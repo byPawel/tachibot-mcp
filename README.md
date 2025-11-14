@@ -87,7 +87,9 @@ tachibot --version
          "env": {
            "PERPLEXITY_API_KEY": "your-key",
            "GROK_API_KEY": "your-key",
-           "OPENAI_API_KEY": "your-key"
+           "OPENAI_API_KEY": "your-key",
+           "GEMINI_API_KEY": "your-key",
+           "OPENROUTER_API_KEY": "your-key"
          }
        }
      }
