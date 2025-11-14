@@ -53,8 +53,6 @@ landing/
 check-key.js
 test-*.js
 test-*.sh
-jest.config.js
-jest.setup.js
 
 # Claude Desktop Extension packages
 *.mcpb
