@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { EventEmitter } from 'events';
 
 /**
@@ -333,7 +334,7 @@ export class MessageQueue extends EventEmitter {
    * Generate unique message ID
    */
   private generateMessageId(): string {
-    return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `msg-${Date.now()}-${randomBytes(6).toString('hex')}`;
   }
 
   /**
@@ -519,8 +520,8 @@ export class MessageQueueOrchestrator extends EventEmitter {
    * Spawn ephemeral subagent
    */
   async spawnEphemeralSubagent(type: string, config: any): Promise<string> {
-    const subagentId = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+    const subagentId = `${type}-${Date.now()}-${randomBytes(6).toString('hex')}`;
+
     const request: SubagentRequest = {
       id: this.generateRequestId(),
       type: 'spawn-subagent',
@@ -566,7 +567,7 @@ export class MessageQueueOrchestrator extends EventEmitter {
    * Generate unique request ID
    */
   private generateRequestId(): string {
-    return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `req-${Date.now()}-${randomBytes(6).toString('hex')}`;
   }
 
   /**

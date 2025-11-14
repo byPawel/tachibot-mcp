@@ -4,6 +4,7 @@
  * Enhanced with multi-model orchestration capabilities
  */
 
+import { randomBytes } from 'crypto';
 import { z } from "zod";
 
 export interface Thought {
@@ -309,7 +310,7 @@ export class SequentialThinking {
    * Generate session ID
    */
   private generateSessionId(): string {
-    return `think_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `think_${Date.now()}_${randomBytes(6).toString('hex')}`;
   }
 
   /**

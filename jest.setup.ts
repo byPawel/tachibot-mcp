@@ -85,6 +85,7 @@ beforeEach(() => {
     const urlStr = url.toString().toLowerCase();
 
     // OpenAI API
+    // codeql[js/incomplete-url-substring-sanitization] - Test mock only, not a security boundary
     if (urlStr.includes('api.openai.com')) {
       return Promise.resolve({
         ok: true,
@@ -105,6 +106,7 @@ beforeEach(() => {
     }
 
     // Google Gemini API
+    // codeql[js/incomplete-url-substring-sanitization] - Test mock only, not a security boundary
     if (urlStr.includes('generativelanguage.googleapis.com')) {
       return Promise.resolve({
         ok: true,

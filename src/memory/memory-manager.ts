@@ -3,6 +3,7 @@
  * Orchestrates multiple memory providers and manages tier-based memory hierarchy
  */
 
+import { randomBytes } from 'crypto';
 import { 
   MemoryConfig, 
   MemoryItem, 
@@ -442,11 +443,11 @@ export class HierarchicalMemoryManager {
   }
   
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}-${randomBytes(6).toString('hex')}`;
   }
-  
+
   private generateSessionId(): string {
-    return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `session-${Date.now()}-${randomBytes(6).toString('hex')}`;
   }
 }
 

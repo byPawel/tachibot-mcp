@@ -20,7 +20,10 @@ function debugApiKey(): void {
   console.error('[PERPLEXITY DEBUG] API Key present:', !!apiKey);
   if (apiKey) {
     console.error('[PERPLEXITY DEBUG] Key length:', apiKey.length);
-    console.error('[PERPLEXITY DEBUG] Key prefix:', apiKey.substring(0, 8) + '...');
+    // Only log key prefix in debug mode to avoid exposing sensitive data
+    if (process.env.DEBUG_API_KEYS === 'true') {
+      console.error('[PERPLEXITY DEBUG] Key prefix:', apiKey.substring(0, 8) + '...');
+    }
   } else {
     console.error('[PERPLEXITY DEBUG] process.env keys:', Object.keys(process.env).filter(k => k.includes('PERP') || k.includes('API')));
   }

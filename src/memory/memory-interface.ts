@@ -3,6 +3,7 @@
  * Common interface for all memory providers (mem0, DevLog, local, etc.)
  */
 
+import { randomBytes } from 'crypto';
 import { 
   MemoryItem, 
   MemoryQuery, 
@@ -313,6 +314,6 @@ export abstract class BaseMemoryProvider implements IMemoryProvider {
    * Generate unique ID
    */
   protected generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}-${randomBytes(6).toString('hex')}`;
   }
 }
