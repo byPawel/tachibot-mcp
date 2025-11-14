@@ -5,7 +5,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-Multi-model AI orchestration platform with 26+ tools, advanced workflows, and intelligent prompt engineering. Works with Claude Code, Claude Desktop, Cursor, and any MCP-compatible client.
+Multi-model AI orchestration platform with 31 tools, advanced workflows, and intelligent prompt engineering. Works with Claude Code, Claude Desktop, Cursor, and any MCP-compatible client.
 
 ---
 
@@ -26,7 +26,7 @@ Multi-model AI orchestration platform with 26+ tools, advanced workflows, and in
 ## ✨ Key Features
 
 ### 🤖 Multi-Model Intelligence
-- **26+ AI Tools:** Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi K2
+- **31 AI Tools:** Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi K2
 - **Multi-Model Reasoning:** Challenger, Verifier, Scout modes
 - **Smart Routing:** Automatic model selection for optimal results
 
@@ -41,7 +41,7 @@ Multi-model AI orchestration platform with 26+ tools, advanced workflows, and in
 - **Research Power** (15 tools) - Default, best balance
 - **Code Focus** (13 tools) - Software development
 - **Balanced** (17 tools) - General-purpose
-- **Full** (26 tools) - Maximum capability
+- **Full** (31 tools) - Maximum capability
 
 ### 🔧 Developer Experience
 - **Claude Code Native** - First-class support
