@@ -1,6 +1,6 @@
 # TachiBot MCP - Complete Tools Reference
 
-**Complete parameter schemas, advanced usage, and examples for all 17+ tools**
+**Complete parameter schemas, advanced usage, and examples for all 31 tools (32 with competitive mode)**
 
 ---
 
@@ -22,25 +22,31 @@
   - [grok_architect](#grok_architect)
   - [grok_brainstorm](#grok_brainstorm)
 - [OpenAI Suite](#openai-suite)
+  - [openai_gpt5_reason](#openai_gpt5_reason)
   - [openai_brainstorm](#openai_brainstorm)
   - [openai_compare](#openai_compare)
+  - [openai_code_review](#openai_code_review)
+  - [openai_explain](#openai_explain)
 - [Gemini Suite](#gemini-suite)
   - [gemini_brainstorm](#gemini_brainstorm)
   - [gemini_analyze_code](#gemini_analyze_code)
   - [gemini_analyze_text](#gemini_analyze_text)
-- [Qwen Suite](#qwen-suite)
+- [OpenRouter Suite](#openrouter-suite)
   - [qwen_coder](#qwen_coder)
-- [Advanced Modes](#advanced-modes)
-  - [verifier](#verifier)
-  - [scout](#scout)
-  - [challenger](#challenger)
+  - [kimi_thinking](#kimi_thinking)
+  - [qwen_competitive](#qwen_competitive) (conditional)
 - [Workflow Tools](#workflow-tools)
   - [workflow](#workflow)
   - [list_workflows](#list_workflows)
   - [create_workflow](#create_workflow)
   - [visualize_workflow](#visualize_workflow)
-- [Collaborative Tools](#collaborative-tools)
-  - [pingpong](#pingpong)
+  - [workflow_start](#workflow_start)
+  - [continue_workflow](#continue_workflow)
+  - [workflow_status](#workflow_status)
+  - [validate_workflow](#validate_workflow)
+  - [validate_workflow_file](#validate_workflow_file)
+- [Workflows (YAML-based)](#workflows-yaml-based)
+  - Note: verifier, scout, challenger, and pingpong are now YAML workflows, not MCP tools
 
 ---
 

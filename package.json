@@ -71,7 +71,7 @@
     "node": ">=18.0.0"
   },
   "license": "MIT",
-  "description": "TachiBot MCP v2.0: 26 AI tools with complete TypeScript schemas. Multi-model orchestration (Perplexity, Grok, OpenAI, Gemini, Qwen), YAML workflows, 5 token-optimized profiles (4k-19k tokens). Smart routing, parallel execution. Comprehensive documentation.",
+  "description": "TachiBot MCP v2.0: 31 AI tools (32 with competitive mode) with complete TypeScript schemas. Multi-model orchestration (Perplexity, Grok, OpenAI, Gemini, Qwen), YAML workflows, 5 token-optimized profiles (4k-20k tokens). Smart routing, parallel execution. Comprehensive documentation.",
   "dependencies": {
     "@types/node": "^22.13.17",
     "@types/yaml": "^1.9.6",

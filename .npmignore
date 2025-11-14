@@ -18,6 +18,8 @@ jest.setup.*
 .claude/
 .focus-sessions/
 dist/.focus-sessions/
+.workflow-sessions/
+dist/.workflow-sessions/
 reviews/
 archive/
 landing/
