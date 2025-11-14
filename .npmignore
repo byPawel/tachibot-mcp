@@ -1,0 +1,72 @@
+# NOTE: Using package.json "files" field for whitelist approach
+# This .npmignore provides additional safety for exclusions
+
+# Test and debug files
+check-key.js
+test-*.js
+test-*.sh
+test-*.mjs
+*.test.ts
+*.spec.ts
+*.test.js
+*.spec.js
+**/__tests__/
+jest.config.*
+jest.setup.*
+
+# Development directories
+.claude/
+.focus-sessions/
+dist/.focus-sessions/
+reviews/
+archive/
+landing/
+.github/
+.git/
+
+# Environment files (NEVER publish these)
+.env
+.env.*
+!.env.example
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+
+# Logs and coverage
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+.nyc_output/
+
+# Package locks (users should generate their own)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Cache directories
+.npm/
+.eslintcache
+.cache/
+node_modules/
+
+# Build artifacts
+*.tsbuildinfo
+
+# CI/CD files
+.travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Development scripts (if not in scripts/)
+run-*.mjs
+analyze-*.mjs
+verify-*.js

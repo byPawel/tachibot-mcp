@@ -1,0 +1,283 @@
+# Iterative Problem Solver - Using Real TachiBot MCP Tools
+# Pattern: Research → Decompose → Solve → Challenge → Iterate
+# Enhanced with 13 prompt engineering techniques for optimal results
+
+name: "Iterative Problem Solver"
+version: "3.0"
+description: "Step-by-step problem solving with research, reasoning, and validation using prompt engineering techniques"
+tags: ["problem-solving", "iterative", "practical", "prompt-engineering"]
+
+config:
+  max_iterations: 5
+  success_threshold: 0.8
+
+steps:
+  # Step 1: Initial Research and Context Gathering
+  # Uses comprehensive_investigation technique for thorough 5W1H analysis
+  - name: research-context
+    tool: scout
+    variant: research_scout
+    promptTechnique: comprehensive_investigation
+    input:
+      query: "${input}"
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: research_context
+
+  # Step 2: Problem Decomposition
+  # Uses problem_decomposition technique to break down complexity
+  - name: decompose-problem
+    tool: think
+    promptTechnique: problem_decomposition
+    input:
+      thought: "${input}"
+    saveToFile: true
+    output:
+      variable: problem_breakdown
+
+  # Step 3: Systematic Analysis
+  # Uses systematic_analysis with research context
+  - name: analyze-problem
+    tool: grok_reason
+    promptTechnique: systematic_analysis
+    input:
+      problem: "${input}"
+      approach: "systematic"
+      context: "Research findings: ${research_context}\n\nProblem structure: ${problem_breakdown}"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: problem_analysis
+
+  # Step 4: Generate Initial Solutions
+  # Uses innovative_solutions technique for creative approaches
+  - name: brainstorm-solutions
+    tool: openai_brainstorm
+    promptTechnique: innovative_solutions
+    input:
+      problem: "${input}"
+      style: "innovative"
+      quantity: 5
+      reasoning_effort: "medium"
+      context: "Analysis: ${problem_analysis}\n\nResearch: ${research_context}"
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: solution_ideas
+
+  # Step 5: First Principles Analysis
+  # Uses first_principles technique to rebuild from fundamentals
+  - name: first-principles-reasoning
+    tool: grok_reason
+    promptTechnique: first_principles
+    input:
+      problem: "${input}"
+      approach: "first-principles"
+      context: "Solutions proposed: ${solution_ideas}\n\nAnalysis: ${problem_analysis}"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: first_principles_analysis
+
+  # Step 6: Deep Multi-Model Reasoning
+  - name: reason-solution
+    tool: focus
+    mode: deep-reasoning
+    input:
+      query: "Synthesize the best solution for: ${input}"
+      rounds: 3
+      models: ["grok-3", "gpt-5", "gemini-2.5"]
+      context: |
+        Research: ${research_context}
+        Problem breakdown: ${problem_breakdown}
+        Analysis: ${problem_analysis}
+        Solution ideas: ${solution_ideas}
+        First principles: ${first_principles_analysis}
+    saveToFile: true
+    maxTokens: 15000
+    output:
+      variable: reasoned_solution
+
+  # Step 7: Evidence Gathering for Validation
+  # Uses evidence_gathering technique to find supporting/contradicting data
+  - name: gather-evidence
+    tool: perplexity_ask
+    promptTechnique: evidence_gathering
+    input:
+      query: "${input} validation best practices case studies"
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: validation_evidence
+
+  # Step 8: Challenge and Validate
+  - name: challenge-solution
+    tool: challenger
+    input:
+      context: |
+        Original problem: ${input}
+        Proposed solution: ${reasoned_solution}
+        Evidence: ${validation_evidence}
+      thoroughness: deep
+      enableFactChecking: true
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: challenges
+
+  # Step 9: Feasibility Analysis
+  # Uses feasibility_analysis technique to evaluate practicality
+  - name: assess-feasibility
+    tool: gemini_analyze_text
+    promptTechnique: feasibility_analysis
+    input:
+      text: "${reasoned_solution}"
+      type: "analysis"
+      context: "Challenges: ${challenges}\n\nEvidence: ${validation_evidence}"
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: feasibility
+
+  # Step 10: Verify with Multi-Model Consensus
+  - name: verify-solution
+    tool: verifier
+    variant: deep_verify
+    input:
+      query: |
+        Solution: ${reasoned_solution}
+        Challenges raised: ${challenges}
+        Feasibility: ${feasibility}
+
+        Is this a valid and complete solution?
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: verification
+
+  # Step 11: Pattern Recognition
+  # Uses pattern_recognition to identify insights across all analyses
+  - name: identify-patterns
+    tool: think
+    promptTechnique: pattern_recognition
+    input:
+      thought: "What patterns emerge from our analysis of '${input}'? Context: ${problem_analysis}, ${solution_ideas}, ${challenges}, ${feasibility}"
+    saveToFile: true
+    output:
+      variable: patterns
+
+  # Step 12: Refine if Needed
+  # Uses alternative_perspectives for creative refinement
+  - name: refine-solution
+    tool: kimi_thinking
+    promptTechnique: alternative_perspectives
+    when: "${verification.confidence} < 0.8"
+    input:
+      problem: "Refine solution for: ${input}"
+      approach: "creative"
+      maxSteps: 10
+      context: |
+        Original: ${reasoned_solution}
+        Issues: ${challenges}
+        Patterns: ${patterns}
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: refined_solution
+
+  # Step 13: Quick Reflection Before Synthesis
+  # Uses quick_reflection to consolidate insights
+  - name: pre-synthesis-reflection
+    tool: think
+    promptTechnique: quick_reflection
+    input:
+      thought: "Reflect on our complete analysis of '${input}': What are the key insights, surprises, and next steps?"
+    saveToFile: true
+    output:
+      variable: reflection
+
+  # Step 14: Ultimate Integration and Synthesis
+  # Uses integration_reflection to combine all perspectives
+  - name: ultimate-synthesis
+    tool: openai_brainstorm
+    promptTechnique: integration_reflection
+    input:
+      problem: "Create comprehensive solution for: ${input}"
+      style: "systematic"
+      reasoning_effort: "high"
+      model: "gpt-5"
+      context: |
+        COMPLETE WORKFLOW CONTEXT:
+
+        Research: ${research_context}
+        Problem Breakdown: ${problem_breakdown}
+        Systematic Analysis: ${problem_analysis}
+        Solution Ideas: ${solution_ideas}
+        First Principles: ${first_principles_analysis}
+        Reasoned Solution: ${reasoned_solution}
+        Evidence: ${validation_evidence}
+        Challenges: ${challenges}
+        Feasibility: ${feasibility}
+        Patterns: ${patterns}
+        Verification: ${verification}
+        Refined Solution: ${refined_solution}
+        Reflection: ${reflection}
+    saveToFile: true
+    maxTokens: 20000
+    output:
+      variable: integrated_solution
+
+  # Step 15: Executive Summary (using Gemini 2.5 Flash for large context)
+  - name: executive-summary
+    tool: gemini_analyze_text
+    input:
+      text: "${integrated_solution}"
+      type: "summary"
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: final_solution
+
+output:
+  format: detailed
+  truncateSteps: false
+  summary: |
+    ╔═══════════════════════════════════════════════════════════════════════════╗
+    ║  ITERATIVE PROBLEM SOLVER v3.0 - Enhanced with Prompt Engineering        ║
+    ║  Problem: ${input}                                                        ║
+    ╚═══════════════════════════════════════════════════════════════════════════╝
+
+    📊 ANALYSIS PHASES COMPLETED:
+    ✅ Phase 1: Research & Context (comprehensive_investigation)
+    ✅ Phase 2: Problem Decomposition (problem_decomposition)
+    ✅ Phase 3: Systematic Analysis (systematic_analysis)
+    ✅ Phase 4: Solution Ideation (innovative_solutions)
+    ✅ Phase 5: First Principles Reasoning (first_principles)
+    ✅ Phase 6: Multi-Model Deep Reasoning (focus)
+    ✅ Phase 7: Evidence Validation (evidence_gathering)
+    ✅ Phase 8: Critical Challenge (challenger)
+    ✅ Phase 9: Feasibility Assessment (feasibility_analysis)
+    ✅ Phase 10: Multi-Model Verification (verifier)
+    ✅ Phase 11: Pattern Recognition (pattern_recognition)
+    ✅ Phase 12: Refinement (alternative_perspectives)
+    ✅ Phase 13: Reflection (quick_reflection)
+    ✅ Phase 14: Ultimate Synthesis (integration_reflection)
+
+    🎯 EXECUTIVE SUMMARY:
+    ${final_solution}
+
+    📁 All outputs saved to: workflow-output/iterative-problem-solver/
+
+    💡 This workflow uses 10 of 13 prompt engineering techniques for optimal results
+
+# Usage examples
+examples:
+  - description: "Debug a complex performance issue"
+    input: "My React app is slow when rendering large lists with complex state updates"
+
+  - description: "Design a system architecture"
+    input: "Design a scalable microservice architecture for an e-commerce platform"
+
+  - description: "Solve algorithmic problem"
+    input: "Optimize database query performance for time-series data"

@@ -1,0 +1,66 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+name: "tachibot-mcp"
+description: "Multi-model AI orchestration platform with 26 tools across Perplexity, Grok, OpenAI GPT-5, Gemini, and Qwen. Features YAML workflows, 5 token-optimized profiles (4k-19k), smart routing, and cost controls. Build complex AI pipelines with variable passing and parallel execution."
+version: "2.0.0"
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: "object"
+    title: "TachiBot MCP Configuration"
+    description: "Configuration options for TachiBot MCP - Universal AI Orchestrator"
+    properties:
+      TACHIBOT_PROFILE:
+        type: "string"
+        title: "Tool Profile"
+        description: "Select tool profile: minimal (8 tools, ~4k tokens), research_power (15 tools), code_focus (13 tools), balanced (17 tools, default), full (26 tools, ~19k tokens)"
+        enum: ["minimal", "research_power", "code_focus", "balanced", "full"]
+        default: "balanced"
+      PERPLEXITY_API_KEY:
+        type: "string"
+        title: "Perplexity API Key"
+        description: "API key for Perplexity (web search, research, reasoning)"
+        format: "password"
+      GROK_API_KEY:
+        type: "string"
+        title: "Grok API Key"
+        description: "API key for xAI Grok (code analysis, debugging, architecture)"
+        format: "password"
+      OPENAI_API_KEY:
+        type: "string"
+        title: "OpenAI API Key"
+        description: "API key for OpenAI GPT-5, Qwen, QwQ models"
+        format: "password"
+      GOOGLE_API_KEY:
+        type: "string"
+        title: "Google Gemini API Key"
+        description: "API key for Google Gemini (brainstorming, analysis)"
+        format: "password"
+      OPENROUTER_API_KEY:
+        type: "string"
+        title: "OpenRouter API Key"
+        description: "Optional: OpenRouter API key for additional model access"
+        format: "password"
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: ['dist/src/server.js'],
+      env: {
+        NODE_ENV: 'production',
+        TACHIBOT_PROFILE: config.TACHIBOT_PROFILE || 'balanced',
+        PERPLEXITY_API_KEY: config.PERPLEXITY_API_KEY || '',
+        GROK_API_KEY: config.GROK_API_KEY || '',
+        OPENAI_API_KEY: config.OPENAI_API_KEY || '',
+        GOOGLE_API_KEY: config.GOOGLE_API_KEY || '',
+        OPENROUTER_API_KEY: config.OPENROUTER_API_KEY || '',
+        TACHI_ENABLE_CACHE: 'true',
+        TACHI_ENABLE_BATCHING: 'true'
+      }
+    })
+
+clients:
+  - claude
+  - cursor
+  - windsurf
+  - cline

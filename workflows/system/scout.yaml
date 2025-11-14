@@ -1,0 +1,164 @@
+name: scout
+description: Intelligent information gathering workflow with temporal context and multi-source research
+version: "2.0"
+
+settings:
+  maxCost: 0.60
+
+steps:
+  # Step 1: Deep web research via Perplexity
+  - name: perplexity_research
+    tool: perplexity_research
+    input:
+      topic: "${query}"
+      depth: "deep"
+    saveToFile: true
+    maxTokens: 20000
+    output:
+      variable: perplexity_data
+
+  # Step 2: Live search via Grok with X/Twitter integration
+  - name: grok_search
+    tool: grok_search
+    input:
+      query: "${query}"
+      depth: "comprehensive"
+    saveToFile: true
+    maxTokens: 20000
+    output:
+      variable: grok_data
+
+  # Step 3: Gemini analysis of search results
+  - name: gemini_analysis
+    tool: gemini_analyze_text
+    loadFiles: ["perplexity_research", "grok_search"]
+    input:
+      text: |
+        Analyze these research findings:
+
+        PERPLEXITY RESEARCH:
+        ${perplexity_data}
+
+        GROK SEARCH:
+        ${grok_data}
+
+        Provide:
+        1. Key themes and patterns
+        2. Temporal context (what's current vs outdated)
+        3. Source reliability assessment
+        4. Contradictions or conflicts
+        5. Knowledge gaps
+      focus: "comprehensive analysis"
+    saveToFile: true
+    maxTokens: 15000
+    output:
+      variable: gemini_analysis_result
+
+  # Step 4: Technical deep-dive with Qwen Coder (if technical topic)
+  - name: qwen_technical_analysis
+    tool: qwen_coder
+    loadFiles: ["perplexity_research", "grok_search"]
+    input:
+      problem: |
+        Provide technical analysis of this research:
+
+        TOPIC: ${query}
+
+        RESEARCH DATA:
+        ${perplexity_data}
+
+        ${grok_data}
+
+        Focus on:
+        - Technical accuracy and details
+        - Code examples or implementation details (if applicable)
+        - Best practices and standards
+        - Recent technical developments
+        - Architecture or design patterns
+    saveToFile: true
+    maxTokens: 15000
+    output:
+      variable: qwen_analysis_result
+
+  # Step 5: Multi-model reasoning synthesis
+  - name: reasoning_synthesis
+    tool: focus
+    loadFiles: ["perplexity_research", "grok_search", "gemini_analysis", "qwen_technical_analysis"]
+    input:
+      query: |
+        Synthesize these comprehensive research findings into a coherent analysis:
+
+        WEB RESEARCH (Perplexity):
+        ${perplexity_data}
+
+        LIVE SEARCH (Grok):
+        ${grok_data}
+
+        ANALYSIS (Gemini):
+        ${gemini_analysis_result}
+
+        TECHNICAL ANALYSIS (Qwen):
+        ${qwen_analysis_result}
+
+        Provide:
+        1. Core findings that appear across multiple sources
+        2. Unique insights from each source
+        3. Contradictions or disagreements between sources
+        4. Confidence levels for different claims
+        5. Actionable recommendations based on the synthesis
+      mode: "analyze"
+      models: ["gpt5-mini", "gemini-2.5-pro", "gemini-2.5-flash", "grok-4"]
+      rounds: 2
+      domain: "research"
+    saveToFile: true
+    maxTokens: 15000
+    output:
+      variable: reasoning_result
+
+  # Step 6: Final formatted report
+  - name: format_scout_report
+    tool: gemini_analyze_text
+    loadFiles: ["reasoning_synthesis"]
+    input:
+      text: |
+        Create a comprehensive scout report:
+
+        QUERY: ${query}
+
+        SYNTHESIS: ${reasoning_result}
+
+        Format as:
+        # Scout Report: ${query}
+
+        ## Executive Summary
+        [3-5 sentence overview]
+
+        ## Key Findings
+        [Numbered list of main discoveries]
+
+        ## Temporal Context
+        - **Current State:** [What's happening now]
+        - **Recent Developments:** [Last 6-12 months]
+        - **Emerging Trends:** [What's coming next]
+
+        ## Source Analysis
+        - **High Confidence Sources:** [List reliable sources]
+        - **Medium Confidence:** [Somewhat reliable]
+        - **Low Confidence:** [Treat with caution]
+
+        ## Technical Details
+        [If applicable: code, architecture, implementation notes]
+
+        ## Knowledge Gaps & Uncertainties
+        [What we don't know or what's unclear]
+
+        ## Recommendations
+        [Actionable next steps or insights]
+
+        ## References
+        [Key sources cited]
+      focus: "report formatting"
+    maxTokens: 8000
+
+output:
+  format: detailed

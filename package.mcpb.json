@@ -1,0 +1,21 @@
+{
+  "name": "tachibot-mcp",
+  "displayName": "TachiBot MCP - Universal AI Orchestrator",
+  "version": "2.0.0",
+  "main": "dist/src/server-cjs.js",
+  "bin": {
+    "tachibot": "./dist/src/server-cjs.js",
+    "tachi": "./dist/src/server-cjs.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT",
+  "description": "TachiBot MCP v2.0: 25+ AI tools with complete TypeScript schemas. Multi-model orchestration, YAML workflows, 5 token-optimized profiles (4k-19k tokens). Smart routing, cost controls, parallel execution. Comprehensive docs with interactive examples.",
+  "author": "Pawel Pawlowski",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/byPawel/tachibot-mcp"
+  },
+  "homepage": "https://github.com/byPawel/tachibot-mcp"
+}

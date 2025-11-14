@@ -1,0 +1,133 @@
+name: verifier
+description: Multi-model consensus verification workflow with file-based chaining
+version: "2.0"
+
+settings:
+  maxCost: 0.50
+
+steps:
+  # Parallel verification across 5 different models
+  # Each model gets 10k tokens, saved to disk
+
+  - name: verify_gpt5_mini
+    tool: openai_compare
+    input:
+      topic: "Verify the following claim or statement"
+      options:
+        - "${query}"
+      includeRecommendation: false
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: gpt5_mini_result
+
+  - name: verify_gemini
+    tool: gemini_analyze_text
+    input:
+      text: |
+        Verify the accuracy and validity of this claim:
+
+        ${query}
+
+        Provide:
+        1. Truth assessment (true/false/partially true/unverifiable)
+        2. Supporting evidence
+        3. Contradicting evidence
+        4. Confidence level (0-100%)
+      focus: "verification"
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: gemini_result
+
+  - name: verify_grok
+    tool: grok_code
+    input:
+      code: "${query}"
+      task: "verify"
+      requirements: |
+        Analyze and verify this claim with:
+        1. Factual accuracy check
+        2. Logical consistency
+        3. Evidence assessment
+        4. Confidence score
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: grok_result
+
+  - name: verify_qwen
+    tool: qwen_coder
+    input:
+      problem: |
+        Verify this technical claim or statement:
+
+        ${query}
+
+        Provide detailed verification including:
+        - Technical accuracy
+        - Code/logic correctness (if applicable)
+        - Best practices alignment
+        - Confidence rating
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: qwen_result
+
+  - name: verify_perplexity
+    tool: perplexity_reason
+    input:
+      query: |
+        Verify with web search and reasoning:
+
+        ${query}
+
+        Check:
+        1. Current factual accuracy (check latest sources)
+        2. Expert consensus
+        3. Recent developments
+        4. Source reliability
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: perplexity_result
+
+  # Executive Summary (using Gemini 2.5 Flash for 50k token context)
+  - name: executive-summary
+    tool: gemini_analyze_text
+    input:
+      text: |
+        ${gpt5_mini_result}
+        ${gemini_result}
+        ${grok_result}
+        ${qwen_result}
+        ${perplexity_result}
+      task: |
+        Original Query: ${query}
+
+        Analyze consensus from 5 verification models and create executive summary:
+
+        ## Verification Summary
+        - Overall Verdict: [True/False/Partially True/Unverifiable]
+        - Consensus Level: [X/5 models agree]
+        - Confidence: [0-100%]
+
+        ## Model Verdicts
+        [Brief summary of each model's verdict]
+
+        ## Key Evidence
+        [Supporting and contradicting evidence]
+
+        ## Outliers & Disagreements
+        [Any models that disagree and why]
+
+        ## Final Recommendation
+        [Should this claim be trusted? Why or why not?]
+
+        Keep under 2000 words for Claude Code.
+    maxTokens: 6000
+    output:
+      variable: verification_report
+
+output:
+  format: detailed

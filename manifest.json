@@ -1,0 +1,84 @@
+{
+  "manifest_version": "0.2",
+  "dxt_version": "1.1.1",
+  "name": "tachibot-mcp",
+  "version": "2.0.0",
+  "description": "Multi-model AI orchestration platform with 26 tools across Perplexity, Grok, OpenAI GPT-5, Gemini, and Qwen",
+  "author": {
+    "name": "Pawel Pawlowski",
+    "email": "pawel@example.com",
+    "url": "https://github.com/byPawel"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/byPawel/tachibot-mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/byPawel/tachibot-mcp.git"
+  },
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/src/server-cjs.cjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/src/server-cjs.cjs"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "user_config": {
+    "TACHIBOT_PROFILE": {
+      "title": "Tool Profile",
+      "type": "string",
+      "description": "Select tool profile: minimal, research_power, code_focus, balanced (default), or full",
+      "default": "balanced"
+    },
+    "PERPLEXITY_API_KEY": {
+      "title": "Perplexity API Key",
+      "type": "string",
+      "description": "For web search, research, and reasoning (Get from perplexity.ai)",
+      "required": false
+    },
+    "GROK_API_KEY": {
+      "title": "Grok API Key",
+      "type": "string",
+      "description": "For code analysis, debugging, and architecture (Get from x.ai)",
+      "required": false
+    },
+    "OPENAI_API_KEY": {
+      "title": "OpenAI API Key",
+      "type": "string",
+      "description": "For GPT-5, Qwen, and QwQ models (Get from platform.openai.com)",
+      "required": false
+    },
+    "GOOGLE_API_KEY": {
+      "title": "Google Gemini API Key",
+      "type": "string",
+      "description": "For Gemini brainstorming and analysis (Get from makersuite.google.com)",
+      "required": false
+    },
+    "OPENROUTER_API_KEY": {
+      "title": "OpenRouter API Key (Optional)",
+      "type": "string",
+      "description": "Alternative provider for additional models (Get from openrouter.ai)",
+      "required": false
+    },
+    "TACHI_ENABLE_CACHE": {
+      "title": "Enable Result Caching",
+      "type": "boolean",
+      "description": "Cache API responses to reduce costs",
+      "default": true
+    },
+    "TACHI_ENABLE_BATCHING": {
+      "title": "Enable Request Batching",
+      "type": "boolean",
+      "description": "Batch parallel requests for efficiency",
+      "default": true
+    }
+  }
+}

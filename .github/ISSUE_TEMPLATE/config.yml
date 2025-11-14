@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/pavveu/tachibot-mcp#documentation
+    about: Check the documentation for guides and examples
+  - name: Discussions
+    url: https://github.com/pavveu/tachibot-mcp/discussions
+    about: Ask questions and discuss ideas with the community

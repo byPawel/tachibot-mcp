@@ -1,0 +1,175 @@
+name: challenger
+description: Devil's advocate workflow that expands perspectives and challenges assumptions
+version: "2.0"
+
+settings:
+  maxCost: 0.55
+
+steps:
+  # Step 1: Extract key claims from the input
+  - name: extract_claims
+    tool: gemini_analyze_text
+    input:
+      text: |
+        Analyze this statement and extract all key claims:
+
+        ${query}
+
+        Identify:
+        1. Primary claim (main assertion)
+        2. Supporting claims (sub-assertions)
+        3. Implicit assumptions
+        4. Confidence level expressed (if any)
+        5. Evidence type (anecdotal, statistical, expert opinion, etc.)
+
+        Format as numbered list with categorization.
+      type: "general"
+    saveToFile: true
+    maxTokens: 5000
+    output:
+      variable: claims_list
+
+  # Step 2: Generate counter-arguments via creative brainstorming
+  - name: generate_counter_arguments
+    tool: gemini_brainstorm
+    input:
+      prompt: |
+        Claims to challenge:
+        ${claims_list}
+
+        Original context:
+        ${query}
+
+        Generate:
+        1. Direct counter-arguments for each claim
+        2. Alternative interpretations
+        3. Devil's advocate positions
+        4. Edge cases that break the claims
+        5. "What if we're looking at this backwards?" scenarios
+
+        Be creative and thorough. Don't just nitpick - find genuinely different perspectives.
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: counter_args
+
+  # Step 3: Research alternative perspectives via Perplexity
+  - name: research_alternatives
+    tool: perplexity_research
+    input:
+      topic: |
+        Alternative perspectives and counter-evidence for:
+
+        ${query}
+
+        Find:
+        - Opposing viewpoints from credible sources
+        - Historical precedents that contradict
+        - Expert opinions that disagree
+        - Data that challenges these claims
+        - Examples where this approach failed
+      depth: "deep"
+    saveToFile: true
+    maxTokens: 15000
+    output:
+      variable: alt_perspectives
+
+  # Step 4: Find counter-evidence via Grok search
+  - name: find_counter_evidence
+    tool: grok_search
+    input:
+      query: |
+        Counter-evidence and criticisms:
+
+        ${query}
+
+        Search for:
+        - Recent criticisms or challenges
+        - Failed implementations or problems
+        - Expert warnings or concerns
+        - Contradictory data or research
+        - Real-world examples that contradict
+      depth: "comprehensive"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: counter_evidence
+
+  # Step 5: Multi-model verification of counter-arguments
+  - name: verify_counter_arguments
+    tool: openai_brainstorm
+    input:
+      problem: |
+        Evaluate the strength and validity of the following counter-arguments:
+
+        ORIGINAL CLAIMS:
+        ${claims_list}
+
+        COUNTER-ARGUMENTS:
+        ${counter_args}
+
+        RESEARCH:
+        ${alt_perspectives}
+
+        COUNTER-EVIDENCE:
+        ${counter_evidence}
+
+        For each counter-argument, assess:
+        1. Logical validity (is the reasoning sound?)
+        2. Evidence strength (is it backed by credible sources/data?)
+        3. Relevance (does it directly challenge the claims?)
+        4. Overall strength (weak/moderate/strong)
+
+        Provide a clear assessment of which counter-arguments are most compelling and why.
+      style: "systematic"
+      reasoning_effort: "high"
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: verification
+
+  # Step 6: Executive Summary (using Gemini 2.5 Flash for large context)
+  - name: executive-summary
+    tool: gemini_analyze_text
+    input:
+      text: |
+        ${claims_list}
+        ${counter_args}
+        ${alt_perspectives}
+        ${counter_evidence}
+        ${verification}
+      task: |
+        Original Statement: ${query}
+
+        Create comprehensive challenger executive summary:
+
+        ## Original Position Summary
+        [Summarize the original claims in 2-3 sentences]
+
+        ## Counter-Arguments by Claim
+        [For top 3 claims: counter-argument + strength + evidence]
+
+        ## Alternative Perspectives
+        [Different ways to view this entirely]
+
+        ## "What if we're backwards?" Analysis
+        [Explore opposite assumptions]
+
+        ## Strongest Challenges
+        [Top 3 most compelling counter-arguments with evidence]
+
+        ## Verdict
+        - **Original Position Strength:** [0-100%]
+        - **Challenge Strength:** [0-100%]
+        - **Recommended Action:** [Accept/Reject/Modify/Investigate Further]
+
+        ## Recommended Modifications
+        [How to strengthen the original position or find middle ground]
+
+        Keep under 2500 words for Claude Code.
+    maxTokens: 8000
+    output:
+      variable: challenge_report
+
+output:
+  format: detailed

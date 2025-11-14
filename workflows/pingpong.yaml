@@ -1,0 +1,141 @@
+name: pingpong
+description: Multi-model debate with analysis, challenge, and consensus
+version: "2.0"
+
+# Usage: workflow --name pingpong --query "your question/idea/architecture"
+# All outputs saved to: workflow-output/pingpong/{timestamp}/
+
+steps:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ANALYSIS: Initial perspectives from all models
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: analyze-grok
+    tool: grok_reason
+    input:
+      problem: "${query}"
+      approach: "first-principles"
+    saveToFile: true
+    maxTokens: 3500
+
+  - name: analyze-gemini
+    tool: gemini_brainstorm
+    input:
+      prompt: "${query}"
+      maxRounds: 1
+    dependsOn: [analyze-grok]
+    saveToFile: true
+    maxTokens: 3500
+
+  - name: analyze-qwen
+    tool: qwen_coder
+    input:
+      task: "explain"
+      requirements: "${query}"
+      language: "typescript"
+    dependsOn: [analyze-gemini]
+    saveToFile: true
+    maxTokens: 3500
+
+  - name: analyze-perplexity
+    tool: perplexity_reason
+    input:
+      problem: "${query}"
+      approach: "analytical"
+    dependsOn: [analyze-qwen]
+    saveToFile: true
+    maxTokens: 3500
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CHALLENGE: Models critique and refine each other's analyses
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: challenge-grok
+    tool: grok_reason
+    input:
+      problem: |
+        Challenge the previous analyses. Find flaws, edge cases, and hidden assumptions.
+
+        Original question: ${query}
+
+        Perplexity's analysis: ${analyze-perplexity.output}
+      approach: "systematic"
+      useHeavy: true
+    loadFiles: [analyze-grok, analyze-gemini, analyze-qwen, analyze-perplexity]
+    dependsOn: [analyze-perplexity]
+    saveToFile: true
+    maxTokens: 3500
+
+  - name: challenge-gemini
+    tool: gemini_analyze_text
+    input:
+      text: |
+        Original question: ${query}
+
+        Task: Synthesize all analyses, then propose alternative approaches.
+
+        Grok's challenges: ${challenge-grok.output}
+      type: "general"
+    loadFiles: [challenge-grok]
+    dependsOn: [challenge-grok]
+    saveToFile: true
+    maxTokens: 3500
+
+  - name: challenge-qwen
+    tool: qwen_coder
+    input:
+      task: "explain"
+      requirements: |
+        Original question: ${query}
+
+        Context: Review Gemini's synthesis below and identify technical risks, implementation challenges, and missing considerations.
+
+        Gemini's synthesis:
+        ${challenge-gemini.output}
+      language: "typescript"
+    loadFiles: [challenge-gemini]
+    dependsOn: [challenge-gemini]
+    saveToFile: true
+    maxTokens: 3500
+
+  - name: challenge-perplexity
+    tool: perplexity_ask
+    input:
+      query: |
+        Context: We are analyzing architectural patterns (SOLID principles vs CQRS vs other patterns) for this question: "${query}"
+
+        Task: Research and find evidence from authoritative sources that supports or refutes the technical analysis below:
+
+        ${challenge-qwen.output}
+
+        Focus your research on: architectural patterns, SOLID principles, CQRS, software design trade-offs, and real-world case studies.
+      searchDomain: "general"
+      searchRecency: "month"
+    loadFiles: [challenge-qwen]
+    dependsOn: [challenge-qwen]
+    saveToFile: true
+    maxTokens: 3500
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CONSENSUS: Final multi-model comparison
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: consensus
+    tool: openai_compare
+    input:
+      topic: "Final consensus on: ${query}"
+      options:
+        - "Grok's analysis: ${challenge-grok.output}"
+        - "Gemini's synthesis: ${challenge-gemini.output}"
+        - "Qwen's technical review: ${challenge-qwen.output}"
+        - "Perplexity's validation: ${challenge-perplexity.output}"
+      criteria: "Coherence, technical soundness, real-world feasibility, and consensus strength"
+      includeRecommendation: true
+    loadFiles: [challenge-grok, challenge-gemini, challenge-qwen, challenge-perplexity]
+    dependsOn: [challenge-perplexity]
+    saveToFile: true
+    maxTokens: 4000
+
+output:
+  format: detailed
+  truncateSteps: false

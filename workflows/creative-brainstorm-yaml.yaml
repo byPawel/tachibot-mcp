@@ -1,0 +1,215 @@
+name: creative-brainstorm-yaml
+description: Multi-model creative brainstorming with mid-flow and final verification
+version: "2.0"
+
+settings:
+  optimization:
+    enabled: true
+    cacheResults: true
+    promptEnhancement: true  # Use prompt-engineer.ts
+  maxCost: 1.00
+
+variables:
+  analysis_depth: "comprehensive"
+
+steps:
+  # Step 1: Claude Thinking - Problem Framing
+  - name: claude-thinking
+    tool: openai_gpt5_reason  # Using GPT-5 Mini for structured thinking
+    input:
+      query: |
+        Analyze and structure the brainstorming request: ${query}
+
+        Provide:
+        1. Domain and framing
+        2. Key stakeholders
+        3. Core constraints and goals
+        4. Success criteria
+        5. Potential approaches to explore
+      mode: "analytical"
+    saveToFile: true
+    maxTokens: 4000
+    output:
+      variable: initial_analysis
+    promptTechnique: "systematic_analysis"
+
+  # Step 2: Initial Ideas Generation
+  - name: initial-ideas
+    tool: openai_brainstorm
+    input:
+      problem: "${initial_analysis}"
+      style: "systematic"
+      quantity: 5
+      constraints: |
+        Based on the framing:
+        ${initial_analysis}
+
+        Generate initial ideas for: ${query}
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: initial_ideas
+    promptTechnique: "innovative_solutions"
+
+  # Step 3: Expand Ideas with Deep Thinking
+  - name: expand-ideas
+    tool: kimi_thinking
+    input:
+      problem: |
+        Expand and build upon these ideas:
+        ${initial_ideas}
+
+        Original query: ${query}
+      approach: "step-by-step"
+      maxSteps: 10
+      context: "${initial_analysis}"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: expanded_ideas
+    promptTechnique: "what_if_speculation"
+
+  # Step 4: Mid-Flow Verification
+  - name: mid-verification
+    tool: verifier
+    input:
+      query: |
+        Verify the feasibility and soundness of these ideas:
+
+        Original Analysis: ${initial_analysis}
+
+        Initial Ideas: ${initial_ideas}
+
+        Expanded Ideas: ${expanded_ideas}
+
+        Assess:
+        1. Feasibility (can this actually be done?)
+        2. Soundness (does the reasoning hold up?)
+        3. Completeness (are we missing critical aspects?)
+        4. Potential flaws or risks
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: mid_verification
+
+  # Step 5: Research Validation
+  - name: research-validation
+    tool: perplexity_research
+    input:
+      topic: |
+        Find the "RESEARCH VALIDATION TOPICS" section in the text below and research ONLY those specific topics in depth.
+
+        ${expanded_ideas}
+
+        If no explicit "RESEARCH VALIDATION TOPICS" section exists, research:
+        - Latest industry data and statistics
+        - Case studies and real-world implementations
+        - Expert opinions and academic research
+        - Recent developments and trends
+
+        For query: ${query}
+      depth: "deep"
+      questions:
+        - "What are the latest industry statistics and trends?"
+        - "What real-world implementations or case studies exist?"
+        - "What do experts and researchers say?"
+    saveToFile: true
+    maxTokens: 15000
+    output:
+      variable: research_findings
+    promptTechnique: "comprehensive_investigation"
+
+  # Step 6: Contrarian View / Devil's Advocate
+  - name: contrarian-view
+    tool: grok_reason
+    input:
+      problem: |
+        Challenge these ideas using first-principles thinking:
+        ${expanded_ideas}
+
+        Verification feedback:
+        ${mid_verification}
+      approach: "first-principles"
+      useHeavy: false
+      context: |
+        Research findings: ${research_findings}
+
+        Be a constructive skeptic. Find:
+        1. Hidden assumptions
+        2. Potential failure modes
+        3. Alternative approaches not considered
+        4. Edge cases and risks
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: contrarian_analysis
+    promptTechnique: "critical_analysis"
+
+  # Step 7: Final Synthesis
+  - name: final-synthesis
+    tool: gemini_brainstorm
+    input:
+      prompt: |
+        Initial Analysis: ${initial_analysis}
+
+        Initial Ideas: ${initial_ideas}
+
+        Expanded Ideas: ${expanded_ideas}
+
+        Verification: ${mid_verification}
+
+        Research: ${research_findings}
+
+        Critical Analysis: ${contrarian_analysis}
+
+        Synthesize all insights into a comprehensive, actionable recommendation for:
+        ${query}
+
+        Include:
+        1. Executive Summary
+        2. Recommended Approach (with reasoning)
+        3. Implementation Roadmap
+        4. Risks and Mitigation
+        5. Success Metrics
+      claudeThoughts: |
+        You are synthesizing 6 rounds of multi-model analysis.
+        Focus on actionable insights, not just summaries.
+      maxRounds: 2
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: final_synthesis
+
+  # Step 8: Final Verification
+  - name: final-verification
+    tool: grok_reason
+    input:
+      problem: |
+        Perform final validation of the synthesized recommendations:
+
+        ${final_synthesis}
+
+        Original query: ${query}
+      approach: "analytical"
+      context: |
+        Verify:
+        1. Internal consistency
+        2. Alignment with original query
+        3. Practical feasibility
+        4. Completeness
+
+        Provide confidence score (0-100%) and final verdict.
+    saveToFile: true
+    maxTokens: 6000
+    output:
+      variable: final_verification
+
+output:
+  format: detailed
+  return: |
+    ${final_synthesis}
+
+    ---
+
+    VALIDATION:
+    ${final_verification}

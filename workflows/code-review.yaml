@@ -1,0 +1,142 @@
+name: comprehensive-code-review
+description: Multi-perspective code review using actually registered tools
+version: "2.0"
+
+settings:
+  optimization:
+    enabled: true
+    cacheResults: true
+    compressPrompts: true
+    smartRouting: true
+
+variables:
+  severity_threshold: "medium"
+  language: "auto-detect"
+
+steps:
+  - name: initial-scan
+    tool: gemini_analyze_code  # Use Gemini for initial quick scan
+    input:
+      code: "${query}"
+      focus: general
+    saveToFile: true
+    output:
+      variable: initial_scan
+    maxTokens: 300
+
+  - name: architecture-review
+    tool: grok_code  # Grok for architecture and optimization
+    input:
+      code: "${query}"
+      task: analyze
+      requirements: |
+        Analyze architecture and code structure:
+        1. Design patterns used
+        2. Code organization
+        3. Potential optimizations
+        4. Architectural issues
+    parallel: true
+    saveToFile: true
+    output:
+      variable: architecture_analysis
+
+  - name: code-analysis
+    tool: qwen_coder  # Qwen for detailed code review
+    input:
+      code: "${query}"
+      task: review
+      language: "${language}"
+      requirements: |
+        Review code for:
+        - Syntax and structure
+        - Best practices
+        - Performance issues
+        - Potential bugs
+    parallel: true
+    saveToFile: true
+    output:
+      variable: code_issues
+
+  - name: security-research
+    tool: perplexity_ask  # Perplexity for security research
+    input:
+      query: |
+        Common security vulnerabilities in ${language} code.
+        Focus on: injection attacks, authentication, data exposure, dependency issues.
+        Provide examples and detection patterns.
+    parallel: true
+    condition:
+      failOnError: false
+    saveToFile: true
+    output:
+      variable: security_patterns
+
+  - name: readability-check
+    tool: openai_brainstorm  # OpenAI for multi-perspective readability
+    input:
+      problem: |
+        Review this code for readability and maintainability:
+        ${query}
+
+        Evaluate from 5 perspectives:
+        1. Junior developer (can they understand it?)
+        2. Senior architect (is it well-designed?)
+        3. Performance engineer (is it efficient?)
+        4. Security expert (is it safe?)
+        5. Code maintainer (is it maintainable?)
+      quantity: 5
+      style: practical
+    parallel: true
+    saveToFile: true
+    output:
+      variable: readability_review
+
+  - name: logical-flow-analysis
+    tool: grok_reason  # Grok for deep reasoning about code logic
+    input:
+      problem: |
+        Analyze the logical flow and reasoning patterns in this code:
+        ${query}
+
+        Focus on:
+        1. Control flow logic (loops, conditions, error paths)
+        2. Data transformations and state changes
+        3. Edge cases and boundary conditions
+        4. Logical correctness and potential flaws
+        5. Alternative approaches that might be clearer
+      approach: systematic
+      context: "Code review - logical flow analysis"
+    parallel: true
+    saveToFile: true
+    output:
+      variable: logical_analysis
+
+  - name: executive-summary
+    tool: gemini_analyze_text  # Gemini 2.5 Flash for large context synthesis
+    input:
+      text: |
+        ${initial_scan}
+        ${architecture_analysis}
+        ${code_issues}
+        ${security_patterns}
+        ${readability_review}
+        ${logical_analysis}
+      task: |
+        Synthesize code review into executive summary:
+
+        1. Critical issues (must fix immediately)
+        2. Important improvements (should fix soon)
+        3. Optimization opportunities
+        4. Security concerns
+        5. Logical flow issues (from deep reasoning analysis)
+        6. Code snippets for top 3 fixes
+
+        Keep under 2000 words for Claude Code.
+    maxTokens: 6000
+    output:
+      variable: review_summary
+
+output:
+  format: detailed
+  truncateSteps: false  # Show full output for all steps (no truncation)
+  # maxStepTokens: 2500  # Default if truncateSteps=true (~10k characters)

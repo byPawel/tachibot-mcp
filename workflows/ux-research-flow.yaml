@@ -1,0 +1,92 @@
+name: ux-research-flow
+description: AI-optimized iterative UX research with Perplexity deep research, Kimi systematic analysis, multi-model verification, and advanced prompt engineering (13 techniques)
+version: "1.2"
+
+settings:
+  optimization:
+    enabled: true
+    smartRouting: true
+
+steps:
+  # Round 1: Initial UX landscape research
+  - name: ux-landscape-research
+    tool: perplexity_research
+    promptTechnique: comprehensive_investigation
+    input:
+      topic: "${input}"
+      questions:
+        - "What are the main user pain points and challenges with ${input}?"
+        - "What are the current UX patterns and best practices for ${input}?"
+        - "What competitive solutions exist and how do they address user needs?"
+      depth: "deep"
+    saveToFile: true
+    output:
+      variable: landscape_research
+
+  # Round 2: UX issues identification with Grok systematic analysis
+  - name: ux-issues-systematic-analysis
+    tool: grok_reason
+    promptTechnique: systematic_analysis
+    input:
+      problem: "Based on this UX research: ${landscape_research}, systematically identify and categorize the key UX issues, user pain points, and friction points. Apply JTBD (Jobs-to-be-Done) framework and create a prioritized list."
+      approach: "systematic"
+      useHeavy: false
+    saveToFile: true
+    output:
+      variable: ux_issues
+
+  # Verify Round 1 with Perplexity Deep Research
+  - name: verify-issues-perplexity
+    tool: perplexity_research
+    promptTechnique: evidence_gathering
+    input:
+      topic: "${input}"
+      questions:
+        - "What are the current best practices and research for this domain?"
+        - "What case studies and validation evidence support these approaches?"
+        - "What proven solutions exist from industry leaders?"
+      depth: "deep"
+    saveToFile: true
+    output:
+      variable: verified_issues
+
+  # Round 3: Solutions generation and validation with Grok
+  - name: solutions-grok-reason
+    tool: grok_reason
+    promptTechnique: innovative_solutions
+    input:
+      problem: "Based on the UX research findings: ${landscape_research} and identified issues: ${ux_issues}, generate 10 practical, implementable solutions for ${input}. Focus on: task templates, automation strategies, field configuration, API integration patterns, user experience design, AI-assisted features (smart field population, duplicate detection, dependency mapping). Provide specific, actionable recommendations."
+      approach: "creative"
+      useHeavy: false
+    saveToFile: true
+    output:
+      variable: solutions
+
+  # Verify solutions with Grok Search
+  - name: verify-solutions-grok
+    tool: grok_search
+    promptTechnique: evidence_gathering
+    input:
+      query: "Real-world examples and case studies for solutions related to: ${input}"
+      recency: "week"
+      max_search_results: 20
+    saveToFile: true
+    output:
+      variable: verified_solutions
+
+  # Final synthesis with Grok
+  - name: final-ux-report
+    tool: grok_reason
+    promptTechnique: integration_reflection
+    input:
+      problem: "Synthesize all research findings into an executive report. Include: 1) Initial landscape research, 2) Identified issues and pain points, 3) Validated best practices, 4) Proposed solutions, 5) Real-world examples, 6) Critical analysis and challenges, 7) Final recommendations with prioritization. Focus on actionable guidance for: ${input}"
+      approach: "systematic"
+      useHeavy: false
+    saveToFile: true
+    output:
+      variable: final_report
+
+output:
+  format: "detailed"
+  truncateSteps: false  # Show full UX analysis (comprehensive workflows need full context)
+  # Alternative: truncateSteps: true, maxStepTokens: 5000  # For larger truncation limit

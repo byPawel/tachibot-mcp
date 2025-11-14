@@ -1,0 +1,81 @@
+{
+  "description": "TachiBot MCP Tool Configuration - Profile system for managing tool availability",
+  "lastModified": "2025-10-23",
+
+  "activeProfile": "research_power",
+
+  "skills": {
+    "bundled": true,
+    "path": "skills"
+  },
+
+  "availableTools": {
+    "description": "Reference: All available tools - Copy any of these to customProfile.tools to create your own selection",
+    "core": ["think", "focus", "nextThought"],
+    "perplexity": [
+      "perplexity_ask",
+      "perplexity_reason",
+      "perplexity_research"
+    ],
+    "grok": [
+      "grok_reason",
+      "grok_code",
+      "grok_debug",
+      "grok_architect",
+      "grok_brainstorm",
+      "grok_search"
+    ],
+    "openai": ["openai_compare", "openai_brainstorm"],
+    "gemini": [
+      "gemini_brainstorm",
+      "gemini_analyze_code",
+      "gemini_analyze_text"
+    ],
+    "qwen": ["qwen_coder"],
+    "kimi": ["kimi_thinking"],
+    "advanced": ["verifier", "scout", "challenger", "hunter"],
+    "workflow": [
+      "workflow",
+      "list_workflows",
+      "create_workflow",
+      "visualize_workflow"
+    ],
+    "collaborative": ["pingpong", "qwen_competitive"]
+  },
+
+  "customProfile": {
+    "description": "Your custom profile - Toggle tools on/off below. Set enabled: true to activate.",
+    "enabled": false,
+    "tools": {
+      "think": true,
+      "focus": true,
+      "nextThought": true,
+      "perplexity_ask": true,
+      "perplexity_reason": true,
+      "perplexity_research": true,
+      "grok_reason": true,
+      "grok_code": true,
+      "grok_debug": true,
+      "grok_architect": true,
+      "grok_brainstorm": true,
+      "grok_search": true,
+      "openai_compare": true,
+      "openai_brainstorm": true,
+      "gemini_brainstorm": true,
+      "gemini_analyze_code": true,
+      "gemini_analyze_text": true,
+      "qwen_coder": true,
+      "kimi_thinking": true,
+      "verifier": true,
+      "scout": true,
+      "challenger": true,
+      "hunter": false,
+      "workflow": true,
+      "list_workflows": true,
+      "create_workflow": true,
+      "visualize_workflow": true,
+      "pingpong": true,
+      "qwen_competitive": false
+    }
+  }
+}

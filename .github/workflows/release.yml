@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build
+      run: npm run build
+
+    - name: Build MCPB Extension Package
+      run: |
+        chmod +x scripts/package-extension.sh
+        npm run build:mcpb
+
+    - name: Create Release Archive
+      run: |
+        tar -czf tachibot-mcp-${{ github.ref_name }}.tar.gz \
+          dist/ \
+          package.json \
+          package-lock.json \
+          README.md \
+          LICENSE \
+          .env.example \
+          mcp.json \
+          smithery.yaml
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          tachibot-mcp-${{ github.ref_name }}.tar.gz
+          tachibot-mcp.mcpb
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

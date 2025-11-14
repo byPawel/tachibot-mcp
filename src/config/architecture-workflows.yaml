@@ -1,0 +1,352 @@
+version: "1.0"
+name: "Architecture Analysis Workflows"
+description: "Multi-stage codebase analysis workflows leveraging Gemini 2.5 Pro"
+
+defaults:
+  early_termination: false  # Complete all stages for comprehensive analysis
+  context_pruning: "hybrid"
+  cache_ttl: 7200
+
+# Analysis profiles for different codebase sizes
+analysis_profiles:
+  small_project:
+    description: "For codebases < 10k lines"
+    gemini_tokens: 100000
+    detail_tokens: 10000
+    parallel_agents: 2
+    
+  medium_project:
+    description: "For codebases 10k-100k lines"
+    gemini_tokens: 500000
+    detail_tokens: 30000
+    parallel_agents: 4
+    
+  large_project:
+    description: "For codebases 100k+ lines"
+    gemini_tokens: 1000000
+    detail_tokens: 50000
+    parallel_agents: 8
+    
+  enterprise_project:
+    description: "For massive enterprise codebases"
+    gemini_tokens: 1000000  # Will need chunking
+    detail_tokens: 100000
+    parallel_agents: 12
+    use_gemini_pro: true  # Upgrade to Pro for complexity
+
+workflows:
+  # Complete codebase audit with all checks
+  full_codebase_audit:
+    name: "Complete Codebase Analysis"
+    description: "Comprehensive multi-stage analysis for entire codebase"
+    stages:
+      - id: gemini_ingest
+        mode: "architect"
+        model: "gemini-2.5-flash"
+        variant: "full_analysis"
+        max_tokens: 1000000
+        tasks:
+          - "map_architecture"
+          - "find_all_issues"
+          - "analyze_dependencies"
+          - "calculate_metrics"
+          - "identify_hotspots"
+        output:
+          - "architecture_map"
+          - "hotspot_list"
+          - "dependency_graph"
+          - "metrics_report"
+          - "files_for_review"
+      
+      - id: parallel_verification
+        mode: "parallel_batch"
+        parallel: true
+        tasks:
+          syntax_check:
+            mode: "verifier"
+            variant: "quick_verify"
+            model: "gpt-4-mini"
+            max_tokens: 5000
+            input: "${gemini_ingest.syntax_issues}"
+          
+          security_scan:
+            mode: "verifier"
+            variant: "security_verify"
+            model: "claude-opus-4.1"
+            max_tokens: 20000
+            input: "${gemini_ingest.security_concerns}"
+
+          performance_analysis:
+            mode: "architect"
+            model: "qwq-32b"
+            max_tokens: 15000
+            input: "${gemini_ingest.performance_bottlenecks}"
+
+          dependency_check:
+            mode: "scout"
+            variant: "fact_scout"
+            model: "perplexity-sonar-pro"
+            max_tokens: 10000
+            input: "${gemini_ingest.outdated_dependencies}"
+      
+      - id: deep_dive
+        mode: "architect"
+        variant: "targeted_analysis"
+        model: "claude-opus-4.1"
+        max_tokens: 30000
+        context_from: 
+          - "gemini_ingest.critical_areas"
+          - "parallel_verification.high_severity"
+        
+      - id: synthesis
+        mode: "synthesis"
+        model: "think"  # FREE!
+        max_tokens: 0
+        combine:
+          - "gemini_ingest"
+          - "parallel_verification"
+          - "deep_dive"
+        output: "final_report"
+    
+    estimated_cost: "$1.25"
+    estimated_tokens: 1080000
+    estimated_time: "3-5 minutes"
+
+  # Security-focused analysis
+  security_audit:
+    name: "Security-Focused Analysis"
+    description: "Deep security vulnerability scanning"
+    stages:
+      - id: gemini_scan
+        mode: "architect"
+        model: "gemini-2.5-flash"
+        max_tokens: 500000
+        focus: "security"
+        tasks:
+          - "identify_vulnerabilities"
+          - "check_authentication"
+          - "analyze_data_flow"
+          - "find_injection_points"
+      
+      - id: verify_vulnerabilities
+        mode: "verifier"
+        variant: "security_verify"
+        models:
+          - "claude-opus-4.1"
+          - "gpt-5"
+          - "qwen3-coder-480b"
+        parallel: true
+        isolated: true
+        max_tokens: 30000
+        
+      - id: challenge_findings
+        mode: "challenger"
+        model: "gpt-5-mini"
+        context_from: "verify_vulnerabilities.consensus"
+        max_tokens: 10000
+        
+      - id: final_assessment
+        mode: "synthesis"
+        model: "think"
+        combine: ["gemini_scan", "verify_vulnerabilities", "challenge_findings"]
+    
+    estimated_cost: "$0.75"
+    estimated_tokens: 540000
+
+  # Performance optimization analysis
+  performance_optimization:
+    name: "Performance Analysis"
+    description: "Identify and analyze performance bottlenecks"
+    stages:
+      - id: gemini_profile
+        mode: "architect"
+        model: "gemini-2.5-flash"
+        max_tokens: 750000
+        focus: "performance"
+        tasks:
+          - "identify_bottlenecks"
+          - "analyze_algorithms"
+          - "check_database_queries"
+          - "find_memory_leaks"
+
+      - id: algorithmic_analysis
+        mode: "architect"
+        variant: "deep_trace"
+        model: "qwq-32b"
+        max_tokens: 20000
+        depth: 3
+        input: "${gemini_profile.complex_algorithms}"
+
+      - id: optimization_suggestions
+        mode: "architect"
+        model: "grok-4"
+        max_tokens: 15000
+        task: "suggest_optimizations"
+        context_from: 
+          - "gemini_profile"
+          - "algorithmic_analysis"
+          
+      - id: synthesis
+        mode: "synthesis"
+        model: "think"
+        combine: ["gemini_profile", "algorithmic_analysis", "optimization_suggestions"]
+    
+    estimated_cost: "$0.95"
+    estimated_tokens: 785000
+
+  # Quick architecture review
+  quick_architecture_review:
+    name: "Quick Architecture Review"
+    description: "Fast high-level architecture analysis"
+    stages:
+      - id: gemini_overview
+        mode: "architect"
+        model: "gemini-2.5-flash"
+        max_tokens: 250000
+        depth: "shallow"
+        tasks:
+          - "map_components"
+          - "identify_patterns"
+          - "check_best_practices"
+      
+      - id: architect_review
+        mode: "architect"
+        model: "grok-4"
+        max_tokens: 10000
+        task: "architecture_validation"
+        context_from: "gemini_overview"
+        
+      - id: synthesis
+        mode: "synthesis"
+        model: "think"
+        combine: ["gemini_overview", "architect_review"]
+    
+    estimated_cost: "$0.25"
+    estimated_tokens: 260000
+
+  # Incremental analysis for large codebases
+  incremental_analysis:
+    name: "Incremental Deep Analysis"
+    description: "Progressive deepening analysis for massive codebases"
+    stages:
+      - id: level_1_scan
+        mode: "architect"
+        model: "gemini-2.5-flash"
+        max_tokens: 100000
+        depth: "shallow"
+        tasks: ["identify_critical_areas"]
+        
+      - id: level_2_analysis
+        mode: "architect"
+        model: "gemini-2.5-flash"
+        max_tokens: 300000
+        depth: "normal"
+        focus_on: "${level_1_scan.critical_areas}"
+        
+      - id: level_3_deep_dive
+        mode: "architect"
+        model: "gemini-2.5-pro"  # Use Pro for deep complexity
+        max_tokens: 500000
+        depth: "deep"
+        focus_on: "${level_2_analysis.high_complexity_areas}"
+        
+      - id: parallel_verification
+        mode: "parallel_batch"
+        parallel: true
+        tasks:
+          - { mode: "verifier", input: "${level_3_deep_dive.issues}" }
+          - { mode: "challenger", input: "${level_3_deep_dive.assumptions}" }
+          - { mode: "auditor", input: "${level_3_deep_dive.evidence_needed}" }
+          
+      - id: synthesis
+        mode: "synthesis"
+        model: "think"
+        combine: ["level_1_scan", "level_2_analysis", "level_3_deep_dive", "parallel_verification"]
+    
+    estimated_cost: "$1.75"
+    estimated_tokens: 950000
+
+  # Pre-deployment validation
+  pre_deployment_check:
+    name: "Pre-Deployment Validation"
+    description: "Final checks before production deployment"
+    stages:
+      - id: gemini_check
+        mode: "architect"
+        model: "gemini-2.5-flash"
+        max_tokens: 200000
+        tasks:
+          - "security_final_check"
+          - "performance_validation"
+          - "dependency_verification"
+          - "configuration_review"
+      
+      - id: commit_validation
+        mode: "commit_guardian"
+        model: "gemini-2.5-flash"
+        max_tokens: 5000
+        validate: true
+        
+      - id: multi_model_verify
+        mode: "verifier"
+        variant: "quick_verify"
+        models: ["gpt-5-mini", "gemini-2.5-flash", "qwen3-30b"]
+        parallel: true
+        max_tokens: 15000
+        
+      - id: final_approval
+        mode: "synthesis"
+        model: "think"
+        combine: ["gemini_check", "commit_validation", "multi_model_verify"]
+        output: "deployment_readiness_report"
+    
+    estimated_cost: "$0.30"
+    estimated_tokens: 220000
+
+# Routing rules for automatic workflow selection
+routing_rules:
+  - condition: "files < 100 && lines < 10000"
+    workflow: "quick_architecture_review"
+    
+  - condition: "files >= 100 && files < 500"
+    workflow: "full_codebase_audit"
+    profile: "medium_project"
+    
+  - condition: "files >= 500"
+    workflow: "incremental_analysis"
+    profile: "large_project"
+    
+  - condition: "focus == 'security'"
+    workflow: "security_audit"
+    
+  - condition: "focus == 'performance'"
+    workflow: "performance_optimization"
+    
+  - condition: "stage == 'pre-deployment'"
+    workflow: "pre_deployment_check"
+
+# Model selection matrix for different analysis types
+model_matrix:
+  syntax_analysis:
+    primary: "gpt-4-mini"
+    fallback: "gemini-2.5-flash"
+    
+  security_analysis:
+    primary: "claude-opus-4.1"
+    fallback: "gpt-5"
+    
+  performance_analysis:
+    primary: "qwq-32b"
+    fallback: "grok-4"
+    
+  architecture_analysis:
+    primary: "grok-4"
+    fallback: "claude-opus-4.1"
+    
+  dependency_analysis:
+    primary: "perplexity-sonar-pro"
+    fallback: "gemini-2.5-flash"
+    
+  general_analysis:
+    primary: "gemini-2.5-flash"
+    fallback: "gpt-5-mini"

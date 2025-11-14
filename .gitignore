@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Development directories
+.claude/
+.focus-sessions/
+reviews/
+archive/
+
+# Landing page (temporary, will be removed)
+landing/
+
+# Test files
+check-key.js
+test-*.js
+test-*.sh
+jest.config.js
+jest.setup.js
+
+# Claude Desktop Extension packages
+*.mcpb
+*.dxt
+
+# NPM configuration
+.npmrc
+
+# Internal development files
+delete_before_launch/
+CLAUDE.md

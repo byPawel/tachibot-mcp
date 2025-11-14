@@ -1,0 +1,318 @@
+name: ultra-creative-brainstorm
+description: Ultra-enhanced brainstorming using optimal model sequencing - Perplexity research first, then Grok analysis, Gemini ideation, synthesis
+version: "3.0"
+
+# Usage: workflow --name ultra-creative-brainstorm --query "your topic/problem/idea"
+# Optimal ordering based on AI reasoning research: Research→Reason→Ideate→Connect→Evaluate→Synthesize→Analyze→Implement
+
+settings:
+  optimization:
+    enabled: true
+    smartRouting: true
+    compressPrompts: false
+  autoSynthesis:
+    enabled: true
+    tokenThreshold: 25000
+    checkpointInterval: 12000
+    synthesisTool: 'gemini_analyze_text'
+    synthesisMaxTokens: 8000
+    logLevel: 'info'
+
+variables:
+  max_ideas: 10
+  depth_level: "deep"
+
+steps:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 0: PROBLEM DECOMPOSITION - Break down the problem first
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: initial-decomposition
+    tool: think
+    promptTechnique: problem_decomposition
+    input:
+      thought: "Break down '${query}' into manageable components. What are the core problems, constraints, and success criteria?"
+    saveToFile: true
+    output:
+      variable: problem_structure
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 1: RESEARCH FOUNDATION - Perplexity first for comprehensive context
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: comprehensive-research
+    tool: perplexity_research
+    promptTechnique: comprehensive_investigation
+    input:
+      topic: "${query}"
+      depth: "${depth_level}"
+      questions:
+        - "What are the current state-of-the-art solutions?"
+        - "What recent breakthroughs are relevant?"
+        - "What are experts saying about future directions?"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: research_findings
+
+  - name: evidence-gathering
+    tool: perplexity_ask
+    promptTechnique: evidence_gathering
+    input:
+      query: "${query} recent innovations case studies success stories"
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: evidence
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 2: DEEP REASONING - Grok for search + first principles analysis
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: grok-search-context
+    tool: grok_search
+    input:
+      query: "${query} breakthrough approaches innovative methods"
+      recency: "month"
+      max_search_results: 15
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: grok_search_results
+
+  - name: first-principles-analysis
+    tool: grok_reason
+    promptTechnique: first_principles
+    input:
+      problem: "${query}"
+      approach: "first-principles"
+      context: "Research findings: ${research_findings}\nProblem structure: ${problem_structure}"
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: first_principles
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 3: DIVERGENT IDEATION - Gemini for creative brainstorming
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: what-if-speculation
+    tool: gemini_brainstorm
+    promptTechnique: what_if_speculation
+    input:
+      prompt: "${query}"
+      maxRounds: 2
+      claudeThoughts: "Context: ${first_principles}"
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: what_if_ideas
+
+  - name: innovative-solutions
+    tool: gemini_brainstorm
+    promptTechnique: innovative_solutions
+    input:
+      prompt: "${query}"
+      maxRounds: 2
+      claudeThoughts: "Research: ${research_findings}\nFirst principles: ${first_principles}"
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: innovative_solutions
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 4: LONG-CONTEXT CONNECTIONS - Kimi K2 for exploring relationships
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: alternative-perspectives
+    tool: kimi_thinking
+    promptTechnique: alternative_perspectives
+    input:
+      problem: "${query}"
+      approach: "creative"
+      maxSteps: 10
+      context: "Ideas generated: ${what_if_ideas}\n\nInnovative solutions: ${innovative_solutions}"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: perspectives
+
+  - name: systematic-analysis
+    tool: kimi_thinking
+    promptTechnique: systematic_analysis
+    input:
+      problem: "Analyze ${query} systematically considering all perspectives"
+      approach: "systematic"
+      maxSteps: 12
+      context: "Research: ${research_findings}\nPerspectives: ${perspectives}"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: systematic_analysis
+
+  - name: pattern-reflection
+    tool: think
+    promptTechnique: quick_reflection
+    input:
+      thought: "What patterns emerge from ${what_if_ideas}, ${perspectives}, and ${systematic_analysis}?"
+    saveToFile: true
+    output:
+      variable: pattern_reflection
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 5: CONVERGENT REFINEMENT - Grok for evaluation
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: grok-evaluation
+    tool: grok_reason
+    input:
+      problem: "Evaluate and refine the most promising ideas for ${query}"
+      approach: "analytical"
+      context: "Ideas: ${innovative_solutions}\nAnalysis: ${systematic_analysis}"
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: grok_evaluation
+
+  - name: pattern-recognition
+    tool: gemini_analyze_text
+    promptTechnique: pattern_recognition
+    input:
+      text: "Analysis of ${query}:\n\n${systematic_analysis}\n\nEvaluation: ${grok_evaluation}"
+      type: "analysis"
+    saveToFile: true
+    maxTokens: 8000
+    output:
+      variable: patterns
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 6: SYNTHESIS - GPT-5 for combining best ideas
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: creative-applications
+    tool: focus
+    promptTechnique: creative_applications
+    input:
+      query: "${query} - explore creative applications across domains"
+      mode: "code-brainstorm"
+      models: ["gpt-5", "gemini-2.5", "grok-3"]
+      rounds: 3
+      context: "Research: ${research_findings}\nIdeas: ${innovative_solutions}\nPatterns: ${patterns}"
+    saveToFile: true
+    maxTokens: 15000
+    output:
+      variable: applications
+
+  - name: ultimate-synthesis
+    tool: openai_brainstorm
+    promptTechnique: integration_reflection
+    input:
+      problem: "Synthesize all perspectives and ideas for ${query} into coherent solutions"
+      style: "systematic"
+      reasoning_effort: "high"
+      model: "gpt-5"
+      context: |
+        COMPREHENSIVE CONTEXT:
+
+        Problem Structure: ${problem_structure}
+        Research Findings: ${research_findings}
+        Evidence: ${evidence}
+        First Principles: ${first_principles}
+        What-If Ideas: ${what_if_ideas}
+        Innovative Solutions: ${innovative_solutions}
+        Multiple Perspectives: ${perspectives}
+        Systematic Analysis: ${systematic_analysis}
+        Patterns: ${patterns}
+        Grok Evaluation: ${grok_evaluation}
+        Creative Applications: ${applications}
+    saveToFile: true
+    maxTokens: 20000
+    output:
+      variable: ultimate_synthesis
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 7: FEASIBILITY ANALYSIS - Gemini for detailed feasibility
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: feasibility-analysis
+    tool: gemini_analyze_text
+    promptTechnique: feasibility_analysis
+    input:
+      text: "Synthesized solution for ${query}:\n\n${ultimate_synthesis}"
+      type: "analysis"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: feasibility
+
+  - name: final-reflection
+    tool: think
+    promptTechnique: quick_reflection
+    input:
+      thought: "Final reflection on ${query}: What are the key insights, risks, and next steps from ${ultimate_synthesis} and ${feasibility}?"
+    saveToFile: true
+    output:
+      variable: final_reflection
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 8: IMPLEMENTATION - QWEN for technical implementation plan
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: technical-implementation
+    tool: qwen_coder
+    input:
+      task: "review"
+      code: "${ultimate_synthesis}"
+      requirements: "Evaluate technical feasibility and create implementation roadmap for: ${query}"
+    saveToFile: true
+    maxTokens: 10000
+    output:
+      variable: implementation_plan
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FINAL OUTPUT
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: executive-summary
+    tool: gemini_analyze_text
+    input:
+      text: |
+        ULTRA BRAINSTORM RESULTS FOR: ${query}
+
+        ${ultimate_synthesis}
+
+        FEASIBILITY: ${feasibility}
+
+        IMPLEMENTATION: ${implementation_plan}
+      type: "summary"
+    saveToFile: true
+    maxTokens: 12000
+    output:
+      variable: final_summary
+
+output:
+  format: "detailed"
+  summary: |
+    ╔═══════════════════════════════════════════════════════════════════════════╗
+    ║  ULTRA CREATIVE BRAINSTORM COMPLETE (v3.0 - Optimal Sequencing)          ║
+    ║  Topic: ${query}                                                          ║
+    ╚═══════════════════════════════════════════════════════════════════════════╝
+
+    📊 OPTIMAL MODEL SEQUENCE COMPLETED:
+    ✅ Phase 0: Problem Decomposition (Think)
+    ✅ Phase 1: Research Foundation (Perplexity research + ask)
+    ✅ Phase 2: Deep Reasoning (Grok search + reason)
+    ✅ Phase 3: Divergent Ideation (Gemini brainstorm)
+    ✅ Phase 4: Long-Context Connections (Kimi K2 thinking)
+    ✅ Phase 5: Convergent Refinement (Grok + Gemini analysis)
+    ✅ Phase 6: Synthesis (GPT-5 via focus + openai_brainstorm)
+    ✅ Phase 7: Feasibility Analysis (Gemini analysis)
+    ✅ Phase 8: Implementation (QWEN coder)
+
+    🎯 EXECUTIVE SUMMARY:
+    ${final_summary}
+
+    📁 All outputs saved to: workflow-output/ultra-creative-brainstorm/
+
+    💡 This workflow follows AI research-backed optimal sequencing:
+    Research → Reason → Ideate → Connect → Evaluate → Synthesize → Analyze → Implement

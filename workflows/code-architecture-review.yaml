@@ -1,0 +1,202 @@
+name: code-architecture-review
+description: Multi-model code architecture review with SOLID, CQRS, and best practices analysis
+version: "1.0"
+
+# Usage Examples:
+#
+# 1. With file variables (recommended):
+#    Read files and pass as variables:
+#    CODE1=$(cat src/orchestrator.ts)
+#    CODE2=$(cat src/workflows.ts)
+#    CODE3=$(cat src/types.ts)
+#
+#    Then run:
+#    workflow --name code-architecture-review \
+#      --query "Analyze architecture for SOLID compliance" \
+#      --variable "code_file_1=$CODE1" \
+#      --variable "code_file_2=$CODE2" \
+#      --variable "code_file_3=$CODE3" \
+#      --variable "file_name_1=orchestrator.ts" \
+#      --variable "file_name_2=workflows.ts" \
+#      --variable "file_name_3=types.ts"
+#
+# 2. Without files (general analysis):
+#    workflow --name code-architecture-review \
+#      --query "Compare SOLID vs CQRS patterns for workflow orchestration"
+#
+# All outputs saved to: workflow-output/code-architecture-review/{timestamp}/
+
+# Variables that can be passed:
+# - code_file_1, code_file_2, code_file_3, code_file_4, code_file_5 (file contents)
+# - file_name_1, file_name_2, file_name_3, file_name_4, file_name_5 (file names for context)
+
+steps:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ANALYSIS: Initial architecture reviews from different perspectives
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: grok-solid-analysis
+    tool: grok_reason
+    input:
+      problem: |
+        Original question: ${query}
+
+        Task: Analyze the code architecture for SOLID principles compliance.
+
+        ${code_file_1 ? `
+        📄 FILE: ${file_name_1 || "File 1"}
+        \`\`\`
+        ${code_file_1}
+        \`\`\`
+        ` : ""}
+
+        ${code_file_2 ? `
+        📄 FILE: ${file_name_2 || "File 2"}
+        \`\`\`
+        ${code_file_2}
+        \`\`\`
+        ` : ""}
+
+        ${code_file_3 ? `
+        📄 FILE: ${file_name_3 || "File 3"}
+        \`\`\`
+        ${code_file_3}
+        \`\`\`
+        ` : ""}
+
+        Evaluate:
+        1. Single Responsibility Principle violations
+        2. Open/Closed Principle adherence
+        3. Liskov Substitution issues
+        4. Interface Segregation opportunities
+        5. Dependency Inversion improvements
+      approach: "first-principles"
+      useHeavy: true
+    saveToFile: true
+    maxTokens: 4000
+
+  - name: gemini-pattern-analysis
+    tool: gemini_analyze_code
+    input:
+      code: |
+        Context: ${query}
+
+        Analyzing architecture patterns across these files:
+
+        ${code_file_1 ? `=== ${file_name_1 || "File 1"} ===\n${code_file_1}\n\n` : ""}
+        ${code_file_2 ? `=== ${file_name_2 || "File 2"} ===\n${code_file_2}\n\n` : ""}
+        ${code_file_3 ? `=== ${file_name_3 || "File 3"} ===\n${code_file_3}\n\n` : ""}
+      focus: "quality"
+      language: "typescript"
+    dependsOn: [grok-solid-analysis]
+    saveToFile: true
+    maxTokens: 4000
+
+  - name: qwen-cqrs-evaluation
+    tool: qwen_coder
+    input:
+      task: "review"
+      requirements: |
+        Original question: ${query}
+
+        Previous SOLID analysis: ${grok-solid-analysis.output}
+
+        Task: Evaluate CQRS pattern applicability for these files:
+
+        ${code_file_1 ? `File: ${file_name_1 || "File 1"}\n${code_file_1}\n\n` : ""}
+        ${code_file_2 ? `File: ${file_name_2 || "File 2"}\n${code_file_2}\n\n` : ""}
+        ${code_file_3 ? `File: ${file_name_3 || "File 3"}\n${code_file_3}\n\n` : ""}
+
+        Assess:
+        1. Command/Query separation opportunities
+        2. Read/Write model splitting benefits
+        3. Event sourcing applicability
+        4. Scalability improvements
+      language: "typescript"
+    loadFiles: [grok-solid-analysis]
+    dependsOn: [gemini-pattern-analysis]
+    saveToFile: true
+    maxTokens: 4000
+
+  - name: perplexity-best-practices
+    tool: perplexity_reason
+    input:
+      problem: |
+        Original question: ${query}
+
+        Context: We're analyzing code architecture. Previous analyses found:
+        - SOLID: ${grok-solid-analysis.output}
+        - Patterns: ${gemini-pattern-analysis.output}
+        - CQRS: ${qwen-cqrs-evaluation.output}
+
+        Research authoritative sources on:
+        1. Modern TypeScript architecture best practices (2024-2025)
+        2. SOLID principles in real-world applications
+        3. When CQRS is beneficial vs overkill
+        4. Code quality metrics and refactoring strategies
+      approach: "systematic"
+    loadFiles: [grok-solid-analysis, gemini-pattern-analysis, qwen-cqrs-evaluation]
+    dependsOn: [qwen-cqrs-evaluation]
+    saveToFile: true
+    maxTokens: 4000
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # REFACTORING: Concrete improvement suggestions
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: grok-refactoring-plan
+    tool: grok_reason
+    input:
+      problem: |
+        Original question: ${query}
+
+        Based on all previous analyses, create a prioritized refactoring plan.
+
+        SOLID issues: ${grok-solid-analysis.output}
+        Pattern opportunities: ${gemini-pattern-analysis.output}
+        CQRS evaluation: ${qwen-cqrs-evaluation.output}
+        Best practices: ${perplexity-best-practices.output}
+
+        ${code_file_1 ? `Code context: ${file_name_1 || "File 1"} + others analyzed` : ""}
+
+        Provide:
+        1. High-priority refactorings (critical issues)
+        2. Medium-priority improvements (code quality)
+        3. Low-priority enhancements (nice-to-haves)
+        4. Concrete code examples for top 3 refactorings
+      approach: "systematic"
+      useHeavy: true
+    loadFiles: [grok-solid-analysis, gemini-pattern-analysis, qwen-cqrs-evaluation, perplexity-best-practices]
+    dependsOn: [perplexity-best-practices]
+    saveToFile: true
+    maxTokens: 4000
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CONSENSUS: Final recommendations
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: consensus
+    tool: openai_compare
+    input:
+      topic: "Final architecture recommendations for: ${query}"
+      options:
+        - "Grok's SOLID analysis: ${grok-solid-analysis.output}"
+        - "Gemini's pattern analysis: ${gemini-pattern-analysis.output}"
+        - "Qwen's CQRS evaluation: ${qwen-cqrs-evaluation.output}"
+        - "Perplexity's best practices: ${perplexity-best-practices.output}"
+        - "Grok's refactoring plan: ${grok-refactoring-plan.output}"
+      criteria: |
+        Evaluate based on:
+        - Technical soundness and feasibility
+        - Balance between code quality and practicality
+        - Clear, actionable recommendations
+        - Alignment with modern best practices
+      includeRecommendation: true
+    loadFiles: [grok-solid-analysis, gemini-pattern-analysis, qwen-cqrs-evaluation, perplexity-best-practices, grok-refactoring-plan]
+    dependsOn: [grok-refactoring-plan]
+    saveToFile: true
+    maxTokens: 4000
+
+output:
+  format: detailed
+  truncateSteps: false
