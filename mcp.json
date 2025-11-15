@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "1.0",
+  "name": "tachibot-mcp",
+  "version": "2.0.1",
+  "description": "Multi-model AI orchestration platform with 31 tools (32 with competitive mode). Orchestrate Perplexity, Grok, GPT-5, Gemini, and Qwen models with YAML workflows, 5 token-optimized profiles, and intelligent prompt engineering.",
+  "author": "Pawel Pawlowski",
+  "license": "AGPL-3.0",
+  "homepage": "https://tachibot.com",
+  "documentation": "https://tachibot.com/docs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/byPawel/tachibot-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/byPawel/tachibot-mcp/issues"
+  },
+  "server": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "tachibot-mcp"],
+    "env": {}
+  },
+  "capabilities": {
+    "tools": true,
+    "prompts": true,
+    "resources": false,
+    "experimental": {
+      "workflows": true,
+      "multiModel": true
+    }
+  },
+  "features": {
+    "multiModelOrchestration": true,
+    "workflows": true,
+    "profiles": true,
+    "promptEngineering": true,
+    "parallelExecution": true,
+    "costOptimization": true
+  },
+  "metadata": {
+    "tags": [
+      "ai",
+      "orchestration",
+      "multi-model",
+      "workflows",
+      "perplexity",
+      "grok",
+      "openai",
+      "gemini",
+      "qwen",
+      "research",
+      "reasoning",
+      "brainstorming",
+      "code-analysis"
+    ],
+    "category": "ai-tools",
+    "toolCount": 31,
+    "competitiveMode": {
+      "available": true,
+      "additionalTools": 1
+    },
+    "supportedModels": [
+      "Perplexity (sonar, reasoning)",
+      "xAI Grok (grok-3, grok-4)",
+      "OpenAI GPT-5 (gpt-5, gpt-5-mini)",
+      "Google Gemini 2.5 (flash, pro)",
+      "Qwen (qwen3-coder-plus, qwq)",
+      "Kimi (kimi-k1.5)"
+    ],
+    "profiles": [
+      {
+        "name": "minimal",
+        "tools": 8,
+        "tokenBudget": "~4k",
+        "description": "Budget-friendly, token-constrained"
+      },
+      {
+        "name": "research_power",
+        "tools": 15,
+        "tokenBudget": "~8k",
+        "description": "Default, best balance for research"
+      },
+      {
+        "name": "code_focus",
+        "tools": 13,
+        "tokenBudget": "~7k",
+        "description": "Software development optimized"
+      },
+      {
+        "name": "balanced",
+        "tools": 17,
+        "tokenBudget": "~10k",
+        "description": "General-purpose, recommended"
+      },
+      {
+        "name": "full",
+        "tools": 31,
+        "tokenBudget": "~20k",
+        "description": "Maximum capability (32 with competitive)"
+      }
+    ]
+  },
+  "configuration": {
+    "required": [],
+    "optional": [
+      "PERPLEXITY_API_KEY",
+      "GROK_API_KEY",
+      "OPENAI_API_KEY",
+      "GEMINI_API_KEY",
+      "GOOGLE_API_KEY",
+      "OPENROUTER_API_KEY",
+      "QWEN_API_KEY",
+      "TACHIBOT_PROFILE"
+    ],
+    "defaults": {
+      "TACHIBOT_PROFILE": "balanced"
+    }
+  },
+  "installation": {
+    "npm": {
+      "package": "tachibot-mcp",
+      "global": true,
+      "command": "npm install -g tachibot-mcp"
+    },
+    "binaries": ["tachibot", "tachi"]
+  },
+  "compatibility": {
+    "clients": [
+      "Claude Code",
+      "Claude Desktop",
+      "Cursor",
+      "Windsurf",
+      "Cline",
+      "Any MCP-compatible client"
+    ],
+    "platforms": ["linux", "darwin", "win32"],
+    "node": ">=18.0.0"
+  },
+  "examples": [
+    {
+      "name": "Quick Research",
+      "tool": "perplexity_ask",
+      "description": "Ask Perplexity for current information with web search"
+    },
+    {
+      "name": "Multi-Model Reasoning",
+      "tool": "focus",
+      "description": "Collaborative deep reasoning with 4+ models"
+    },
+    {
+      "name": "Code Analysis",
+      "tool": "grok_reason",
+      "description": "Advanced code analysis with Grok"
+    },
+    {
+      "name": "Fact Verification",
+      "tool": "verifier",
+      "description": "Multi-model consensus verification"
+    },
+    {
+      "name": "Creative Brainstorming",
+      "tool": "gemini_brainstorm",
+      "description": "Creative ideation with Gemini"
+    },
+    {
+      "name": "Run Workflow",
+      "tool": "workflow",
+      "description": "Execute YAML-defined multi-step AI processes"
+    }
+  ],
+  "pricing": {
+    "model": "usage-based",
+    "note": "Costs depend on selected AI provider APIs. TachiBot itself is free and open-source.",
+    "apiKeys": {
+      "required": "At least one API key from supported providers",
+      "providers": {
+        "Perplexity": "https://www.perplexity.ai/settings/api",
+        "Grok/xAI": "https://console.x.ai/",
+        "OpenAI": "https://platform.openai.com/api-keys",
+        "Google Gemini": "https://aistudio.google.com/apikey",
+        "OpenRouter": "https://openrouter.ai/keys"
+      }
+    }
+  },
+  "support": {
+    "documentation": "https://tachibot.com/docs",
+    "repository": "https://github.com/byPawel/tachibot-mcp",
+    "issues": "https://github.com/byPawel/tachibot-mcp/issues",
+    "community": "https://github.com/byPawel/tachibot-mcp/discussions"
+  }
+}
