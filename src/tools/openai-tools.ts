@@ -1,6 +1,6 @@
 /**
  * OpenAI Tools Implementation
- * Provides GPT-5, GPT-5-mini, and GPT-5-nano model capabilities
+ * Provides GPT-5.1 model capabilities with reasoning_effort control
  */
 
 import { z } from "zod";
@@ -15,24 +15,91 @@ config({ path: path.resolve(__dirname, '../../../.env') });
 
 // OpenAI API configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 
-// Available OpenAI models (GPT-5 family only)
-export enum OpenAIModel {
-  GPT5 = "gpt-5",                      // Most advanced reasoning model
-  GPT5_MINI = "gpt-5-mini",            // Cost-efficient GPT-5 ($0.25/$2 per million tokens)
-  GPT5_NANO = "gpt-5-nano",            // Fastest, most cost-efficient ($0.05/$0.40 per million tokens)
+// Zod schemas for API responses
+const ChatCompletionResponseSchema = z.object({
+  id: z.string(),
+  object: z.string(),
+  created: z.number(),
+  model: z.string(),
+  choices: z.array(z.object({
+    index: z.number(),
+    message: z.object({
+      role: z.string(),
+      content: z.string()
+    }),
+    finish_reason: z.string().optional()
+  })),
+  usage: z.object({
+    prompt_tokens: z.number().optional(),
+    completion_tokens: z.number().optional(),
+    total_tokens: z.number().optional()
+  }).optional()
+});
+
+const ResponsesAPIOutputSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  status: z.string().optional(),
+  content: z.array(z.object({
+    type: z.string(), // Can be "output_text", "text", etc.
+    text: z.string().optional(), // Make optional to handle different content types
+    annotations: z.array(z.unknown()).optional(),
+    logprobs: z.array(z.unknown()).optional()
+  })).optional(),
+  summary: z.array(z.unknown()).optional(),
+  role: z.string().optional()
+});
+
+const ResponsesAPISchema = z.object({
+  id: z.string(),
+  object: z.literal("response"),
+  created_at: z.number(),
+  status: z.string(),
+  model: z.string(),
+  output: z.array(ResponsesAPIOutputSchema),
+  reasoning: z.object({
+    effort: z.string(),
+    summary: z.string().nullable().optional()
+  }).optional(),
+  usage: z.object({
+    input_tokens: z.number().optional(), // Fixed: was prompt_tokens
+    input_tokens_details: z.object({
+      cached_tokens: z.number().optional()
+    }).optional(),
+    output_tokens: z.number().optional(), // Fixed: was completion_tokens
+    output_tokens_details: z.object({
+      reasoning_tokens: z.number().optional()
+    }).optional(),
+    total_tokens: z.number().optional()
+  }).optional()
+});
+
+type ChatCompletionResponse = z.infer<typeof ChatCompletionResponseSchema>;
+type ResponsesAPIResponse = z.infer<typeof ResponsesAPISchema>;
+
+// Available OpenAI models (GPT-5.1 family)
+export enum OpenAI51Model {
+  FULL = "gpt-5.1",                         // Full reasoning model ($1.25/$10 per million tokens)
+  CODEX_MINI = "gpt-5.1-codex-mini",        // Coding optimized, cost-efficient ($0.25/$2 per million tokens)
+  CODEX = "gpt-5.1-codex",                  // Advanced coding ($1.25/$10 per million tokens)
 }
+
+// Type alias for backward compatibility
+export type OpenAIModel = OpenAI51Model;
 
 /**
  * Call OpenAI API with model fallback support
- * Automatically detects GPT-5 models and uses correct endpoint + format
+ * Automatically detects GPT-5.1 models and uses correct endpoint + format
  */
 export async function callOpenAI(
   messages: Array<{ role: string; content: string }>,
-  model: OpenAIModel = OpenAIModel.GPT5_MINI,
-  temperature: number = 1,
+  model: OpenAIModel = OpenAI51Model.CODEX_MINI,
+  temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased default for comprehensive responses
+  reasoningEffort: string = "low",
   requireConfirmation: boolean = false,
   skipValidation: boolean = false
 ): Promise<string> {
@@ -55,11 +122,11 @@ export async function callOpenAI(
     return { ...msg, content: validation.sanitized };
   });
 
-  // Model fallback chain - GPT-5 models have no fallbacks to test actual availability
+  // Model fallback chain - GPT-5.1 models have no fallbacks to test actual availability
   const modelFallbacks: Record<string, string[]> = {
-    [OpenAIModel.GPT5]: [],  // No fallback - test actual GPT-5
-    [OpenAIModel.GPT5_MINI]: [],  // No fallback - test actual GPT-5-mini
-    [OpenAIModel.GPT5_NANO]: []  // No fallback - test actual GPT-5-nano
+    [OpenAI51Model.FULL]: [],  // No fallback - test actual GPT-5.1
+    [OpenAI51Model.CODEX_MINI]: [],  // No fallback - test actual GPT-5.1-codex-mini
+    [OpenAI51Model.CODEX]: []  // No fallback - test actual GPT-5.1-codex
   };
 
   const modelsToTry = [model, ...(modelFallbacks[model] || [])];
@@ -69,35 +136,36 @@ export async function callOpenAI(
   for (const currentModel of modelsToTry) {
     console.error(`🔍 TRACE: Trying model: ${currentModel}`);
     try {
-      // Detect if this is a GPT-5 model (uses /v1/responses endpoint)
-      const isGPT5 = currentModel.startsWith('gpt-5');
-      const endpoint = isGPT5
-        ? "https://api.openai.com/v1/responses"
-        : OPENAI_API_URL;
+      // GPT-5.1 models use /v1/responses, others use /v1/chat/completions
+      const isGPT51 = currentModel.startsWith('gpt-5.1');
+      const endpoint = isGPT51 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
 
-      // For GPT-5: convert messages to input string
-      const input = isGPT5
-        ? validatedMessages.map(m => m.role === 'system' ? `System: ${m.content}` : m.content).join('\n\n')
-        : undefined;
+      let requestBody: any;
 
-      const requestBody: any = isGPT5 ? {
-        model: currentModel,
-        input: input,
-        reasoning: {
-          effort: "minimal"  // minimal/low/medium/high
-        },
-        text: {
-          verbosity: "medium"  // silent/minimal/concise/balanced/medium/detailed/exhaustive
-        }
-      } : {
-        model: currentModel,
-        messages: validatedMessages,
-        temperature,
-        max_tokens: maxTokens,
-        stream: false
-      };
+      // GPT-5.1 uses Responses API format, others use Chat Completions format
+      if (isGPT51) {
+        // Responses API format - NO temperature, use reasoning.effort instead
+        requestBody = {
+          model: currentModel,
+          input: validatedMessages,
+          max_output_tokens: maxTokens,
+          stream: false,
+          reasoning: {
+            effort: reasoningEffort // "none", "low", "medium", "high"
+          }
+        };
+      } else {
+        // Chat Completions format
+        requestBody = {
+          model: currentModel,
+          messages: validatedMessages,
+          temperature,
+          max_tokens: maxTokens,
+          stream: false
+        };
+      }
 
-      console.error(`🔍 TRACE: Using ${isGPT5 ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
+      console.error(`🔍 TRACE: Using ${isGPT51 ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -121,19 +189,39 @@ export async function callOpenAI(
         throw new Error(lastError);
       }
 
-      const data = await response.json() as any;
+      const rawData = await response.json();
 
-      // Parse response based on endpoint type
-      let result: string;
-      if (isGPT5) {
-        // GPT-5 /v1/responses format: output array with message objects
-        const messageOutput = data.output?.find((o: any) => o.type === 'message');
-        const textContent = messageOutput?.content?.find((c: any) => c.type === 'output_text');
-        result = textContent?.text || "No response from OpenAI";
+      // Parse based on API type - they have DIFFERENT response formats!
+      let rawContent: string | undefined;
+
+      if (isGPT51) {
+        // Validate and parse Responses API format
+        const parseResult = ResponsesAPISchema.safeParse(rawData);
+        if (parseResult.success) {
+          const data: ResponsesAPIResponse = parseResult.data;
+          const messageOutput = data.output.find(item => item.type === 'message');
+          rawContent = messageOutput?.content?.[0]?.text;
+
+          // Capture reasoning info
+          if (data.reasoning) {
+            console.error(`🔍 TRACE: Reasoning effort: ${data.reasoning.effort}`);
+          }
+        } else {
+          console.error(`🔍 TRACE: Failed to parse Responses API response:`, parseResult.error);
+        }
       } else {
-        // GPT-4 /v1/chat/completions format
-        result = data.choices?.[0]?.message?.content || "No response from OpenAI";
+        // Validate and parse Chat Completions API format
+        const parseResult = ChatCompletionResponseSchema.safeParse(rawData);
+        if (parseResult.success) {
+          const chatData: ChatCompletionResponse = parseResult.data;
+          rawContent = chatData.choices[0]?.message?.content;
+        } else {
+          console.error(`🔍 TRACE: Failed to parse Chat Completions response:`, parseResult.error);
+        }
       }
+
+      // Ensure result is always a string
+      const result = rawContent || "No response from OpenAI";
 
       console.error(`🔍 TRACE: ${currentModel} SUCCESS - Response length: ${result.length}`);
 
@@ -147,17 +235,17 @@ export async function callOpenAI(
   }
 
   console.error(`🔍 TRACE: ALL MODELS FAILED - Last error: ${lastError}`);
-  return `[GPT-5 model "${model}" not available. Error: ${lastError}]`;
+  return `[GPT-5.1 model "${model}" not available. Error: ${lastError}]`;
 }
 
 /**
  * Call OpenAI API with custom parameters for specific models
- * Automatically detects GPT-5 models and uses correct endpoint + format
+ * Automatically detects GPT-5.1 models and uses correct endpoint + format
  */
 async function callOpenAIWithCustomParams(
   messages: Array<{ role: string; content: string }>,
   model: OpenAIModel,
-  temperature: number = 0.8,
+  temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased for detailed brainstorming
   reasoningEffort: string = "low",
   skipValidation: boolean = false
@@ -182,39 +270,37 @@ async function callOpenAIWithCustomParams(
   });
 
   try {
-    const isGPT5 = model.startsWith('gpt-5');
-    const endpoint = isGPT5
-      ? "https://api.openai.com/v1/responses"
-      : OPENAI_API_URL;
+    // GPT-5.1 models use /v1/responses, others use /v1/chat/completions
+    const isGPT51 = model.startsWith('gpt-5.1');
+    const endpoint = isGPT51 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
 
-    // For GPT-5: convert messages to input string
-    const input = isGPT5
-      ? validatedMessages.map(m => m.role === 'system' ? `System: ${m.content}` : m.content).join('\n\n')
-      : undefined;
+    let requestBody: any;
 
-    const requestBody: any = isGPT5 ? {
-      model: model,
-      input: input,
-      reasoning: {
-        effort: reasoningEffort  // minimal/low/medium/high
-      },
-      text: {
-        verbosity: "medium"
-      }
-    } : {
-      model: model,
-      messages: validatedMessages,
-      temperature,
-      max_tokens: maxTokens,
-      stream: false
-    };
-
-    console.error(`🔍 TRACE: Using ${isGPT5 ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
-    if (isGPT5) {
-      console.error(`🔍 TRACE: GPT-5 params: reasoning_effort=${reasoningEffort}`);
+    // GPT-5.1 uses Responses API format, others use Chat Completions format
+    if (isGPT51) {
+      // Responses API format - NO temperature, use reasoning.effort instead
+      requestBody = {
+        model: model,
+        input: validatedMessages,
+        max_output_tokens: maxTokens,
+        stream: false,
+        reasoning: {
+          effort: reasoningEffort // "none", "low", "medium", "high"
+        }
+      };
     } else {
-      console.error(`🔍 TRACE: GPT-4 params: max_tokens=${maxTokens}, temperature=${temperature}`);
+      // Chat Completions format
+      requestBody = {
+        model: model,
+        messages: validatedMessages,
+        temperature,
+        max_tokens: maxTokens,
+        stream: false
+      };
     }
+
+    console.error(`🔍 TRACE: Using ${isGPT51 ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
+    console.error(`🔍 TRACE: Model params: max_tokens=${maxTokens}, temperature=${temperature}${isGPT51 ? `, reasoning_effort=${reasoningEffort}` : ''}`);
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -231,19 +317,39 @@ async function callOpenAIWithCustomParams(
       return `[${model} failed: ${response.status} - ${error}]`;
     }
 
-    const data = await response.json() as any;
+    const rawData = await response.json();
 
-    // Parse response based on endpoint type
-    let result: string;
-    if (isGPT5) {
-      // GPT-5 /v1/responses format
-      const messageOutput = data.output?.find((o: any) => o.type === 'message');
-      const textContent = messageOutput?.content?.find((c: any) => c.type === 'output_text');
-      result = textContent?.text || "No response from OpenAI";
+    // Parse based on API type - they have DIFFERENT response formats!
+    let rawContent: string | undefined;
+
+    if (isGPT51) {
+      // Validate and parse Responses API format
+      const parseResult = ResponsesAPISchema.safeParse(rawData);
+      if (parseResult.success) {
+        const data: ResponsesAPIResponse = parseResult.data;
+        const messageOutput = data.output.find(item => item.type === 'message');
+        rawContent = messageOutput?.content?.[0]?.text;
+
+        // Capture reasoning info
+        if (data.reasoning) {
+          console.error(`🔍 TRACE: Reasoning effort: ${data.reasoning.effort}`);
+        }
+      } else {
+        console.error(`🔍 TRACE: Failed to parse Responses API response:`, parseResult.error);
+      }
     } else {
-      // GPT-4 /v1/chat/completions format
-      result = data.choices?.[0]?.message?.content || "No response from OpenAI";
+      // Validate and parse Chat Completions API format
+      const parseResult = ChatCompletionResponseSchema.safeParse(rawData);
+      if (parseResult.success) {
+        const chatData: ChatCompletionResponse = parseResult.data;
+        rawContent = chatData.choices[0]?.message?.content;
+      } else {
+        console.error(`🔍 TRACE: Failed to parse Chat Completions response:`, parseResult.error);
+      }
     }
+
+    // Ensure result is always a string
+    const result = rawContent || "No response from OpenAI";
 
     console.error(`🔍 TRACE: ${model} SUCCESS - Response length: ${result.length}`);
 
@@ -292,8 +398,8 @@ export const gpt5ReasonTool = {
       }
     ];
     
-    // Use GPT-5; callOpenAI has fallback to 5-mini and 4o if unavailable
-    return await callOpenAI(messages, OpenAIModel.GPT5, 0.7, 4000);
+    // Use GPT-5.1 with high reasoning
+    return await callOpenAI(messages, OpenAI51Model.FULL, 0.7, 4000, "high");
   }
 };
 
@@ -327,14 +433,14 @@ export const gpt5MiniReasonTool = {
       }
     ];
     
-    // Use GPT-5-mini directly; fallback chain will handle unavailability
-    return await callOpenAI(messages, OpenAIModel.GPT5_MINI, 0.7, 3000);
+    // Use GPT-5.1-codex-mini with medium reasoning
+    return await callOpenAI(messages, OpenAI51Model.CODEX_MINI, 0.7, 3000, "medium");
   }
 };
 
 export const openaiGpt5ReasonTool = {
   name: "openai_gpt5_reason",
-  description: "Mathematical reasoning using GPT-5-mini",
+  description: "Mathematical reasoning using GPT-5.1 with high reasoning effort",
   parameters: z.object({
     query: z.string(),
     context: z.string().optional(),
@@ -347,7 +453,7 @@ export const openaiGpt5ReasonTool = {
       logical: "Use formal logic and systematic deduction",
       analytical: "Break down complex problems into components"
     };
-    
+
     const messages = [
       {
         role: "system",
@@ -362,15 +468,15 @@ ${args.context ? `Context: ${args.context}` : ''}`
       }
     ];
 
-    // Use GPT-5-mini for reasoning
-    return await callOpenAI(messages, OpenAIModel.GPT5_MINI, 0.7, 4000);
+    // Use GPT-5.1 with high reasoning effort for complex reasoning
+    return await callOpenAI(messages, OpenAI51Model.FULL, 0.7, 4000, "high");
   }
 };
 
 
 /**
  * OpenAI Compare Tool
- * Multi-option comparison and consensus building using GPT-5-mini
+ * Multi-option comparison and consensus building using GPT-5.1-codex-mini
  */
 export const openaiCompareTool = {
   name: "openai_compare",
@@ -398,7 +504,7 @@ ${args.includeRecommendation ? 'Provide a clear recommendation with justificatio
       }
     ];
 
-    return await callOpenAI(messages, OpenAIModel.GPT5_MINI, 0.7, 3000);
+    return await callOpenAI(messages, OpenAI51Model.CODEX_MINI, 0.7, 3000, "low");
   }
 };
 
@@ -414,20 +520,18 @@ export const openAIBrainstormTool = {
     constraints: z.string().optional(),
     quantity: z.number().optional(),
     style: z.enum(["innovative", "practical", "wild", "systematic"]).optional(),
-    model: z.enum(["gpt-5", "gpt-5-mini", "gpt-5-nano"]).optional(),
-    reasoning_effort: z.enum(["minimal", "low", "medium", "high"]).optional(),
-    verbosity: z.enum(["silent", "minimal", "concise", "balanced", "detailed", "exhaustive"]).optional(),
+    model: z.enum(["gpt-5.1", "gpt-5.1-codex-mini", "gpt-5.1-codex"]).optional(),
+    reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional(),
     max_tokens: z.number().optional()
   }),
-  execute: async (args: { problem: string; constraints?: string; quantity?: number; style?: string; model?: string; reasoning_effort?: string; verbosity?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
+  execute: async (args: { problem: string; constraints?: string; quantity?: number; style?: string; model?: string; reasoning_effort?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
     const {
       problem,
       constraints,
       quantity = 5,
       style = "innovative",
-      model = "gpt-5-mini",
-      reasoning_effort = "low",
-      verbosity = "balanced",
+      model = "gpt-5.1-codex-mini",
+      reasoning_effort = "medium",
       max_tokens = 4000
     } = args;
     console.error('🚀 TOOL CALLED: openai_brainstorm');
@@ -464,9 +568,7 @@ Format: Number each idea and provide a brief explanation.`
     // Convert string model to OpenAIModel enum
     const modelEnum = model as OpenAIModel;
     console.error(`🔍 CALLING: callOpenAIWithCustomParams with ${modelEnum}, skipValidation: ${options.skipValidation || false}`);
-    // Use temperature=1 (default) for GPT-5, 0.8 for others
-    const temperature = model.startsWith('gpt-5') ? 1.0 : 0.8;
-    const result = await callOpenAIWithCustomParams(messages, modelEnum, temperature, maxTokens, reasoningEffort, options.skipValidation || false);
+    const result = await callOpenAIWithCustomParams(messages, modelEnum, 0.9, maxTokens, reasoningEffort, options.skipValidation || false);
     console.error('🔍 DEBUG: Got result from callOpenAI:', result.substring(0, 100));
     console.error('✅ TOOL COMPLETE: openai_brainstorm');
     return result;
@@ -475,7 +577,7 @@ Format: Number each idea and provide a brief explanation.`
 
 /**
  * OpenAI Code Review Tool
- * Comprehensive code review
+ * Comprehensive code review using GPT-5.1-codex-mini
  */
 export const openaiCodeReviewTool = {
   name: "openai_code_review",
@@ -486,10 +588,10 @@ export const openaiCodeReviewTool = {
     focusAreas: z.array(z.enum(["security", "performance", "readability", "bugs", "best-practices"])).optional()
   }),
   execute: async (args: { code: string; language?: string; focusAreas?: string[] }, { log }: any) => {
-    const focusText = args.focusAreas 
+    const focusText = args.focusAreas
       ? `Focus especially on: ${args.focusAreas.join(', ')}`
       : "Review all aspects: security, performance, readability, bugs, and best practices";
-    
+
     const messages = [
       {
         role: "system",
@@ -504,14 +606,14 @@ Format: Use sections for different aspects, be specific about line numbers or fu
         content: `Review this code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\``
       }
     ];
-    
-    return await callOpenAI(messages, OpenAIModel.GPT5_MINI, 0.7, 4000);
+
+    return await callOpenAI(messages, OpenAI51Model.CODEX_MINI, 0.3, 4000, "medium");
   }
 };
 
 /**
  * OpenAI Explain Tool
- * Clear explanations for complex topics
+ * Clear explanations for complex topics using GPT-5.1-codex-mini
  */
 export const openaiExplainTool = {
   name: "openai_explain",
@@ -527,14 +629,14 @@ export const openaiExplainTool = {
       intermediate: "Explain for someone with basic understanding",
       expert: "Provide detailed, technical explanation"
     };
-    
+
     const stylePrompts = {
       technical: "Use precise technical terminology",
       simple: "Use simple, everyday language",
       analogy: "Use analogies and metaphors",
       visual: "Describe with visual concepts and diagrams"
     };
-    
+
     const messages = [
       {
         role: "system",
@@ -548,8 +650,8 @@ Make the explanation clear, engaging, and memorable.`
         content: `Explain: ${args.topic}`
       }
     ];
-    
-    return await callOpenAI(messages, OpenAIModel.GPT5_MINI, 0.7, 2500);
+
+    return await callOpenAI(messages, OpenAI51Model.CODEX_MINI, 0.7, 2500, "low");
   }
 };
 
@@ -569,10 +671,10 @@ export function getAllOpenAITools() {
   }
 
   return [
-    openaiGpt5ReasonTool,  // GPT-5-mini reasoning
-    openaiCompareTool,     // GPT-5-mini comparison
-    openAIBrainstormTool,  // GPT-5-mini/GPT-5 brainstorming
-    openaiCodeReviewTool,  // GPT-5-mini code review
-    openaiExplainTool      // GPT-5-mini explanations
+    openaiGpt5ReasonTool,  // GPT-5.1 reasoning (high effort)
+    openaiCompareTool,     // GPT-5.1-codex-mini comparison (low effort)
+    openAIBrainstormTool,  // GPT-5.1-codex-mini brainstorming (medium effort)
+    openaiCodeReviewTool,  // GPT-5.1-codex-mini code review (medium effort)
+    openaiExplainTool      // GPT-5.1-codex-mini explanations (low effort)
   ];
 }
