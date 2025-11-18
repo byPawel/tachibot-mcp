@@ -5,6 +5,34 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2025-11-18
+
+### Changed
+- Updated OpenAI models from GPT-5 to GPT-5.1 series
+- Updated default model to `gpt-5.1-codex-mini` for better code generation
+- Added GPT-5.1 reasoning effort levels (none, low, medium, high)
+- Changed default active profile from `research_power` to `full`
+- Improved model configuration in workflows and tool mapper
+- Updated model constants and defaults throughout codebase
+
+### Fixed
+- Model references in iterative-problem-solver workflow
+- Model references in scout workflow
+- Model references in ultra-creative-brainstorm workflow
+
+## [2.0.2] - 2025-11-15
+
+### Fixed
+- OpenAI GPT-5.1 API integration
+- License correction from MIT to AGPL-3.0 in package.json
+
+## [2.0.1] - 2025-11-10
+
+### Changed
+- Updated README with comprehensive API key documentation
+- Added missing GEMINI_API_KEY and OPENROUTER_API_KEY to installation examples
+- Improved documentation clarity
+
 ## [2.0.0] - 2025-10-15
 
 ### Added

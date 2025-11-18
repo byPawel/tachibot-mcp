@@ -87,7 +87,7 @@ steps:
     input:
       query: "Synthesize the best solution for: ${input}"
       rounds: 3
-      models: ["grok-3", "gpt-5", "gemini-2.5"]
+      models: ["grok-4-fast-reasoning", "gpt-5.1", "gemini-2.5"]
       context: |
         Research: ${research_context}
         Problem breakdown: ${problem_breakdown}
@@ -206,7 +206,7 @@ steps:
       problem: "Create comprehensive solution for: ${input}"
       style: "systematic"
       reasoning_effort: "high"
-      model: "gpt-5"
+      model: "gpt-5.1"
       context: |
         COMPLETE WORKFLOW CONTEXT:
 

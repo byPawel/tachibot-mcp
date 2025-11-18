@@ -18,15 +18,15 @@ export interface ModelConfig {
  * Get Scout model configuration
  *
  * Defaults:
- * - quick_scout: Flash + gpt-5-mini (speed + cost efficient)
- * - research_scout: Pro + gpt-5-mini (quality + cost balance)
+ * - quick_scout: Flash + gpt-5.1-codex-mini (speed + cost efficient)
+ * - research_scout: Pro + gpt-5.1-codex-mini (quality + cost balance)
  */
 export function getScoutModels(): { quick: string[]; research: string[] } {
   const quick = process.env.SCOUT_QUICK_MODELS?.split(',').map(m => m.trim()) ||
-    ['qwen/qwen3-coder-plus', 'gemini-2.5-flash', 'gpt-5-mini'];
+    ['qwen/qwen3-coder-plus', 'gemini-2.5-flash', 'gpt-5.1-codex-mini'];
 
   const research = process.env.SCOUT_RESEARCH_MODELS?.split(',').map(m => m.trim()) ||
-    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5-mini'];
+    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5.1-codex-mini'];
 
   return { quick, research };
 }
@@ -34,20 +34,20 @@ export function getScoutModels(): { quick: string[]; research: string[] } {
 /**
  * Get Challenger model configuration
  *
- * Defaults: Pro + gpt-5-mini (quality for critical analysis, cost efficient)
+ * Defaults: Pro + gpt-5.1-codex-mini (quality for critical analysis, cost efficient)
  */
 export function getChallengerModels(): string[] {
   return process.env.CHALLENGER_MODELS?.split(',').map(m => m.trim()) ||
-    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5-mini'];
+    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5.1-codex-mini'];
 }
 
 /**
  * Get Verifier model configuration
  *
  * Defaults:
- * - quick_verify: Flash + gpt-5-mini (fast checks, cost efficient)
- * - standard modes: Pro + gpt-5-mini (quality + cost balance)
- * - deep_verify: Pro + gpt-5 (maximum quality for critical verification)
+ * - quick_verify: Flash + gpt-5.1-codex-mini (fast checks, cost efficient)
+ * - standard modes: Pro + gpt-5.1-codex-mini (quality + cost balance)
+ * - deep_verify: Pro + gpt-5.1 (maximum quality for critical verification)
  */
 export function getVerifierModels(): {
   quick: string[];
@@ -55,13 +55,13 @@ export function getVerifierModels(): {
   standard: string[];
 } {
   const quick = process.env.VERIFIER_QUICK_MODELS?.split(',').map(m => m.trim()) ||
-    ['qwen/qwen3-coder-plus', 'gemini-2.5-flash', 'gpt-5-mini'];
+    ['qwen/qwen3-coder-plus', 'gemini-2.5-flash', 'gpt-5.1-codex-mini'];
 
   const deep = process.env.VERIFIER_DEEP_MODELS?.split(',').map(m => m.trim()) ||
-    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5'];
+    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5.1'];
 
   const standard = process.env.VERIFIER_STANDARD_MODELS?.split(',').map(m => m.trim()) ||
-    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5-mini'];
+    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5.1-codex-mini'];
 
   return { quick, deep, standard };
 }
@@ -69,9 +69,9 @@ export function getVerifierModels(): {
 /**
  * Get default fallback models (used when variant has no specific config)
  *
- * Default: Pro + gpt-5-mini (balanced quality and cost)
+ * Default: Pro + gpt-5.1-codex-mini (balanced quality and cost)
  */
 export function getDefaultModels(): string[] {
   return process.env.DEFAULT_MODELS?.split(',').map(m => m.trim()) ||
-    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5-mini'];
+    ['qwen/qwen3-coder-plus', 'gemini-2.5-pro', 'gpt-5.1-codex-mini'];
 }

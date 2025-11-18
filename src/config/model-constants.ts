@@ -3,17 +3,25 @@
  * Use these constants instead of hardcoded strings in workflows and tools
  */
 
-// OpenAI GPT-5 Models (August 2025)
-export const GPT5_MODELS = {
-  NANO: "gpt-5-nano", // Fastest, most cost-efficient ($0.05/$0.40 per 1M tokens)
-  MINI: "gpt-5-mini", // Balanced performance ($0.25/$2 per 1M tokens)
-  FULL: "gpt-5", // Most advanced ($1.25/$10 per 1M tokens)
+// OpenAI GPT-5.1 Models (November 2025)
+export const GPT51_MODELS = {
+  FULL: "gpt-5.1", // Full reasoning model ($1.25/$10 per 1M tokens)
+  CODEX_MINI: "gpt-5.1-codex-mini", // Coding optimized, cost-efficient ($0.25/$2 per 1M tokens) - DEFAULT
+  CODEX: "gpt-5.1-codex", // Advanced coding ($1.25/$10 per 1M tokens)
 } as const;
 
-// OpenAI GPT-4 Models
+// GPT-5.1 Reasoning Effort Levels
+export const GPT51_REASONING = {
+  NONE: "none", // No extra reasoning (fastest, cheapest)
+  LOW: "low", // Light reasoning
+  MEDIUM: "medium", // Balanced reasoning (default)
+  HIGH: "high", // Maximum reasoning (slowest, most thorough)
+} as const;
+
+// OpenAI GPT-4 Models (Legacy - mapped to GPT-5.1)
 export const GPT4_MODELS = {
-  O_MINI: "gpt-5-mini", // Cost-efficient
-  O: "gpt-5", // Current best
+  O_MINI: "gpt-5.1-codex-mini", // Cost-efficient
+  O: "gpt-5.1", // Current best
   _1_MINI: "gpt-4.1-mini", // Best value with 1M context
 } as const;
 
@@ -49,7 +57,7 @@ export const KIMI_MODELS = {
 
 // All models combined for validation
 export const ALL_MODELS = {
-  ...GPT5_MODELS,
+  ...GPT51_MODELS,
   ...GPT4_MODELS,
   ...GEMINI_MODELS,
   ...PERPLEXITY_MODELS,
@@ -70,21 +78,36 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 
 // Tool-specific defaults for ALL tools
 export const TOOL_DEFAULTS = {
-  // OpenAI GPT-5 tools
-  gpt5_nano: {
-    model: GPT5_MODELS.NANO,
-    maxTokens: 1000,
-    temperature: 1.0, // GPT-5 requires temperature=1
-  },
-  gpt5_mini: {
-    model: GPT5_MODELS.MINI,
-    maxTokens: 2000,
-    temperature: 1.0,
-  },
-  gpt5: {
-    model: GPT5_MODELS.FULL,
+  // OpenAI GPT-5.1 tools
+  openai_gpt5_reason: {
+    model: GPT51_MODELS.FULL,
+    reasoning_effort: GPT51_REASONING.HIGH,
     maxTokens: 4000,
-    temperature: 1.0,
+    temperature: 0.7,
+  },
+  openai_brainstorm: {
+    model: GPT51_MODELS.CODEX_MINI,
+    reasoning_effort: GPT51_REASONING.MEDIUM,
+    maxTokens: 2000,
+    temperature: 0.9,
+  },
+  openai_compare: {
+    model: GPT51_MODELS.CODEX_MINI,
+    reasoning_effort: GPT51_REASONING.LOW,
+    maxTokens: 2000,
+    temperature: 0.7,
+  },
+  openai_code_review: {
+    model: GPT51_MODELS.CODEX_MINI,
+    reasoning_effort: GPT51_REASONING.MEDIUM,
+    maxTokens: 2000,
+    temperature: 0.3,
+  },
+  openai_explain: {
+    model: GPT51_MODELS.CODEX_MINI,
+    reasoning_effort: GPT51_REASONING.LOW,
+    maxTokens: 1500,
+    temperature: 0.7,
   },
 
   // Gemini tools
@@ -178,31 +201,36 @@ export const TOOL_DEFAULTS = {
 
   // Meta tools (think, focus, code_reviewer, etc.)
   think: {
-    model: GPT5_MODELS.MINI,
+    model: GPT51_MODELS.FULL,
+    reasoning_effort: GPT51_REASONING.HIGH,
     maxTokens: 500,
     temperature: 0.7,
   },
   focus: {
-    model: GPT5_MODELS.MINI,
+    model: GPT51_MODELS.CODEX_MINI,
+    reasoning_effort: GPT51_REASONING.LOW,
     maxTokens: 2000,
     temperature: 0.8,
   },
   code_reviewer: {
-    model: GPT5_MODELS.MINI,
+    model: GPT51_MODELS.CODEX_MINI,
+    reasoning_effort: GPT51_REASONING.MEDIUM,
     maxTokens: 2000,
     temperature: 0.5,
   },
   test_architect: {
-    model: GPT5_MODELS.MINI,
+    model: GPT51_MODELS.CODEX_MINI,
+    reasoning_effort: GPT51_REASONING.MEDIUM,
     maxTokens: 2000,
     temperature: 0.6,
   },
   documentation_writer: {
-    model: GPT5_MODELS.MINI,
+    model: GPT51_MODELS.CODEX_MINI,
+    reasoning_effort: GPT51_REASONING.LOW,
     maxTokens: 2000,
     temperature: 0.7,
   },
 } as const;
 
 // Default tool to use in workflows if not specified
-export const DEFAULT_WORKFLOW_TOOL = "gpt5_mini";
+export const DEFAULT_WORKFLOW_TOOL = "openai_brainstorm";

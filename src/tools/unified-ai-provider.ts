@@ -18,13 +18,13 @@ const PROVIDER_CONFIGS = {
   openai: {
     base: 'https://api.openai.com/v1',
     key: process.env.OPENAI_API_KEY,
-    models: ['gpt-5', 'gpt-5-mini', 'gpt-5-nano']
+    models: ['gpt-5.1', 'gpt-5.1-codex-mini', 'gpt-5.1-codex']
   },
-  gpt5: {
+  gpt51: {
     base: 'https://api.openai.com/v1',  // Uses /responses endpoint internally
     key: process.env.OPENAI_API_KEY,
-    models: ['gpt-5', 'gpt-5-mini', 'gpt-5-nano'],
-    special: true  // Needs special handling
+    models: ['gpt-5.1', 'gpt-5.1-codex-mini', 'gpt-5.1-codex'],
+    special: true  // Needs special handling for reasoning_effort
   },
   mistral: {
     base: 'https://api.mistral.ai/v1',
@@ -111,7 +111,7 @@ export async function queryAI(
   }
 
   // Handle GPT-5 special case
-  if (options.provider === 'gpt5' && 'special' in config && config.special) {
+  if (options.provider === 'gpt51' && 'special' in config && config.special) {
     return await handleGPT5(prompt, options);
   }
 
@@ -143,24 +143,32 @@ export async function queryAI(
   }
 }
 
+// Type for GPT-5.1 /v1/responses API
+interface GPT51ResponseOutput {
+  type: string;
+  content?: Array<{ text?: string }>;
+}
+
+interface GPT51Response {
+  output: GPT51ResponseOutput[];
+}
+
 /**
  * Special handling for GPT-5 (uses /responses endpoint)
  */
 async function handleGPT5(prompt: string, options: UnifiedAIOptions): Promise<string> {
-  const config = PROVIDER_CONFIGS.gpt5;
+  const config = PROVIDER_CONFIGS.gpt51;
   const endpoint = 'https://api.openai.com/v1/responses';
 
-  const model = options.model || 'gpt-5-nano';  // Default to cheapest
+  const model = options.model || 'gpt-5.1-codex-mini';  // Default to cheapest
 
   const requestBody = {
     model,
     input: prompt,
     reasoning: {
-      effort: model === 'gpt-5' ? 'high' : 'low'
+      effort: model === 'gpt-5.1' ? 'high' : 'low'
     },
-    text: {
-      verbosity: 'medium'
-    }
+    max_output_tokens: 4000
   };
 
   try {
@@ -178,8 +186,9 @@ async function handleGPT5(prompt: string, options: UnifiedAIOptions): Promise<st
       throw new Error(`GPT-5 API error: ${error}`);
     }
 
-    const data = await response.json() as any;
-    return data.output || data.response || 'No response generated';
+    const data = await response.json() as GPT51Response;
+    const messageOutput = data.output.find(item => item.type === 'message');
+    return messageOutput?.content?.[0]?.text || 'No response generated';
   } catch (error) {
     console.error('GPT-5 error:', error);
     throw error;

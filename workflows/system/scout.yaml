@@ -107,7 +107,7 @@ steps:
         4. Confidence levels for different claims
         5. Actionable recommendations based on the synthesis
       mode: "analyze"
-      models: ["gpt5-mini", "gemini-2.5-pro", "gemini-2.5-flash", "grok-4"]
+      models: ["gpt-5.1-codex-mini", "gemini-2.5-pro", "gemini-2.5-flash", "grok-4-fast-reasoning"]
       rounds: 2
       domain: "research"
     saveToFile: true

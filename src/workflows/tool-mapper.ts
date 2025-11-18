@@ -5,10 +5,10 @@
 
 import { callGemini, GeminiModel } from "../tools/gemini-tools.js";
 import { getAllPerplexityTools } from "../tools/perplexity-tools.js";
-import { callOpenAI } from "../tools/openai-tools.js";
+import { callOpenAI, OpenAI51Model } from "../tools/openai-tools.js";
 import { callGrok, GrokModel } from "../tools/grok-tools.js";
 import {
-  GPT5_MODELS,
+  GPT51_MODELS,
   GPT4_MODELS,
   TOOL_DEFAULTS,
 } from "../config/model-constants.js";
@@ -156,7 +156,7 @@ export async function executeWorkflowTool(
   };
 
   const {
-    model = (toolDefaults as any).model || "gpt-5-mini",
+    model = ('model' in toolDefaults ? (toolDefaults.model as string) : GPT51_MODELS.CODEX_MINI),
     maxTokens = options.maxTokens ?? toolDefaults.maxTokens ?? 2000,
     temperature = options.temperature ?? toolDefaults.temperature ?? 0.7,
     systemPrompt,
@@ -178,7 +178,7 @@ export async function executeWorkflowTool(
   };
 
   try {
-    let actualModel = model; // Track the actual model used
+    let actualModel: any = model; // Track the actual model used (can be OpenAI51Model, GrokModel, or string)
     // Route to appropriate tool based on name
     switch (toolName) {
       // ============ GEMINI TOOLS ============
@@ -278,13 +278,14 @@ export async function executeWorkflowTool(
       // ============ OPENAI TOOLS ============
       case "openai_brainstorm":
       case "openai_analyze":
-        actualModel = (model as any) || ("gpt-5" as any);
+        actualModel = (model || GPT51_MODELS.FULL) as OpenAI51Model;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
             actualModel,
             temperature,
             maxTokens,
+            "low", // reasoningEffort
             false, // requireConfirmation
             options.skipValidation || false, // skipValidation for workflow calls
           ),
@@ -295,43 +296,39 @@ export async function executeWorkflowTool(
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
-            "gpt-5-mini" as any,
+            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
             0.7,
             maxTokens,
           ),
-          "gpt-5-mini"
+          GPT51_MODELS.CODEX_MINI
         );
 
       case "openai_reason":
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
-            "gpt-5-mini" as any,
+            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
             temperature,
             maxTokens,
           ),
-          "gpt-5-mini"
+          GPT51_MODELS.CODEX_MINI
         );
 
       // ============ GPT-5 TOOLS ============
       case "gpt5":
       case "gpt5_mini":
       case "gpt5_nano":
-        const gpt5Model =
-          toolName === "gpt5_nano"
-            ? GPT5_MODELS.NANO
-            : toolName === "gpt5_mini"
-              ? GPT5_MODELS.MINI
-              : GPT5_MODELS.FULL;
-        // GPT-5 models only support temperature=1.0
+        // Map old names to new GPT-5.1 models
+        const gpt51Model = GPT51_MODELS.CODEX_MINI as OpenAI51Model; // Always use cost-efficient codex-mini
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
-            gpt5Model as any,
-            1.0, // Fixed temperature for GPT-5
+            gpt51Model,
+            0.7,
             maxTokens,
+            "low", // reasoning_effort
           ),
-          gpt5Model
+          gpt51Model
         );
 
       // ============ GROK TOOLS ============
@@ -451,33 +448,33 @@ export async function executeWorkflowTool(
 
       // ============ META TOOLS ============
       case "think":
-        // Simple reflection tool - uses GPT-5-mini for cost efficiency
+        // Simple reflection tool - uses GPT-5.1-codex-mini for cost efficiency
         return buildResult(
           await callOpenAI(
             toMessages(
               `Reflect on the following and provide brief insights:\n\n${prompt}`,
               "You are a reflective thinking assistant. Provide concise, insightful analysis.",
             ),
-            "gpt-5-mini" as any,
+            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
             0.7,
             500,
           ),
-          "gpt-5-mini"
+          GPT51_MODELS.CODEX_MINI
         );
 
       case "focus":
-        // Deep analysis tool - uses GPT-5
+        // Deep analysis tool - uses GPT-5.1
         return buildResult(
           await callOpenAI(
             toMessages(
               `Perform deep analysis and synthesis:\n\n${prompt}`,
               "You are an advanced analytical assistant. Provide comprehensive, synthesized insights.",
             ),
-            "gpt-5" as any,
+            GPT51_MODELS.FULL as OpenAI51Model,
             0.8,
             maxTokens,
           ),
-          "gpt-5"
+          GPT51_MODELS.FULL
         );
 
       case "code_reviewer":
@@ -487,11 +484,11 @@ export async function executeWorkflowTool(
               `Perform thorough code review:\n\n${prompt}`,
               "You are an expert code reviewer. Analyze for bugs, security issues, performance, and best practices.",
             ),
-            "gpt-5" as any,
+            GPT51_MODELS.FULL as OpenAI51Model,
             0.5,
             maxTokens,
           ),
-          "gpt-5"
+          GPT51_MODELS.FULL
         );
 
       case "test_architect":
@@ -501,11 +498,11 @@ export async function executeWorkflowTool(
               `Design comprehensive tests:\n\n${prompt}`,
               "You are a testing expert. Design thorough test suites with edge cases.",
             ),
-            "gpt-5" as any,
+            GPT51_MODELS.FULL as OpenAI51Model,
             0.6,
             maxTokens,
           ),
-          "gpt-5"
+          GPT51_MODELS.FULL
         );
 
       case "documentation_writer":
@@ -515,26 +512,26 @@ export async function executeWorkflowTool(
               `Create clear documentation:\n\n${prompt}`,
               "You are a technical writer. Create clear, comprehensive documentation.",
             ),
-            "gpt-5-mini" as any,
+            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
             0.7,
             maxTokens,
           ),
-          "gpt-5-mini"
+          GPT51_MODELS.CODEX_MINI
         );
 
       // ============ DEFAULT ============
       default:
         console.warn(
-          `⚠️ Unknown tool: ${toolName}, falling back to GPT-5-mini`,
+          `⚠️ Unknown tool: ${toolName}, falling back to GPT-5.1-codex-mini`,
         );
         return buildResult(
           await callOpenAI(
             toMessages(prompt),
-            "gpt-5-mini" as any,
+            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
             temperature,
             maxTokens,
           ),
-          "gpt-5-mini"
+          GPT51_MODELS.CODEX_MINI
         );
     }
   } catch (error) {
