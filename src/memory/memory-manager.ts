@@ -17,6 +17,7 @@ import {
 import { IMemoryProvider } from './memory-interface.js';
 import { LocalProvider } from './providers/local-provider.js';
 import { Mem0Provider } from './providers/mem0-provider.js';
+import { randomBytes } from 'crypto';
 // import { DevLogProvider } from './providers/devlog-provider.js';
 // import { HybridProvider } from './providers/hybrid-provider.js';
 
@@ -442,11 +443,11 @@ export class HierarchicalMemoryManager {
   }
   
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}-${randomBytes(6).toString('hex')}`;
   }
   
   private generateSessionId(): string {
-    return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `session-${Date.now()}-${randomBytes(6).toString('hex')}`;
   }
 }
 

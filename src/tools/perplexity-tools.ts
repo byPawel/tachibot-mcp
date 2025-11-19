@@ -18,11 +18,9 @@ function getPerplexityApiKey(): string | undefined {
 function debugApiKey(): void {
   const apiKey = getPerplexityApiKey();
   console.error('[PERPLEXITY DEBUG] API Key present:', !!apiKey);
-  if (apiKey) {
-    console.error('[PERPLEXITY DEBUG] Key length:', apiKey.length);
-    console.error('[PERPLEXITY DEBUG] Key prefix:', apiKey.substring(0, 8) + '...');
-  } else {
-    console.error('[PERPLEXITY DEBUG] process.env keys:', Object.keys(process.env).filter(k => k.includes('PERP') || k.includes('API')));
+  if (!apiKey) {
+    console.error('[PERPLEXITY DEBUG] Environment variables containing PERP or API found:',
+      Object.keys(process.env).filter(k => k.includes('PERP') || k.includes('API')).length);
   }
 }
 

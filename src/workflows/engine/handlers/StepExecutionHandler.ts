@@ -220,7 +220,7 @@ export class StepExecutionHandler {
     if (match) {
       const [, variable, expectedValue] = match;
       const actualValue = variables[variable];
-      return String(actualValue).trim() === expectedValue.trim().replace(/['"]/, '');
+      return String(actualValue).trim() === expectedValue.trim().replace(/['"]/g, '');
     }
 
     // Default: check if variable exists and is truthy

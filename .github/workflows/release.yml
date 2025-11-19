@@ -41,7 +41,6 @@ jobs:
           README.md \
           LICENSE \
           .env.example \
-          mcp.json \
           smithery.yaml
 
     - name: Create GitHub Release

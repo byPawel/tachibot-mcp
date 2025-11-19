@@ -32,11 +32,9 @@ zip -r "$PACKAGE_NAME" \
     node_modules/ \
     package.json \
     smithery.yaml \
-    mcp.json \
     tools.config.json \
     profiles/ \
     workflows/ \
-    personality/ \
     README.md \
     LICENSE \
     .env.example \

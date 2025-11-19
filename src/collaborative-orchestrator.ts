@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import {
   ReasoningMode,
   TechnicalDomain,
@@ -320,7 +321,7 @@ export class CollaborativeOrchestrator {
    * Generate session ID
    */
   private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `session_${Date.now()}_${randomBytes(6).toString('hex')}`;
   }
 
   /**

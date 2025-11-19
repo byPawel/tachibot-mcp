@@ -82,10 +82,16 @@ beforeEach(() => {
   global.fetch = jest.fn() as any;
 
   (global.fetch as jest.Mock).mockImplementation((url: string, options?: any) => {
-    const urlStr = url.toString().toLowerCase();
+    let hostname: string;
+    try {
+      hostname = new URL(url.toString()).hostname.toLowerCase();
+    } catch {
+      // If URL parsing fails, return error
+      return Promise.reject(new Error('Invalid URL'));
+    }
 
     // OpenAI API
-    if (urlStr.includes('api.openai.com')) {
+    if (hostname === 'api.openai.com') {
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -95,7 +101,7 @@ beforeEach(() => {
     }
 
     // Perplexity API
-    if (urlStr.includes('api.perplexity.ai')) {
+    if (hostname === 'api.perplexity.ai') {
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -105,7 +111,7 @@ beforeEach(() => {
     }
 
     // Google Gemini API
-    if (urlStr.includes('generativelanguage.googleapis.com')) {
+    if (hostname === 'generativelanguage.googleapis.com') {
       return Promise.resolve({
         ok: true,
         status: 200,

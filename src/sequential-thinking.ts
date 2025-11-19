@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import { randomBytes } from "crypto";
 
 export interface Thought {
   number: number;
@@ -309,7 +310,7 @@ export class SequentialThinking {
    * Generate session ID
    */
   private generateSessionId(): string {
-    return `think_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `think_${Date.now()}_${randomBytes(6).toString('hex')}`;
   }
 
   /**
