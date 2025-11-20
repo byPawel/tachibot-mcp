@@ -14,6 +14,9 @@ build/
 .env.*
 !.env.example
 
+# MCP Registry tokens
+.mcpregistry_*
+
 # IDE specific files
 .idea/
 .vscode/
@@ -42,6 +45,7 @@ coverage/
 
 # Development directories
 .claude/
+.mcp.json
 .focus-sessions/
 reviews/
 archive/
