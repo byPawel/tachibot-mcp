@@ -1,7 +1,7 @@
 # Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
 name: "tachibot-mcp"
-description: "Multi-model AI orchestration platform with 26 tools across Perplexity, Grok, OpenAI GPT-5, Gemini, and Qwen. Features YAML workflows, 5 token-optimized profiles (4k-19k), smart routing, and cost controls. Build complex AI pipelines with variable passing and parallel execution."
-version: "2.0.0"
+description: "Multi-model AI orchestration platform with 31 tools across Perplexity, Grok, OpenAI GPT-5, Gemini, and Qwen. Features YAML workflows, 5 token-optimized profiles (4k-20k), smart routing, and cost controls. Build complex AI pipelines with variable passing and parallel execution."
+version: "2.0.5"
 
 startCommand:
   type: stdio
