@@ -67,6 +67,22 @@ export class ModelRouter {
       reasoning: 10,
       useFor: ['complex reasoning with evidence']
     }],
+    ['grok-4.1', {
+      id: 'grok-4.1',
+      cost: 9,
+      quality: 10,
+      speed: 7,
+      reasoning: 10,
+      useFor: ['enhanced reasoning', 'creativity', 'emotional intelligence', 'first-principles']
+    }],
+    ['grok-4.1-fast', {
+      id: 'grok-4.1-fast',
+      cost: 9,
+      quality: 10,
+      speed: 8,
+      reasoning: 10,
+      useFor: ['tool-calling', 'agentic workflows', 'code analysis', 'fast reasoning']
+    }],
     ['grok-4', {
       id: 'grok-4',
       cost: 9,
@@ -163,14 +179,14 @@ export class ModelRouter {
     }
     
     const taskTypeMap: Record<string, string> = {
-      'code': task.complexity > 0.7 ? 'qwen3-coder-480b' : 'gemini-2.5-flash',
+      'code': task.complexity > 0.7 ? 'qwen3-coder-480b' : 'grok-4.1-fast',
       'research': 'perplexity-sonar-pro',
       'reasoning': task.complexity > 0.5 ? 'gpt5' : 'gpt5_mini',
       'scout': 'multi-model',
       'verifier': task.complexity > 0.5 ? 'gpt5' : 'gpt5_mini',
       'challenger': 'gpt5_mini',
       'auditor': 'perplexity-sonar-pro',
-      'architect': 'grok-4',
+      'architect': 'grok-4.1',
       'commit_guardian': 'gemini-2.5-flash'
     };
     

@@ -514,7 +514,7 @@ perplexity_reason({
 
 ### grok_search
 
-Cost-optimized web search using Grok-4's live search with advanced filtering.
+Cost-optimized web search using Grok-4.1's live search with advanced filtering and enhanced reasoning.
 
 #### Schema
 
@@ -640,7 +640,7 @@ grok_search({
 
 ### grok_reason
 
-Deep logical reasoning with Grok-4 using first principles.
+Deep logical reasoning with Grok-4.1 using first principles and enhanced emotional intelligence.
 
 #### Schema
 
@@ -686,7 +686,7 @@ grok_reason({
 
 ### grok_code
 
-Code analysis and optimization with Grok-4.
+Code analysis and optimization with Grok-4.1 Fast (tool-calling optimized).
 
 #### Schema
 
@@ -738,7 +738,7 @@ grok_code({
 
 ### grok_debug
 
-Deep debugging assistance with Grok-4.
+Deep debugging assistance with Grok-4.1 Fast.
 
 #### Schema
 
@@ -772,7 +772,7 @@ grok_debug({
 
 ### grok_architect
 
-System architecture and design with Grok-4.
+System architecture and design with Grok-4.1.
 
 #### Schema
 
@@ -800,7 +800,7 @@ grok_architect({
 
 ### grok_brainstorm
 
-Creative brainstorming using Grok-4-heavy.
+Creative brainstorming using Grok-4.1 with enhanced creativity and emotional intelligence.
 
 #### Schema
 

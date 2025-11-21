@@ -18,9 +18,13 @@ config({ path: path.resolve(__dirname, '../../../.env') });
 const GROK_API_KEY = process.env.GROK_API_KEY;
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
-// Available Grok models - Updated 2025-11-07 with new fast models
+// Available Grok models - Updated 2025-11-21 with Grok 4.1
 export enum GrokModel {
-  // New fast models (2025) - PRIMARY USE
+  // Grok 4.1 models (Nov 2025) - LATEST & BEST
+  GROK_4_1 = "grok-4.1",                       // Latest: 2M context, $0.20/$0.50, enhanced reasoning & creativity
+  GROK_4_1_FAST = "grok-4.1-fast",             // Tool-calling optimized: 2M context, $0.20/$0.50, agentic workflows
+
+  // Previous fast models (2025) - Still good
   CODE_FAST = "grok-code-fast-1",              // Coding specialist: 256K→2M, $0.20/$1.50, 92 tok/sec
   GROK_4_FAST_REASONING = "grok-4-fast-reasoning", // Cheap reasoning: 2M→4M, $0.20/$0.50
   GROK_4_FAST = "grok-4-fast-non-reasoning",   // Fast general: 2M→4M, $0.20/$0.50
@@ -35,7 +39,7 @@ export enum GrokModel {
  */
 export async function callGrok(
   messages: Array<{ role: string; content: string }>,
-  model: GrokModel = GrokModel.GROK_4_FAST_REASONING, // Changed: Use cheap fast reasoning by default
+  model: GrokModel = GrokModel.GROK_4_1, // Updated 2025-11-21: Use latest Grok 4.1 by default
   temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased default for comprehensive responses
   forceVisibleOutput: boolean = true
@@ -55,7 +59,9 @@ export async function callGrok(
 
   try {
     // For Grok 4 models, we need to handle reasoning tokens specially
-    const isGrok4 = model === GrokModel.GROK_4_FAST_REASONING ||
+    const isGrok4 = model === GrokModel.GROK_4_1 ||
+                    model === GrokModel.GROK_4_1_FAST ||
+                    model === GrokModel.GROK_4_FAST_REASONING ||
                     model === GrokModel.GROK_4_FAST ||
                     model === GrokModel.GROK_4_HEAVY;
 
@@ -131,7 +137,7 @@ export const grokReasonTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok, an expert at logical reasoning and problem-solving.
+        content: `You are Grok 4.1, an expert at logical reasoning and problem-solving with enhanced emotional intelligence.
 ${approachPrompts[approach as keyof typeof approachPrompts]}.
 ${context ? `Context: ${context}` : ''}`
       },
@@ -141,8 +147,8 @@ ${context ? `Context: ${context}` : ''}`
       }
     ];
 
-    // Use GROK_4_FAST_REASONING by default (3x cheaper!), GROK_4_HEAVY only if explicitly requested
-    const model = useHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_FAST_REASONING;
+    // Use GROK_4_1 by default (latest with enhanced reasoning!), GROK_4_HEAVY only if explicitly requested
+    const model = useHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1;
     const maxTokens = useHeavy ? 100000 : 16384; // 100k for heavy, 16k for normal reasoning
     log?.info(`Using Grok model: ${model} for deep reasoning (max tokens: ${maxTokens}, cost: ${useHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50'})`);
 
@@ -176,7 +182,7 @@ export const grokCodeTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok Code Fast, an expert programmer and code analyst.
+        content: `You are Grok 4.1 Fast, an expert programmer and code analyst with advanced tool-calling capabilities.
 Task: ${taskPrompts[task as keyof typeof taskPrompts]}
 ${language ? `Language: ${language}` : ''}
 ${requirements ? `Requirements: ${requirements}` : ''}`
@@ -187,8 +193,8 @@ ${requirements ? `Requirements: ${requirements}` : ''}`
       }
     ];
 
-    log?.info(`Using Grok Code Fast (92 tok/sec coding specialist)`);
-    return await callGrok(messages, GrokModel.CODE_FAST, 0.2, 4000, true);
+    log?.info(`Using Grok 4.1 Fast (2M context, enhanced reasoning, $0.20/$0.50)`);
+    return await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.2, 4000, true);
   }
 };
 

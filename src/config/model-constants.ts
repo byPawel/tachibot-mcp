@@ -38,11 +38,15 @@ export const PERPLEXITY_MODELS = {
   SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model
 } as const;
 
-// Grok Models (xAI) - Updated 2025-11-07
+// Grok Models (xAI) - Updated 2025-11-21 with Grok 4.1
 export const GROK_MODELS = {
-  // New fast models (2025) - PRIMARY USE
+  // Grok 4.1 models (Nov 2025) - LATEST & BEST
+  _4_1: "grok-4.1",                           // Latest: 2M context, $0.20/$0.50, enhanced reasoning & creativity
+  _4_1_FAST: "grok-4.1-fast",                 // Tool-calling optimized: 2M context, $0.20/$0.50, agentic workflows
+
+  // Previous fast models (2025) - Still good
   CODE_FAST: "grok-code-fast-1",              // Coding specialist: 256K→2M, $0.20/$1.50, 92 tok/sec
-  _4_FAST_REASONING: "grok-4-fast-reasoning", // Cheap reasoning: 2M→4M, $0.20/$0.50 (3x cheaper!)
+  _4_FAST_REASONING: "grok-4-fast-reasoning", // Cheap reasoning: 2M→4M, $0.20/$0.50
   _4_FAST: "grok-4-fast-non-reasoning",       // Fast general: 2M→4M, $0.20/$0.50
 
   // Expensive/specialized (use sparingly)
@@ -149,39 +153,39 @@ export const TOOL_DEFAULTS = {
     temperature: 0.7,
   },
 
-  // Grok tools - UPDATED with new fast models
+  // Grok tools - UPDATED 2025-11-21 with Grok 4.1
   grok: {
-    model: GROK_MODELS._4_FAST_REASONING, // Changed: 3x cheaper output
+    model: GROK_MODELS._4_1, // Latest: Enhanced reasoning & creativity
     maxTokens: 4000,
     temperature: 0.7,
   },
   grok_reason: {
-    model: GROK_MODELS._4_FAST_REASONING, // Changed: 3x cheaper, 8x context
+    model: GROK_MODELS._4_1, // Latest: Enhanced reasoning with lower hallucination
     maxTokens: 8000,
     temperature: 0.7,
   },
   grok_code: {
-    model: GROK_MODELS.CODE_FAST, // Changed: Coding specialist, 3x faster
+    model: GROK_MODELS._4_1_FAST, // Tool-calling optimized, better than code-fast-1
     maxTokens: 4000,
     temperature: 0.3,
   },
   grok_search: {
-    model: GROK_MODELS._4_FAST_REASONING, // Changed: Use fast reasoning with search
+    model: GROK_MODELS._4_1, // Latest with enhanced reasoning
     maxTokens: 3000,
     temperature: 0.7,
   },
   grok_brainstorm: {
-    model: GROK_MODELS._4_FAST, // Changed: Fast non-reasoning for creativity
+    model: GROK_MODELS._4_1, // Latest: Enhanced creativity & emotional intelligence
     maxTokens: 4000,
     temperature: 0.9,
   },
   grok_architect: {
-    model: GROK_MODELS._4_FAST_REASONING, // New: Architecture needs reasoning
+    model: GROK_MODELS._4_1, // Latest: Enhanced architecture reasoning
     maxTokens: 4000,
     temperature: 0.6,
   },
   grok_debug: {
-    model: GROK_MODELS.CODE_FAST, // New: Use code specialist for debugging
+    model: GROK_MODELS._4_1_FAST, // Tool-calling optimized for debugging
     maxTokens: 3000,
     temperature: 0.3,
   },

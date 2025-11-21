@@ -116,7 +116,9 @@ Grok (by xAI) provides live web search, reasoning, and code analysis.
 
 #### Models Available
 
-- **grok-4** - Latest reasoning model
+- **grok-4.1** - Latest (Nov 2025): Enhanced reasoning, creativity & emotional intelligence
+- **grok-4.1-fast** - Tool-calling optimized: Fast inference, agentic workflows
+- **grok-4** - Previous reasoning model
 - **grok-4-0709** - Specific version
 - **grok-4-heavy** - Extended context (256k tokens)
 
@@ -124,7 +126,9 @@ Grok (by xAI) provides live web search, reasoning, and code analysis.
 
 | Model | Input | Output | Notes |
 |-------|-------|--------|-------|
-| Grok-4 | $5.00 / 1M tokens | $15.00 / 1M tokens | Standard |
+| Grok-4.1 | $0.20 / 1M tokens | $0.50 / 1M tokens | Latest & best! |
+| Grok-4.1-fast | $0.20 / 1M tokens | $0.50 / 1M tokens | Tool-calling optimized |
+| Grok-4 | $5.00 / 1M tokens | $15.00 / 1M tokens | Previous version |
 | Grok-4-heavy | $10.00 / 1M tokens | $30.00 / 1M tokens | 256k context |
 | **Live Search** | **$5 / 1k sources** | - | Extra cost per search! |
 
