@@ -5,7 +5,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-Multi-model AI orchestration platform with 31 tools (32 with competitive mode), advanced workflows, and intelligent prompt engineering. Works with Claude Code, Claude Desktop, Cursor, and any MCP-compatible client.
+Multi-model AI orchestration platform with 31 tools, advanced workflows, and intelligent prompt engineering. Works with Claude Code, Claude Desktop, Cursor, and any MCP-compatible client.
 
 ---
 
@@ -74,10 +74,10 @@ Get keys: [OpenRouter](https://openrouter.ai) | [Perplexity](https://perplexity.
 
 ### 🎯 Tool Profiles
 - **Minimal** (8 tools) - Budget-friendly, token-constrained
-- **Research Power** (15 tools) - Default, best balance
-- **Code Focus** (13 tools) - Software development
-- **Balanced** (17 tools) - General-purpose
-- **Full** (31 tools, 32 with competitive) - Maximum capability
+- **Research Power** (13 tools) - Default, best balance
+- **Code Focus** (15 tools) - Software development
+- **Balanced** (18 tools) - General-purpose
+- **Full** (31 tools, includes competitive mode) - Maximum capability
 
 ### 🔧 Developer Experience
 - **Claude Code Native** - First-class support
