@@ -13,6 +13,50 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 config({ path: path.resolve(__dirname, '../../../.env') });
 
+// =============================================================================
+// OPENROUTER GATEWAY MODE
+// =============================================================================
+// When enabled, routes OpenAI/Gemini/Grok through OpenRouter with single API key
+// Kimi/Qwen always use OpenRouter (native), Perplexity always uses direct API
+const USE_OPENROUTER_GATEWAY = process.env.USE_OPENROUTER_GATEWAY === 'true';
+
+/**
+ * Get OpenRouter model name - adds provider prefix
+ * Returns null if model should skip gateway (e.g., Perplexity)
+ */
+function getOpenRouterModel(model: string): string | null {
+  // Perplexity - NEVER use gateway
+  if (model.startsWith('sonar')) return null;
+  // Already has prefix
+  if (model.includes('/')) return model;
+  // Add provider prefix
+  if (model.startsWith('gpt-')) return `openai/${model}`;
+  if (model.startsWith('gemini-')) return `google/${model}`;
+  if (model.startsWith('grok-')) return `x-ai/${model}`;
+  return model;
+}
+
+/**
+ * Check if a model should use OpenRouter gateway
+ * - Kimi/Qwen: Always (native OpenRouter)
+ * - Perplexity: Never (not on OpenRouter)
+ * - Others: Only if USE_OPENROUTER_GATEWAY=true
+ */
+function shouldUseOpenRouterGateway(model: string): boolean {
+  // Already OpenRouter format (qwen/, moonshotai/)
+  if (model.startsWith('qwen/') || model.startsWith('moonshotai/')) {
+    return true;
+  }
+
+  // Perplexity models never go through OpenRouter
+  if (model.startsWith('sonar')) {
+    return false;
+  }
+
+  // Everything else: check gateway flag
+  return USE_OPENROUTER_GATEWAY;
+}
+
 // Provider configurations with their base URLs
 const PROVIDER_CONFIGS = {
   openai: {
@@ -101,8 +145,8 @@ export async function queryAI(
   prompt: string,
   options: UnifiedAIOptions
 ): Promise<string> {
-  const config = PROVIDER_CONFIGS[options.provider];
-  if (!config) {
+  const providerConfig = PROVIDER_CONFIGS[options.provider];
+  if (!providerConfig) {
     throw new Error(`Unknown provider: ${options.provider}`);
   }
 
@@ -110,18 +154,58 @@ export async function queryAI(
     throw new Error(`Provider ${options.provider} is not configured. Please set the appropriate API key.`);
   }
 
-  // Handle GPT-5 special case
-  if (options.provider === 'gpt51' && 'special' in config && config.special) {
+  let model = options.model || providerConfig.models[0];
+
+  // Check if we should route through OpenRouter gateway
+  if (shouldUseOpenRouterGateway(model) && process.env.OPENROUTER_API_KEY) {
+    const openRouterModel = getOpenRouterModel(model);
+
+    // Skip gateway if model returns null (e.g., Perplexity)
+    if (!openRouterModel) {
+      // Fall through to direct API handling below
+    } else {
+    console.error(`🔀 [OpenRouter Gateway] Routing ${model} → ${openRouterModel}`);
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultHeaders: {
+        'HTTP-Referer': 'https://tachibot-mcp.local',
+        'X-Title': 'TachiBot MCP Server'
+      }
+    });
+
+    try {
+      const response = await client.chat.completions.create({
+        model: openRouterModel,
+        messages: [
+          ...(options.systemPrompt ? [{ role: 'system' as const, content: options.systemPrompt }] : []),
+          { role: 'user' as const, content: prompt }
+        ],
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? 2000,
+        stream: false
+      });
+
+      return response.choices[0]?.message?.content || 'No response generated';
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error with OpenRouter gateway:`, errorMessage);
+      throw new Error(`OpenRouter gateway error: ${errorMessage}`);
+    }
+    } // Close else block for openRouterModel check
+  }
+
+  // Handle GPT-5 special case (direct API only)
+  if (options.provider === 'gpt51' && 'special' in providerConfig && providerConfig.special) {
     return await handleGPT5(prompt, options);
   }
 
-  // Standard OpenAI-compatible handling
+  // Standard OpenAI-compatible handling (direct API)
   const client = new OpenAI({
-    apiKey: config.key,
-    baseURL: config.base
+    apiKey: providerConfig.key,
+    baseURL: providerConfig.base
   });
-
-  const model = options.model || config.models[0];
 
   try {
     const response = await client.chat.completions.create({

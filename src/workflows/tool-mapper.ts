@@ -8,8 +8,7 @@ import { getAllPerplexityTools } from "../tools/perplexity-tools.js";
 import { callOpenAI, OpenAI51Model } from "../tools/openai-tools.js";
 import { callGrok, GrokModel } from "../tools/grok-tools.js";
 import {
-  GPT51_MODELS,
-  GPT4_MODELS,
+  OPENAI_MODELS,
   TOOL_DEFAULTS,
   GEMINI_MODELS,
 } from "../config/model-constants.js";
@@ -159,7 +158,7 @@ export async function executeWorkflowTool(
   };
 
   const {
-    model = ('model' in toolDefaults ? (toolDefaults.model as string) : GPT51_MODELS.CODEX_MINI),
+    model = ('model' in toolDefaults ? (toolDefaults.model as string) : OPENAI_MODELS.CODEX_MINI),
     maxTokens = options.maxTokens ?? toolDefaults.maxTokens ?? 2000,
     temperature = options.temperature ?? toolDefaults.temperature ?? 0.7,
     systemPrompt,
@@ -281,7 +280,7 @@ export async function executeWorkflowTool(
       // ============ OPENAI TOOLS ============
       case "openai_brainstorm":
       case "openai_analyze":
-        actualModel = (model || GPT51_MODELS.FULL) as OpenAI51Model;
+        actualModel = (model || OPENAI_MODELS.FULL) as OpenAI51Model;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -297,7 +296,7 @@ export async function executeWorkflowTool(
 
       case "openai_reason":
         // GPT-5 Pro with high reasoning effort for complex reasoning
-        actualModel = GPT51_MODELS.PRO as OpenAI51Model;
+        actualModel = OPENAI_MODELS.PRO as OpenAI51Model;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -313,7 +312,7 @@ export async function executeWorkflowTool(
 
       case "openai_code_review":
         // GPT-5.1 codex-mini for code review (medium reasoning)
-        actualModel = GPT51_MODELS.CODEX_MINI as OpenAI51Model;
+        actualModel = OPENAI_MODELS.CODEX_MINI as OpenAI51Model;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt || "You are an expert code reviewer. Provide thorough code review with specific, actionable feedback."),
@@ -329,7 +328,7 @@ export async function executeWorkflowTool(
 
       case "openai_explain":
         // GPT-5.1 codex-mini for explanations (low reasoning)
-        actualModel = GPT51_MODELS.CODEX_MINI as OpenAI51Model;
+        actualModel = OPENAI_MODELS.CODEX_MINI as OpenAI51Model;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt || "You are an expert educator. Provide clear, engaging explanations."),
@@ -347,28 +346,28 @@ export async function executeWorkflowTool(
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
-            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
             0.7,
             maxTokens,
           ),
-          GPT51_MODELS.CODEX_MINI
+          OPENAI_MODELS.CODEX_MINI
         );
 
       case "openai_reason":
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
-            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
             temperature,
             maxTokens,
           ),
-          GPT51_MODELS.CODEX_MINI
+          OPENAI_MODELS.CODEX_MINI
         );
 
       // ============ GPT-5 TOOLS ============
       case "gpt5":
         // Map to flagship gpt-5.1
-        const gpt5Full = GPT51_MODELS.FULL as OpenAI51Model; // gpt-5.1 flagship
+        const gpt5Full = OPENAI_MODELS.FULL as OpenAI51Model; // gpt-5.1 flagship
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -382,7 +381,7 @@ export async function executeWorkflowTool(
 
       case "gpt5_mini":
         // Map to gpt-5.1-codex-mini for code tasks (most workflows use for code)
-        const gpt5CodexMini = GPT51_MODELS.CODEX_MINI as OpenAI51Model; // gpt-5.1-codex-mini
+        const gpt5CodexMini = OPENAI_MODELS.CODEX_MINI as OpenAI51Model; // gpt-5.1-codex-mini
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -542,11 +541,11 @@ export async function executeWorkflowTool(
               `Reflect on the following and provide brief insights:\n\n${prompt}`,
               "You are a reflective thinking assistant. Provide concise, insightful analysis.",
             ),
-            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
             0.7,
             500,
           ),
-          GPT51_MODELS.CODEX_MINI
+          OPENAI_MODELS.CODEX_MINI
         );
 
       case "focus":
@@ -557,11 +556,11 @@ export async function executeWorkflowTool(
               `Perform deep analysis and synthesis:\n\n${prompt}`,
               "You are an advanced analytical assistant. Provide comprehensive, synthesized insights.",
             ),
-            GPT51_MODELS.FULL as OpenAI51Model,
+            OPENAI_MODELS.FULL as OpenAI51Model,
             0.8,
             maxTokens,
           ),
-          GPT51_MODELS.FULL
+          OPENAI_MODELS.FULL
         );
 
       case "code_reviewer":
@@ -571,11 +570,11 @@ export async function executeWorkflowTool(
               `Perform thorough code review:\n\n${prompt}`,
               "You are an expert code reviewer. Analyze for bugs, security issues, performance, and best practices.",
             ),
-            GPT51_MODELS.FULL as OpenAI51Model,
+            OPENAI_MODELS.FULL as OpenAI51Model,
             0.5,
             maxTokens,
           ),
-          GPT51_MODELS.FULL
+          OPENAI_MODELS.FULL
         );
 
       case "test_architect":
@@ -585,11 +584,11 @@ export async function executeWorkflowTool(
               `Design comprehensive tests:\n\n${prompt}`,
               "You are a testing expert. Design thorough test suites with edge cases.",
             ),
-            GPT51_MODELS.FULL as OpenAI51Model,
+            OPENAI_MODELS.FULL as OpenAI51Model,
             0.6,
             maxTokens,
           ),
-          GPT51_MODELS.FULL
+          OPENAI_MODELS.FULL
         );
 
       case "documentation_writer":
@@ -599,11 +598,11 @@ export async function executeWorkflowTool(
               `Create clear documentation:\n\n${prompt}`,
               "You are a technical writer. Create clear, comprehensive documentation.",
             ),
-            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
             0.7,
             maxTokens,
           ),
-          GPT51_MODELS.CODEX_MINI
+          OPENAI_MODELS.CODEX_MINI
         );
 
       // ============ DEFAULT ============
@@ -614,11 +613,11 @@ export async function executeWorkflowTool(
         return buildResult(
           await callOpenAI(
             toMessages(prompt),
-            GPT51_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
             temperature,
             maxTokens,
           ),
-          GPT51_MODELS.CODEX_MINI
+          OPENAI_MODELS.CODEX_MINI
         );
     }
   } catch (error) {

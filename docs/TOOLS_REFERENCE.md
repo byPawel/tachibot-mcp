@@ -836,7 +836,7 @@ Creative brainstorming using GPT-5 suite with advanced controls.
 ```typescript
 {
   problem: string;                  // REQUIRED
-  model?: "gpt-5" | "gpt-5-mini" | "gpt-5-nano";  // Default: "gpt-5-mini"
+  model?: "gpt-5.1" | "gpt-5.1-codex-mini" | "gpt-5.1-codex";  // Default: "gpt-5.1-codex-mini"
   quantity?: number;                // Default: 5
   style?: "innovative" | "practical" | "wild" | "systematic";
   constraints?: string;
@@ -851,7 +851,7 @@ Creative brainstorming using GPT-5 suite with advanced controls.
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `problem` | `string` | ✅ Yes | - | Problem to brainstorm |
-| `model` | `string` | No | `"gpt-5-mini"` | GPT-5 model variant |
+| `model` | `string` | No | `"gpt-5.1-codex-mini"` | GPT-5 model variant |
 | `quantity` | `number` | No | `5` | Number of ideas to generate |
 | `style` | `string` | No | `"innovative"` | Brainstorming style |
 | `constraints` | `string` | No | - | Additional constraints |
@@ -863,9 +863,9 @@ Creative brainstorming using GPT-5 suite with advanced controls.
 
 | Model | Speed | Cost | Best For |
 |-------|-------|------|----------|
-| `gpt-5-nano` | Fastest | $ | Quick ideation |
-| `gpt-5-mini` | Fast | $$ | Most tasks (default) |
-| `gpt-5` | Slow | $$$$ | Complex problems requiring deep reasoning |
+| `gpt-5.1-codex-mini` | Fast | $$ | Most tasks (default) |
+| `gpt-5.1-codex` | Medium | $$$ | Complex code tasks |
+| `gpt-5.1` | Slow | $$$$ | Deep reasoning problems |
 
 #### Reasoning Effort (GPT-5 only)
 
@@ -908,7 +908,7 @@ openai_brainstorm({
 ```typescript
 openai_brainstorm({
   problem: "Reduce app cold start time",
-  model: "gpt-5-nano",
+  model: "gpt-5.1-codex-mini",
   quantity: 5,
   style: "practical",
   constraints: "Must work on mobile devices"
@@ -1119,7 +1119,7 @@ Multi-model parallel verification with consensus analysis.
 #### Variants
 
 **quick_verify** (Default)
-- Models: `gpt-5-mini`, `gemini-2.5-flash`, `gpt-5`
+- Models: `gpt-5.1-codex-mini`, `gemini-2.5-flash`, `gpt-5`
 - Tokens: 2000
 - Timeout: 10s
 - Use: Fast verification
@@ -1131,7 +1131,7 @@ Multi-model parallel verification with consensus analysis.
 - Use: Complex reasoning
 
 **fact_check**
-- Models: `gpt-5`, `gemini-2.5-pro`, `gpt-5-mini`
+- Models: `gpt-5`, `gemini-2.5-pro`, `gpt-5.1-codex-mini`
 - Tokens: 3000
 - Timeout: 15s
 - Sources: Enabled by default
@@ -1303,7 +1303,7 @@ Critical thinking and echo chamber prevention by generating counter-arguments.
 ```typescript
 {
   context: string | object | array;  // REQUIRED
-  model?: string;                    // Default: "gpt-5-mini"
+  model?: string;                    // Default: "gpt-5.1-codex-mini"
   maxTokens?: number;                // Default: 2000
   temperature?: number;              // 0-1, Default: 0.9
 }
@@ -1314,13 +1314,13 @@ Critical thinking and echo chamber prevention by generating counter-arguments.
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `context` | `string \| object \| array` | ✅ Yes | - | Claims to challenge |
-| `model` | `string` | No | `"gpt-5-mini"` | AI model to use |
+| `model` | `string` | No | `"gpt-5.1-codex-mini"` | AI model to use |
 | `maxTokens` | `number` | No | `2000` | Max tokens per call |
 | `temperature` | `number` | No | `0.9` | Creativity (0-1) |
 
 #### Supported Models
 
-- `gpt-5-mini`, `gpt-5`, `qwq-32b`, `qwen3-30b`, `qwen3-coder-480b`
+- `gpt-5.1-codex-mini`, `gpt-5`, `qwq-32b`, `qwen3-30b`, `qwen3-coder-480b`
 - `gemini-2.5-flash`, `gemini-2.5-pro`
 - `grok-4`, `grok-4-0709`
 - `sonar-pro`, `perplexity-sonar-pro`

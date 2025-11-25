@@ -1,11 +1,46 @@
 # TachiBot MCP - Universal AI Orchestrator
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/byPawel/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/byPawel/tachibot-mcp)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
 Multi-model AI orchestration platform with 31 tools (32 with competitive mode), advanced workflows, and intelligent prompt engineering. Works with Claude Code, Claude Desktop, Cursor, and any MCP-compatible client.
+
+---
+
+## 🔑 Bring Your Own Keys
+
+**Two ways to connect — pick what works for you:**
+
+| Mode | Keys Needed | Best For |
+|------|-------------|----------|
+| **Gateway Mode** | 2 keys (OpenRouter + Perplexity) | Simplicity, unified billing |
+| **Direct Mode** | 5+ keys (one per provider) | Maximum control, no middleman |
+
+### Gateway Mode (Recommended)
+Route GPT-5, Gemini, and Grok through OpenRouter — same key you need for Qwen/Kimi anyway.
+
+```bash
+OPENROUTER_API_KEY=sk-or-xxx     # GPT-5, Gemini, Grok, Qwen, Kimi
+PERPLEXITY_API_KEY=pplx-xxx      # Required separately (not on OpenRouter)
+USE_OPENROUTER_GATEWAY=true
+```
+
+### Direct Mode
+Use each provider's native API directly.
+
+```bash
+OPENAI_API_KEY=sk-xxx            # GPT-5
+GOOGLE_API_KEY=xxx               # Gemini
+GROK_API_KEY=xxx                 # Grok
+OPENROUTER_API_KEY=sk-or-xxx     # Qwen, Kimi (always via OpenRouter)
+PERPLEXITY_API_KEY=pplx-xxx      # Perplexity
+```
+
+Both modes work. Gateway mode just means fewer accounts to manage.
+
+Get keys: [OpenRouter](https://openrouter.ai) | [Perplexity](https://perplexity.ai)
 
 ---
 
@@ -29,6 +64,7 @@ Multi-model AI orchestration platform with 31 tools (32 with competitive mode), 
 - **31 AI Tools:** Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi (32 with competitive mode)
 - **Multi-Model Reasoning:** Challenger, Verifier, Scout modes
 - **Smart Routing:** Automatic model selection for optimal results
+- **OpenRouter Gateway:** Optional single API key for all providers (OpenAI, Gemini, Grok)
 
 ### 🔄 Advanced Workflows
 - **YAML-Based Workflows:** Define complex multi-step AI processes
@@ -66,37 +102,41 @@ tachibot --version
 
 ### Setup
 
-1. **Add API Keys** (at least one):
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your API keys
-   ```
+**Option A: Single Key Mode (Recommended)**
+```json
+{
+  "mcpServers": {
+    "tachibot": {
+      "command": "tachibot",
+      "env": {
+        "OPENROUTER_API_KEY": "sk-or-xxx",
+        "PERPLEXITY_API_KEY": "pplx-xxx",
+        "USE_OPENROUTER_GATEWAY": "true"
+      }
+    }
+  }
+}
+```
 
-2. **Configure Profile** (optional):
-   ```bash
-   # Edit .env
-   TACHIBOT_PROFILE=research_power  # or minimal, code_focus, balanced, full
-   ```
+**Option B: Direct Provider Keys**
+```json
+{
+  "mcpServers": {
+    "tachibot": {
+      "command": "tachibot",
+      "env": {
+        "PERPLEXITY_API_KEY": "your-key",
+        "GROK_API_KEY": "your-key",
+        "OPENAI_API_KEY": "your-key",
+        "GOOGLE_API_KEY": "your-key",
+        "OPENROUTER_API_KEY": "your-key"
+      }
+    }
+  }
+}
+```
 
-3. **Add to Claude Code/Desktop**:
-   ```json
-   {
-     "mcpServers": {
-       "tachibot": {
-         "command": "tachibot",
-         "env": {
-           "PERPLEXITY_API_KEY": "your-key",
-           "GROK_API_KEY": "your-key",
-           "OPENAI_API_KEY": "your-key",
-           "GEMINI_API_KEY": "your-key",
-           "OPENROUTER_API_KEY": "your-key"
-         }
-       }
-     }
-   }
-   ```
-
-4. **Restart Claude** and you're ready! 🎉
+**Restart Claude** and you're ready!
 
 See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
@@ -106,9 +146,9 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ### Core Tools
 - 🔍 **Research:** `perplexity_ask`, `perplexity_research`, `grok_search`, `scout`
-- 🧠 **Reasoning:** `grok_reason`, `kimi_thinking`, `openai_brainstorm`, `focus`
-- 💡 **Analysis:** `gemini_brainstorm`, `gemini_analyze_text`, `qwen_coder`
-- ✅ **Validation:** `verifier`, `challenger`
+- 🧠 **Reasoning:** `grok_reason`, `openai_reason`, `perplexity_reason`, `kimi_thinking`, `focus`
+- 💡 **Analysis:** `gemini_brainstorm`, `gemini_analyze_text`, `openai_brainstorm`, `qwen_coder`
+- ✅ **Validation:** `verifier`*, `challenger`* (*multi-model workflows)
 - 💭 **Meta:** `think`, `nextThought`
 
 ### Advanced Modes
@@ -118,10 +158,14 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 - **Verifier** - Multi-model consensus verification
 
 ### Workflows
-- **Ultra Creative Brainstorm** - 15 steps, 10 techniques
-- **Iterative Problem Solver** - Research → Analyze → Solve
+- **Ultra Creative Brainstorm** - 15 steps, 10 prompt techniques
 - **Code Architecture Review** - Systematic code analysis
+- **Code Review** - PR and code review workflow
+- **UX Research Flow** - User experience research
 - **Accessibility Audit** - WCAG compliance checking
+- **Creative Brainstorm** - Quick ideation workflow
+- **PingPong** - Multi-model debate/collaboration
+- **System Workflows** - `verifier`, `challenger`, `scout`
 - **Custom Workflows** - Build your own in YAML
 
 ---
@@ -183,7 +227,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 
-Apache License 2.0 - see [LICENSE](LICENSE) for details.
+AGPL-3.0 - see [LICENSE](LICENSE) for details.
 
 ---
 
@@ -196,6 +240,6 @@ Apache License 2.0 - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Made with ❤️ by the TachiBot Team**
+**Made with ❤️ by [@byPawel](https://github.com/byPawel)**
 
 *Transform your AI workflow with intelligent multi-model orchestration.*
