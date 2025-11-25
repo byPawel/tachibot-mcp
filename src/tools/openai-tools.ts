@@ -80,11 +80,13 @@ const ResponsesAPISchema = z.object({
 type ChatCompletionResponse = z.infer<typeof ChatCompletionResponseSchema>;
 type ResponsesAPIResponse = z.infer<typeof ResponsesAPISchema>;
 
-// Available OpenAI models (GPT-5.1 family)
+// Available OpenAI GPT-5 models (optimized for Claude Code)
 export enum OpenAI51Model {
-  FULL = "gpt-5.1",                         // Full reasoning model ($1.25/$10 per million tokens)
-  CODEX_MINI = "gpt-5.1-codex-mini",        // Coding optimized, cost-efficient ($0.25/$2 per million tokens)
-  CODEX = "gpt-5.1-codex",                  // Advanced coding ($1.25/$10 per million tokens)
+  FULL = "gpt-5.1",                         // Flagship reasoning ($10/$30 per million tokens)
+  PRO = "gpt-5-pro",                        // Premium orchestration ($20/$60 per million tokens, 2x)
+  CODEX_MINI = "gpt-5.1-codex-mini",        // Code workhorse ($2/$6 per million tokens) - CHEAP!
+  CODEX = "gpt-5.1-codex",                  // Code power ($15/$45 per million tokens)
+  CODEX_MAX = "gpt-5.1-codex-max",          // Code frontier - BEST for complex analysis
 }
 
 // Type alias for backward compatibility
@@ -136,36 +138,35 @@ export async function callOpenAI(
   for (const currentModel of modelsToTry) {
     console.error(`🔍 TRACE: Trying model: ${currentModel}`);
     try {
-      // GPT-5.1 models use /v1/responses, others use /v1/chat/completions
-      const isGPT51 = currentModel.startsWith('gpt-5.1');
-      const endpoint = isGPT51 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
+      // Codex models use /v1/responses, non-codex use /v1/chat/completions
+      const isCodex = currentModel.includes('codex');
+      const endpoint = isCodex ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
 
       let requestBody: any;
 
-      // GPT-5.1 uses Responses API format, others use Chat Completions format
-      if (isGPT51) {
-        // Responses API format - NO temperature, use reasoning.effort instead
+      if (isCodex) {
+        // Responses API format for codex models
         requestBody = {
           model: currentModel,
           input: validatedMessages,
           max_output_tokens: maxTokens,
           stream: false,
           reasoning: {
-            effort: reasoningEffort // "none", "low", "medium", "high"
+            effort: reasoningEffort
           }
         };
       } else {
-        // Chat Completions format
+        // Chat Completions format for non-codex GPT-5 models (gpt-5.1, gpt-5-pro)
         requestBody = {
           model: currentModel,
           messages: validatedMessages,
           temperature,
-          max_tokens: maxTokens,
+          max_completion_tokens: maxTokens,  // GPT-5 requires max_completion_tokens (not max_tokens)
           stream: false
         };
       }
 
-      console.error(`🔍 TRACE: Using ${isGPT51 ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
+      console.error(`🔍 TRACE: Using ${isCodex ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -191,18 +192,17 @@ export async function callOpenAI(
 
       const rawData = await response.json();
 
-      // Parse based on API type - they have DIFFERENT response formats!
+      // Parse based on API type
       let rawContent: string | undefined;
 
-      if (isGPT51) {
-        // Validate and parse Responses API format
+      if (isCodex) {
+        // Responses API format
         const parseResult = ResponsesAPISchema.safeParse(rawData);
         if (parseResult.success) {
           const data: ResponsesAPIResponse = parseResult.data;
           const messageOutput = data.output.find(item => item.type === 'message');
           rawContent = messageOutput?.content?.[0]?.text;
 
-          // Capture reasoning info
           if (data.reasoning) {
             console.error(`🔍 TRACE: Reasoning effort: ${data.reasoning.effort}`);
           }
@@ -210,7 +210,7 @@ export async function callOpenAI(
           console.error(`🔍 TRACE: Failed to parse Responses API response:`, parseResult.error);
         }
       } else {
-        // Validate and parse Chat Completions API format
+        // Chat Completions format
         const parseResult = ChatCompletionResponseSchema.safeParse(rawData);
         if (parseResult.success) {
           const chatData: ChatCompletionResponse = parseResult.data;
@@ -270,37 +270,36 @@ async function callOpenAIWithCustomParams(
   });
 
   try {
-    // GPT-5.1 models use /v1/responses, others use /v1/chat/completions
-    const isGPT51 = model.startsWith('gpt-5.1');
-    const endpoint = isGPT51 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
+    // Codex models use /v1/responses, non-codex use /v1/chat/completions
+    const isCodex = model.includes('codex');
+    const endpoint = isCodex ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
 
     let requestBody: any;
 
-    // GPT-5.1 uses Responses API format, others use Chat Completions format
-    if (isGPT51) {
-      // Responses API format - NO temperature, use reasoning.effort instead
+    if (isCodex) {
+      // Responses API format for codex models
       requestBody = {
         model: model,
         input: validatedMessages,
-        max_output_tokens: maxTokens,
+        max_output_tokens: maxTokens, // NOT max_completion_tokens or max_tokens!
         stream: false,
         reasoning: {
           effort: reasoningEffort // "none", "low", "medium", "high"
         }
       };
     } else {
-      // Chat Completions format
+      // Chat Completions format for non-codex GPT-5 models (gpt-5.1, gpt-5-pro)
       requestBody = {
         model: model,
         messages: validatedMessages,
         temperature,
-        max_tokens: maxTokens,
+        max_completion_tokens: maxTokens,  // GPT-5 requires max_completion_tokens (not max_tokens)
         stream: false
       };
     }
 
-    console.error(`🔍 TRACE: Using ${isGPT51 ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
-    console.error(`🔍 TRACE: Model params: max_tokens=${maxTokens}, temperature=${temperature}${isGPT51 ? `, reasoning_effort=${reasoningEffort}` : ''}`);
+    console.error(`🔍 TRACE: Using ${isCodex ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
+    console.error(`🔍 TRACE: Model params: ${isCodex ? `max_output_tokens=${maxTokens}, reasoning_effort=${reasoningEffort}` : `max_completion_tokens=${maxTokens}, temperature=${temperature}`}`);
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -322,7 +321,7 @@ async function callOpenAIWithCustomParams(
     // Parse based on API type - they have DIFFERENT response formats!
     let rawContent: string | undefined;
 
-    if (isGPT51) {
+    if (isCodex) {
       // Validate and parse Responses API format
       const parseResult = ResponsesAPISchema.safeParse(rawData);
       if (parseResult.success) {
@@ -439,7 +438,7 @@ export const gpt5MiniReasonTool = {
 };
 
 export const openaiGpt5ReasonTool = {
-  name: "openai_gpt5_reason",
+  name: "openai_reason",
   description: "Mathematical reasoning using GPT-5.1 with high reasoning effort",
   parameters: z.object({
     query: z.string(),
@@ -473,40 +472,6 @@ ${args.context ? `Context: ${args.context}` : ''}`
   }
 };
 
-
-/**
- * OpenAI Compare Tool
- * Multi-option comparison and consensus building using GPT-5.1-codex-mini
- */
-export const openaiCompareTool = {
-  name: "openai_compare",
-  description: "Multi-model consensus",
-  parameters: z.object({
-    topic: z.string(),
-    options: z.array(z.string()),
-    criteria: z.string().optional(),
-    includeRecommendation: z.boolean().optional().default(true)
-  }),
-  execute: async (args: { topic: string; options: string[]; criteria?: string; includeRecommendation?: boolean }, { log }: any) => {
-    const optionsList = args.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n');
-
-    const messages = [
-      {
-        role: "system",
-        content: `You are an expert at comparative analysis and decision-making.
-Compare the given options systematically.
-${args.criteria ? `Criteria: ${args.criteria}` : 'Consider: pros, cons, trade-offs, and suitability'}
-${args.includeRecommendation ? 'Provide a clear recommendation with justification.' : ''}`
-      },
-      {
-        role: "user",
-        content: `Topic: ${args.topic}\n\nOptions:\n${optionsList}`
-      }
-    ];
-
-    return await callOpenAI(messages, OpenAI51Model.CODEX_MINI, 0.7, 3000, "low");
-  }
-};
 
 /**
  * OpenAI Brainstorm Tool
@@ -672,7 +637,6 @@ export function getAllOpenAITools() {
 
   return [
     openaiGpt5ReasonTool,  // GPT-5.1 reasoning (high effort)
-    openaiCompareTool,     // GPT-5.1-codex-mini comparison (low effort)
     openAIBrainstormTool,  // GPT-5.1-codex-mini brainstorming (medium effort)
     openaiCodeReviewTool,  // GPT-5.1-codex-mini code review (medium effort)
     openaiExplainTool      // GPT-5.1-codex-mini explanations (low effort)

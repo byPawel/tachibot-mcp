@@ -108,7 +108,7 @@ export class InstructionOrchestrator {
     const toolMap: Record<string, string> = {
       'gemini_brainstorm': 'mcp__gemini__gemini-brainstorm',
       'perplexity_research': 'mcp__perplexity-ask__perplexity_research',
-      'openai_reason': 'mcp__openai-mcp__openai_gpt5_reason',
+      'openai_reason': 'mcp__openai-mcp__openai_reason',
       'openai_brainstorm': 'mcp__openai-mcp__openai_brainstorm',
       'think': 'mcp__think-mcp-server__think',
     };

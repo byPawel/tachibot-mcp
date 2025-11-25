@@ -22,9 +22,8 @@
   - [grok_architect](#grok_architect)
   - [grok_brainstorm](#grok_brainstorm)
 - [OpenAI Suite](#openai-suite)
-  - [openai_gpt5_reason](#openai_gpt5_reason)
+  - [openai_reason](#openai_reason)
   - [openai_brainstorm](#openai_brainstorm)
-  - [openai_compare](#openai_compare)
   - [openai_code_review](#openai_code_review)
   - [openai_explain](#openai_explain)
 - [Gemini Suite](#gemini-suite)
@@ -923,41 +922,6 @@ openai_brainstorm({
   style: "wild",
   quantity: 20,
   verbosity: "exhaustive"
-})
-```
-
----
-
-### openai_compare
-
-Multi-option consensus analysis with GPT-5.
-
-#### Schema
-
-```typescript
-{
-  topic: string;                    // REQUIRED
-  options: string[];                // REQUIRED - Options to compare
-  criteria?: string[];              // Evaluation criteria
-  includeRecommendation?: boolean;  // Default: true
-}
-```
-
-#### Example Calls
-
-**Compare frameworks:**
-```typescript
-openai_compare({
-  topic: "JavaScript framework selection",
-  options: ["React", "Vue", "Svelte", "Angular"],
-  criteria: [
-    "Learning curve",
-    "Performance",
-    "Community support",
-    "Ecosystem maturity",
-    "Job market demand"
-  ],
-  includeRecommendation: true
 })
 ```
 

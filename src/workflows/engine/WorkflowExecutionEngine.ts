@@ -185,7 +185,7 @@ async function executeWorkflowImpl(
         console.error(`🔍 Available stepOutputs: [${Object.keys(stepOutputs).join(', ')}]`);
 
         // Extract variables that this step wants to use
-        const inputStr = JSON.stringify(step.input);
+        const inputStr = step.input ? JSON.stringify(step.input) : '';
         const usedVars = [...inputStr.matchAll(/\$\{([^}]+)\}/g)].map(m => m[1]);
         if (usedVars.length > 0) {
           console.error(`🔍 Variables needed by this step: [${usedVars.join(', ')}]`);
@@ -275,7 +275,7 @@ async function executeWorkflowImpl(
         if (workflow.settings?.optimization?.enabled && typeof stepInput === "string") {
           const optimized = await tokenOptimizer.optimize({
             prompt: stepInput,
-            model: model || "gpt-5-mini",
+            model: model || "gpt-5.1-codex-mini",
             maxTokens: resolvedParams.maxTokens,
           });
 

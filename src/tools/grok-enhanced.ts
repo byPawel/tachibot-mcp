@@ -7,21 +7,23 @@ import { z } from "zod";
 import { config } from "dotenv";
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 config({ path: path.resolve(__dirname, '../../../.env') });
 
 // Grok API configuration
-const GROK_API_KEY = process.env.GROK_API_KEY || process.env.XAI_API_KEY;
+const GROK_API_KEY = getGrokApiKey();
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
-// Grok models - Updated 2025-11-21 with Grok 4.1
+// Grok models - Updated 2025-11-22 with correct API model names
 export enum GrokModel {
-  // Grok 4.1 models (Nov 2025) - LATEST & BEST
-  GROK_4_1 = "grok-4.1",                       // Latest: 2M context, $0.20/$0.50, enhanced reasoning & creativity
-  GROK_4_1_FAST = "grok-4.1-fast",             // Tool-calling optimized: 2M context, $0.20/$0.50, agentic workflows
+  // Grok 4.1 models (Nov 2025) - LATEST & BEST (verified working)
+  GROK_4_1_FAST_REASONING = "grok-4-1-fast-reasoning",     // Latest: 2M context, $0.20/$0.50, enhanced reasoning
+  GROK_4_1_FAST = "grok-4-1-fast-non-reasoning",           // Tool-calling optimized: 2M context, $0.20/$0.50, no reasoning tokens
 
-  // Previous fast models (2025) - Still good
+  // Grok 4 fast models (2025) - Still good
   CODE_FAST = "grok-code-fast-1",              // Coding specialist: 256K→2M, $0.20/$1.50, 92 tok/sec
   GROK_4_FAST_REASONING = "grok-4-fast-reasoning", // Cheap reasoning: 2M→4M, $0.20/$0.50
   GROK_4_FAST = "grok-4-fast-non-reasoning",   // Fast general: 2M→4M, $0.20/$0.50
@@ -60,7 +62,7 @@ export async function callGrokEnhanced(
   }
 
   const {
-    model = GrokModel.GROK_4_1, // Updated 2025-11-21: Use latest Grok 4.1 by default
+    model = GrokModel.GROK_4_1_FAST_REASONING, // Updated 2025-11-22: Use latest Grok 4.1 by default
     temperature = 0.7,
     maxTokens = options.useHeavy ? 100000 : 4000,
     enableLiveSearch = false,
@@ -183,10 +185,10 @@ Cite your sources when using web data.`
       }
     ];
 
-    log?.info(`Grok Scout: ${variant} research with ${enableLiveSearch ? 'live search' : 'knowledge base'} (using grok-4.1 with enhanced reasoning)`);
+    log?.info(`Grok Scout: ${variant} research with ${enableLiveSearch ? 'live search' : 'knowledge base'} (using grok-4-1-fast-reasoning with enhanced reasoning)`);
 
     const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_1, // Updated 2025-11-21: Use latest Grok 4.1
+      model: GrokModel.GROK_4_1_FAST_REASONING, // Updated 2025-11-21: Use latest Grok 4.1
       enableLiveSearch,
       searchSources,
       searchDomains,
@@ -259,7 +261,7 @@ ${enableLiveSearch ? 'Use live search for current information when needed.' : ''
     log?.info(`Using ${modelName} (${approach}) with ${enableLiveSearch ? 'live search' : 'knowledge base'} - Cost: ${costInfo}`);
 
     const result = await callGrokEnhanced(messages, {
-      model: useHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1, // Updated 2025-11-21: Use latest Grok 4.1
+      model: useHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1_FAST_REASONING, // Updated 2025-11-21: Use latest Grok 4.1
       useHeavy,
       enableLiveSearch,
       searchSources: 50,
@@ -316,7 +318,7 @@ export const grokFunctionTool = {
 
     // Make request with tools
     const requestBody = {
-      model: args.useHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1_FAST, // Updated 2025-11-21: Use tool-calling optimized Grok 4.1 Fast
+      model: args.useHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1_FAST, // Updated 2025-11-22: Use tool-calling optimized Grok 4.1 Fast Non-Reasoning
       messages,
       tools,
       tool_choice: "auto", // Let Grok decide when to call functions
@@ -392,7 +394,7 @@ Limit search to ${max_search_results} sources for cost control.`
       }
     ];
 
-    log?.info(`Grok Search: ${max_search_results} sources, recency: ${recency} (using grok-4.1 with enhanced reasoning)`);
+    log?.info(`Grok Search: ${max_search_results} sources, recency: ${recency} (using grok-4-1-fast-reasoning with enhanced reasoning)`);
 
     // Extract domains from sources if specified
     const domains = sources
@@ -400,7 +402,7 @@ Limit search to ${max_search_results} sources for cost control.`
       ?.flatMap((s: any) => s.allowed_websites) || [];
 
     const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_1,  // Updated 2025-11-21: Use latest Grok 4.1 with search
+      model: GrokModel.GROK_4_1_FAST_REASONING,  // Updated 2025-11-21: Use latest Grok 4.1 with search
       enableLiveSearch: true,
       searchSources: max_search_results,
       searchDomains: domains,
@@ -418,7 +420,7 @@ Limit search to ${max_search_results} sources for cost control.`
  * Check if Grok is available
  */
 export function isGrokAvailable(): boolean {
-  return !!(GROK_API_KEY);
+  return hasGrokApiKey();
 }
 
 /**
@@ -431,10 +433,10 @@ export function getGrokStatus(): {
 } {
   return {
     available: isGrokAvailable(),
-    model: GrokModel.GROK_4_1,
+    model: GrokModel.GROK_4_1_FAST_REASONING,
     features: [
-      'Grok 4.1 (Nov 2025): Enhanced reasoning, creativity & emotional intelligence ($0.20/$0.50, 2M context)',
-      'Grok 4.1 Fast: Tool-calling optimized, agentic workflows ($0.20/$0.50, 2M context)',
+      'Grok 4.1 Fast Reasoning (Nov 2025): Enhanced reasoning, creativity & emotional intelligence ($0.20/$0.50, 2M context)',
+      'Grok 4.1 Fast Non-Reasoning: Tool-calling optimized, agentic workflows ($0.20/$0.50, 2M context)',
       'Heavy mode available (grok-4-0709: $3/$15, use sparingly)',
       'Live web search with citations',
       'Function calling',

@@ -9,22 +9,23 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { grokSearchTool } from './grok-enhanced.js';
 import { validateToolInput } from "../utils/input-validator.js";
+import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 config({ path: path.resolve(__dirname, '../../../.env') });
 
 // Grok API configuration
-const GROK_API_KEY = process.env.GROK_API_KEY;
+const GROK_API_KEY = getGrokApiKey();
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
-// Available Grok models - Updated 2025-11-21 with Grok 4.1
+// Available Grok models - Updated 2025-11-22 with correct API model names
 export enum GrokModel {
-  // Grok 4.1 models (Nov 2025) - LATEST & BEST
-  GROK_4_1 = "grok-4.1",                       // Latest: 2M context, $0.20/$0.50, enhanced reasoning & creativity
-  GROK_4_1_FAST = "grok-4.1-fast",             // Tool-calling optimized: 2M context, $0.20/$0.50, agentic workflows
+  // Grok 4.1 models (Nov 2025) - LATEST & BEST (verified working)
+  GROK_4_1_FAST_REASONING = "grok-4-1-fast-reasoning",     // Latest: 2M context, $0.20/$0.50, enhanced reasoning
+  GROK_4_1_FAST = "grok-4-1-fast-non-reasoning",           // Tool-calling optimized: 2M context, $0.20/$0.50, no reasoning tokens
 
-  // Previous fast models (2025) - Still good
+  // Grok 4 fast models (2025) - Still good
   CODE_FAST = "grok-code-fast-1",              // Coding specialist: 256K→2M, $0.20/$1.50, 92 tok/sec
   GROK_4_FAST_REASONING = "grok-4-fast-reasoning", // Cheap reasoning: 2M→4M, $0.20/$0.50
   GROK_4_FAST = "grok-4-fast-non-reasoning",   // Fast general: 2M→4M, $0.20/$0.50
@@ -39,13 +40,13 @@ export enum GrokModel {
  */
 export async function callGrok(
   messages: Array<{ role: string; content: string }>,
-  model: GrokModel = GrokModel.GROK_4_1, // Updated 2025-11-21: Use latest Grok 4.1 by default
+  model: GrokModel = GrokModel.GROK_4_1_FAST_REASONING, // Updated 2025-11-22: Use latest Grok 4.1 by default
   temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased default for comprehensive responses
   forceVisibleOutput: boolean = true
 ): Promise<string> {
   if (!GROK_API_KEY) {
-    return `[Grok API key not configured. Add GROK_API_KEY to .env file]`;
+    return `[Grok API key not configured. Add XAI_API_KEY to .env file]`;
   }
 
   // Validate and sanitize message content
@@ -59,7 +60,7 @@ export async function callGrok(
 
   try {
     // For Grok 4 models, we need to handle reasoning tokens specially
-    const isGrok4 = model === GrokModel.GROK_4_1 ||
+    const isGrok4 = model === GrokModel.GROK_4_1_FAST_REASONING ||
                     model === GrokModel.GROK_4_1_FAST ||
                     model === GrokModel.GROK_4_FAST_REASONING ||
                     model === GrokModel.GROK_4_FAST ||
@@ -147,8 +148,8 @@ ${context ? `Context: ${context}` : ''}`
       }
     ];
 
-    // Use GROK_4_1 by default (latest with enhanced reasoning!), GROK_4_HEAVY only if explicitly requested
-    const model = useHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1;
+    // Use GROK_4_1_FAST_REASONING by default (latest with enhanced reasoning!), GROK_4_HEAVY only if explicitly requested
+    const model = useHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1_FAST_REASONING;
     const maxTokens = useHeavy ? 100000 : 16384; // 100k for heavy, 16k for normal reasoning
     log?.info(`Using Grok model: ${model} for deep reasoning (max tokens: ${maxTokens}, cost: ${useHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50'})`);
 
@@ -193,7 +194,7 @@ ${requirements ? `Requirements: ${requirements}` : ''}`
       }
     ];
 
-    log?.info(`Using Grok 4.1 Fast (2M context, enhanced reasoning, $0.20/$0.50)`);
+    log?.info(`Using Grok 4.1 Fast Non-Reasoning (2M context, tool-calling optimized, $0.20/$0.50)`);
     return await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.2, 4000, true);
   }
 };
@@ -243,8 +244,8 @@ Analyze the issue systematically:
       }
     ];
 
-    log?.info(`Using Grok Code Fast for debugging (specialized code model)`);
-    return await callGrok(messages, GrokModel.CODE_FAST, 0.3, 3000, true);
+    log?.info(`Using Grok 4.1 Fast Non-Reasoning for debugging (tool-calling optimized, $0.20/$0.50)`);
+    return await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.3, 3000, true);
   }
 };
 
@@ -277,8 +278,8 @@ ${constraints ? `Constraints: ${constraints}` : ''}`
       }
     ];
 
-    log?.info(`Using Grok 4 Fast Reasoning for architecture (cheap reasoning model)`);
-    return await callGrok(messages, GrokModel.GROK_4_FAST_REASONING, 0.6, 4000, true);
+    log?.info(`Using Grok 4.1 Fast Reasoning for architecture (latest model, $0.20/$0.50)`);
+    return await callGrok(messages, GrokModel.GROK_4_1_FAST_REASONING, 0.6, 4000, true);
   }
 };
 
@@ -310,9 +311,9 @@ ${constraints ? `Constraints: ${constraints}` : 'No constraints - think freely!'
       }
     ];
 
-    // Use GROK_4_FAST for creative brainstorming (cheap, fast), GROK_4_HEAVY only if explicitly requested
-    const model = forceHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_FAST;
-    log?.info(`Brainstorming with Grok model: ${model} (Heavy: ${forceHeavy}, cost: ${forceHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50'})`);
+    // Use GROK_4_1_FAST_REASONING for creative brainstorming (needs reasoning for creativity), GROK_4_HEAVY only if explicitly requested
+    const model = forceHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1_FAST_REASONING;
+    log?.info(`Brainstorming with Grok model: ${model} (Heavy: ${forceHeavy}, cost: ${forceHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50 - latest 4.1'})`);
 
     return await callGrok(messages, model, 0.95, 4000); // High temperature for creativity
   }
@@ -322,7 +323,7 @@ ${constraints ? `Constraints: ${constraints}` : 'No constraints - think freely!'
  * Check if Grok is available
  */
 export function isGrokAvailable(): boolean {
-  return !!GROK_API_KEY;
+  return hasGrokApiKey();
 }
 
 /**

@@ -28,8 +28,7 @@ export interface ToolsConfig {
   grok_search: boolean;
 
   // OpenAI tools
-  openai_gpt5_reason: boolean;
-  openai_compare: boolean;
+  openai_reason: boolean;
   openai_brainstorm: boolean;
   openai_code_review: boolean;
   openai_explain: boolean;

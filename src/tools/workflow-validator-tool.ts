@@ -18,7 +18,7 @@ function getAllKnownTools(): Set<string> {
     // Grok
     'grok_reason', 'grok_code', 'grok_debug', 'grok_architect', 'grok_brainstorm', 'grok_search',
     // OpenAI
-    'openai_compare', 'openai_brainstorm', 'openai_gpt5_reason', 'openai_code_review', 'openai_explain',
+    'openai_brainstorm', 'openai_reason', 'openai_code_review', 'openai_explain',
     // Gemini
     'gemini_brainstorm', 'gemini_analyze_code', 'gemini_analyze_text',
     // Qwen

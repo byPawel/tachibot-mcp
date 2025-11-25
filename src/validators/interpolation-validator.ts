@@ -176,6 +176,11 @@ export class InterpolationValidator {
     currentStepIndex?: number,
     stepOrder?: Map<string, number>
   ) {
+    // Safety check: return early if content is null/undefined
+    if (!content || typeof content !== 'string') {
+      return;
+    }
+
     const matches = content.matchAll(this.interpolationRegex);
 
     for (const match of matches) {

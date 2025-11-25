@@ -31,6 +31,16 @@ export class VariableInterpolator implements IVariableInterpolator {
     template: string,
     context: InterpolationContext
   ): Promise<string> {
+    // Safety check: return empty string if template is null/undefined
+    if (template === null || template === undefined) {
+      return '';
+    }
+
+    // Ensure template is a string
+    if (typeof template !== 'string') {
+      return String(template);
+    }
+
     const mergedContext: Record<string, any> = {
       ...context.variables,
       ...Object.fromEntries(context.fileReferences)
@@ -95,12 +105,32 @@ export class VariableInterpolator implements IVariableInterpolator {
             console.error(`✓ Interpolated '${key}': savedTo = ${filename}`);
             return { match: fullMatch, replacement: filename };
           } else if (property === 'output') {
-            // Handle ${step.output} by returning summary
-            console.error(`✓ Interpolated '${key}': using summary (${value.summary.length} chars)`);
-            return { match: fullMatch, replacement: value.summary };
+            // Handle ${step.output} by returning FULL content (not summary!)
+            // This is the primary interpolation method - must have complete output for chaining
+            const content = await value.getContent();
+            console.error(`✓ Interpolated '${key}': loaded full content (${content.length} chars)`);
+            return { match: fullMatch, replacement: content };
           } else {
             throw new Error(`Unknown FileReference property: ${property}`);
           }
+        }
+
+        // Handle objects that aren't FileReferences (convert to JSON or extract summary)
+        if (typeof value === 'object' && value !== null) {
+          // Check if it has a summary property (duck typing for FileReference-like objects)
+          if ('summary' in value && typeof value.summary === 'string') {
+            console.error(`✓ Interpolated '${key}': using summary from object (${value.summary.length} chars)`);
+            return { match: fullMatch, replacement: value.summary };
+          }
+          // Check if it has a content property
+          if ('content' in value && typeof value.content === 'string') {
+            console.error(`✓ Interpolated '${key}': using content from object (${value.content.length} chars)`);
+            return { match: fullMatch, replacement: value.content };
+          }
+          // Fallback: JSON stringify the object
+          const jsonStr = JSON.stringify(value, null, 2);
+          console.error(`✓ Interpolated '${key}': stringified object (${jsonStr.length} chars)`);
+          return { match: fullMatch, replacement: jsonStr };
         }
 
         // Handle primitive values

@@ -1,5 +1,6 @@
 import { ModelRouter } from '../workflows/model-router.js';
 import { getScoutModels, getDefaultModels } from '../config/model-defaults.js';
+import { getGrokApiKey } from '../utils/api-keys.js';
 import { createProgressStream, createMultiModelReporter } from '../utils/progress-stream.js';
 import { smartAPIClient } from '../utils/smart-api-client.js';
 import { providerRouter, ProviderConfig } from '../utils/provider-router.js';
@@ -94,7 +95,7 @@ export class Scout {
   constructor() {
     // Load configuration from environment
     this.defaultSearchProvider = (process.env.DEFAULT_SEARCH_PROVIDER as 'perplexity' | 'grok' | 'both') || 'perplexity';
-    this.grokApiKey = process.env.GROK_API_KEY || process.env.XAI_API_KEY;
+    this.grokApiKey = getGrokApiKey();
     this.perplexityApiKey = process.env.PERPLEXITY_API_KEY;
     this.modelRouter = new ModelRouter();
 

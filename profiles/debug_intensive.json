@@ -22,7 +22,6 @@
     "grok_architect": false,
     "grok_brainstorm": false,
     "grok_search": false,
-    "openai_compare": false,
     "openai_brainstorm": false,
     "gemini_brainstorm": false,
     "gemini_analyze_text": false,

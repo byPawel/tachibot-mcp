@@ -72,7 +72,6 @@ export const KNOWN_TOOLS = [
   'openai_brainstorm',
   'openai_analyze',
   'openai_reason',
-  'openai_compare',
   'gpt5',
   'gpt5_mini',
   'gpt5_nano',

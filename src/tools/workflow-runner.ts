@@ -95,6 +95,20 @@ export function registerWorkflowTools(server: FastMCP) {
             // Format the step output - keep it clean and readable
             let stepOutput = step.output;
 
+            // DEFENSIVE: Ensure stepOutput is a string (fix [object Object] issue)
+            if (stepOutput !== null && typeof stepOutput === 'object') {
+              // Handle FileReference objects - extract summary or stringify
+              if ('summary' in stepOutput && typeof stepOutput.summary === 'string') {
+                stepOutput = stepOutput.summary;
+              } else if ('content' in stepOutput && typeof stepOutput.content === 'string') {
+                stepOutput = stepOutput.content;
+              } else {
+                stepOutput = JSON.stringify(stepOutput, null, 2);
+              }
+            } else if (stepOutput === undefined || stepOutput === null) {
+              stepOutput = '[No output]';
+            }
+
             // Truncate based on settings
             if (truncate && typeof stepOutput === 'string' && stepOutput.length > maxChars) {
               const approxTokens = Math.floor(stepOutput.length / 4);

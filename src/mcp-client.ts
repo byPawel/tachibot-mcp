@@ -16,7 +16,7 @@ export class MCPClient {
     this.availableTools = new Set([
       'mcp__gemini__gemini-brainstorm',
       'mcp__perplexity-ask__perplexity_research',
-      'mcp__openai-mcp__openai_gpt5_reason',
+      'mcp__openai-mcp__openai_reason',
       'mcp__openai-mcp__openai_brainstorm',
       'mcp__think-mcp-server__think',
       'mcp__devlog-search__search_devlogs',
@@ -69,7 +69,7 @@ export class MCPClient {
           }]
         };
         
-      case 'mcp__openai-mcp__openai_gpt5_reason':
+      case 'mcp__openai-mcp__openai_reason':
         return {
           query: params.prompt || params.query,
           context: params.context
@@ -95,7 +95,7 @@ export class MCPClient {
     const descriptions: Record<string, string> = {
       'mcp__gemini__gemini-brainstorm': 'Creative brainstorming with Gemini',
       'mcp__perplexity-ask__perplexity_research': 'Deep research with citations',
-      'mcp__openai-mcp__openai_gpt5_reason': 'Mathematical/logical reasoning (GPT-5-mini)',
+      'mcp__openai-mcp__openai_reason': 'Mathematical/logical reasoning (GPT-5-mini)',
       'mcp__openai-mcp__openai_brainstorm': 'Alternative perspective generation',
       'mcp__think-mcp-server__think': 'Reflective thinking scratchpad'
     };

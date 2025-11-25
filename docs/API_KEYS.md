@@ -48,7 +48,7 @@ TachiBot MCP works with multiple AI providers to offer diverse capabilities. You
 |----------|--------------|----------------|
 | **Perplexity** | Research, web search | `perplexity_ask`, `perplexity_research`, `perplexity_reason`, `scout` (default) |
 | **Grok/xAI** | Live search, reasoning | `grok_search`, `grok_reason`, `grok_code`, `grok_debug`, `grok_architect`, `grok_brainstorm`, `scout` (with grok) |
-| **OpenAI** | GPT-5 models | `openai_brainstorm`, `openai_compare`, `focus` (some modes), `verifier`, `challenger` |
+| **OpenAI** | GPT-5 models | `openai_brainstorm`, `openai_reason`, `openai_code_review`, `openai_explain`, `focus` (some modes), `verifier`, `challenger` |
 | **Google** | Gemini models | `gemini_brainstorm`, `gemini_analyze_code`, `gemini_analyze_text`, `verifier`, `scout` |
 | **OpenRouter** | Qwen models | `qwen_coder`, `qwen_competitive` |
 
@@ -116,11 +116,11 @@ Grok (by xAI) provides live web search, reasoning, and code analysis.
 
 #### Models Available
 
-- **grok-4.1** - Latest (Nov 2025): Enhanced reasoning, creativity & emotional intelligence
-- **grok-4.1-fast** - Tool-calling optimized: Fast inference, agentic workflows
-- **grok-4** - Previous reasoning model
-- **grok-4-0709** - Specific version
-- **grok-4-heavy** - Extended context (256k tokens)
+- **grok-4-1-fast-reasoning** - Latest (Nov 2025): Enhanced reasoning, creativity & emotional intelligence (2M context)
+- **grok-4-1-fast-non-reasoning** - Tool-calling optimized: Fast inference, agentic workflows (2M context)
+- **grok-4-fast-reasoning** - Previous reasoning model
+- **grok-4-0709** - Heavy model (expensive, use sparingly)
+- **grok-code-fast-1** - Coding specialist
 
 #### Pricing
 
@@ -207,7 +207,7 @@ OpenAI provides GPT-5 models for brainstorming, comparison, and reasoning.
 
 - Single `openai_brainstorm` (gpt-5-mini): ~$0.01 - $0.03
 - Single `openai_brainstorm` (gpt-5): ~$0.15 - $0.40
-- Single `openai_compare`: ~$0.02 - $0.05
+- Single `openai_code_review`: ~$0.02 - $0.05
 
 **Tip:** Use `model: "gpt-5-mini"` by default, only use `gpt-5` for complex tasks.
 

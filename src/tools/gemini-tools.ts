@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { validateToolInput } from "../utils/input-validator.js";
+import { GEMINI_MODELS } from "../config/model-constants.js";
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env
@@ -14,20 +15,12 @@ import { validateToolInput } from "../utils/input-validator.js";
 const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 
-// Available Gemini models (2025 - Latest)
-export enum GeminiModel {
-  // Primary models (Gemini 2.5 - preferred)
-  FLASH = "gemini-2.5-flash",  // Latest fast model, best price-performance
-  PRO = "gemini-2.5-pro",  // Most advanced reasoning capabilities
-  FLASH_LITE = "gemini-2.5-flash-lite",  // Cost-effective variant
-}
-
 /**
  * Call Gemini API directly
  */
 export async function callGemini(
   prompt: string,
-  model: GeminiModel = GeminiModel.PRO,
+  model: string = GEMINI_MODELS.GEMINI_3_PRO,
   systemPrompt?: string,
   temperature: number = 0.7,
   skipValidation: boolean = false
@@ -169,10 +162,15 @@ export const geminiQueryTool = {
   description: "Query Gemini",
   parameters: z.object({
     prompt: z.string(),
-    model: z.enum(["pro", "flash"]).optional().default("pro")
+    model: z.enum(["gemini-3", "pro", "flash"]).optional().default("gemini-3")
   }),
   execute: async (args: { prompt: string; model?: string }, { log }: any) => {
-    const model = args.model === "flash" ? GeminiModel.FLASH : GeminiModel.PRO;
+    let model: string = GEMINI_MODELS.GEMINI_3_PRO; // Default to Gemini 3
+    if (args.model === "flash") {
+      model = GEMINI_MODELS.FLASH;
+    } else if (args.model === "pro") {
+      model = GEMINI_MODELS.PRO;
+    }
     return await callGemini(args.prompt, model);
   }
 };
@@ -201,8 +199,8 @@ IMPORTANT: Output a detailed written response with:
 
 Provide your complete analysis as visible text output.`;
 
-    const response = await callGemini(args.prompt, GeminiModel.PRO, systemPrompt, 0.9);
-    
+    const response = await callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.9);
+
     // If multiple rounds requested, we could iterate here
     // For now, return the single response
     return response;
@@ -241,7 +239,7 @@ Provide:
 
     return await callGemini(
       `Analyze this code:\n\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\``,
-      GeminiModel.PRO,
+      GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
       0.3
     );
@@ -277,7 +275,7 @@ ${args.type === 'key-points' ? '- Main arguments\n- Supporting points\n- Conclus
 
     return await callGemini(
       `Analyze this text:\n\n${args.text}`,
-      GeminiModel.PRO,
+      GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
       0.3
     );
@@ -319,7 +317,7 @@ Focus on:
 
     return await callGemini(
       `Summarize this content:\n\n${args.content}`,
-      GeminiModel.PRO,
+      GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
       0.3
     );
@@ -358,7 +356,7 @@ ${args.style ? `Style: ${args.style}` : ''}
 ${args.mood ? `Mood: ${args.mood}` : ''}
 ${args.details ? `Additional details: ${args.details}` : ''}`;
 
-    return await callGemini(userPrompt, GeminiModel.PRO, systemPrompt, 0.7);
+    return await callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7);
   }
 };
 

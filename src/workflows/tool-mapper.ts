@@ -3,7 +3,7 @@
  * Enables workflows to call real tools instead of returning placeholders
  */
 
-import { callGemini, GeminiModel } from "../tools/gemini-tools.js";
+import { callGemini } from "../tools/gemini-tools.js";
 import { getAllPerplexityTools } from "../tools/perplexity-tools.js";
 import { callOpenAI, OpenAI51Model } from "../tools/openai-tools.js";
 import { callGrok, GrokModel } from "../tools/grok-tools.js";
@@ -11,8 +11,10 @@ import {
   GPT51_MODELS,
   GPT4_MODELS,
   TOOL_DEFAULTS,
+  GEMINI_MODELS,
 } from "../config/model-constants.js";
 import { validateToolInput } from "../utils/input-validator.js";
+import { hasGrokApiKey } from "../utils/api-keys.js";
 
 // Lazy load OpenRouter for Qwen models
 let callOpenRouter: any = null;
@@ -103,7 +105,8 @@ export async function executeWorkflowTool(
     if (typeof input === "string") return input;
 
     // Try all common parameter names (order matters!)
-    return input.requirements ||  // qwen_coder, task-specific
+    return input.thought ||       // think tool reflection
+           input.requirements ||  // qwen_coder, task-specific
            input.problem ||        // brainstorm, reasoning tools
            input.query ||          // search/ask tools
            input.topic ||          // research tools
@@ -186,11 +189,11 @@ export async function executeWorkflowTool(
       case "gemini_brainstorm":
       case "gemini_analyze_code":
       case "gemini_analyze_text":
-        actualModel = model === "flash" ? GeminiModel.FLASH : GeminiModel.PRO;
+        actualModel = model === "flash" ? GEMINI_MODELS.FLASH : GEMINI_MODELS.GEMINI_3_PRO;
         return buildResult(
           await callGemini(
             prompt,
-            actualModel as GeminiModel,
+            actualModel,
             systemPrompt,
             temperature,
             options.skipValidation || false, // Pass skipValidation flag to Gemini
@@ -292,6 +295,54 @@ export async function executeWorkflowTool(
           actualModel
         );
 
+      case "openai_reason":
+        // GPT-5 Pro with high reasoning effort for complex reasoning
+        actualModel = GPT51_MODELS.PRO as OpenAI51Model;
+        return buildResult(
+          await callOpenAI(
+            toMessages(prompt, systemPrompt),
+            actualModel,
+            temperature,
+            maxTokens,
+            "high", // reasoningEffort
+            false, // requireConfirmation
+            options.skipValidation || false,
+          ),
+          actualModel
+        );
+
+      case "openai_code_review":
+        // GPT-5.1 codex-mini for code review (medium reasoning)
+        actualModel = GPT51_MODELS.CODEX_MINI as OpenAI51Model;
+        return buildResult(
+          await callOpenAI(
+            toMessages(prompt, systemPrompt || "You are an expert code reviewer. Provide thorough code review with specific, actionable feedback."),
+            actualModel,
+            0.3, // Low temperature for consistent code review
+            maxTokens,
+            "medium", // reasoningEffort
+            false,
+            options.skipValidation || false,
+          ),
+          actualModel
+        );
+
+      case "openai_explain":
+        // GPT-5.1 codex-mini for explanations (low reasoning)
+        actualModel = GPT51_MODELS.CODEX_MINI as OpenAI51Model;
+        return buildResult(
+          await callOpenAI(
+            toMessages(prompt, systemPrompt || "You are an expert educator. Provide clear, engaging explanations."),
+            actualModel,
+            temperature,
+            maxTokens,
+            "low", // reasoningEffort
+            false,
+            options.skipValidation || false,
+          ),
+          actualModel
+        );
+
       case "gpt5_analyze":
         return buildResult(
           await callOpenAI(
@@ -316,30 +367,66 @@ export async function executeWorkflowTool(
 
       // ============ GPT-5 TOOLS ============
       case "gpt5":
-      case "gpt5_mini":
-      case "gpt5_nano":
-        // Map old names to new GPT-5.1 models
-        const gpt51Model = GPT51_MODELS.CODEX_MINI as OpenAI51Model; // Always use cost-efficient codex-mini
+        // Map to flagship gpt-5.1
+        const gpt5Full = GPT51_MODELS.FULL as OpenAI51Model; // gpt-5.1 flagship
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
-            gpt51Model,
+            gpt5Full,
+            0.7,
+            maxTokens,
+            "medium", // reasoning_effort
+          ),
+          gpt5Full
+        );
+
+      case "gpt5_mini":
+        // Map to gpt-5.1-codex-mini for code tasks (most workflows use for code)
+        const gpt5CodexMini = GPT51_MODELS.CODEX_MINI as OpenAI51Model; // gpt-5.1-codex-mini
+        return buildResult(
+          await callOpenAI(
+            toMessages(prompt, systemPrompt),
+            gpt5CodexMini,
             0.7,
             maxTokens,
             "low", // reasoning_effort
           ),
-          gpt51Model
+          gpt5CodexMini
         );
 
       // ============ GROK TOOLS ============
       case "grok":
       case "grok_reason":
+      case "grok_brainstorm":
+      case "grok_search":
+        // Use reasoning model for reasoning/creative tasks
+        actualModel = GrokModel.GROK_4_1_FAST_REASONING; // Latest 4.1 (2M context, $0.20/$0.50)
+        return buildResult(
+          await callGrok(
+            toMessages(prompt, systemPrompt),
+            actualModel,
+            temperature,
+            maxTokens,
+          ),
+          actualModel
+        );
+
       case "grok_code":
       case "grok_debug":
-      case "grok_brainstorm":
-      case "grok_heavy": // Grok Heavy is just grok-4-0709 with more backend resources
-      case "grok_search":
-        actualModel = GrokModel.GROK_4_FAST_REASONING; // Using fast reasoning (2M context, $0.20/$0.50)
+        // Use non-reasoning model for code/debug (tool-calling optimized)
+        actualModel = GrokModel.GROK_4_1_FAST; // Latest 4.1 non-reasoning (2M context, $0.20/$0.50)
+        return buildResult(
+          await callGrok(
+            toMessages(prompt, systemPrompt),
+            actualModel,
+            temperature,
+            maxTokens,
+          ),
+          actualModel
+        );
+
+      case "grok_heavy": // Grok Heavy is grok-4-0709 with extended context
+        actualModel = GrokModel.GROK_4_HEAVY; // Expensive $3/$15
         return buildResult(
           await callGrok(
             toMessages(prompt, systemPrompt),
@@ -568,14 +655,16 @@ export function getAvailableTools(): string[] {
   if (process.env.OPENAI_API_KEY) {
     tools.push(
       "openai_brainstorm",
+      "openai_reason",
+      "openai_code_review",
+      "openai_explain",
       "gpt5_analyze",
       "openai_reason",
       "gpt5",
       "gpt5_mini",
-      "gpt5_nano",
     );
   }
-  if (process.env.XAI_API_KEY) {
+  if (hasGrokApiKey()) {
     tools.push(
       "grok",
       "grok_reason",
