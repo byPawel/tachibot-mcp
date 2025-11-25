@@ -68,3 +68,4 @@ test-*.sh
 # Internal development files
 delete_before_launch/
 CLAUDE.md
+workflow-output/

@@ -121,10 +121,12 @@ steps:
   # ═══════════════════════════════════════════════════════════════════════════
 
   - name: consensus
-    tool: openai_compare
+    tool: openai_brainstorm
     input:
-      topic: "Final consensus on: ${query}"
-      options:
+      problem: |
+        Synthesize final consensus on: ${query}
+
+        Analyze these perspectives and provide a unified recommendation:
         - "Grok's analysis: ${challenge-grok.output}"
         - "Gemini's synthesis: ${challenge-gemini.output}"
         - "Qwen's technical review: ${challenge-qwen.output}"

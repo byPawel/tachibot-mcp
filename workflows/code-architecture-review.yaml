@@ -176,10 +176,12 @@ steps:
   # ═══════════════════════════════════════════════════════════════════════════
 
   - name: consensus
-    tool: openai_compare
+    tool: openai_brainstorm
     input:
-      topic: "Final architecture recommendations for: ${query}"
-      options:
+      problem: |
+        Synthesize final architecture recommendations for: ${query}
+
+        Combine these expert analyses into actionable recommendations:
         - "Grok's SOLID analysis: ${grok-solid-analysis.output}"
         - "Gemini's pattern analysis: ${gemini-pattern-analysis.output}"
         - "Qwen's CQRS evaluation: ${qwen-cqrs-evaluation.output}"

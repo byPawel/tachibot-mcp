@@ -158,22 +158,23 @@ export class CustomWorkflowEngine {
           {
             name: "Gemini Ideas",
             tool: "gemini_brainstorm",
+            input: { prompt: "${query}" },
             maxTokens: 500,
           },
           {
             name: "GPT-5 Creative",
             tool: "gpt5_mini",
-            input: { prompt: "Build on previous ideas with creative twists" },
+            input: { prompt: "Build on these ideas with creative twists for: ${query}\n\nPrevious ideas: ${Gemini Ideas.output}" },
           },
           {
             name: "Perplexity Research",
             tool: "perplexity_research",
-            input: { prompt: "Find real-world examples and evidence" },
+            input: { prompt: "Find real-world examples and evidence for: ${query}" },
           },
           {
             name: "Final Synthesis",
             tool: "focus",
-            input: { prompt: "Combine all ideas into top 5 recommendations" },
+            input: { prompt: "Synthesize all brainstorming results into top 5 creative recommendations for: ${query}\n\nIdeas to combine:\n${Gemini Ideas.output}\n${GPT-5 Creative.output}\n${Perplexity Research.output}" },
           },
         ],
       },

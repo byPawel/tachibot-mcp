@@ -8,10 +8,10 @@ version: "3.0"
 settings:
   optimization:
     enabled: true
-    smartRouting: true
+    smartRouting: false  # Disabled - was selecting invalid gpt-5-nano model
     compressPrompts: false
   autoSynthesis:
-    enabled: true
+    enabled: false  # Disabled for testing
     tokenThreshold: 25000
     checkpointInterval: 12000
     synthesisTool: 'gemini_analyze_text'
@@ -195,7 +195,7 @@ steps:
     input:
       query: "${query} - explore creative applications across domains"
       mode: "code-brainstorm"
-      models: ["gpt-5.1", "gemini-2.5", "grok-4-fast-reasoning"]
+      models: ["gpt-5.1", "gemini-2.5-flash", "grok-4-1-fast-reasoning"]
       rounds: 3
       context: "Research: ${research_findings}\nIdeas: ${innovative_solutions}\nPatterns: ${patterns}"
     saveToFile: true

@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import { TechnicalDomain } from './reasoning-chain.js';
+import { getGrokApiKey } from './utils/api-keys.js';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -132,7 +133,7 @@ export function loadConfig(): FocusConfig {
       gemini: process.env.GOOGLE_API_KEY,
       deepseek: process.env.DEEPSEEK_API_KEY,
       perplexity: process.env.PERPLEXITY_API_KEY,
-      grok: process.env.GROK_API_KEY,
+      grok: getGrokApiKey(),
       qwen: process.env.QWEN_API_KEY,
     },
     

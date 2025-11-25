@@ -25,7 +25,7 @@ workflow verifier --query "Python is faster than JavaScript for all use cases"
 ```
 
 **Models Used:**
-1. GPT-5 Mini (openai_compare)
+1. GPT-5 Mini (openai_brainstorm)
 2. Gemini 2.5 (gemini_analyze_text)
 3. Grok 4 (grok_code)
 4. Qwen Coder (qwen_coder)

@@ -4,22 +4,22 @@
  */
 
 export enum ModelTier {
-  // Tier 0: NEW! GPT-5 Nano - CHEAPEST OPTION
-  ULTRA_CHEAP = "gpt-5-nano", // $0.00005/1K input - INSANELY CHEAP!
+  // Tier 0: Cheapest - GPT-5.1 Codex Mini
+  ULTRA_CHEAP = "gpt-5.1-codex-mini", // $2/$6 per million - CHEAPEST!
 
   // Tier 1: Ultra Fast & Cheap (< $0.001 per request)
-  ULTRA_EFFICIENT = "gemini-2.5-flash", // $0.000075/1K - Second cheapest
-  EFFICIENT = "gpt-5-mini", // Cost-efficient
+  ULTRA_EFFICIENT = "gemini-2.5-flash", // Fast Gemini
+  EFFICIENT = "gpt-5.1-codex-mini", // Cost-efficient codex
 
   // Tier 2: Balanced ($0.001-$0.01 per request)
-  STANDARD = "gpt-5", // Best for code
-  GPT5_MINI = "gpt-5-mini", // $0.00025/1K - Good balance
+  STANDARD = "gpt-5.1-codex", // Standard codex for code
+  GPT5_MINI = "gpt-5.1-codex-mini", // Alias for efficiency
 
   // Tier 3: Advanced ($0.01-$0.05 per request)
   WEB_SEARCH = "perplexity-sonar-pro", // $0.006/1K - With citations
 
   // Tier 4: Premium (Use with caution)
-  GPT5_FULL = "gpt-5", // $0.00125/1K input, $0.01/1K output - EXPENSIVE
+  GPT5_FULL = "gpt-5.1", // Flagship model - EXPENSIVE
 }
 
 export interface QueryContext {
@@ -52,14 +52,18 @@ interface ModelCosts {
 }
 
 const MODEL_COSTS: ModelCosts = {
-  // GPT-5 Models (Nov 2025 pricing)
-  "gpt-5-nano": { input: 0.00005, output: 0.0004, latency: 400 }, // CHEAPEST!
-  "gpt-5-mini": { input: 0.00025, output: 0.002, latency: 800 },
-  "gpt-5": { input: 0.00125, output: 0.01, latency: 2000 },
+  // GPT-5.1 Models (Nov 2025 pricing) - ACTUAL API MODEL NAMES
+  "gpt-5.1-codex-mini": { input: 0.002, output: 0.006, latency: 800 }, // CHEAPEST!
+  "gpt-5.1-codex": { input: 0.015, output: 0.045, latency: 1500 },
+  "gpt-5.1": { input: 0.010, output: 0.030, latency: 2000 },
+  "gpt-5-pro": { input: 0.020, output: 0.060, latency: 3000 },
 
-  // Existing models
+  // Gemini models
   "gemini-2.5-flash": { input: 0.000075, output: 0.0003, latency: 500 },
   "gemini-2.5-pro": { input: 0.00015, output: 0.0006, latency: 1000 },
+  "gemini-3-pro-preview": { input: 0.0002, output: 0.0008, latency: 800 },
+
+  // Other models
   qwencoder: { input: 0.00015, output: 0.0006, latency: 1000 },
   "perplexity-sonar-pro": { input: 0.006, output: 0.006, latency: 2000 },
 };
@@ -146,19 +150,19 @@ export class SmartModelRouter {
    * Select optimal model based on context
    */
   selectModel(context: QueryContext): ModelSelection {
-    // Rule 1: Simple queries → GPT-5 Nano (CHEAPEST!)
+    // Rule 1: Simple queries → GPT-5.1 Codex Mini (CHEAPEST!)
     if (context.complexity === "simple" && context.costSensitive !== false) {
       // Check if GPT-5 is enabled
       const gpt5Enabled = process.env.ENABLE_GPT5 !== "false";
 
       if (gpt5Enabled) {
         return {
-          primary: ModelTier.ULTRA_CHEAP, // gpt-5-nano
+          primary: ModelTier.ULTRA_CHEAP, // gpt-5.1-codex-mini
           fallback: ModelTier.ULTRA_EFFICIENT, // gemini-2.5-flash
-          estimatedCost: 0.000008, // Even cheaper than gemini!
-          estimatedLatency: 400,
+          estimatedCost: 0.002,
+          estimatedLatency: 800,
           requiresConfirmation: false,
-          reasoning: "Simple query - using GPT-5 Nano (cheapest option)",
+          reasoning: "Simple query - using GPT-5.1 Codex Mini (cheapest option)",
         };
       } else {
         return {

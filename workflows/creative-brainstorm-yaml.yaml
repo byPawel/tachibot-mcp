@@ -15,7 +15,7 @@ variables:
 steps:
   # Step 1: Claude Thinking - Problem Framing
   - name: claude-thinking
-    tool: openai_gpt5_reason  # Using GPT-5 Mini for structured thinking
+    tool: openai_reason  # Using GPT-5 Mini for structured thinking
     input:
       query: |
         Analyze and structure the brainstorming request: ${query}

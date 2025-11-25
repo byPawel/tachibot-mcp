@@ -24,16 +24,18 @@ const envResult = dotenvConfig({
   override: true  // Force override of existing env vars
 });
 
+// Import centralized API key utilities
+import { hasGrokApiKey, hasOpenAIApiKey, hasPerplexityApiKey, hasGeminiApiKey, hasOpenRouterApiKey } from "./utils/api-keys.js";
+
 // Debug: Log API key status (for troubleshooting)
 if (process.env.DEBUG === 'true') {
   console.error('[ENV] Loaded from:', envPath);
   console.error('[ENV] API Keys present:', {
-    OPENROUTER: !!process.env.OPENROUTER_API_KEY,
-    PERPLEXITY: !!process.env.PERPLEXITY_API_KEY,
-    OPENAI: !!process.env.OPENAI_API_KEY,
-    GEMINI: !!process.env.GOOGLE_API_KEY,
-    GROK: !!process.env.GROK_API_KEY,
-    ANTHROPIC: !!process.env.ANTHROPIC_API_KEY
+    OPENROUTER: hasOpenRouterApiKey(),
+    PERPLEXITY: hasPerplexityApiKey(),
+    OPENAI: hasOpenAIApiKey(),
+    GEMINI: hasGeminiApiKey(),
+    GROK: hasGrokApiKey()
   });
 }
 
@@ -480,7 +482,7 @@ if (isGrokAvailable()) {
   console.error(`✅ Registered ${grokTools.length} Grok tools (custom API)`);
 }
 
-// Register all OpenAI tools (includes gpt5_analyze, gpt5_reason, openai_compare, etc.)
+// Register all OpenAI tools (includes openai_reason, openai_brainstorm, etc.)
 if (isOpenAIAvailable()) {
   const openaiTools = getAllOpenAITools();
   openaiTools.forEach(tool => {
@@ -571,11 +573,11 @@ async function initializeServer() {
 
     // API Key Status (quick check)
     const apiStatus = {
-      OpenRouter: !!process.env.OPENROUTER_API_KEY,
-      Perplexity: !!process.env.PERPLEXITY_API_KEY,
-      OpenAI: !!process.env.OPENAI_API_KEY,
-      Gemini: !!process.env.GOOGLE_API_KEY,
-      Grok: !!process.env.GROK_API_KEY
+      OpenRouter: hasOpenRouterApiKey(),
+      Perplexity: hasPerplexityApiKey(),
+      OpenAI: hasOpenAIApiKey(),
+      Gemini: hasGeminiApiKey(),
+      Grok: hasGrokApiKey()
     };
     const configured = Object.entries(apiStatus).filter(([_, v]) => v).map(([k, _]) => k);
     if (configured.length > 0) {

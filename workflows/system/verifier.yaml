@@ -10,12 +10,15 @@ steps:
   # Each model gets 10k tokens, saved to disk
 
   - name: verify_gpt5_mini
-    tool: openai_compare
+    tool: openai_brainstorm
     input:
-      topic: "Verify the following claim or statement"
-      options:
-        - "${query}"
-      includeRecommendation: false
+      problem: |
+        Verify the following claim or statement:
+        ${query}
+
+        Provide verification analysis including accuracy assessment, evidence, and confidence level.
+      style: "systematic"
+      quantity: 3
     saveToFile: true
     maxTokens: 10000
     output:

@@ -87,9 +87,9 @@ export class FallbackStrategies {
       },
       execute: async (context) => {
         return {
-          alternativeTool: 'gpt-5-nano',
+          alternativeTool: 'gpt5_mini',
           fallbackUsed: 'cheaper-model',
-          warning: 'Falling back to GPT-5 Nano for cost efficiency'
+          warning: 'Falling back to gpt-5.1-codex-mini (cost-efficient coding model)'
         };
       }
     });

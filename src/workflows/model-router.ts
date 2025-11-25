@@ -33,6 +33,15 @@ export class ModelRouter {
       reasoning: 10,
       useFor: ['primary reasoning', 'code', 'analysis']
     }],
+    ['gemini-3-pro-preview', {
+      id: 'gemini-3-pro-preview',
+      cost: 10,
+      quality: 10,
+      speed: 8,
+      reasoning: 10,
+      context: '1M tokens',
+      useFor: ['latest Gemini (Nov 2025)', 'enhanced structured outputs', 'multimodal', 'complex analysis']
+    }],
     ['gemini-2.5-pro', {
       id: 'gemini-2.5-pro',
       cost: 10,
@@ -67,20 +76,20 @@ export class ModelRouter {
       reasoning: 10,
       useFor: ['complex reasoning with evidence']
     }],
-    ['grok-4.1', {
-      id: 'grok-4.1',
+    ['grok-4-1-fast-reasoning', {
+      id: 'grok-4-1-fast-reasoning',
       cost: 9,
       quality: 10,
       speed: 7,
       reasoning: 10,
       useFor: ['enhanced reasoning', 'creativity', 'emotional intelligence', 'first-principles']
     }],
-    ['grok-4.1-fast', {
-      id: 'grok-4.1-fast',
+    ['grok-4-1-fast-non-reasoning', {
+      id: 'grok-4-1-fast-non-reasoning',
       cost: 9,
       quality: 10,
-      speed: 8,
-      reasoning: 10,
+      speed: 9,
+      reasoning: 8,
       useFor: ['tool-calling', 'agentic workflows', 'code analysis', 'fast reasoning']
     }],
     ['grok-4', {
@@ -179,14 +188,14 @@ export class ModelRouter {
     }
     
     const taskTypeMap: Record<string, string> = {
-      'code': task.complexity > 0.7 ? 'qwen3-coder-480b' : 'grok-4.1-fast',
+      'code': task.complexity > 0.7 ? 'qwen3-coder-480b' : 'grok-4-1-fast-non-reasoning',
       'research': 'perplexity-sonar-pro',
       'reasoning': task.complexity > 0.5 ? 'gpt5' : 'gpt5_mini',
       'scout': 'multi-model',
       'verifier': task.complexity > 0.5 ? 'gpt5' : 'gpt5_mini',
       'challenger': 'gpt5_mini',
       'auditor': 'perplexity-sonar-pro',
-      'architect': 'grok-4.1',
+      'architect': 'grok-4-1-fast-reasoning',
       'commit_guardian': 'gemini-2.5-flash'
     };
     
@@ -230,9 +239,9 @@ export class ModelRouter {
   selectModelsForVerification(variant: string): string[] {
     const variants: Record<string, string[]> = {
       'quick_verify': ['gpt5_mini', 'gemini-2.5-flash', 'qwen3-30b'],
-      'deep_verify': ['gpt5', 'qwq-32b', 'gpt5_reason', 'gemini-2.5-pro', 'qwen3-coder-480b'],
-      'fact_check': ['perplexity-sonar-pro', 'gpt5', 'gemini-2.5-pro'],
-      'code_verify': ['qwen3-coder-480b', 'gpt5', 'gemini-2.5-pro'],
+      'deep_verify': ['gpt5', 'qwq-32b', 'gpt5_reason', 'gemini-3-pro-preview', 'qwen3-coder-480b'],
+      'fact_check': ['perplexity-sonar-pro', 'gpt5', 'gemini-3-pro-preview'],
+      'code_verify': ['qwen3-coder-480b', 'gpt5', 'gemini-3-pro-preview'],
       'security_verify': ['gpt5', 'qwen3-coder-480b', 'grok-4']
     };
 

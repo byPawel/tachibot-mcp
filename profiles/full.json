@@ -1,5 +1,5 @@
 {
-  "description": "All tools enabled for maximum capability (~Xk tokens, 32 tools)",
+  "description": "All tools enabled for maximum capability (~Xk tokens, 31 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -13,8 +13,7 @@
     "grok_architect": true,
     "grok_brainstorm": true,
     "grok_search": true,
-    "openai_gpt5_reason": true,
-    "openai_compare": true,
+    "openai_reason": true,
     "openai_brainstorm": true,
     "openai_code_review": true,
     "openai_explain": true,

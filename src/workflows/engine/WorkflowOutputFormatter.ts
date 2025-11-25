@@ -22,7 +22,8 @@ export class WorkflowOutputFormatter implements IWorkflowOutputFormatter {
     const synthesisStep = execution.outputs.find(step => step.step === 'auto-synthesis');
     if (synthesisStep) {
       // Auto-synthesis ran - return only the synthesis output to prevent MCP 25k limit
-      return synthesisStep.output;
+      // DEFENSIVE: Ensure output is a string
+      return this.ensureString(synthesisStep.output);
     }
 
     switch (format) {
@@ -34,7 +35,7 @@ export class WorkflowOutputFormatter implements IWorkflowOutputFormatter {
           status: execution.status,
           steps: execution.outputs.map(out => ({
             step: out.step,
-            summary: out.output,
+            summary: this.ensureString(out.output),
             filePath: out.filePath
           }))
         };
@@ -46,6 +47,29 @@ export class WorkflowOutputFormatter implements IWorkflowOutputFormatter {
       default:
         return this.formatSummary(execution);
     }
+  }
+
+  /**
+   * Ensures a value is converted to a string (handles FileReference and objects)
+   */
+  private ensureString(value: unknown): string {
+    if (value === null || value === undefined) {
+      return '[No output]';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'object') {
+      // Handle FileReference objects - extract summary or content
+      if ('summary' in (value as any) && typeof (value as any).summary === 'string') {
+        return (value as any).summary;
+      }
+      if ('content' in (value as any) && typeof (value as any).content === 'string') {
+        return (value as any).content;
+      }
+      return JSON.stringify(value, null, 2);
+    }
+    return String(value);
   }
 
   /**
@@ -75,7 +99,7 @@ export class WorkflowOutputFormatter implements IWorkflowOutputFormatter {
         output += `**Input:**\n${step.input}...\n\n`;
       }
 
-      output += `${step.output}\n\n`;
+      output += `${this.ensureString(step.output)}\n\n`;
 
       if (step.filePath) {
         output += `📄 *Full output saved to: ${step.filePath}*\n\n`;
@@ -99,7 +123,7 @@ export class WorkflowOutputFormatter implements IWorkflowOutputFormatter {
       .map(out => `  - ${out.step}: ${out.filePath}`)
       .join('\n');
 
-    let result = lastOutput?.output || "Workflow completed";
+    let result = lastOutput ? this.ensureString(lastOutput.output) : "Workflow completed";
 
     if (savedFiles) {
       result += `\n\n**Files saved:**\n${savedFiles}\n\n`;

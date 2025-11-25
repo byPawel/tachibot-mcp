@@ -18,6 +18,8 @@ export interface ModelPreferences {
   modelOverrides?: Record<string, ModelConfig>;
 }
 
+import { hasGrokApiKey } from "../utils/api-keys.js";
+
 export interface ModelConfig {
   enabled: boolean;
   priority: number; // Lower = higher priority
@@ -69,7 +71,7 @@ export class ModelPreferencesManager {
     }
 
     if (preferO3) {
-      this.preferences.primaryReasoning = "openai_gpt5_reason";
+      this.preferences.primaryReasoning = "openai_reason";
       this.preferences.enableExpensiveModels = true;
     }
 
@@ -99,7 +101,7 @@ export class ModelPreferencesManager {
     }
 
     // Grok configuration
-    if (process.env.GROK_API_KEY) {
+    if (hasGrokApiKey()) {
       this.preferences.modelOverrides!["grok_reason"] = {
         enabled: true,
         priority: parseInt(process.env.GROK_PRIORITY || "2"),
@@ -165,7 +167,7 @@ export class ModelPreferencesManager {
    */
   private initializeModels(): void {
     // Check which APIs are available
-    const hasGrok = !!process.env.GROK_API_KEY;
+    const hasGrok = hasGrokApiKey();
     const hasOpenAI = !!process.env.OPENAI_API_KEY;
     const hasGemini = !!process.env.GOOGLE_API_KEY;
     const hasPerplexity = !!process.env.PERPLEXITY_API_KEY;
@@ -432,7 +434,7 @@ export class ModelPreferencesManager {
    */
   getRecommendations(): string[] {
     const recommendations: string[] = [];
-    const hasGrok = !!process.env.GROK_API_KEY;
+    const hasGrok = hasGrokApiKey();
     const hasOpenAI = !!process.env.OPENAI_API_KEY;
 
     if (hasGrok && !this.preferences.enableExpensiveModels) {

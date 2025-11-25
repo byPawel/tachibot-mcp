@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { hasGrokApiKey, hasOpenAIApiKey, hasPerplexityApiKey, hasGeminiApiKey, hasOpenRouterApiKey } from "../utils/api-keys.js";
 
 // Tool capability categories
 export enum ToolCategory {
@@ -81,64 +82,54 @@ export class ToolRouter {
     return {
       [ToolCategory.REASONING]: [
         {
-          name: "gpt5_reason",
+          name: "openai_reason",
           provider: ToolProvider.OPENAI,
           categories: [ToolCategory.REASONING],
           priority: 1,
           costTier: "high",
           speedTier: "medium",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENAI_API_KEY && process.env.ENABLE_GPT5 === 'true'
-        },
-        {
-          name: "gpt5_mini_reason",
-          provider: ToolProvider.OPENAI,
-          categories: [ToolCategory.REASONING],
-          priority: 2,
-          costTier: "medium",
-          speedTier: "fast",
-          qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENAI_API_KEY
-        },
-        {
-          name: "qwq_reason",
-          provider: ToolProvider.OPENROUTER,
-          categories: [ToolCategory.REASONING],
-          priority: 3,
-          costTier: "medium",
-          speedTier: "medium",
-          qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENROUTER_API_KEY
+          checkAvailability: () => hasOpenAIApiKey()
         },
         {
           name: "grok_reason",
           provider: ToolProvider.GROK,
           categories: [ToolCategory.REASONING],
-          priority: 4,
+          priority: 2,
           costTier: "medium",
           speedTier: "fast",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.GROK_API_KEY
+          checkAvailability: () => hasGrokApiKey()
         },
         {
           name: "perplexity_reason",
           provider: ToolProvider.PERPLEXITY,
           categories: [ToolCategory.REASONING, ToolCategory.SEARCH],
-          priority: 5,
+          priority: 3,
           costTier: "medium",
           speedTier: "fast",
           qualityTier: "good",
-          checkAvailability: () => !!process.env.PERPLEXITY_API_KEY
+          checkAvailability: () => hasPerplexityApiKey()
         },
         {
-          name: "gemini_query",
+          name: "kimi_thinking",
+          provider: ToolProvider.OPENROUTER,
+          categories: [ToolCategory.REASONING],
+          priority: 4,
+          costTier: "medium",
+          speedTier: "medium",
+          qualityTier: "excellent",
+          checkAvailability: () => hasOpenRouterApiKey()
+        },
+        {
+          name: "gemini_brainstorm",
           provider: ToolProvider.GEMINI,
           categories: [ToolCategory.REASONING],
-          priority: 6,
+          priority: 5,
           costTier: "low",
           speedTier: "fast",
           qualityTier: "good",
-          checkAvailability: () => !!process.env.GOOGLE_API_KEY
+          checkAvailability: () => hasGeminiApiKey()
         }
       ],
       
@@ -151,7 +142,7 @@ export class ToolRouter {
           costTier: "medium",
           speedTier: "medium",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENROUTER_API_KEY
+          checkAvailability: () => hasOpenRouterApiKey()
         },
         {
           name: "grok_code",
@@ -161,17 +152,17 @@ export class ToolRouter {
           costTier: "medium",
           speedTier: "fast",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.GROK_API_KEY
+          checkAvailability: () => hasGrokApiKey()
         },
         {
-          name: "gpt5_code",
+          name: "openai_code_review",
           provider: ToolProvider.OPENAI,
           categories: [ToolCategory.CODE, ToolCategory.ANALYSIS],
           priority: 3,
           costTier: "medium",
           speedTier: "fast",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENAI_API_KEY
+          checkAvailability: () => hasOpenAIApiKey()
         },
         {
           name: "gemini_analyze_code",
@@ -181,7 +172,7 @@ export class ToolRouter {
           costTier: "low",
           speedTier: "fast",
           qualityTier: "good",
-          checkAvailability: () => !!process.env.GOOGLE_API_KEY
+          checkAvailability: () => hasGeminiApiKey()
         }
       ],
       
@@ -194,7 +185,7 @@ export class ToolRouter {
           costTier: "medium",
           speedTier: "medium",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.GROK_API_KEY
+          checkAvailability: () => hasGrokApiKey()
         },
         {
           name: "openai_brainstorm",
@@ -204,7 +195,7 @@ export class ToolRouter {
           costTier: "high",
           speedTier: "medium",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENAI_API_KEY
+          checkAvailability: () => hasOpenAIApiKey()
         },
         {
           name: "gemini_brainstorm",
@@ -214,7 +205,7 @@ export class ToolRouter {
           costTier: "low",
           speedTier: "fast",
           qualityTier: "good",
-          checkAvailability: () => !!process.env.GOOGLE_API_KEY
+          checkAvailability: () => hasGeminiApiKey()
         }
       ],
       
@@ -227,7 +218,7 @@ export class ToolRouter {
           costTier: "medium",
           speedTier: "fast",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.PERPLEXITY_API_KEY
+          checkAvailability: () => hasPerplexityApiKey()
         },
         {
           name: "perplexity_research",
@@ -237,40 +228,50 @@ export class ToolRouter {
           costTier: "medium",
           speedTier: "medium",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.PERPLEXITY_API_KEY
+          checkAvailability: () => hasPerplexityApiKey()
+        },
+        {
+          name: "grok_search",
+          provider: ToolProvider.GROK,
+          categories: [ToolCategory.SEARCH],
+          priority: 3,
+          costTier: "medium",
+          speedTier: "fast",
+          qualityTier: "good",
+          checkAvailability: () => hasGrokApiKey()
         }
       ],
       
       [ToolCategory.ANALYSIS]: [
         {
-          name: "gpt5_mini_analyze",
+          name: "openai_code_review",
           provider: ToolProvider.OPENAI,
           categories: [ToolCategory.ANALYSIS],
           priority: 1,
           costTier: "medium",
           speedTier: "fast",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENAI_API_KEY
-        },
-        {
-          name: "openai_compare",
-          provider: ToolProvider.OPENAI,
-          categories: [ToolCategory.ANALYSIS],
-          priority: 2,
-          costTier: "medium",
-          speedTier: "medium",
-          qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENAI_API_KEY
+          checkAvailability: () => hasOpenAIApiKey()
         },
         {
           name: "gemini_analyze_text",
           provider: ToolProvider.GEMINI,
           categories: [ToolCategory.ANALYSIS],
+          priority: 2,
+          costTier: "low",
+          speedTier: "fast",
+          qualityTier: "good",
+          checkAvailability: () => hasGeminiApiKey()
+        },
+        {
+          name: "gemini_analyze_code",
+          provider: ToolProvider.GEMINI,
+          categories: [ToolCategory.ANALYSIS, ToolCategory.CODE],
           priority: 3,
           costTier: "low",
           speedTier: "fast",
           qualityTier: "good",
-          checkAvailability: () => !!process.env.GOOGLE_API_KEY
+          checkAvailability: () => hasGeminiApiKey()
         }
       ],
       
@@ -283,17 +284,17 @@ export class ToolRouter {
           costTier: "medium",
           speedTier: "fast",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.GROK_API_KEY
+          checkAvailability: () => hasGrokApiKey()
         },
         {
-          name: "gpt5_code",
+          name: "openai_code_review",
           provider: ToolProvider.OPENAI,
           categories: [ToolCategory.DEBUG, ToolCategory.CODE],
           priority: 2,
           costTier: "medium",
           speedTier: "fast",
           qualityTier: "excellent",
-          checkAvailability: () => !!process.env.OPENAI_API_KEY
+          checkAvailability: () => hasOpenAIApiKey()
         }
       ]
     };
