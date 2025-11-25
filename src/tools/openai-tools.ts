@@ -8,6 +8,7 @@ import { config } from "dotenv";
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { validateToolInput } from "../utils/input-validator.js";
+import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -106,6 +107,19 @@ export async function callOpenAI(
   skipValidation: boolean = false
 ): Promise<string> {
   console.error(`🔍 TRACE: callOpenAI called with model: ${model}`);
+
+  // Try OpenRouter gateway first if enabled
+  if (isGatewayEnabled()) {
+    const gatewayResult = await tryOpenRouterGateway(model, messages, {
+      temperature,
+      max_tokens: maxTokens
+    });
+    if (gatewayResult) {
+      return gatewayResult;
+    }
+    // Gateway failed or returned null, fall through to direct API
+    console.error(`🔍 TRACE: Gateway returned null, falling back to direct OpenAI API`);
+  }
 
   if (!OPENAI_API_KEY) {
     console.error(`🔍 TRACE: No API key found`);
@@ -251,6 +265,18 @@ async function callOpenAIWithCustomParams(
   skipValidation: boolean = false
 ): Promise<string> {
   console.error(`🔍 TRACE: callOpenAIWithCustomParams called with model: ${model}, reasoning_effort: ${reasoningEffort}`);
+
+  // Try OpenRouter gateway first if enabled
+  if (isGatewayEnabled()) {
+    const gatewayResult = await tryOpenRouterGateway(model, messages, {
+      temperature,
+      max_tokens: maxTokens
+    });
+    if (gatewayResult) {
+      return gatewayResult;
+    }
+    console.error(`🔍 TRACE: Gateway returned null, falling back to direct OpenAI API`);
+  }
 
   if (!OPENAI_API_KEY) {
     console.error(`🔍 TRACE: No API key found`);

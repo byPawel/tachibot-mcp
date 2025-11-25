@@ -175,18 +175,21 @@ OpenAI provides GPT-5 models for brainstorming, comparison, and reasoning.
 
 #### Models Available
 
-- **gpt-5** - Full GPT-5 with deep reasoning
-- **gpt-5-mini** - Faster, cheaper GPT-5
-- **gpt-5-nano** - Quickest, cheapest
-- **qwq-32b**, **qwen3-30b**, **qwen3-coder-480b** - Via OpenAI (if configured)
+- **gpt-5.1** - Flagship model with deep reasoning (2M context)
+- **gpt-5.1-codex-mini** - Fast, cheap workhorse for code tasks (256K context)
+- **gpt-5.1-codex** - Power model for complex code (1M context)
+- **gpt-5-pro** - Premium for complex orchestration (4M context)
 
 #### Pricing
 
+> **Note:** Prices are approximate and may be outdated. Check [OpenAI Pricing](https://openai.com/pricing) for current rates.
+
 | Model | Input | Output | Notes |
 |-------|-------|--------|-------|
-| GPT-5 | $15.00 / 1M tokens | $60.00 / 1M tokens | Full reasoning |
-| GPT-5-mini | $2.00 / 1M tokens | $8.00 / 1M tokens | Most balanced |
-| GPT-5-nano | $0.40 / 1M tokens | $1.60 / 1M tokens | Budget option |
+| gpt-5.1 | ~$10 / 1M tokens | ~$30 / 1M tokens | Flagship reasoning |
+| gpt-5.1-codex-mini | ~$2 / 1M tokens | ~$6 / 1M tokens | Best value for code |
+| gpt-5.1-codex | ~$15 / 1M tokens | ~$45 / 1M tokens | Complex code tasks |
+| gpt-5-pro | ~$20 / 1M tokens | ~$60 / 1M tokens | Premium orchestration |
 
 **Warning:** GPT-5 models may generate invisible reasoning tokens that increase costs. Monitor usage carefully.
 
@@ -205,11 +208,11 @@ OpenAI provides GPT-5 models for brainstorming, comparison, and reasoning.
 
 #### Cost Estimation
 
-- Single `openai_brainstorm` (gpt-5-mini): ~$0.01 - $0.03
+- Single `openai_brainstorm` (gpt-5.1-codex-mini): ~$0.01 - $0.03
 - Single `openai_brainstorm` (gpt-5): ~$0.15 - $0.40
 - Single `openai_code_review`: ~$0.02 - $0.05
 
-**Tip:** Use `model: "gpt-5-mini"` by default, only use `gpt-5` for complex tasks.
+**Tip:** Use `model: "gpt-5.1-codex-mini"` by default, only use `gpt-5` for complex tasks.
 
 #### Add to .env
 
@@ -312,6 +315,37 @@ Varies by model, generally:
 ```bash
 OPENROUTER_API_KEY=sk-or-v1-abc123...
 ```
+
+#### OpenRouter Gateway Mode (Optional)
+
+OpenRouter can act as a **unified gateway** for all providers (OpenAI, Gemini, Grok) with a single API key:
+
+```bash
+# Enable gateway mode - routes all providers through OpenRouter
+USE_OPENROUTER_GATEWAY=true
+OPENROUTER_API_KEY=sk-or-v1-abc123...
+```
+
+**How it works:**
+| Provider | Default Mode | Gateway Mode |
+|----------|--------------|--------------|
+| Kimi/Qwen | OpenRouter | OpenRouter (no change) |
+| OpenAI | Direct API | → OpenRouter |
+| Gemini | Direct API | → OpenRouter |
+| Grok | Direct API | → OpenRouter |
+| Perplexity | Direct API | Direct API (always) |
+
+**Benefits:**
+- ✅ Single API key for most providers
+- ✅ Unified billing dashboard
+- ✅ Automatic fallback/load balancing
+
+**Limitations:**
+- ⚠️ Perplexity still requires direct API (not on OpenRouter)
+- ⚠️ Some provider-specific features may not work (e.g., `reasoning_effort`)
+- ⚠️ Slight latency overhead (proxy)
+
+**Note:** Gateway mode is validated by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-council) project.
 
 ---
 
@@ -434,7 +468,7 @@ See [TOOL_PROFILES.md](TOOL_PROFILES.md) for details.
 - **Deep research:** `perplexity_research` (expensive, use sparingly)
 - **Live data:** `grok_search` with low `maxSearchSources` (10-20)
 - **Code tasks:** `gemini_analyze_code` or `qwen_coder` (cost-effective)
-- **Brainstorming:** `gemini_brainstorm` or `openai_brainstorm` with `model: "gpt-5-mini"`
+- **Brainstorming:** `gemini_brainstorm` or `openai_brainstorm` with `model: "gpt-5.1-codex-mini"`
 
 ### 4. Monitor Regularly
 
@@ -509,7 +543,7 @@ TACHI_CACHE_TTL=3600  # 1 hour
 2. Review which tools are being used
 3. Switch to `minimal` or `balanced` profile
 4. Avoid `grok_search` with high `maxSearchSources`
-5. Use `gpt-5-mini` instead of `gpt-5`
+5. Use `gpt-5.1-codex-mini` instead of `gpt-5`
 
 ### API Key Not Working After Setup
 

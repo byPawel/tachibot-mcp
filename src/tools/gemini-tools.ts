@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { validateToolInput } from "../utils/input-validator.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
+import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env
@@ -25,6 +26,23 @@ export async function callGemini(
   temperature: number = 0.7,
   skipValidation: boolean = false
 ): Promise<string> {
+  // Try OpenRouter gateway first if enabled
+  if (isGatewayEnabled()) {
+    const messages = [
+      ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+      { role: 'user', content: prompt }
+    ];
+    const gatewayResult = await tryOpenRouterGateway(model, messages, {
+      temperature,
+      max_tokens: 49152
+    });
+    if (gatewayResult) {
+      return gatewayResult;
+    }
+    // Gateway failed, fall through to direct API
+    console.error(`🔀 [Gemini] Gateway returned null, falling back to direct API`);
+  }
+
   if (!GEMINI_API_KEY) {
     return `[Gemini API key not configured. Add GOOGLE_API_KEY to .env file]`;
   }

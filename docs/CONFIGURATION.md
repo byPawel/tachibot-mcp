@@ -167,6 +167,23 @@ ANTHROPIC_API_KEY=sk-ant-...
 QWEN_API_KEY=...
 ```
 
+### OpenRouter Gateway Mode
+
+Route all providers (OpenAI, Gemini, Grok) through OpenRouter with a single API key:
+
+```bash
+# Enable gateway mode
+USE_OPENROUTER_GATEWAY=true
+OPENROUTER_API_KEY=sk-or-...
+```
+
+**Routing behavior:**
+- **Kimi/Qwen** → Always OpenRouter (native)
+- **OpenAI/Gemini/Grok** → Direct API (default) or OpenRouter (when gateway enabled)
+- **Perplexity** → Always direct API (not on OpenRouter)
+
+See [API_KEYS.md](API_KEYS.md#openrouter-gateway-mode-optional) for details.
+
 ### Search Configuration
 
 ```bash
@@ -249,28 +266,28 @@ Configure which models are used for Scout, Challenger, and Verifier tools. These
 
 ```bash
 # Scout model configuration
-SCOUT_QUICK_MODELS=qwen/qwen3-coder-plus,gemini-2.5-flash,gpt-5-mini
-SCOUT_RESEARCH_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5-mini
+SCOUT_QUICK_MODELS=qwen/qwen3-coder-plus,gemini-2.5-flash,gpt-5.1-codex-mini
+SCOUT_RESEARCH_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5.1-codex-mini
 
 # Challenger model configuration
-CHALLENGER_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5-mini
+CHALLENGER_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5.1-codex-mini
 
 # Verifier model configuration
-VERIFIER_QUICK_MODELS=qwen/qwen3-coder-plus,gemini-2.5-flash,gpt-5-mini
-VERIFIER_STANDARD_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5-mini
+VERIFIER_QUICK_MODELS=qwen/qwen3-coder-plus,gemini-2.5-flash,gpt-5.1-codex-mini
+VERIFIER_STANDARD_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5.1-codex-mini
 VERIFIER_DEEP_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5
 
 # Default models for fallback
-DEFAULT_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5-mini
+DEFAULT_MODELS=qwen/qwen3-coder-plus,gemini-2.5-pro,gpt-5.1-codex-mini
 ```
 
 **Cost Optimization:**
-- **gpt-5-mini**: 60% cheaper (~$0.50/$1.00 per 1M tokens), faster, good for most tasks
+- **gpt-5.1-codex-mini**: 60% cheaper (~$0.50/$1.00 per 1M tokens), faster, good for most tasks
 - **gpt-5**: Full quality (~$1.25/$2.50 per 1M tokens), best for critical decisions
 - **gemini-2.5-flash**: Faster, cheaper, good for quick checks
 - **gemini-2.5-pro**: Better reasoning/accuracy, recommended for verification
 
-**Recommendation:** Use defaults (gpt-5-mini) for 60% cost savings. Upgrade to gpt-5 only for `deep_verify` or critical workflows.
+**Recommendation:** Use defaults (gpt-5.1-codex-mini) for 60% cost savings. Upgrade to gpt-5 only for `deep_verify` or critical workflows.
 
 ### Model-Specific Settings
 

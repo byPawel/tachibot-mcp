@@ -1,51 +1,43 @@
 /**
  * Centralized Model Names and Constants
+ * Named by PROVIDER (not model version) for consistency and future-proofing
  * Use these constants instead of hardcoded strings in workflows and tools
  */
 
-// OpenAI GPT-5 Models (November 2025) - Optimized for Claude Code MCP
-// Verified via Perplexity + OpenAI API docs
-// Strategy: Use codex for code (80%), flagship for reasoning, pro for orchestration
+// =============================================================================
+// OPENAI MODELS (provider-based naming)
+// =============================================================================
 // NOTE: Codex models use /v1/responses endpoint, non-codex use /v1/chat/completions
-export const GPT5_MODELS = {
+export const OPENAI_MODELS = {
   // General purpose (use /v1/chat/completions)
   FULL: "gpt-5.1",              // Flagship: reasoning/fallback ($10/$30, 2M context)
-  PRO: "gpt-5-pro",              // Premium: complex orchestration ($20/$60, 4M context, 2x cost)
+  PRO: "gpt-5-pro",             // Premium: complex orchestration ($20/$60, 4M context)
 
   // Code specialized (use /v1/responses endpoint!)
-  CODEX_MINI: "gpt-5.1-codex-mini", // Workhorse: 70-80% of code tasks ($2/$6, 256K) ⚡ CHEAP!
-  CODEX: "gpt-5.1-codex",        // Power: complex code tasks ($15/$45, 1M context)
-  CODEX_MAX: "gpt-5.1-codex-max", // Frontier: BEST for deep analysis & multi-file refactoring (pricing TBD)
-
-  // REMOVED: MINI (redundant - codex-mini better for code), NANO (too weak)
+  CODEX_MINI: "gpt-5.1-codex-mini", // Workhorse: 70-80% of code tasks ($2/$6, 256K)
+  CODEX: "gpt-5.1-codex",           // Power: complex code tasks ($15/$45, 1M context)
+  CODEX_MAX: "gpt-5.1-codex-max",   // Frontier: deep analysis & multi-file refactoring
 } as const;
 
-// Backward compatibility alias
-export const GPT51_MODELS = GPT5_MODELS;
-
-// GPT-5.1 Reasoning Effort Levels
-export const GPT51_REASONING = {
-  NONE: "none", // No extra reasoning (fastest, cheapest)
-  LOW: "low", // Light reasoning
+// OpenAI Reasoning Effort Levels (for models that support it)
+export const OPENAI_REASONING = {
+  NONE: "none",   // No extra reasoning (fastest, cheapest)
+  LOW: "low",     // Light reasoning
   MEDIUM: "medium", // Balanced reasoning (default)
-  HIGH: "high", // Maximum reasoning (slowest, most thorough)
+  HIGH: "high",   // Maximum reasoning (slowest, most thorough)
 } as const;
 
-// OpenAI GPT-4 Models (Legacy - mapped to GPT-5.1)
-export const GPT4_MODELS = {
-  O_MINI: "gpt-5-mini", // Cost-efficient (mapped to GPT-5 mini)
-  O: "gpt-5.1", // Current best (mapped to GPT-5.1 flagship)
-  _1_MINI: "gpt-4.1-mini", // Best value with 1M context
-} as const;
 
-// Google Gemini Models (2025)
+// =============================================================================
+// GEMINI MODELS (Google)
+// =============================================================================
 export const GEMINI_MODELS = {
   // Gemini 3 (November 2025 - Latest)
-  GEMINI_3_PRO: "gemini-3-pro-preview", // Latest with enhanced structured outputs & multimodal, 1M context
+  GEMINI_3_PRO: "gemini-3-pro-preview", // Latest: structured outputs & multimodal, 1M context
 
-  // Gemini 2.5 (Previous generation)
-  FLASH: "gemini-2.5-flash", // Latest fast model
-  PRO: "gemini-2.5-pro", // Most advanced reasoning
+  // Gemini 2.5 (Previous generation - still available)
+  FLASH: "gemini-2.5-flash",       // Fast model
+  PRO: "gemini-2.5-pro",           // Advanced reasoning
   FLASH_LITE: "gemini-2.5-flash-lite", // Cost-effective
 } as const;
 
@@ -71,19 +63,47 @@ export const GROK_MODELS = {
   _3: "grok-3",                               // Legacy with search: 256K→2M
 } as const;
 
-// Kimi Models (Moonshot AI via OpenRouter) - Added 2025-11-07
+// Kimi Models (Moonshot AI via OpenRouter)
 export const KIMI_MODELS = {
   K2_THINKING: "moonshotai/kimi-k2-thinking", // 1T MoE, 32B active - Leading open-source agentic reasoning (256k context)
 } as const;
 
+// Qwen Models (Alibaba via OpenRouter)
+export const QWEN_MODELS = {
+  CODER_PLUS: "qwen/qwen3-coder-plus", // Code specialist (32K context)
+  CODER: "qwen/qwen3-coder",           // Standard coder
+  QWQ_32B: "qwen/qwq-32b",             // Deep reasoning
+} as const;
+
+// =============================================================================
+// OPENROUTER MODELS (Unified - all models accessible via OpenRouter)
+// =============================================================================
+export const OPENROUTER_MODELS = {
+  // Qwen models
+  ...QWEN_MODELS,
+  // Kimi models
+  ...KIMI_MODELS,
+} as const;
+
+// =============================================================================
+// PROVIDERS - All provider constants in one place
+// =============================================================================
+export const PROVIDERS = {
+  openai: OPENAI_MODELS,
+  google: GEMINI_MODELS,
+  xai: GROK_MODELS,
+  perplexity: PERPLEXITY_MODELS,
+  openrouter: OPENROUTER_MODELS,
+} as const;
+
 // All models combined for validation
 export const ALL_MODELS = {
-  ...GPT51_MODELS,
-  ...GPT4_MODELS,
+  ...OPENAI_MODELS,
   ...GEMINI_MODELS,
   ...PERPLEXITY_MODELS,
   ...GROK_MODELS,
   ...KIMI_MODELS,
+  ...QWEN_MODELS,
 } as const;
 
 // Type for any valid model name
@@ -105,10 +125,10 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // ============================================================================
 export const CURRENT_MODELS = {
   openai: {
-    reason: GPT5_MODELS.PRO,           // Deep reasoning
-    brainstorm: GPT5_MODELS.FULL,       // Creative ideation
-    code: GPT5_MODELS.CODEX_MINI,       // Code tasks (cheap & fast)
-    explain: GPT5_MODELS.CODEX_MINI,    // Explanations
+    reason: OPENAI_MODELS.PRO,           // Deep reasoning
+    brainstorm: OPENAI_MODELS.FULL,       // Creative ideation
+    code: OPENAI_MODELS.CODEX_MINI,       // Code tasks (cheap & fast)
+    explain: OPENAI_MODELS.CODEX_MINI,    // Explanations
   },
   grok: {
     reason: GROK_MODELS._4_1_FAST_REASONING,
@@ -127,6 +147,7 @@ export const CURRENT_MODELS = {
   },
   openrouter: {
     kimi: KIMI_MODELS.K2_THINKING,
+    qwen: QWEN_MODELS.CODER_PLUS,
   }
 } as const;
 
@@ -135,25 +156,25 @@ export const TOOL_DEFAULTS = {
   // OpenAI tools
   openai_reason: {
     model: CURRENT_MODELS.openai.reason,
-    reasoning_effort: GPT51_REASONING.HIGH,
+    reasoning_effort: OPENAI_REASONING.HIGH,
     maxTokens: 4000,
     temperature: 0.7,
   },
   openai_brainstorm: {
     model: CURRENT_MODELS.openai.brainstorm,
-    reasoning_effort: GPT51_REASONING.MEDIUM,
+    reasoning_effort: OPENAI_REASONING.MEDIUM,
     maxTokens: 2000,
     temperature: 0.9,
   },
   openai_code_review: {
     model: CURRENT_MODELS.openai.code,
-    reasoning_effort: GPT51_REASONING.MEDIUM,
+    reasoning_effort: OPENAI_REASONING.MEDIUM,
     maxTokens: 2000,
     temperature: 0.3,
   },
   openai_explain: {
     model: CURRENT_MODELS.openai.explain,
-    reasoning_effort: GPT51_REASONING.LOW,
+    reasoning_effort: OPENAI_REASONING.LOW,
     maxTokens: 1500,
     temperature: 0.7,
   },
@@ -238,13 +259,13 @@ export const TOOL_DEFAULTS = {
   // Meta tools
   think: {
     model: CURRENT_MODELS.openai.reason,
-    reasoning_effort: GPT51_REASONING.HIGH,
+    reasoning_effort: OPENAI_REASONING.HIGH,
     maxTokens: 500,
     temperature: 0.7,
   },
   focus: {
     model: CURRENT_MODELS.openai.code,
-    reasoning_effort: GPT51_REASONING.LOW,
+    reasoning_effort: OPENAI_REASONING.LOW,
     maxTokens: 2000,
     temperature: 0.8,
   },

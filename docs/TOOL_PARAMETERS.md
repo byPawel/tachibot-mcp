@@ -20,7 +20,7 @@ The Challenger tool provides critical thinking and echo chamber prevention by ge
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `context` | `string \| object \| array` | ✅ Yes | - | The claims, statements, or context to challenge. Can be a string, object with `query`/`text`/`content`, or array of contexts |
-| `model` | `string` | No | `'gpt-5-mini'` | AI model to use for generating challenges. Supports: `gpt-5-mini`, `gpt-5`, `gemini-2.5-flash`, `gemini-2.5-pro`, `grok-4`, `sonar-pro` |
+| `model` | `string` | No | `'gpt-5.1-codex-mini'` | AI model to use for generating challenges. See [Supported Models](#supported-models) section |
 | `maxTokens` | `number` | No | `2000` | Maximum tokens per API call |
 | `temperature` | `number` | No | `0.9` | Temperature for response generation (0-1). Higher = more creative challenges |
 
@@ -89,17 +89,20 @@ interface Challenge {
 
 ### Supported Models
 
-- **OpenAI**: `gpt-5`, `gpt-5-mini`, `qwq-32b`, `qwen3-30b`, `qwen3-coder-480b`
-- **Google**: `gemini-2.5-flash`, `gemini-2.5-pro`
-- **xAI**: `grok-4`, `grok-4-0709`
-- **Perplexity**: `sonar-pro`, `perplexity-sonar-pro`
+| Provider | Models | Notes |
+|----------|--------|-------|
+| **Google Gemini** | `gemini-3-pro-preview`, `gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-2.5-flash-lite` | Gemini 3 Pro is latest (Nov 2025) |
+| **OpenAI** | `gpt-5.1`, `gpt-5.1-codex-mini`, `gpt-5.1-codex`, `gpt-5-pro` | Codex models use /v1/responses endpoint |
+| **xAI (Grok)** | `grok-4-1-fast-reasoning`, `grok-4-1-fast-non-reasoning`, `grok-code-fast-1`, `grok-4-0709` | Grok 4.1 is latest (Nov 2025) |
+| **Perplexity** | `sonar-pro`, `sonar-reasoning-pro` | Web search enabled |
+| **OpenRouter** | `qwen/qwen3-coder-plus`, `moonshotai/kimi-k2-thinking` | Requires OPENROUTER_API_KEY |
 
 ### Notes
 
 - Higher `temperature` values produce more diverse and creative challenges
 - The tool automatically detects claim types (fact, opinion, assumption, conclusion)
 - Groupthink detection works best with array contexts containing multiple similar statements
-- Default model (`gpt-5-mini`) balances cost and quality
+- Default model (`gpt-5.1-codex-mini`) balances cost and quality
 
 ---
 
@@ -123,32 +126,32 @@ The Verifier tool provides multi-model parallel verification with consensus anal
 Each variant uses different models and settings optimized for specific use cases:
 
 #### `quick_verify` (Default)
-- **Models**: `gpt5_mini`, `gemini-2.5-flash`, `qwen3-30b`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 2000
 - **Timeout**: 10000ms
 - **Use case**: Fast verification of simple statements
 
 #### `deep_verify`
-- **Models**: `gpt5`, `qwq-32b`, `gpt5_reason`, `gemini-2.5-pro`, `qwen3-coder-480b`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1`
 - **Tokens**: 6000
 - **Timeout**: 30000ms
 - **Use case**: Complex reasoning and analysis
 
 #### `fact_check`
-- **Models**: `perplexity-sonar-pro`, `gpt5`, `gemini-2.5-pro`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 3000
 - **Timeout**: 15000ms
 - **Include Sources**: Yes (default)
 - **Use case**: Factual verification with citations
 
 #### `code_verify`
-- **Models**: `qwen3-coder-480b`, `gpt5`, `gemini-2.5-pro`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 4000
 - **Timeout**: 20000ms
 - **Use case**: Code correctness verification
 
 #### `security_verify`
-- **Models**: `gpt5`, `qwen3-coder-480b`, `grok-4`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 4000
 - **Timeout**: 20000ms
 - **Use case**: Security vulnerability detection
@@ -175,7 +178,7 @@ const result2 = await verifier.verify(
 const result3 = await verifier.verify(
   'Is this code safe?',
   {
-    model: ['gpt-5', 'gemini-2.5-pro'],
+    model: ['gpt-5.1', 'gemini-2.5-pro'],
     maxTokens: 3000
   }
 );
@@ -248,7 +251,7 @@ The Scout tool provides conditional hybrid intelligence gathering, using Perplex
 #### `research_scout` (Default)
 - **Flow**: `perplexity-first-always`
 - **Perplexity Timeout**: 500ms
-- **Parallel Models**: `gemini-2.5-flash`, `gpt-5-mini`
+- **Parallel Models**: `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 2500
 - **Max Sources**: 100
 - **Use case**: Comprehensive research with current facts
@@ -271,7 +274,7 @@ The Scout tool provides conditional hybrid intelligence gathering, using Perplex
 #### `quick_scout`
 - **Flow**: `conditional-hybrid`
 - **Perplexity Timeout**: 250ms
-- **Parallel Models**: `gemini-2.5-flash`
+- **Parallel Models**: `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 1000
 - **Max Sources**: 50
 - **Use case**: Fast information gathering
@@ -451,7 +454,7 @@ See test files for more usage examples:
 1. **Use appropriate variants**: Don't use `deep_verify` when `quick_verify` suffices
 2. **Set token limits**: Lower `maxTokens` for simple queries
 3. **Control timeouts**: Shorter timeouts for time-sensitive operations
-4. **Choose models wisely**: `gpt-5-mini` and `gemini-2.5-flash` are fast and cheap
+4. **Choose models wisely**: `gpt-5.1-codex-mini` and `gemini-2.5-flash` are fast and cheap
 5. **Limit Grok sources**: Keep `maxSearchSources` low unless needed
 6. **Use `quick_scout`**: For simple lookups instead of full research
 
@@ -467,7 +470,7 @@ If migrating from old tool structure:
 await thinkTool.challenge(context);
 
 // New
-await challenger.challenge(context, { model: 'gpt-5-mini' });
+await challenger.challenge(context, { model: 'gpt-5.1-codex-mini' });
 ```
 
 ### Verifier (formerly consensus tools)

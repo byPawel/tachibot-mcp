@@ -561,7 +561,7 @@ steps:
           problem: "GraphQL architecture patterns"
           style: "systematic"
           quantity: 5
-          model: "gpt-5-mini"
+          model: "gpt-5.1-codex-mini"
         output:
           variable: openai_patterns
 
@@ -587,7 +587,7 @@ steps:
       problem: "Design a distributed caching system"
       style: "innovative"
       quantity: 3
-      model: "gpt-5-mini"
+      model: "gpt-5.1-codex-mini"
     output: initial_design
 
   # Step 2: Challenge the design
@@ -603,7 +603,7 @@ steps:
       query: "Improve the design considering these challenges: ${challenges}"
       mode: "architecture-debate"
       domain: "backend"
-      models: ["gpt-5-mini", "gemini-2.5-pro", "grok-4"]
+      models: ["gpt-5.1-codex-mini", "gemini-2.5-pro", "grok-4"]
       rounds: 5
       pingPongStyle: "debate"
       temperature: 0.7
@@ -614,7 +614,7 @@ steps:
     params:
       query: "Verify this refined design addresses the challenges: ${refined_design}"
       variant: "code_verify"
-      models: ["gpt-5-mini", "gemini-2.5-pro"]
+      models: ["gpt-5.1-codex-mini", "gemini-2.5-pro"]
     output: final_verdict
 ```
 
@@ -690,7 +690,7 @@ steps:
       problem: "${query}"
       style: "systematic"
       quantity: 3
-      model: "gpt-5-mini"
+      model: "gpt-5.1-codex-mini"
     output: gpt_perspective
 
   - tool: perplexity_ask
@@ -723,7 +723,7 @@ steps:
     params:
       query: "Based on synchronized analysis (${sync_analysis}) and latest data (${latest_data}), provide comprehensive answer to: ${query}"
       mode: "deep-reasoning"
-      models: ["gpt-5-mini", "gemini-2.5-pro", "perplexity"]
+      models: ["gpt-5.1-codex-mini", "gemini-2.5-pro", "perplexity"]
       rounds: 5
       pingPongStyle: "collaborative"
     output: deep_analysis
@@ -733,7 +733,7 @@ steps:
     params:
       query: "Challenge and improve this analysis: ${deep_analysis}"
       mode: "architecture-debate"
-      models: ["gpt-5-mini", "gemini-2.5-pro", "grok-4"]
+      models: ["gpt-5.1-codex-mini", "gemini-2.5-pro", "grok-4"]
       rounds: 3
       pingPongStyle: "debate"
     output: challenged_analysis
