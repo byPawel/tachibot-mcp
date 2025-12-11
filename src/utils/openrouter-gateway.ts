@@ -21,6 +21,13 @@ const NO_GATEWAY_MODELS = new Set([
   'sonar',
 ]);
 
+// GPT-5.2 model mapping - OpenAI names → OpenRouter names (Dec 2025)
+const GPT52_MODEL_MAP: Record<string, string> = {
+  'gpt-5.2-thinking': 'openai/gpt-5.2',           // Reasoning variant → base model
+  'gpt-5.2-pro': 'openai/gpt-5.2-pro',            // Pro variant
+  'gpt-5.2-instant': 'openai/gpt-5.2-chat-latest', // Instant → chat-latest
+};
+
 // Grok model mapping - our names → OpenRouter names
 const GROK_MODEL_MAP: Record<string, string> = {
   'grok-4-1-fast-reasoning': 'x-ai/grok-4.1-fast',
@@ -66,6 +73,11 @@ export function mapModelToOpenRouter(model: string): string | null {
   // Already has provider prefix (qwen/, moonshotai/, etc.) - pass through
   if (model.includes('/')) {
     return model;
+  }
+
+  // GPT-5.2 models need explicit mapping (names differ from OpenRouter)
+  if (GPT52_MODEL_MAP[model]) {
+    return GPT52_MODEL_MAP[model];
   }
 
   // Grok models need explicit mapping (names differ from OpenRouter)

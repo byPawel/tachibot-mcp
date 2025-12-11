@@ -7,16 +7,26 @@
 // =============================================================================
 // OPENAI MODELS (provider-based naming)
 // =============================================================================
-// NOTE: Codex models use /v1/responses endpoint, non-codex use /v1/chat/completions
+// GPT-5.2 released Dec 11, 2025 - CURRENT
+// OpenRouter uses prefix: openai/gpt-5.2-pro, openai/gpt-5.2, openai/gpt-5.2-chat
 export const OPENAI_MODELS = {
-  // General purpose (use /v1/chat/completions)
-  FULL: "gpt-5.1",              // Flagship: reasoning/fallback ($10/$30, 2M context)
-  PRO: "gpt-5-pro",             // Premium: complex orchestration ($20/$60, 4M context)
+  // GPT-5.2 Models (Dec 2025 - CURRENT)
+  THINKING: "gpt-5.2-thinking",     // SOTA reasoning: 293% accuracy boost ($1.75/$14, 400K)
+  PRO: "gpt-5.2-pro",               // Expert: programming, science, 88.4% GPQA ($21/$168, 400K)
+  INSTANT: "gpt-5.2-instant",       // Fast: conversations, explanations ($1.75/$14, 400K)
 
-  // Code specialized (use /v1/responses endpoint!)
-  CODEX_MINI: "gpt-5.1-codex-mini", // Workhorse: 70-80% of code tasks ($2/$6, 256K)
-  CODEX: "gpt-5.1-codex",           // Power: complex code tasks ($15/$45, 1M context)
-  CODEX_MAX: "gpt-5.1-codex-max",   // Frontier: deep analysis & multi-file refactoring
+  // Aliases for backward compatibility
+  FULL: "gpt-5.2-thinking",         // Map old FULL to THINKING
+  CODEX_MINI: "gpt-5.2-instant",    // Map old codex-mini to INSTANT
+  CODEX: "gpt-5.2-pro",             // Map old codex to PRO
+  CODEX_MAX: "gpt-5.2-pro",         // Map old codex-max to PRO
+} as const;
+
+// OpenRouter model ID mapping (add prefix when using OpenRouter gateway)
+export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
+  "gpt-5.2-thinking": "openai/",
+  "gpt-5.2-pro": "openai/",
+  "gpt-5.2-instant": "openai/",
 } as const;
 
 // OpenAI Reasoning Effort Levels (for models that support it)
@@ -123,12 +133,13 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
+// UPDATED Dec 11, 2025: Migrated to GPT-5.2 (PRO for quality, THINKING for reasoning)
 export const CURRENT_MODELS = {
   openai: {
-    reason: OPENAI_MODELS.PRO,           // Deep reasoning
-    brainstorm: OPENAI_MODELS.FULL,       // Creative ideation
-    code: OPENAI_MODELS.CODEX_MINI,       // Code tasks (cheap & fast)
-    explain: OPENAI_MODELS.CODEX_MINI,    // Explanations
+    reason: OPENAI_MODELS.THINKING,       // Deep reasoning (gpt-5.2-thinking - 293% accuracy)
+    brainstorm: OPENAI_MODELS.PRO,        // Creative ideation (gpt-5.2-pro - HIGH IQ)
+    code: OPENAI_MODELS.PRO,              // Code tasks (gpt-5.2-pro - 88.4% GPQA)
+    explain: OPENAI_MODELS.PRO,           // Explanations (gpt-5.2-pro - quality)
   },
   grok: {
     reason: GROK_MODELS._4_1_FAST_REASONING,

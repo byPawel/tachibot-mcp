@@ -2,7 +2,7 @@
   "description": "TachiBot MCP Tool Configuration - Profile system for managing tool availability",
   "lastModified": "2025-10-23",
 
-  "activeProfile": "full",
+  "activeProfile": "heavy_coding",
 
   "skills": {
     "bundled": true,

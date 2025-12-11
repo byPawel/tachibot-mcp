@@ -18,6 +18,7 @@ import { researchPowerProfile } from '../src/profiles/research_power.js';
 import { codeFocusProfile } from '../src/profiles/code_focus.js';
 import { balancedProfile } from '../src/profiles/balanced.js';
 import { fullProfile } from '../src/profiles/full.js';
+import { heavyCodingProfile } from '../src/profiles/heavy_coding.js';
 
 const profiles = {
   minimal: minimalProfile,
@@ -25,6 +26,7 @@ const profiles = {
   code_focus: codeFocusProfile,
   balanced: balancedProfile,
   full: fullProfile,
+  heavy_coding: heavyCodingProfile,
 };
 
 // Output directory - write to root profiles/ (not dist/profiles/)
