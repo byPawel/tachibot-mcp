@@ -271,7 +271,7 @@ export const TOOL_DEFAULTS = {
   think: {
     model: CURRENT_MODELS.openai.reason,
     reasoning_effort: OPENAI_REASONING.HIGH,
-    maxTokens: 500,
+    maxTokens: 4000,
     temperature: 0.7,
   },
   focus: {
