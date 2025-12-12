@@ -5,7 +5,7 @@
 
 import { callGemini } from "../tools/gemini-tools.js";
 import { getAllPerplexityTools } from "../tools/perplexity-tools.js";
-import { callOpenAI, OpenAI51Model } from "../tools/openai-tools.js";
+import { callOpenAI, OpenAIModel } from "../tools/openai-tools.js";
 import { callGrok, GrokModel } from "../tools/grok-tools.js";
 import {
   OPENAI_MODELS,
@@ -280,7 +280,7 @@ export async function executeWorkflowTool(
       // ============ OPENAI TOOLS ============
       case "openai_brainstorm":
       case "openai_analyze":
-        actualModel = (model || OPENAI_MODELS.FULL) as OpenAI51Model;
+        actualModel = (model || OPENAI_MODELS.FULL) as OpenAIModel;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -296,7 +296,7 @@ export async function executeWorkflowTool(
 
       case "openai_reason":
         // GPT-5 Pro with high reasoning effort for complex reasoning
-        actualModel = OPENAI_MODELS.PRO as OpenAI51Model;
+        actualModel = OPENAI_MODELS.PRO as OpenAIModel;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -312,7 +312,7 @@ export async function executeWorkflowTool(
 
       case "openai_code_review":
         // GPT-5.1 codex-mini for code review (medium reasoning)
-        actualModel = OPENAI_MODELS.CODEX_MINI as OpenAI51Model;
+        actualModel = OPENAI_MODELS.CODEX_MINI as OpenAIModel;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt || "You are an expert code reviewer. Provide thorough code review with specific, actionable feedback."),
@@ -328,7 +328,7 @@ export async function executeWorkflowTool(
 
       case "openai_explain":
         // GPT-5.1 codex-mini for explanations (low reasoning)
-        actualModel = OPENAI_MODELS.CODEX_MINI as OpenAI51Model;
+        actualModel = OPENAI_MODELS.CODEX_MINI as OpenAIModel;
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt || "You are an expert educator. Provide clear, engaging explanations."),
@@ -346,7 +346,7 @@ export async function executeWorkflowTool(
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
-            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAIModel,
             0.7,
             maxTokens,
           ),
@@ -357,7 +357,7 @@ export async function executeWorkflowTool(
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
-            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAIModel,
             temperature,
             maxTokens,
           ),
@@ -367,7 +367,7 @@ export async function executeWorkflowTool(
       // ============ GPT-5 TOOLS ============
       case "gpt5":
         // Map to flagship gpt-5.1
-        const gpt5Full = OPENAI_MODELS.FULL as OpenAI51Model; // gpt-5.1 flagship
+        const gpt5Full = OPENAI_MODELS.FULL as OpenAIModel; // gpt-5.1 flagship
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -381,7 +381,7 @@ export async function executeWorkflowTool(
 
       case "gpt5_mini":
         // Map to gpt-5.1-codex-mini for code tasks (most workflows use for code)
-        const gpt5CodexMini = OPENAI_MODELS.CODEX_MINI as OpenAI51Model; // gpt-5.1-codex-mini
+        const gpt5CodexMini = OPENAI_MODELS.CODEX_MINI as OpenAIModel; // gpt-5.1-codex-mini
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -541,7 +541,7 @@ export async function executeWorkflowTool(
               `Reflect on the following and provide brief insights:\n\n${prompt}`,
               "You are a reflective thinking assistant. Provide concise, insightful analysis.",
             ),
-            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAIModel,
             0.7,
             500,
           ),
@@ -556,7 +556,7 @@ export async function executeWorkflowTool(
               `Perform deep analysis and synthesis:\n\n${prompt}`,
               "You are an advanced analytical assistant. Provide comprehensive, synthesized insights.",
             ),
-            OPENAI_MODELS.FULL as OpenAI51Model,
+            OPENAI_MODELS.FULL as OpenAIModel,
             0.8,
             maxTokens,
           ),
@@ -570,7 +570,7 @@ export async function executeWorkflowTool(
               `Perform thorough code review:\n\n${prompt}`,
               "You are an expert code reviewer. Analyze for bugs, security issues, performance, and best practices.",
             ),
-            OPENAI_MODELS.FULL as OpenAI51Model,
+            OPENAI_MODELS.FULL as OpenAIModel,
             0.5,
             maxTokens,
           ),
@@ -584,7 +584,7 @@ export async function executeWorkflowTool(
               `Design comprehensive tests:\n\n${prompt}`,
               "You are a testing expert. Design thorough test suites with edge cases.",
             ),
-            OPENAI_MODELS.FULL as OpenAI51Model,
+            OPENAI_MODELS.FULL as OpenAIModel,
             0.6,
             maxTokens,
           ),
@@ -598,7 +598,7 @@ export async function executeWorkflowTool(
               `Create clear documentation:\n\n${prompt}`,
               "You are a technical writer. Create clear, comprehensive documentation.",
             ),
-            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAIModel,
             0.7,
             maxTokens,
           ),
@@ -613,7 +613,7 @@ export async function executeWorkflowTool(
         return buildResult(
           await callOpenAI(
             toMessages(prompt),
-            OPENAI_MODELS.CODEX_MINI as OpenAI51Model,
+            OPENAI_MODELS.CODEX_MINI as OpenAIModel,
             temperature,
             maxTokens,
           ),

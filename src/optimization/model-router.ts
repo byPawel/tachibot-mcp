@@ -4,22 +4,22 @@
  */
 
 export enum ModelTier {
-  // Tier 0: Cheapest - GPT-5.1 Codex Mini
-  ULTRA_CHEAP = "gpt-5.1-codex-mini", // $2/$6 per million - CHEAPEST!
+  // Tier 0: Cheapest - GPT-5.2 Instant/Thinking (same price!)
+  ULTRA_CHEAP = "gpt-5.2-instant", // $1.75/$14 per million
 
   // Tier 1: Ultra Fast & Cheap (< $0.001 per request)
   ULTRA_EFFICIENT = "gemini-2.5-flash", // Fast Gemini
-  EFFICIENT = "gpt-5.1-codex-mini", // Cost-efficient codex
+  EFFICIENT = "gpt-5.2-thinking", // SOTA reasoning at cheap price!
 
-  // Tier 2: Balanced ($0.001-$0.01 per request)
-  STANDARD = "gpt-5.1-codex", // Standard codex for code
-  GPT5_MINI = "gpt-5.1-codex-mini", // Alias for efficiency
+  // Tier 2: Balanced - GPT-5.2 Thinking (best value)
+  STANDARD = "gpt-5.2-thinking", // SOTA reasoning ($1.75/$14)
+  GPT5_MINI = "gpt-5.2-thinking", // Alias - use thinking for everything
 
   // Tier 3: Advanced ($0.01-$0.05 per request)
   WEB_SEARCH = "perplexity-sonar-pro", // $0.006/1K - With citations
 
-  // Tier 4: Premium (Use with caution)
-  GPT5_FULL = "gpt-5.1", // Flagship model - EXPENSIVE
+  // Tier 4: Premium (Use with caution - 12x more expensive)
+  GPT5_FULL = "gpt-5.2-pro", // Expert model ($21/$168) - opt-in only
 }
 
 export interface QueryContext {
@@ -52,11 +52,10 @@ interface ModelCosts {
 }
 
 const MODEL_COSTS: ModelCosts = {
-  // GPT-5.1 Models (Nov 2025 pricing) - ACTUAL API MODEL NAMES
-  "gpt-5.1-codex-mini": { input: 0.002, output: 0.006, latency: 800 }, // CHEAPEST!
-  "gpt-5.1-codex": { input: 0.015, output: 0.045, latency: 1500 },
-  "gpt-5.1": { input: 0.010, output: 0.030, latency: 2000 },
-  "gpt-5-pro": { input: 0.020, output: 0.060, latency: 3000 },
+  // GPT-5.2 Models (Dec 2025 pricing) - ACTUAL API MODEL NAMES
+  "gpt-5.2-thinking": { input: 0.00175, output: 0.014, latency: 1500 }, // SOTA reasoning, cheap!
+  "gpt-5.2-instant": { input: 0.00175, output: 0.014, latency: 800 },   // Fast, same price
+  "gpt-5.2-pro": { input: 0.021, output: 0.168, latency: 2500 },        // Premium (12x more)
 
   // Gemini models
   "gemini-2.5-flash": { input: 0.000075, output: 0.0003, latency: 500 },
@@ -157,7 +156,7 @@ export class SmartModelRouter {
 
       if (gpt5Enabled) {
         return {
-          primary: ModelTier.ULTRA_CHEAP, // gpt-5.1-codex-mini
+          primary: ModelTier.ULTRA_CHEAP, // gpt-5.2-instant
           fallback: ModelTier.ULTRA_EFFICIENT, // gemini-2.5-flash
           estimatedCost: 0.002,
           estimatedLatency: 800,

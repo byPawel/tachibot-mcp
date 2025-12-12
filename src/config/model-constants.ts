@@ -8,33 +8,37 @@
 // OPENAI MODELS (provider-based naming)
 // =============================================================================
 // GPT-5.2 released Dec 11, 2025 - CURRENT
-// OpenRouter uses prefix: openai/gpt-5.2-pro, openai/gpt-5.2, openai/gpt-5.2-chat
+// Model is "gpt-5.2", "thinking" is controlled by reasoning.effort parameter
+// OpenRouter uses prefix: openai/gpt-5.2-pro, openai/gpt-5.2
 export const OPENAI_MODELS = {
   // GPT-5.2 Models (Dec 2025 - CURRENT)
-  THINKING: "gpt-5.2-thinking",     // SOTA reasoning: 293% accuracy boost ($1.75/$14, 400K)
+  // Note: "gpt-5.2" + reasoning.effort="high"/"xhigh" = "thinking" mode
+  DEFAULT: "gpt-5.2",               // Main model - use with reasoning.effort for "thinking"
   PRO: "gpt-5.2-pro",               // Expert: programming, science, 88.4% GPQA ($21/$168, 400K)
-  INSTANT: "gpt-5.2-instant",       // Fast: conversations, explanations ($1.75/$14, 400K)
 
   // Aliases for backward compatibility
-  FULL: "gpt-5.2-thinking",         // Map old FULL to THINKING
-  CODEX_MINI: "gpt-5.2-instant",    // Map old codex-mini to INSTANT
+  THINKING: "gpt-5.2",              // "Thinking" = gpt-5.2 with high reasoning effort
+  INSTANT: "gpt-5.2",               // Same model, just use lower reasoning effort
+  FULL: "gpt-5.2",                  // Map old FULL to DEFAULT
+  CODEX_MINI: "gpt-5.2",            // Map old codex-mini to DEFAULT
   CODEX: "gpt-5.2-pro",             // Map old codex to PRO
   CODEX_MAX: "gpt-5.2-pro",         // Map old codex-max to PRO
 } as const;
 
 // OpenRouter model ID mapping (add prefix when using OpenRouter gateway)
 export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
-  "gpt-5.2-thinking": "openai/",
+  "gpt-5.2": "openai/",
   "gpt-5.2-pro": "openai/",
-  "gpt-5.2-instant": "openai/",
 } as const;
 
 // OpenAI Reasoning Effort Levels (for models that support it)
+// Use with gpt-5.2: none=fast, low/medium=balanced, high/xhigh="thinking" mode
 export const OPENAI_REASONING = {
-  NONE: "none",   // No extra reasoning (fastest, cheapest)
-  LOW: "low",     // Light reasoning
+  NONE: "none",     // No extra reasoning (fastest, allows temperature)
+  LOW: "low",       // Light reasoning
   MEDIUM: "medium", // Balanced reasoning (default)
-  HIGH: "high",   // Maximum reasoning (slowest, most thorough)
+  HIGH: "high",     // Strong reasoning ("thinking" mode)
+  XHIGH: "xhigh",   // Maximum reasoning (most thorough, slowest)
 } as const;
 
 
@@ -133,13 +137,17 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
-// UPDATED Dec 11, 2025: Migrated to GPT-5.2 (PRO for quality, THINKING for reasoning)
+// UPDATED Dec 12, 2025: Use gpt-5.2 with reasoning.effort for "thinking" mode
+// PRO available for opt-in when extra quality needed (12x more expensive)
 export const CURRENT_MODELS = {
   openai: {
-    reason: OPENAI_MODELS.THINKING,       // Deep reasoning (gpt-5.2-thinking - 293% accuracy)
-    brainstorm: OPENAI_MODELS.PRO,        // Creative ideation (gpt-5.2-pro - HIGH IQ)
-    code: OPENAI_MODELS.PRO,              // Code tasks (gpt-5.2-pro - 88.4% GPQA)
-    explain: OPENAI_MODELS.PRO,           // Explanations (gpt-5.2-pro - quality)
+    default: OPENAI_MODELS.DEFAULT,       // gpt-5.2 - use with reasoning.effort
+    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (gpt-5.2 + effort=high)
+    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (gpt-5.2 + effort=medium)
+    code: OPENAI_MODELS.DEFAULT,          // Code tasks (gpt-5.2 + effort=medium)
+    explain: OPENAI_MODELS.DEFAULT,       // Explanations (gpt-5.2 + effort=low)
+    // Premium option for opt-in (use sparingly - 12x more expensive)
+    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.2-pro - 88.4% GPQA, $21/$168)
   },
   grok: {
     reason: GROK_MODELS._4_1_FAST_REASONING,

@@ -1,6 +1,7 @@
 /**
  * OpenAI Tools Implementation
- * Provides GPT-5.1 model capabilities with reasoning_effort control
+ * Provides GPT-5.2 model capabilities with reasoning_effort control
+ * Uses centralized model constants from model-constants.ts
  */
 
 import { z } from "zod";
@@ -9,6 +10,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { validateToolInput } from "../utils/input-validator.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
+import { OPENAI_MODELS, OPENAI_REASONING, CURRENT_MODELS, TOOL_DEFAULTS } from "../config/model-constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,25 +83,69 @@ const ResponsesAPISchema = z.object({
 type ChatCompletionResponse = z.infer<typeof ChatCompletionResponseSchema>;
 type ResponsesAPIResponse = z.infer<typeof ResponsesAPISchema>;
 
-// Available OpenAI GPT-5 models (optimized for Claude Code)
-export enum OpenAI51Model {
-  FULL = "gpt-5.1",                         // Flagship reasoning ($10/$30 per million tokens)
-  PRO = "gpt-5-pro",                        // Premium orchestration ($20/$60 per million tokens, 2x)
-  CODEX_MINI = "gpt-5.1-codex-mini",        // Code workhorse ($2/$6 per million tokens) - CHEAP!
-  CODEX = "gpt-5.1-codex",                  // Code power ($15/$45 per million tokens)
-  CODEX_MAX = "gpt-5.1-codex-max",          // Code frontier - BEST for complex analysis
+// Fallback type for partial data extraction when Zod parsing fails
+interface PartialChatCompletion {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
 }
 
-// Type alias for backward compatibility
-export type OpenAIModel = OpenAI51Model;
+// Type guard for safe fallback extraction
+function isPartialChatCompletion(data: unknown): data is PartialChatCompletion {
+  if (typeof data !== 'object' || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  return Array.isArray(obj.choices);
+}
+
+// Fallback type for Responses API partial data extraction
+interface PartialResponsesAPI {
+  output?: Array<{
+    content?: Array<{
+      text?: string;
+    }>;
+  }>;
+}
+
+// Type guard for Responses API fallback extraction
+function isPartialResponsesAPI(data: unknown): data is PartialResponsesAPI {
+  if (typeof data !== 'object' || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  return Array.isArray(obj.output);
+}
+
+// GPT-5.2 Models (Dec 2025) - Uses centralized constants
+// THINKING: gpt-5.2-thinking - SOTA reasoning (293% accuracy boost, $1.75/$14, 400K)
+// PRO: gpt-5.2-pro - Expert programming/science (88.4% GPQA, $21/$168, 400K)
+// INSTANT: gpt-5.2-instant - Fast conversations ($1.75/$14, 400K)
+
+// Type alias for model strings
+export type OpenAIModel = string;
+
+// Re-export for backward compatibility (maps to gpt-5.2 models)
+// "Thinking" mode = gpt-5.2 with reasoning.effort="high"/"xhigh"
+export const OpenAI52Model = {
+  DEFAULT: OPENAI_MODELS.DEFAULT,     // gpt-5.2 (use with reasoning.effort)
+  THINKING: OPENAI_MODELS.DEFAULT,    // gpt-5.2 + high effort = "thinking"
+  PRO: OPENAI_MODELS.PRO,             // gpt-5.2-pro (expert mode)
+  INSTANT: OPENAI_MODELS.DEFAULT,     // gpt-5.2 + low effort = fast
+  // Legacy aliases
+  FULL: OPENAI_MODELS.DEFAULT,
+  CODEX_MINI: OPENAI_MODELS.DEFAULT,
+  CODEX: OPENAI_MODELS.PRO,
+} as const;
+
+// Backward compatibility alias
+export const OpenAI51Model = OpenAI52Model;
 
 /**
  * Call OpenAI API with model fallback support
- * Automatically detects GPT-5.1 models and uses correct endpoint + format
+ * GPT-5.2 uses /v1/responses endpoint for all models
  */
 export async function callOpenAI(
   messages: Array<{ role: string; content: string }>,
-  model: OpenAIModel = OpenAI51Model.CODEX_MINI,
+  model: OpenAIModel = OPENAI_MODELS.INSTANT,  // Default to fast/cheap model
   temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased default for comprehensive responses
   reasoningEffort: string = "low",
@@ -138,11 +184,10 @@ export async function callOpenAI(
     return { ...msg, content: validation.sanitized };
   });
 
-  // Model fallback chain - GPT-5.1 models have no fallbacks to test actual availability
+  // Model fallback chain - GPT-5.2 models have no fallbacks to test actual availability
   const modelFallbacks: Record<string, string[]> = {
-    [OpenAI51Model.FULL]: [],  // No fallback - test actual GPT-5.1
-    [OpenAI51Model.CODEX_MINI]: [],  // No fallback - test actual GPT-5.1-codex-mini
-    [OpenAI51Model.CODEX]: []  // No fallback - test actual GPT-5.1-codex
+    "gpt-5.2": [],      // No fallback - test actual gpt-5.2
+    "gpt-5.2-pro": []   // No fallback - test actual gpt-5.2-pro
   };
 
   const modelsToTry = [model, ...(modelFallbacks[model] || [])];
@@ -152,35 +197,40 @@ export async function callOpenAI(
   for (const currentModel of modelsToTry) {
     console.error(`🔍 TRACE: Trying model: ${currentModel}`);
     try {
-      // Codex models use /v1/responses, non-codex use /v1/chat/completions
-      const isCodex = currentModel.includes('codex');
-      const endpoint = isCodex ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
+      // GPT-5.2 uses Responses API, others use Chat Completions
+      const isGPT52 = currentModel.startsWith('gpt-5.2');
+      const endpoint = isGPT52 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
 
       let requestBody: any;
 
-      if (isCodex) {
-        // Responses API format for codex models
+      if (isGPT52) {
+        // Responses API format for GPT-5.2
+        // Input is array of message objects [{role, content}]
+        const inputMessages = validatedMessages.map(m => ({
+          role: m.role,
+          content: m.content
+        }));
+
         requestBody = {
           model: currentModel,
-          input: validatedMessages,
-          max_output_tokens: maxTokens,
-          stream: false,
+          input: inputMessages,
           reasoning: {
-            effort: reasoningEffort
-          }
+            effort: reasoningEffort || 'medium'
+          },
+          max_output_tokens: maxTokens
         };
       } else {
-        // Chat Completions format for non-codex GPT-5 models (gpt-5.1, gpt-5-pro)
+        // Chat Completions format for older models
         requestBody = {
           model: currentModel,
           messages: validatedMessages,
-          temperature,
-          max_completion_tokens: maxTokens,  // GPT-5 requires max_completion_tokens (not max_tokens)
+          max_completion_tokens: maxTokens,
+          temperature: temperature,
           stream: false
         };
       }
 
-      console.error(`🔍 TRACE: Using ${isCodex ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
+      console.error(`🔍 TRACE: Using ${isGPT52 ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${currentModel}`);
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -206,31 +256,45 @@ export async function callOpenAI(
 
       const rawData = await response.json();
 
-      // Parse based on API type
+      // Parse response based on API type
       let rawContent: string | undefined;
 
-      if (isCodex) {
-        // Responses API format
+      if (isGPT52) {
+        // Parse Responses API response for GPT-5.2
         const parseResult = ResponsesAPISchema.safeParse(rawData);
         if (parseResult.success) {
-          const data: ResponsesAPIResponse = parseResult.data;
-          const messageOutput = data.output.find(item => item.type === 'message');
-          rawContent = messageOutput?.content?.[0]?.text;
-
-          if (data.reasoning) {
-            console.error(`🔍 TRACE: Reasoning effort: ${data.reasoning.effort}`);
+          const responsesData: ResponsesAPIResponse = parseResult.data;
+          // Extract text from output array - find first message with content
+          for (const outputItem of responsesData.output) {
+            if (outputItem.content) {
+              for (const contentItem of outputItem.content) {
+                if (contentItem.text) {
+                  rawContent = contentItem.text;
+                  break;
+                }
+              }
+            }
+            if (rawContent) break;
           }
         } else {
           console.error(`🔍 TRACE: Failed to parse Responses API response:`, parseResult.error);
+          // Safe fallback using type guard
+          if (isPartialResponsesAPI(rawData)) {
+            rawContent = rawData.output?.[0]?.content?.[0]?.text;
+          }
         }
       } else {
-        // Chat Completions format
+        // Parse Chat Completions response for older models
         const parseResult = ChatCompletionResponseSchema.safeParse(rawData);
         if (parseResult.success) {
           const chatData: ChatCompletionResponse = parseResult.data;
           rawContent = chatData.choices[0]?.message?.content;
         } else {
           console.error(`🔍 TRACE: Failed to parse Chat Completions response:`, parseResult.error);
+          // Safe fallback using type guard
+          if (isPartialChatCompletion(rawData)) {
+            rawContent = rawData.choices?.[0]?.message?.content;
+          }
         }
       }
 
@@ -249,16 +313,16 @@ export async function callOpenAI(
   }
 
   console.error(`🔍 TRACE: ALL MODELS FAILED - Last error: ${lastError}`);
-  return `[GPT-5.1 model "${model}" not available. Error: ${lastError}]`;
+  return `[GPT-5.2 model "${model}" not available. Error: ${lastError}]`;
 }
 
 /**
  * Call OpenAI API with custom parameters for specific models
- * Automatically detects GPT-5.1 models and uses correct endpoint + format
+ * GPT-5.2 models use /v1/responses endpoint
  */
 async function callOpenAIWithCustomParams(
   messages: Array<{ role: string; content: string }>,
-  model: OpenAIModel,
+  model: OpenAIModel = OPENAI_MODELS.DEFAULT,
   temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased for detailed brainstorming
   reasoningEffort: string = "low",
@@ -296,36 +360,41 @@ async function callOpenAIWithCustomParams(
   });
 
   try {
-    // Codex models use /v1/responses, non-codex use /v1/chat/completions
-    const isCodex = model.includes('codex');
-    const endpoint = isCodex ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
+    // GPT-5.2 uses Responses API, others use Chat Completions
+    const isGPT52 = model.startsWith('gpt-5.2');
+    const endpoint = isGPT52 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
 
     let requestBody: any;
 
-    if (isCodex) {
-      // Responses API format for codex models
+    if (isGPT52) {
+      // Responses API format for GPT-5.2
+      // Input is array of message objects [{role, content}]
+      const inputMessages = validatedMessages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
       requestBody = {
         model: model,
-        input: validatedMessages,
-        max_output_tokens: maxTokens, // NOT max_completion_tokens or max_tokens!
-        stream: false,
+        input: inputMessages,
         reasoning: {
-          effort: reasoningEffort // "none", "low", "medium", "high"
-        }
+          effort: reasoningEffort || 'medium'
+        },
+        max_output_tokens: maxTokens
       };
     } else {
-      // Chat Completions format for non-codex GPT-5 models (gpt-5.1, gpt-5-pro)
+      // Chat Completions format for older models
       requestBody = {
         model: model,
         messages: validatedMessages,
-        temperature,
-        max_completion_tokens: maxTokens,  // GPT-5 requires max_completion_tokens (not max_tokens)
+        max_completion_tokens: maxTokens,
+        temperature: temperature,
         stream: false
       };
     }
 
-    console.error(`🔍 TRACE: Using ${isCodex ? '/v1/responses' : '/v1/chat/completions'} endpoint`);
-    console.error(`🔍 TRACE: Model params: ${isCodex ? `max_output_tokens=${maxTokens}, reasoning_effort=${reasoningEffort}` : `max_completion_tokens=${maxTokens}, temperature=${temperature}`}`);
+    console.error(`🔍 TRACE: Using ${isGPT52 ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${model}`);
+    console.error(`🔍 TRACE: Model params: max_tokens=${maxTokens}, reasoning_effort=${reasoningEffort}`);
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -344,32 +413,42 @@ async function callOpenAIWithCustomParams(
 
     const rawData = await response.json();
 
-    // Parse based on API type - they have DIFFERENT response formats!
+    // Parse response based on API type
     let rawContent: string | undefined;
 
-    if (isCodex) {
-      // Validate and parse Responses API format
+    if (isGPT52) {
+      // Parse Responses API response for GPT-5.2
       const parseResult = ResponsesAPISchema.safeParse(rawData);
       if (parseResult.success) {
-        const data: ResponsesAPIResponse = parseResult.data;
-        const messageOutput = data.output.find(item => item.type === 'message');
-        rawContent = messageOutput?.content?.[0]?.text;
-
-        // Capture reasoning info
-        if (data.reasoning) {
-          console.error(`🔍 TRACE: Reasoning effort: ${data.reasoning.effort}`);
+        const responsesData: ResponsesAPIResponse = parseResult.data;
+        for (const outputItem of responsesData.output) {
+          if (outputItem.content) {
+            for (const contentItem of outputItem.content) {
+              if (contentItem.text) {
+                rawContent = contentItem.text;
+                break;
+              }
+            }
+          }
+          if (rawContent) break;
         }
       } else {
         console.error(`🔍 TRACE: Failed to parse Responses API response:`, parseResult.error);
+        if (isPartialResponsesAPI(rawData)) {
+          rawContent = rawData.output?.[0]?.content?.[0]?.text;
+        }
       }
     } else {
-      // Validate and parse Chat Completions API format
+      // Parse Chat Completions response for older models
       const parseResult = ChatCompletionResponseSchema.safeParse(rawData);
       if (parseResult.success) {
         const chatData: ChatCompletionResponse = parseResult.data;
         rawContent = chatData.choices[0]?.message?.content;
       } else {
         console.error(`🔍 TRACE: Failed to parse Chat Completions response:`, parseResult.error);
+        if (isPartialChatCompletion(rawData)) {
+          rawContent = rawData.choices?.[0]?.message?.content;
+        }
       }
     }
 
@@ -423,8 +502,8 @@ export const gpt5ReasonTool = {
       }
     ];
     
-    // Use GPT-5.1 with high reasoning
-    return await callOpenAI(messages, OpenAI51Model.FULL, 0.7, 4000, "high");
+    // Use GPT-5.2-thinking with high reasoning
+    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 4000, "high");
   }
 };
 
@@ -458,14 +537,14 @@ export const gpt5MiniReasonTool = {
       }
     ];
     
-    // Use GPT-5.1-codex-mini with medium reasoning
-    return await callOpenAI(messages, OpenAI51Model.CODEX_MINI, 0.7, 3000, "medium");
+    // Use GPT-5.2-thinking with medium reasoning (cost-effective)
+    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 3000, "medium");
   }
 };
 
 export const openaiGpt5ReasonTool = {
   name: "openai_reason",
-  description: "Mathematical reasoning using GPT-5.1 with high reasoning effort",
+  description: "Mathematical reasoning using GPT-5.2-thinking with high reasoning effort",
   parameters: z.object({
     query: z.string(),
     context: z.string().optional(),
@@ -493,8 +572,8 @@ ${args.context ? `Context: ${args.context}` : ''}`
       }
     ];
 
-    // Use GPT-5.1 with high reasoning effort for complex reasoning
-    return await callOpenAI(messages, OpenAI51Model.FULL, 0.7, 4000, "high");
+    // Use GPT-5.2-thinking with high reasoning effort for complex reasoning
+    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 4000, "high");
   }
 };
 
@@ -511,8 +590,8 @@ export const openAIBrainstormTool = {
     constraints: z.string().optional(),
     quantity: z.number().optional(),
     style: z.enum(["innovative", "practical", "wild", "systematic"]).optional(),
-    model: z.enum(["gpt-5.1", "gpt-5.1-codex-mini", "gpt-5.1-codex"]).optional(),
-    reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional(),
+    model: z.enum(["gpt-5.2", "gpt-5.2-pro"]).optional(),
+    reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh"]).optional(),
     max_tokens: z.number().optional()
   }),
   execute: async (args: { problem: string; constraints?: string; quantity?: number; style?: string; model?: string; reasoning_effort?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
@@ -521,7 +600,7 @@ export const openAIBrainstormTool = {
       constraints,
       quantity = 5,
       style = "innovative",
-      model = "gpt-5.1-codex-mini",
+      model = OPENAI_MODELS.DEFAULT,  // Default to gpt-5.2 (use reasoning.effort for "thinking")
       reasoning_effort = "medium",
       max_tokens = 4000
     } = args;
@@ -598,7 +677,7 @@ Format: Use sections for different aspects, be specific about line numbers or fu
       }
     ];
 
-    return await callOpenAI(messages, OpenAI51Model.CODEX_MINI, 0.3, 4000, "medium");
+    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.3, 4000, "medium");
   }
 };
 
@@ -642,7 +721,7 @@ Make the explanation clear, engaging, and memorable.`
       }
     ];
 
-    return await callOpenAI(messages, OpenAI51Model.CODEX_MINI, 0.7, 2500, "low");
+    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 2500, "low");
   }
 };
 
@@ -662,9 +741,9 @@ export function getAllOpenAITools() {
   }
 
   return [
-    openaiGpt5ReasonTool,  // GPT-5.1 reasoning (high effort)
-    openAIBrainstormTool,  // GPT-5.1-codex-mini brainstorming (medium effort)
-    openaiCodeReviewTool,  // GPT-5.1-codex-mini code review (medium effort)
-    openaiExplainTool      // GPT-5.1-codex-mini explanations (low effort)
+    openaiGpt5ReasonTool,  // GPT-5.2-thinking reasoning (high effort)
+    openAIBrainstormTool,  // GPT-5.2-thinking brainstorming (medium effort)
+    openaiCodeReviewTool,  // GPT-5.2-thinking code review (medium effort)
+    openaiExplainTool      // GPT-5.2-thinking explanations (low effort)
   ];
 }

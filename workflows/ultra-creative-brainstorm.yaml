@@ -195,7 +195,7 @@ steps:
     input:
       query: "${query} - explore creative applications across domains"
       mode: "code-brainstorm"
-      models: ["gpt-5.1", "gemini-2.5-flash", "grok-4-1-fast-reasoning"]
+      models: ["gpt-5.2-thinking", "gemini-3-pro-preview", "grok-4-1-fast-reasoning"]
       rounds: 3
       context: "Research: ${research_findings}\nIdeas: ${innovative_solutions}\nPatterns: ${patterns}"
     saveToFile: true
@@ -210,7 +210,7 @@ steps:
       problem: "Synthesize all perspectives and ideas for ${query} into coherent solutions"
       style: "systematic"
       reasoning_effort: "high"
-      model: "gpt-5.1"
+      model: "gpt-5.2-thinking"
       context: |
         COMPREHENSIVE CONTEXT:
 

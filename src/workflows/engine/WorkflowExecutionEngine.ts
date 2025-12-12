@@ -275,7 +275,7 @@ async function executeWorkflowImpl(
         if (workflow.settings?.optimization?.enabled && typeof stepInput === "string") {
           const optimized = await tokenOptimizer.optimize({
             prompt: stepInput,
-            model: model || "gpt-5.1-codex-mini",
+            model: model || "gpt-5.2-thinking",
             maxTokens: resolvedParams.maxTokens,
           });
 

@@ -62,12 +62,12 @@ const PROVIDER_CONFIGS = {
   openai: {
     base: 'https://api.openai.com/v1',
     key: process.env.OPENAI_API_KEY,
-    models: ['gpt-5.1', 'gpt-5.1-codex-mini', 'gpt-5.1-codex']
+    models: ['gpt-5.2', 'gpt-5.2-pro']  // gpt-5.2 with reasoning.effort for "thinking"
   },
-  gpt51: {
-    base: 'https://api.openai.com/v1',  // Uses /responses endpoint internally
+  gpt52: {
+    base: 'https://api.openai.com/v1',  // Uses /responses endpoint
     key: process.env.OPENAI_API_KEY,
-    models: ['gpt-5.1', 'gpt-5.1-codex-mini', 'gpt-5.1-codex'],
+    models: ['gpt-5.2', 'gpt-5.2-pro'],  // reasoning.effort controls "thinking" mode
     special: true  // Needs special handling for reasoning_effort
   },
   mistral: {
@@ -196,9 +196,9 @@ export async function queryAI(
     } // Close else block for openRouterModel check
   }
 
-  // Handle GPT-5 special case (direct API only)
-  if (options.provider === 'gpt51' && 'special' in providerConfig && providerConfig.special) {
-    return await handleGPT5(prompt, options);
+  // Handle GPT-5.2 special case (direct API only)
+  if (options.provider === 'gpt52' && 'special' in providerConfig && providerConfig.special) {
+    return await handleGPT52(prompt, options);
   }
 
   // Standard OpenAI-compatible handling (direct API)
@@ -227,32 +227,44 @@ export async function queryAI(
   }
 }
 
-// Type for GPT-5.1 /v1/responses API
-interface GPT51ResponseOutput {
-  type: string;
-  content?: Array<{ text?: string }>;
+// Type for GPT-5.2 Responses API response
+interface GPT52ResponsesOutput {
+  content?: Array<{
+    text?: string;
+  }>;
 }
 
-interface GPT51Response {
-  output: GPT51ResponseOutput[];
+interface GPT52ResponsesResponse {
+  output?: GPT52ResponsesOutput[];
 }
 
 /**
- * Special handling for GPT-5 (uses /responses endpoint)
+ * Special handling for GPT-5.2 (uses /v1/responses endpoint)
  */
-async function handleGPT5(prompt: string, options: UnifiedAIOptions): Promise<string> {
-  const config = PROVIDER_CONFIGS.gpt51;
+async function handleGPT52(prompt: string, options: UnifiedAIOptions): Promise<string> {
+  const config = PROVIDER_CONFIGS.gpt52;
   const endpoint = 'https://api.openai.com/v1/responses';
 
-  const model = options.model || 'gpt-5.1-codex-mini';  // Default to cheapest
+  // Default to gpt-5.2 model (use reasoning.effort for "thinking" mode)
+  const model = options.model || 'gpt-5.2';
+
+  // Reasoning effort based on model - "high" for "thinking" mode
+  // gpt-5.2-pro gets high effort, gpt-5.2 uses medium by default
+  const reasoningEffort = model === 'gpt-5.2-pro' ? 'high' : 'medium';
+
+  // Build input as array of message objects
+  const inputMessages = [
+    ...(options.systemPrompt ? [{ role: 'system', content: options.systemPrompt }] : []),
+    { role: 'user', content: prompt }
+  ];
 
   const requestBody = {
     model,
-    input: prompt,
+    input: inputMessages,
     reasoning: {
-      effort: model === 'gpt-5.1' ? 'high' : 'low'
+      effort: reasoningEffort
     },
-    max_output_tokens: 4000
+    max_output_tokens: options.maxTokens || 4000
   };
 
   try {
@@ -267,14 +279,30 @@ async function handleGPT5(prompt: string, options: UnifiedAIOptions): Promise<st
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`GPT-5 API error: ${error}`);
+      throw new Error(`GPT-5.2 API error: ${error}`);
     }
 
-    const data = await response.json() as GPT51Response;
-    const messageOutput = data.output.find(item => item.type === 'message');
-    return messageOutput?.content?.[0]?.text || 'No response generated';
+    const data = await response.json() as GPT52ResponsesResponse;
+
+    // Extract text from Responses API output
+    let result: string | undefined;
+    if (data.output) {
+      for (const outputItem of data.output) {
+        if (outputItem.content) {
+          for (const contentItem of outputItem.content) {
+            if (contentItem.text) {
+              result = contentItem.text;
+              break;
+            }
+          }
+        }
+        if (result) break;
+      }
+    }
+
+    return result || 'No response generated';
   } catch (error) {
-    console.error('GPT-5 error:', error);
+    console.error('GPT-5.2 error:', error);
     throw error;
   }
 }

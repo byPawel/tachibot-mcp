@@ -27,9 +27,9 @@ const MODELS = {
   // Google Gemini
   GEMINI: GEMINI_MODELS.GEMINI_3_PRO,           // gemini-3-pro-preview
 
-  // OpenAI
-  OPENAI: OPENAI_MODELS.CODEX_MINI,             // gpt-5.1-codex-mini (default)
-  OPENAI_REASON: OPENAI_MODELS.FULL,            // gpt-5.1 (deep reasoning)
+  // OpenAI (GPT-5.2)
+  OPENAI: OPENAI_MODELS.THINKING,               // gpt-5.2-thinking (default - SOTA reasoning)
+  OPENAI_REASON: OPENAI_MODELS.THINKING,        // gpt-5.2-thinking (deep reasoning)
 
   // xAI Grok
   GROK: GROK_MODELS._4_1_FAST_REASONING,        // grok-4-1-fast-reasoning
@@ -75,7 +75,7 @@ export function getChallengerModels(): string[] {
 
 /**
  * Get Verifier model configuration
- * All variants use Gemini 3 Pro; deep uses gpt-5.1 for max reasoning
+ * All variants use Gemini 3 Pro; deep uses gpt-5.2-thinking for max reasoning
  */
 export function getVerifierModels(): {
   quick: string[];
