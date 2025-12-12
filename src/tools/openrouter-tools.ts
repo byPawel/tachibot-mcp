@@ -82,7 +82,7 @@ export const qwenCoderTool = {
   name: "qwen_coder",
   description: "Code generation",
   parameters: z.object({
-    task: z.enum(["generate", "review", "optimize", "debug", "refactor", "explain"])
+    task: z.enum(["generate", "review", "optimize", "debug", "refactor", "explain", "analyze"])
       ,
     code: z.string().optional(),
     requirements: z.string().optional().default(""), // Changed: Make optional with default
@@ -102,7 +102,8 @@ export const qwenCoderTool = {
       optimize: "Optimize code for performance and efficiency",
       debug: "Debug and fix issues in the code",
       refactor: "Refactor code for better structure and maintainability",
-      explain: "Explain how the code works in detail"
+      explain: "Explain how the code works in detail",
+      analyze: "Analyze code for patterns, complexity, architecture, and provide insights"
     };
     
     const systemPrompt = `You are Qwen3-Coder, an advanced code generation model.
