@@ -142,7 +142,16 @@ export function getAllStats(): UsageData {
 }
 
 /**
- * Get summary of tool usage for current repo
+ * Create ASCII bar
+ */
+function createBar(value: number, max: number, width: number = 12): string {
+  if (max === 0) return '░'.repeat(width);
+  const filled = Math.round((value / max) * width);
+  return '█'.repeat(filled) + '░'.repeat(width - filled);
+}
+
+/**
+ * Get summary of tool usage for current repo with visual bars
  */
 export function getUsageSummary(repoPath?: string): string {
   const stats = getRepoStats(repoPath);
@@ -150,33 +159,46 @@ export function getUsageSummary(repoPath?: string): string {
     return 'No usage data for this repo yet.';
   }
 
-  const lines: string[] = [
-    `📊 Usage Stats for: ${stats.repoName}`,
-    `   Total calls: ${stats.totalCalls}`,
-    `   First used: ${stats.firstSeen.split('T')[0]}`,
-    `   Last used: ${stats.lastSeen.split('T')[0]}`,
-    '',
-    '🔧 Tools Used:',
-  ];
-
   // Sort by calls descending
   const sortedTools = Object.entries(stats.tools)
     .sort(([, a], [, b]) => b.calls - a.calls);
 
-  for (const [toolName, usage] of sortedTools) {
-    const topModel = Object.entries(usage.models)
-      .sort(([, a], [, b]) => b - a)[0];
-
-    lines.push(
-      `   ${toolName}: ${usage.calls} calls` +
-      (topModel ? ` (${topModel[0]}: ${topModel[1]})` : '') +
-      ` | $${usage.totalCost.toFixed(4)}`
-    );
+  if (sortedTools.length === 0) {
+    return 'No usage data for this repo yet.';
   }
 
-  // Suggest unused tools
-  lines.push('');
-  lines.push('💡 Tip: Tools not in this list are unused - consider removing from profile.');
+  // Calculate totals and max for scaling
+  const maxCalls = Math.max(...sortedTools.map(([, t]) => t.calls));
+  const totalCost = sortedTools.reduce((sum, [, t]) => sum + t.totalCost, 0);
+  const totalTokens = sortedTools.reduce((sum, [, t]) => sum + t.totalTokens, 0);
+
+  // Find max tool name length for alignment (cap at 18)
+  const maxNameLen = Math.min(18, Math.max(...sortedTools.map(([name]) => name.length)));
+
+  const lines: string[] = [
+    ``,
+    `📊 USAGE STATS ─ ${stats.repoName}`,
+    ``,
+  ];
+
+  // Tool bars
+  for (const [toolName, usage] of sortedTools) {
+    const name = toolName.length > maxNameLen
+      ? toolName.slice(0, maxNameLen - 2) + '..'
+      : toolName.padEnd(maxNameLen);
+    const bar = createBar(usage.calls, maxCalls, 12);
+    const calls = String(usage.calls).padStart(4);
+    const cost = `$${usage.totalCost.toFixed(2)}`.padStart(6);
+
+    lines.push(`${name} ${bar} ${calls}  ${cost}`);
+  }
+
+  // Footer with totals
+  lines.push(`${'─'.repeat(maxNameLen + 28)}`);
+  lines.push(`${'TOTAL'.padEnd(maxNameLen)} ${''.padStart(12)} ${String(stats.totalCalls).padStart(4)}  ${'$' + totalCost.toFixed(2).padStart(5)}`);
+  lines.push(``);
+  lines.push(`Tokens: ~${totalTokens.toLocaleString()} | Period: ${stats.firstSeen.split('T')[0]} → ${stats.lastSeen.split('T')[0]}`);
+  lines.push(``);
 
   return lines.join('\n');
 }
@@ -223,7 +245,7 @@ export function estimateTokens(text: string): number {
 }
 
 /**
- * Get all repos summary (for "all" scope)
+ * Get all repos summary (for "all" scope) with visual bars
  */
 export function getAllReposSummary(): string {
   const data = loadStats();
@@ -233,26 +255,47 @@ export function getAllReposSummary(): string {
     return 'No usage data yet.';
   }
 
-  const lines: string[] = ['📊 Usage Stats (All Repos)', ''];
+  // Calculate totals per repo
+  const repoData = repos.map(repo => ({
+    name: repo.repoName,
+    calls: repo.totalCalls,
+    tokens: Object.values(repo.tools).reduce((sum, t) => sum + t.totalTokens, 0),
+    cost: Object.values(repo.tools).reduce((sum, t) => sum + t.totalCost, 0),
+  }));
 
-  // Sort by total calls descending
-  repos.sort((a, b) => b.totalCalls - a.totalCalls);
+  // Sort by calls descending
+  repoData.sort((a, b) => b.calls - a.calls);
 
-  let grandTotal = { calls: 0, tokens: 0, cost: 0 };
+  const maxCalls = Math.max(...repoData.map(r => r.calls));
+  const maxNameLen = Math.min(20, Math.max(...repoData.map(r => r.name.length)));
+  const grandTotal = repoData.reduce((acc, r) => ({
+    calls: acc.calls + r.calls,
+    tokens: acc.tokens + r.tokens,
+    cost: acc.cost + r.cost,
+  }), { calls: 0, tokens: 0, cost: 0 });
 
-  for (const repo of repos) {
-    const totalCost = Object.values(repo.tools).reduce((sum, t) => sum + t.totalCost, 0);
-    const totalTokens = Object.values(repo.tools).reduce((sum, t) => sum + t.totalTokens, 0);
+  const lines: string[] = [
+    ``,
+    `📊 USAGE STATS ─ All Repos`,
+    ``,
+  ];
 
-    lines.push(`**${repo.repoName}**: ${repo.totalCalls} calls | ${totalTokens} tok | $${totalCost.toFixed(4)}`);
+  for (const repo of repoData) {
+    const name = repo.name.length > maxNameLen
+      ? repo.name.slice(0, maxNameLen - 2) + '..'
+      : repo.name.padEnd(maxNameLen);
+    const bar = createBar(repo.calls, maxCalls, 10);
+    const calls = String(repo.calls).padStart(4);
+    const cost = `$${repo.cost.toFixed(2)}`.padStart(7);
 
-    grandTotal.calls += repo.totalCalls;
-    grandTotal.tokens += totalTokens;
-    grandTotal.cost += totalCost;
+    lines.push(`${name} ${bar} ${calls} ${cost}`);
   }
 
-  lines.push('');
-  lines.push(`**TOTAL**: ${grandTotal.calls} calls | ${grandTotal.tokens} tok | $${grandTotal.cost.toFixed(4)}`);
+  lines.push(`${'─'.repeat(maxNameLen + 26)}`);
+  lines.push(`${'TOTAL'.padEnd(maxNameLen)} ${''.padStart(10)} ${String(grandTotal.calls).padStart(4)} ${'$' + grandTotal.cost.toFixed(2).padStart(6)}`);
+  lines.push(``);
+  lines.push(`Tokens: ~${grandTotal.tokens.toLocaleString()}`);
+  lines.push(``);
 
   return lines.join('\n');
 }
