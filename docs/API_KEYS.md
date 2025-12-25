@@ -222,15 +222,15 @@ Google's Gemini models for analysis, brainstorming, and text processing.
 
 #### Models Available
 
-- **gemini-3-pro-preview** - Latest Gemini 3 Pro (Nov 2025), 1M context
-- **gemini-3-flash** - Fast & cheap option
+- **gemini-3-pro-preview** - Latest Gemini 3 Pro (Dec 2025), 1M context
+- **gemini-3-flash-preview** - Fast frontier model (Dec 2025)
 
 #### Pricing
 
 | Model | Input | Output |
 |-------|-------|--------|
 | Gemini 3 Pro Preview | $2.00 / 1M tokens | $12.00 / 1M tokens |
-| Gemini 3 Flash | $0.50 / 1M tokens | $3.00 / 1M tokens |
+| Gemini 3 Flash Preview | $0.50 / 1M tokens | $3.00 / 1M tokens |
 
 #### Cost Estimation
 

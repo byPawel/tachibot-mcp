@@ -46,13 +46,13 @@ export const OPENAI_REASONING = {
 // GEMINI MODELS (Google)
 // =============================================================================
 export const GEMINI_MODELS = {
-  // Gemini 3 Pro Preview (November 2025 - RAW POWER)
-  GEMINI_3_PRO: "gemini-3-pro-preview", // Latest: structured outputs & multimodal, 1M context
+  // Gemini 3 (Dec 2025)
+  GEMINI_3_PRO: "gemini-3-pro-preview",   // Quality model, 1M context
+  GEMINI_3_FLASH: "gemini-3-flash-preview", // Fast frontier model
 
-  // Aliases for backward compatibility - all point to Gemini 3 Pro Preview
-  FLASH: "gemini-3-pro-preview",       // Alias → Gemini 3 Pro
-  PRO: "gemini-3-pro-preview",         // Alias → Gemini 3 Pro
-  FLASH_LITE: "gemini-3-pro-preview",  // Alias → Gemini 3 Pro
+  // Aliases - default to Pro for quality
+  PRO: "gemini-3-pro-preview",
+  FLASH: "gemini-3-flash-preview",
 } as const;
 
 // Perplexity Models
@@ -304,7 +304,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
 
   // Gemini
   "gemini-3-pro-preview": "gemini-3-pro",
-  "gemini-3-flash": "gemini-3-flash",
+  "gemini-3-flash-preview": "gemini-3-flash",
 
   // Grok (xAI)
   "grok-4-1-fast-reasoning": "grok-4.1",
@@ -341,7 +341,7 @@ export const MODEL_PRICING: Record<string, number> = {
 
   // Gemini
   "gemini-3-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
-  "gemini-3-flash": 0.00175,     // ($0.50 + $3) / 2 / 1000
+  "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000
 
   // Grok - all cheap!
   "grok-4-1-fast-reasoning": 0.00035,

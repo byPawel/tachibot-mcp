@@ -4,11 +4,11 @@
  */
 
 export enum ModelTier {
-  // Tier 0: Cheapest - Gemini 3 Flash (3.5x cheaper than GPT-5.2!)
-  ULTRA_CHEAP = "gemini-3-flash", // $0.50/$3.00 per million - CHEAPEST
+  // Tier 0: Cheapest - Gemini 3 Flash Preview (Dec 2025)
+  ULTRA_CHEAP = "gemini-3-flash-preview", // Fast frontier model
 
   // Tier 1: Fast & Efficient
-  ULTRA_EFFICIENT = "gemini-3-flash", // $0.50/$3.00 - fast + cheap
+  ULTRA_EFFICIENT = "gemini-3-flash-preview", // Fast frontier model
   EFFICIENT = "gpt-5.2-thinking", // $1.75/$14 - SOTA reasoning
 
   // Tier 2: Balanced - GPT-5.2 Thinking (best value)
@@ -57,9 +57,9 @@ const MODEL_COSTS: ModelCosts = {
   "gpt-5.2-instant": { input: 0.00175, output: 0.014, latency: 800 },   // Fast, same price
   "gpt-5.2-pro": { input: 0.021, output: 0.168, latency: 2500 },        // Premium (12x more)
 
-  // Gemini 3 models - CORRECTED PRICING (Dec 2025)
-  "gemini-3-flash": { input: 0.0005, output: 0.003, latency: 500 },       // $0.50/$3.00 per M - CHEAPEST!
-  "gemini-3-pro-preview": { input: 0.002, output: 0.012, latency: 1200 }, // $2.00/$12.00 per M - Quality
+  // Gemini 3 models - Dec 2025
+  "gemini-3-flash-preview": { input: 0.0005, output: 0.003, latency: 500 }, // Fast frontier
+  "gemini-3-pro-preview": { input: 0.002, output: 0.012, latency: 1200 },   // Quality
 
   // Other models
   qwencoder: { input: 0.00015, output: 0.0006, latency: 1000 },
