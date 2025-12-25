@@ -6,6 +6,7 @@ export const balancedProfile: ProfileConfig = {
     think: true,
     focus: true,
     nextThought: true,
+    usage_stats: true,
     perplexity_ask: true,
     perplexity_reason: true,
     perplexity_research: false,

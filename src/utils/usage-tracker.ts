@@ -221,3 +221,70 @@ export function inferModelFromTool(toolName: string): string {
 export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
+
+/**
+ * Get all repos summary (for "all" scope)
+ */
+export function getAllReposSummary(): string {
+  const data = loadStats();
+  const repos = Object.values(data.repos);
+
+  if (repos.length === 0) {
+    return 'No usage data yet.';
+  }
+
+  const lines: string[] = ['📊 Usage Stats (All Repos)', ''];
+
+  // Sort by total calls descending
+  repos.sort((a, b) => b.totalCalls - a.totalCalls);
+
+  let grandTotal = { calls: 0, tokens: 0, cost: 0 };
+
+  for (const repo of repos) {
+    const totalCost = Object.values(repo.tools).reduce((sum, t) => sum + t.totalCost, 0);
+    const totalTokens = Object.values(repo.tools).reduce((sum, t) => sum + t.totalTokens, 0);
+
+    lines.push(`**${repo.repoName}**: ${repo.totalCalls} calls | ${totalTokens} tok | $${totalCost.toFixed(4)}`);
+
+    grandTotal.calls += repo.totalCalls;
+    grandTotal.tokens += totalTokens;
+    grandTotal.cost += totalCost;
+  }
+
+  lines.push('');
+  lines.push(`**TOTAL**: ${grandTotal.calls} calls | ${grandTotal.tokens} tok | $${grandTotal.cost.toFixed(4)}`);
+
+  return lines.join('\n');
+}
+
+/**
+ * Get stats as JSON
+ */
+export function getStatsJson(scope: 'current' | 'all', repoPath?: string): string {
+  if (scope === 'current') {
+    const stats = getRepoStats(repoPath);
+    return JSON.stringify(stats, null, 2);
+  }
+  return JSON.stringify(loadStats(), null, 2);
+}
+
+/**
+ * Reset stats
+ */
+export function resetStats(scope: 'current' | 'all', repoPath?: string): string {
+  const data = loadStats();
+
+  if (scope === 'all') {
+    saveStats({ version: 1, repos: {} });
+    return '✅ All usage statistics have been reset.';
+  }
+
+  const cwd = repoPath || process.cwd();
+  if (data.repos[cwd]) {
+    delete data.repos[cwd];
+    saveStats(data);
+    return `✅ Usage statistics for ${path.basename(cwd)} have been reset.`;
+  }
+
+  return 'No stats to reset for this repo.';
+}

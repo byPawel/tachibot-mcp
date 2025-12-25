@@ -1,0 +1,4 @@
+# Private workflows - not shared
+*.yaml
+*.yml
+!.gitignore

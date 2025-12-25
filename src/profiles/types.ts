@@ -13,6 +13,7 @@ export interface ToolsConfig {
   think: boolean;
   focus: boolean;
   nextThought: boolean;
+  usage_stats: boolean;
 
   // Perplexity tools
   perplexity_ask: boolean;

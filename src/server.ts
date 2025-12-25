@@ -44,7 +44,7 @@ import { z } from "zod";
 import { InstructionOrchestrator } from "./orchestrator-instructions.js";
 import { validateToolInput, sanitizeForLogging } from "./utils/input-validator.js";
 import { isToolEnabled, logToolConfiguration } from "./utils/tool-config.js";
-import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled } from "./utils/usage-tracker.js";
+import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled, getUsageSummary, getAllReposSummary, getStatsJson, resetStats } from "./utils/usage-tracker.js";
 // import { WorkflowVisualizerLite } from "./visualizer-lite.js"; // Unused - removed
 import { collaborativeOrchestrator } from "./collaborative-orchestrator.js";
 import { TechnicalDomain } from "./reasoning-chain.js";
@@ -479,6 +479,35 @@ safeAddTool({
       return `Error in sequential thinking: ${errorMessage}`;
     }
   }
+});
+
+// Usage Stats Tool - view/reset usage statistics
+safeAddTool({
+  name: "usage_stats",
+  description: "View or reset tool usage statistics",
+  parameters: z.object({
+    action: z.enum(["view", "reset"]).describe("View stats or reset them"),
+    scope: z.enum(["current", "all"]).default("current").describe("Current repo or all repos"),
+    format: z.enum(["table", "json"]).default("table").describe("Output format"),
+  }),
+  execute: async (args: { action: string; scope: string; format: string }): Promise<string> => {
+    const { action, scope, format } = args;
+
+    if (action === "reset") {
+      return resetStats(scope as 'current' | 'all');
+    }
+
+    // View stats
+    if (format === "json") {
+      return getStatsJson(scope as 'current' | 'all');
+    }
+
+    // Table format
+    if (scope === "all") {
+      return getAllReposSummary();
+    }
+    return getUsageSummary();
+  },
 });
 
 // Skip registering generic unified AI tools - we have specific provider tools

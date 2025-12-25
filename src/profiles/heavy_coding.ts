@@ -7,6 +7,7 @@ export const heavyCodingProfile: ProfileConfig = {
     think: true,
     focus: true,
     nextThought: true,
+    usage_stats: true,
 
     // Perplexity - all enabled for research
     perplexity_ask: true,

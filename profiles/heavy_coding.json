@@ -1,9 +1,10 @@
 {
-  "description": "Heavy coding with all reasoning & code tools (~14k tokens, 23 tools)",
+  "description": "Heavy coding with all reasoning & code tools (~14k tokens, 24 tools)",
   "tools": {
     "think": true,
     "focus": true,
     "nextThought": true,
+    "usage_stats": true,
     "perplexity_ask": true,
     "perplexity_reason": true,
     "perplexity_research": true,

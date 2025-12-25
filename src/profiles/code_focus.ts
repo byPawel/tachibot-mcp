@@ -6,6 +6,7 @@ export const codeFocusProfile: ProfileConfig = {
     think: true,
     focus: true,
     nextThought: true,
+    usage_stats: true,
     perplexity_ask: true,
     perplexity_reason: false,
     perplexity_research: false,

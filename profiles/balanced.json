@@ -1,9 +1,10 @@
 {
-  "description": "Balanced set for general use (~Xk tokens, 18 tools)",
+  "description": "Balanced set for general use (~Xk tokens, 19 tools)",
   "tools": {
     "think": true,
     "focus": true,
     "nextThought": true,
+    "usage_stats": true,
     "perplexity_ask": true,
     "perplexity_reason": true,
     "perplexity_research": false,
