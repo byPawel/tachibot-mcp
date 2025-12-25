@@ -198,3 +198,26 @@ export function tagOutput(content: string, model: string, tokens?: number): stri
   const tokenInfo = tokens ? ` ${tokens}tok` : '';
   return `${tag}${tokenInfo}\n\n${content}`;
 }
+
+/**
+ * Infer model/provider from tool name
+ * Used when actual model info isn't available
+ */
+export function inferModelFromTool(toolName: string): string {
+  if (toolName.startsWith('grok_')) return 'grok';
+  if (toolName.startsWith('openai_')) return 'openai';
+  if (toolName.startsWith('gemini_')) return 'gemini';
+  if (toolName.startsWith('perplexity_')) return 'perplexity';
+  if (toolName.startsWith('qwen_')) return 'qwen';
+  if (toolName.startsWith('kimi_')) return 'kimi';
+  if (toolName === 'think' || toolName === 'focus') return 'openai';
+  if (toolName === 'nextThought') return 'openai';
+  return 'unknown';
+}
+
+/**
+ * Estimate token count from text (rough: ~4 chars per token)
+ */
+export function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}

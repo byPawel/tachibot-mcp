@@ -44,6 +44,7 @@ import { z } from "zod";
 import { InstructionOrchestrator } from "./orchestrator-instructions.js";
 import { validateToolInput, sanitizeForLogging } from "./utils/input-validator.js";
 import { isToolEnabled, logToolConfiguration } from "./utils/tool-config.js";
+import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled } from "./utils/usage-tracker.js";
 // import { WorkflowVisualizerLite } from "./visualizer-lite.js"; // Unused - removed
 import { collaborativeOrchestrator } from "./collaborative-orchestrator.js";
 import { TechnicalDomain } from "./reasoning-chain.js";
@@ -169,7 +170,37 @@ function safeAddTool(tool: MCPTool): void {
   }
 
   if (!registeredTools.has(tool.name)) {
-    server.addTool(tool);
+    // Wrap execute with usage tracking
+    const originalExecute = tool.execute;
+    const wrappedTool = {
+      ...tool,
+      execute: async (...args: Parameters<typeof originalExecute>) => {
+        const result = await originalExecute(...args);
+
+        // Track usage (fire and forget, don't block)
+        if (isTrackingEnabled()) {
+          try {
+            const model = inferModelFromTool(tool.name);
+            // Estimate tokens from result
+            let tokens = 0;
+            if (typeof result === 'string') {
+              tokens = estimateTokens(result);
+            } else if (result?.content) {
+              const text = Array.isArray(result.content)
+                ? result.content.map((c: any) => c.text || '').join('')
+                : String(result.content);
+              tokens = estimateTokens(text);
+            }
+            trackToolCall(tool.name, model, tokens);
+          } catch {
+            // Silently ignore tracking errors
+          }
+        }
+
+        return result;
+      }
+    };
+    server.addTool(wrappedTool);
     registeredTools.add(tool.name);
   } else {
     console.warn(`⚠️ Skipping duplicate tool registration: ${tool.name}`);
