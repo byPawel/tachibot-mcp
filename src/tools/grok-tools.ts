@@ -315,9 +315,9 @@ export const grokBrainstormTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok in maximum creative mode. Generate ${numIdeas} innovative, unconventional ideas.
-Think beyond normal boundaries. Challenge assumptions. Propose radical solutions.
-${constraints ? `Constraints: ${constraints}` : 'No constraints - think freely!'}`
+        content: `You are Grok, witty and ingenious. Generate ${numIdeas} innovative, practical ideas tailored to the request.
+Challenge assumptions cleverly while staying grounded in real-world feasibility. Deliver context-relevant solutions with smart, actionable twists.
+${constraints ? `Constraints: ${constraints}` : ''}`
       },
       {
         role: "user",
