@@ -184,8 +184,8 @@ export function getAvailableModels(config: FocusConfig): string[] {
     }
   }
   if (config.apiKeys.gemini) {
-    // Use Gemini 2.5 (latest and best)
-    models.push('gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite');
+    // Use Gemini 3 Pro Preview (RAW POWER)
+    models.push('gemini-3-pro-preview');
   }
   if (config.apiKeys.deepseek) {
     models.push('deepseek-r1');

@@ -1119,32 +1119,32 @@ Multi-model parallel verification with consensus analysis.
 #### Variants
 
 **quick_verify** (Default)
-- Models: `gpt-5.1-codex-mini`, `gemini-2.5-flash`, `gpt-5`
+- Models: `gpt-5.1-codex-mini`, `gemini-3-pro-preview`, `gpt-5`
 - Tokens: 2000
 - Timeout: 10s
 - Use: Fast verification
 
 **deep_verify**
-- Models: `gpt-5`, `qwq-32b`, `gemini-2.5-pro`, `qwen/qwen3-coder`
+- Models: `gpt-5`, `qwq-32b`, `gemini-3-pro-preview`, `qwen/qwen3-coder`
 - Tokens: 6000
 - Timeout: 30s
 - Use: Complex reasoning
 
 **fact_check**
-- Models: `gpt-5`, `gemini-2.5-pro`, `gpt-5.1-codex-mini`
+- Models: `gpt-5`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
 - Tokens: 3000
 - Timeout: 15s
 - Sources: Enabled by default
 - Use: Factual verification
 
 **code_verify**
-- Models: `gpt-5`, `gemini-2.5-pro`, `qwen/qwen3-coder`
+- Models: `gpt-5`, `gemini-3-pro-preview`, `qwen/qwen3-coder`
 - Tokens: 4000
 - Timeout: 20s
 - Use: Code correctness
 
 **security_verify**
-- Models: `gpt-5`, `gemini-2.5-pro`, `qwen/qwen3-coder`
+- Models: `gpt-5`, `gemini-3-pro-preview`, `qwen/qwen3-coder`
 - Tokens: 4000
 - Timeout: 20s
 - Use: Security analysis
@@ -1180,7 +1180,7 @@ verifier({
 verifier({
   query: "Complex mathematical proof",
   variant: "deep_verify",
-  model: ["gpt-5", "qwq-32b", "gemini-2.5-pro"],
+  model: ["gpt-5", "qwq-32b", "gemini-3-pro-preview"],
   maxTokens: 8000
 })
 ```
@@ -1321,7 +1321,7 @@ Critical thinking and echo chamber prevention by generating counter-arguments.
 #### Supported Models
 
 - `gpt-5.1-codex-mini`, `gpt-5`, `qwq-32b`, `qwen3-30b`, `qwen3-coder-480b`
-- `gemini-2.5-flash`, `gemini-2.5-pro`
+- `gemini-3-pro-preview`, `gemini-3-pro-preview`
 - `grok-4`, `grok-4-0709`
 - `sonar-pro`, `perplexity-sonar-pro`
 
@@ -1368,7 +1368,7 @@ challenger({
 ```typescript
 challenger({
   context: "Cryptocurrency will replace traditional banking",
-  model: "gemini-2.5-flash",
+  model: "gemini-3-pro-preview",
   temperature: 0.7
 })
 ```

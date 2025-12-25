@@ -40,7 +40,7 @@ const result1 = await challenger.challenge(
 const result2 = await challenger.challenge(
   'Social media has only positive effects.',
   {
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-pro-preview',
     temperature: 0.7,
     maxTokens: 1500
   }
@@ -91,7 +91,7 @@ interface Challenge {
 
 | Provider | Models | Notes |
 |----------|--------|-------|
-| **Google Gemini** | `gemini-3-pro-preview`, `gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-2.5-flash-lite` | Gemini 3 Pro is latest (Nov 2025) |
+| **Google Gemini** | `gemini-3-pro-preview`, `gemini-3-pro-preview`, `gemini-3-pro-preview`, `gemini-3-pro-preview-lite` | Gemini 3 Pro is latest (Nov 2025) |
 | **OpenAI** | `gpt-5.1`, `gpt-5.1-codex-mini`, `gpt-5.1-codex`, `gpt-5-pro` | Codex models use /v1/responses endpoint |
 | **xAI (Grok)** | `grok-4-1-fast-reasoning`, `grok-4-1-fast-non-reasoning`, `grok-code-fast-1`, `grok-4-0709` | Grok 4.1 is latest (Nov 2025) |
 | **Perplexity** | `sonar-pro`, `sonar-reasoning-pro` | Web search enabled |
@@ -178,7 +178,7 @@ const result2 = await verifier.verify(
 const result3 = await verifier.verify(
   'Is this code safe?',
   {
-    model: ['gpt-5.1', 'gemini-2.5-pro'],
+    model: ['gpt-5.1', 'gemini-3-pro-preview'],
     maxTokens: 3000
   }
 );
@@ -259,7 +259,7 @@ The Scout tool provides conditional hybrid intelligence gathering, using Perplex
 #### `code_scout`
 - **Flow**: `conditional-hybrid`
 - **Perplexity For**: Latest API docs only
-- **Primary**: `gemini-2.5-flash`
+- **Primary**: `gemini-3-pro-preview`
 - **Tokens**: 2000
 - **Max Sources**: 100
 - **Use case**: Technical documentation and code information
@@ -454,7 +454,7 @@ See test files for more usage examples:
 1. **Use appropriate variants**: Don't use `deep_verify` when `quick_verify` suffices
 2. **Set token limits**: Lower `maxTokens` for simple queries
 3. **Control timeouts**: Shorter timeouts for time-sensitive operations
-4. **Choose models wisely**: `gpt-5.1-codex-mini` and `gemini-2.5-flash` are fast and cheap
+4. **Choose models wisely**: `gpt-5.1-codex-mini` and `gemini-3-pro-preview` are fast and cheap
 5. **Limit Grok sources**: Keep `maxSearchSources` low unless needed
 6. **Use `quick_scout`**: For simple lookups instead of full research
 

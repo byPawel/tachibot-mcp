@@ -185,7 +185,7 @@ perplexity_ask({
 focus({
   query: "Design a scalable microservice architecture",
   mode: "deep-reasoning",
-  models: ["grok-3", "gpt-5", "gemini-2.5"],
+  models: ["grok-3", "gpt-5", "gemini-3-pro-preview"],
   rounds: 5
 })
 ```

@@ -169,7 +169,7 @@ export class VisualizationService implements IExtendedVisualizationRenderer {
     examples += `## 2. Architecture Debate\n`;
     examples += `\`\`\`typescript\n`;
     examples += `focus --mode architecture-debate "Microservices vs Monolith for startup MVP"\n`;
-    examples += `// Models debate pros/cons → Grok analyzes → DeepSeek optimizes → Claude consensus\n`;
+    examples += `// Models debate pros/cons → Grok analyzes → Gemini optimizes → Claude consensus\n`;
     examples += `\`\`\`\n\n`;
 
     examples += `## 3. Algorithm Optimization Chain\n`;
@@ -207,7 +207,7 @@ export class VisualizationService implements IExtendedVisualizationRenderer {
     examples += `## 7. Performance Council\n`;
     examples += `\`\`\`typescript\n`;
     examples += `focus --mode performance-council "Optimize database queries for dashboard"\n`;
-    examples += `// Gemini profiles → Claude adds caching → Grok improves algorithms → DeepSeek benchmarks\n`;
+    examples += `// Gemini profiles → Claude adds caching → Grok improves algorithms → GPT benchmarks\n`;
     examples += `\`\`\`\n`;
 
     return examples;

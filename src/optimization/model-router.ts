@@ -4,12 +4,12 @@
  */
 
 export enum ModelTier {
-  // Tier 0: Cheapest - GPT-5.2 Instant/Thinking (same price!)
-  ULTRA_CHEAP = "gpt-5.2-instant", // $1.75/$14 per million
+  // Tier 0: Cheapest - Gemini 3 Flash (3.5x cheaper than GPT-5.2!)
+  ULTRA_CHEAP = "gemini-3-flash", // $0.50/$3.00 per million - CHEAPEST
 
-  // Tier 1: Ultra Fast & Cheap (< $0.001 per request)
-  ULTRA_EFFICIENT = "gemini-2.5-flash", // Fast Gemini
-  EFFICIENT = "gpt-5.2-thinking", // SOTA reasoning at cheap price!
+  // Tier 1: Fast & Efficient
+  ULTRA_EFFICIENT = "gemini-3-flash", // $0.50/$3.00 - fast + cheap
+  EFFICIENT = "gpt-5.2-thinking", // $1.75/$14 - SOTA reasoning
 
   // Tier 2: Balanced - GPT-5.2 Thinking (best value)
   STANDARD = "gpt-5.2-thinking", // SOTA reasoning ($1.75/$14)
@@ -57,10 +57,9 @@ const MODEL_COSTS: ModelCosts = {
   "gpt-5.2-instant": { input: 0.00175, output: 0.014, latency: 800 },   // Fast, same price
   "gpt-5.2-pro": { input: 0.021, output: 0.168, latency: 2500 },        // Premium (12x more)
 
-  // Gemini models
-  "gemini-2.5-flash": { input: 0.000075, output: 0.0003, latency: 500 },
-  "gemini-2.5-pro": { input: 0.00015, output: 0.0006, latency: 1000 },
-  "gemini-3-pro-preview": { input: 0.0002, output: 0.0008, latency: 800 },
+  // Gemini 3 models - CORRECTED PRICING (Dec 2025)
+  "gemini-3-flash": { input: 0.0005, output: 0.003, latency: 500 },       // $0.50/$3.00 per M - CHEAPEST!
+  "gemini-3-pro-preview": { input: 0.002, output: 0.012, latency: 1200 }, // $2.00/$12.00 per M - Quality
 
   // Other models
   qwencoder: { input: 0.00015, output: 0.0006, latency: 1000 },
@@ -157,20 +156,20 @@ export class SmartModelRouter {
       if (gpt5Enabled) {
         return {
           primary: ModelTier.ULTRA_CHEAP, // gpt-5.2-instant
-          fallback: ModelTier.ULTRA_EFFICIENT, // gemini-2.5-flash
+          fallback: ModelTier.ULTRA_EFFICIENT, // gemini-3-pro-preview
           estimatedCost: 0.002,
           estimatedLatency: 800,
           requiresConfirmation: false,
-          reasoning: "Simple query - using GPT-5.1 Codex Mini (cheapest option)",
+          reasoning: "Simple query - using GPT-5.2 Instant (cheapest option)",
         };
       } else {
         return {
-          primary: ModelTier.ULTRA_EFFICIENT, // gemini-2.5-flash
+          primary: ModelTier.ULTRA_EFFICIENT, // gemini-3-pro-preview
           fallback: ModelTier.EFFICIENT,
-          estimatedCost: 0.00001,
-          estimatedLatency: 500,
+          estimatedCost: 0.0002,
+          estimatedLatency: 800,
           requiresConfirmation: false,
-          reasoning: "Simple query - using Gemini Flash (GPT-5 disabled)",
+          reasoning: "Simple query - using Gemini 3 Pro Preview (GPT-5 disabled)",
         };
       }
     }

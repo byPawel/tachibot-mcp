@@ -46,13 +46,13 @@ export const OPENAI_REASONING = {
 // GEMINI MODELS (Google)
 // =============================================================================
 export const GEMINI_MODELS = {
-  // Gemini 3 (November 2025 - Latest)
+  // Gemini 3 Pro Preview (November 2025 - RAW POWER)
   GEMINI_3_PRO: "gemini-3-pro-preview", // Latest: structured outputs & multimodal, 1M context
 
-  // Gemini 2.5 (Previous generation - still available)
-  FLASH: "gemini-2.5-flash",       // Fast model
-  PRO: "gemini-2.5-pro",           // Advanced reasoning
-  FLASH_LITE: "gemini-2.5-flash-lite", // Cost-effective
+  // Aliases for backward compatibility - all point to Gemini 3 Pro Preview
+  FLASH: "gemini-3-pro-preview",       // Alias → Gemini 3 Pro
+  PRO: "gemini-3-pro-preview",         // Alias → Gemini 3 Pro
+  FLASH_LITE: "gemini-3-pro-preview",  // Alias → Gemini 3 Pro
 } as const;
 
 // Perplexity Models
@@ -292,3 +292,73 @@ export const TOOL_DEFAULTS = {
 
 // Default tool to use in workflows if not specified
 export const DEFAULT_WORKFLOW_TOOL = "openai_brainstorm";
+
+// =============================================================================
+// MODEL DISPLAY NAMES - Single source of truth for UI display
+// =============================================================================
+// Used in tool outputs, usage stats, logs - keeps display consistent
+export const MODEL_DISPLAY_NAMES: Record<string, string> = {
+  // OpenAI
+  "gpt-5.2": "gpt-5.2",
+  "gpt-5.2-pro": "gpt-5.2-pro",
+
+  // Gemini
+  "gemini-3-pro-preview": "gemini-3-pro",
+  "gemini-3-flash": "gemini-3-flash",
+
+  // Grok (xAI)
+  "grok-4-1-fast-reasoning": "grok-4.1",
+  "grok-4-1-fast-non-reasoning": "grok-4.1-fast",
+  "grok-4-fast-reasoning": "grok-4",
+  "grok-4-fast-non-reasoning": "grok-4-fast",
+  "grok-code-fast-1": "grok-code",
+  "grok-4-0709": "grok-4-heavy",
+  "grok-3": "grok-3",
+
+  // Perplexity
+  "sonar-pro": "perplexity",
+  "sonar-reasoning-pro": "perplexity-reason",
+
+  // Kimi (Moonshot)
+  "moonshotai/kimi-k2-thinking": "kimi-k2",
+
+  // Qwen (Alibaba)
+  "qwen/qwen3-coder-plus": "qwen-coder",
+  "qwen/qwen3-coder": "qwen-coder",
+  "qwen/qwq-32b": "qwq-32b",
+} as const;
+
+// Helper to get display name (falls back to model ID if not mapped)
+export function getModelDisplayName(modelId: string): string {
+  return MODEL_DISPLAY_NAMES[modelId] || modelId;
+}
+
+// Model pricing per 1K tokens (input/output average) for cost tracking
+export const MODEL_PRICING: Record<string, number> = {
+  // OpenAI
+  "gpt-5.2": 0.00788,           // ($1.75 + $14) / 2 / 1000
+  "gpt-5.2-pro": 0.0945,        // ($21 + $168) / 2 / 1000
+
+  // Gemini
+  "gemini-3-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
+  "gemini-3-flash": 0.00175,     // ($0.50 + $3) / 2 / 1000
+
+  // Grok - all cheap!
+  "grok-4-1-fast-reasoning": 0.00035,
+  "grok-4-1-fast-non-reasoning": 0.00035,
+  "grok-4-fast-reasoning": 0.00035,
+  "grok-4-fast-non-reasoning": 0.00035,
+  "grok-code-fast-1": 0.00085,
+  "grok-4-0709": 0.009,          // expensive
+  "grok-3": 0.00035,
+
+  // Perplexity
+  "sonar-pro": 0.006,
+  "sonar-reasoning-pro": 0.006,
+
+  // OpenRouter models
+  "moonshotai/kimi-k2-thinking": 0.002,
+  "qwen/qwen3-coder-plus": 0.0005,
+  "qwen/qwen3-coder": 0.0003,
+  "qwen/qwq-32b": 0.001,
+} as const;

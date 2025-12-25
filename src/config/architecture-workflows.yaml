@@ -42,7 +42,7 @@ workflows:
     stages:
       - id: gemini_ingest
         mode: "architect"
-        model: "gemini-2.5-flash"
+        model: "gemini-3-pro-preview"
         variant: "full_analysis"
         max_tokens: 1000000
         tasks:
@@ -119,7 +119,7 @@ workflows:
     stages:
       - id: gemini_scan
         mode: "architect"
-        model: "gemini-2.5-flash"
+        model: "gemini-3-pro-preview"
         max_tokens: 500000
         focus: "security"
         tasks:
@@ -160,7 +160,7 @@ workflows:
     stages:
       - id: gemini_profile
         mode: "architect"
-        model: "gemini-2.5-flash"
+        model: "gemini-3-pro-preview"
         max_tokens: 750000
         focus: "performance"
         tasks:
@@ -201,7 +201,7 @@ workflows:
     stages:
       - id: gemini_overview
         mode: "architect"
-        model: "gemini-2.5-flash"
+        model: "gemini-3-pro-preview"
         max_tokens: 250000
         depth: "shallow"
         tasks:
@@ -231,21 +231,21 @@ workflows:
     stages:
       - id: level_1_scan
         mode: "architect"
-        model: "gemini-2.5-flash"
+        model: "gemini-3-pro-preview"
         max_tokens: 100000
         depth: "shallow"
         tasks: ["identify_critical_areas"]
         
       - id: level_2_analysis
         mode: "architect"
-        model: "gemini-2.5-flash"
+        model: "gemini-3-pro-preview"
         max_tokens: 300000
         depth: "normal"
         focus_on: "${level_1_scan.critical_areas}"
         
       - id: level_3_deep_dive
         mode: "architect"
-        model: "gemini-2.5-pro"  # Use Pro for deep complexity
+        model: "gemini-3-pro-preview"  # Use Pro for deep complexity
         max_tokens: 500000
         depth: "deep"
         focus_on: "${level_2_analysis.high_complexity_areas}"
@@ -273,7 +273,7 @@ workflows:
     stages:
       - id: gemini_check
         mode: "architect"
-        model: "gemini-2.5-flash"
+        model: "gemini-3-pro-preview"
         max_tokens: 200000
         tasks:
           - "security_final_check"
@@ -283,14 +283,14 @@ workflows:
       
       - id: commit_validation
         mode: "commit_guardian"
-        model: "gemini-2.5-flash"
+        model: "gemini-3-pro-preview"
         max_tokens: 5000
         validate: true
         
       - id: multi_model_verify
         mode: "verifier"
         variant: "quick_verify"
-        models: ["gpt-5-mini", "gemini-2.5-flash", "qwen3-30b"]
+        models: ["gpt-5-mini", "gemini-3-pro-preview", "qwen3-30b"]
         parallel: true
         max_tokens: 15000
         
@@ -329,7 +329,7 @@ routing_rules:
 model_matrix:
   syntax_analysis:
     primary: "gpt-4-mini"
-    fallback: "gemini-2.5-flash"
+    fallback: "gemini-3-pro-preview"
     
   security_analysis:
     primary: "claude-opus-4.1"
@@ -345,8 +345,8 @@ model_matrix:
     
   dependency_analysis:
     primary: "perplexity-sonar-pro"
-    fallback: "gemini-2.5-flash"
+    fallback: "gemini-3-pro-preview"
     
   general_analysis:
-    primary: "gemini-2.5-flash"
+    primary: "gemini-3-pro-preview"
     fallback: "gpt-5-mini"

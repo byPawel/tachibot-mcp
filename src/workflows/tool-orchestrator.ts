@@ -548,12 +548,6 @@ export class ToolOrchestrator extends EventEmitter {
             reason: 'GPT-5 - Advanced mathematical/scientific reasoning'
           });
         }
-        if (modelPreferences.isModelAvailable('deepseek_r1')) {
-          workflow.push({
-            toolId: 'deepseek_r1',
-            reason: 'DeepSeek R1 - Cost-effective deep reasoning'
-          });
-        }
       }
     } else if (analysis.complexity === 'medium') {
       // Use preferred model or default

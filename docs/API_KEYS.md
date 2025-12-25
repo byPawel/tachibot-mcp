@@ -235,15 +235,15 @@ Google's Gemini models for analysis, brainstorming, and text processing.
 
 #### Models Available
 
-- **gemini-2.5-flash** - Fast, cost-effective
-- **gemini-2.5-pro** - Advanced reasoning
+- **gemini-3-pro-preview** - Fast, cost-effective
+- **gemini-3-pro-preview** - Advanced reasoning
 
 #### Pricing
 
 | Model | Input | Output |
 |-------|-------|--------|
-| Gemini 2.5 Flash | $0.075 / 1M tokens | $0.30 / 1M tokens |
-| Gemini 2.5 Pro | $1.25 / 1M tokens | $5.00 / 1M tokens |
+| Gemini 3 Pro Preview | $0.075 / 1M tokens | $0.30 / 1M tokens |
+| Gemini 3 Pro Preview | $1.25 / 1M tokens | $5.00 / 1M tokens |
 
 **Free Tier:**
 - **15 requests/minute** (free tier)

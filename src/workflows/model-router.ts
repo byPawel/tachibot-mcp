@@ -42,24 +42,6 @@ export class ModelRouter {
       context: '1M tokens',
       useFor: ['latest Gemini (Nov 2025)', 'enhanced structured outputs', 'multimodal', 'complex analysis']
     }],
-    ['gemini-2.5-pro', {
-      id: 'gemini-2.5-pro',
-      cost: 10,
-      quality: 9,
-      speed: 7,
-      reasoning: 9,
-      context: '1M tokens',
-      useFor: ['deep reasoning', 'complex analysis', 'when quality matters']
-    }],
-    ['gemini-2.5-flash', {
-      id: 'gemini-2.5-flash',
-      cost: 2,
-      quality: 7,
-      speed: 10,
-      reasoning: 7,
-      context: '1M tokens',
-      useFor: ['scout mode', 'quick analysis', 'high-volume tasks']
-    }],
     ['perplexity-sonar-pro', {
       id: 'perplexity-sonar-pro',
       cost: 6,
@@ -176,7 +158,7 @@ export class ModelRouter {
     }
     
     if (task.complexity < 0.2 && task.type === 'format') {
-      return 'gemini-2.5-flash';
+      return 'gemini-3-pro-preview';
     }
     
     if (task.type === 'synthesis') {
@@ -196,7 +178,7 @@ export class ModelRouter {
       'challenger': 'gpt5_mini',
       'auditor': 'perplexity-sonar-pro',
       'architect': 'grok-4-1-fast-reasoning',
-      'commit_guardian': 'gemini-2.5-flash'
+      'commit_guardian': 'gemini-3-pro-preview'
     };
     
     return taskTypeMap[task.type] || this.selectByConstraints(task, constraints);
@@ -238,7 +220,7 @@ export class ModelRouter {
 
   selectModelsForVerification(variant: string): string[] {
     const variants: Record<string, string[]> = {
-      'quick_verify': ['gpt5_mini', 'gemini-2.5-flash', 'qwen3-30b'],
+      'quick_verify': ['gpt5_mini', 'gemini-3-pro-preview', 'qwen3-30b'],
       'deep_verify': ['gpt5', 'qwq-32b', 'gpt5_reason', 'gemini-3-pro-preview', 'qwen3-coder-480b'],
       'fact_check': ['perplexity-sonar-pro', 'gpt5', 'gemini-3-pro-preview'],
       'code_verify': ['qwen3-coder-480b', 'gpt5', 'gemini-3-pro-preview'],

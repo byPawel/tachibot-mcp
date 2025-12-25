@@ -604,9 +604,6 @@ export const openAIBrainstormTool = {
       reasoning_effort = "medium",
       max_tokens = 4000
     } = args;
-    console.error('🚀 TOOL CALLED: openai_brainstorm');
-    console.error('📥 ARGS RECEIVED:', JSON.stringify(args, null, 2));
-    console.error('📥 OPTIONS RECEIVED:', JSON.stringify(options, null, 2));
     const stylePrompts = {
       innovative: "Focus on novel, cutting-edge solutions",
       practical: "Emphasize feasible, implementable ideas",
@@ -629,19 +626,8 @@ Format: Number each idea and provide a brief explanation.`
       }
     ];
 
-    // Use specified model with proper parameters
-    const maxTokens = max_tokens;
-    const reasoningEffort = reasoning_effort;
-
-    console.error(`🔍 DEBUG: Using model: ${model}, reasoning_effort: ${reasoningEffort}, max_tokens: ${maxTokens}`);
-
-    // Convert string model to OpenAIModel enum
     const modelEnum = model as OpenAIModel;
-    console.error(`🔍 CALLING: callOpenAIWithCustomParams with ${modelEnum}, skipValidation: ${options.skipValidation || false}`);
-    const result = await callOpenAIWithCustomParams(messages, modelEnum, 0.9, maxTokens, reasoningEffort, options.skipValidation || false);
-    console.error('🔍 DEBUG: Got result from callOpenAI:', result.substring(0, 100));
-    console.error('✅ TOOL COMPLETE: openai_brainstorm');
-    return result;
+    return await callOpenAIWithCustomParams(messages, modelEnum, 0.9, max_tokens, reasoning_effort, options.skipValidation || false);
   }
 };
 

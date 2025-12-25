@@ -22,8 +22,7 @@ export class TokenTracker {
     ['gpt5', 12],
     ['gpt5_mini', 8],
     ['gpt5_nano', 2],
-    ['gemini-2.5-pro', 10],
-    ['gemini-2.5-flash', 2],
+    ['gemini-3-pro-preview', 10],
     ['perplexity-sonar-pro', 6],
     ['qwen3-coder-480b', 12],
     ['qwq-32b', 10],
@@ -136,7 +135,7 @@ export class TokenTracker {
     const report = this.getReport();
 
     if (report.optimizationRate < 0.5) {
-      suggestions.push('Consider using more cost-effective models like gemini-2.5-flash for simple tasks');
+      suggestions.push('Consider batching requests to optimize token usage');
     }
 
     for (const [model, metrics] of report.byModel) {

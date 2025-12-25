@@ -128,7 +128,7 @@ export const REASONING_TEMPLATES = {
         prompt: "Analyze both approaches. What are the trade-offs?"
       },
       {
-        model: "deepseek",
+        model: "gemini",
         mode: ReasoningMode.ENHANCE,
         prompt: "Propose a hybrid approach combining the best of both."
       },
@@ -288,7 +288,7 @@ export const REASONING_TEMPLATES = {
         prompt: "Suggest algorithmic improvements and data structure changes."
       },
       {
-        model: "deepseek",
+        model: "gemini",
         mode: ReasoningMode.VALIDATE,
         prompt: "Benchmark proposals. Calculate expected improvements."
       },
@@ -431,15 +431,6 @@ export const MODEL_PERSONAS: Record<string, ModelPersona> = {
     temperature: 0.3
   },
   
-  "deepseek-optimizer": {
-    name: "DeepSeek Optimizer",
-    model: "deepseek",
-    role: "Efficiency Expert",
-    strengths: ["optimization", "benchmarking", "cost analysis"],
-    perspective: "Maximize efficiency. Minimize resource usage.",
-    temperature: 0.5
-  },
-  
   "analysis-reviewer": {
     name: "Analysis Reviewer",
     model: "analysis",
@@ -575,7 +566,7 @@ export function createReasoningChain(
  * .addBrainstorm("gemini", "Generate 3 architectural approaches")
  * .addCritique("claude-opus", "Evaluate scalability and latency")
  * .addDebate("grok", "gemini", "CRDT vs Operational Transform")
- * .addEnhancement("deepseek", "Optimize for cost")
+ * .addEnhancement("gemini", "Optimize for cost")
  * .addSynthesis("claude-sonnet")
  * .build();
  */
