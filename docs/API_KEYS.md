@@ -15,7 +15,6 @@ Complete guide to obtaining, configuring, and managing API keys for TachiBot MCP
   - [Google Gemini](#google-gemini)
   - [OpenRouter](#openrouter)
 - [Cost Comparison](#cost-comparison)
-- [Free Tier Information](#free-tier-information)
 - [Usage Monitoring](#usage-monitoring)
 - [Rate Limits](#rate-limits)
 - [Best Practices](#best-practices)
@@ -82,8 +81,6 @@ Perplexity provides real-time web search and research capabilities with citation
 | Sonar Pro | $3.00 / 1M tokens | $15.00 / 1M tokens | Quick search |
 | Sonar Reasoning Pro | $5.00 / 1M tokens | $25.00 / 1M tokens | Complex reasoning |
 
-**Free Tier:** $5 credit on signup (typically ~100-200 queries)
-
 #### Rate Limits
 
 - **Standard:** 20 requests/minute
@@ -133,11 +130,6 @@ Grok (by xAI) provides live web search, reasoning, and code analysis.
 | **Live Search** | **$5 / 1k sources** | - | Extra cost per search! |
 
 **Important:** Grok live search (`grok_search` tool) costs $5 per 1000 sources searched. Control with `maxSearchSources` parameter or `GROK_SEARCH_SOURCES_LIMIT` env var.
-
-#### Free Tier
-
-- **$25 credit** on signup
-- Usually good for 1000-2000 queries or 20-50 live searches
 
 #### Rate Limits
 
@@ -193,11 +185,6 @@ OpenAI provides GPT-5 models for brainstorming, comparison, and reasoning.
 
 **Warning:** GPT-5 models may generate invisible reasoning tokens that increase costs. Monitor usage carefully.
 
-#### Free Tier
-
-- **$5 credit** for new accounts
-- Must add payment method after trial
-
 #### Rate Limits
 
 | Tier | Requests/Min | Tokens/Min |
@@ -235,27 +222,15 @@ Google's Gemini models for analysis, brainstorming, and text processing.
 
 #### Models Available
 
-- **gemini-3-pro-preview** - Fast, cost-effective
-- **gemini-3-pro-preview** - Advanced reasoning
+- **gemini-3-pro-preview** - Latest Gemini 3 Pro (Nov 2025), 1M context
+- **gemini-3-flash** - Fast & cheap option
 
 #### Pricing
 
 | Model | Input | Output |
 |-------|-------|--------|
-| Gemini 3 Pro Preview | $0.075 / 1M tokens | $0.30 / 1M tokens |
-| Gemini 3 Pro Preview | $1.25 / 1M tokens | $5.00 / 1M tokens |
-
-**Free Tier:**
-- **15 requests/minute** (free tier)
-- **1,500 requests/day** (free tier)
-- Very generous for experimentation!
-
-#### Rate Limits
-
-| Tier | Requests/Min | Requests/Day |
-|------|--------------|--------------|
-| Free | 15 | 1,500 |
-| Paid | 1,000 | 50,000 |
+| Gemini 3 Pro Preview | $2.00 / 1M tokens | $12.00 / 1M tokens |
+| Gemini 3 Flash | $0.50 / 1M tokens | $3.00 / 1M tokens |
 
 #### Cost Estimation
 
@@ -295,8 +270,6 @@ OpenRouter provides access to Qwen models and other open-source models.
 | Qwen3-coder-480B | $1.50 / 1M tokens | $6.00 / 1M tokens |
 | QwQ-32B | $0.20 / 1M tokens | $0.80 / 1M tokens |
 | Qwen3-30B | $0.60 / 1M tokens | $2.40 / 1M tokens |
-
-**Free Tier:** Some models have free tier, but Qwen models are paid only.
 
 #### Rate Limits
 
@@ -373,28 +346,6 @@ OPENROUTER_API_KEY=sk-or-v1-abc123...
 
 ---
 
-## Free Tier Information
-
-### Best Free Tiers
-
-1. **Google Gemini** - 1,500 requests/day, very generous
-2. **Perplexity** - $5 credit (~100-200 queries)
-3. **Grok** - $25 credit (~1000-2000 queries)
-4. **OpenAI** - $5 credit (~200-500 queries with mini)
-
-### Free Tier Strategy
-
-Start with this order:
-1. **Week 1:** Use Gemini free tier (1500 req/day)
-2. **Week 2:** Use Perplexity $5 credit
-3. **Week 3:** Use Grok $25 credit
-4. **Week 4:** Use OpenAI $5 credit
-5. **Month 2:** Add payment method to favorite provider
-
-This gives you ~1 month of free usage!
-
----
-
 ## Usage Monitoring
 
 ### Provider Dashboards
@@ -433,8 +384,8 @@ TachiBot automatically handles rate limits with:
 
 ### Rate Limit Reference
 
-| Provider | Free Tier | Paid Tier 1 | Paid Tier 2 |
-|----------|-----------|-------------|-------------|
+| Provider | Basic | Tier 1 | Tier 2 |
+|----------|-------|--------|--------|
 | Perplexity | 20/min | 100/min | Custom |
 | Grok | 60/min | 60/min | 600/min |
 | OpenAI | 3/min | 500/min | 5000/min |
@@ -449,7 +400,7 @@ TachiBot automatically handles rate limits with:
 
 Begin with one provider:
 - **Research focus:** Start with Perplexity
-- **Code focus:** Start with Gemini (free tier)
+- **Code focus:** Start with Gemini
 - **General use:** Start with OpenAI mini
 
 ### 2. Use Profiles to Control Costs
@@ -605,4 +556,4 @@ TACHI_CACHE_TTL=3600  # 1 hour
 
 ---
 
-**Remember:** You only pay for what you use. Start with free tiers, monitor usage, and scale up as needed!
+**Remember:** You only pay for what you use. Monitor usage and scale as needed.
