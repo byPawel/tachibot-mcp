@@ -14,6 +14,7 @@ import {
 } from "../config/model-constants.js";
 import { validateToolInput } from "../utils/input-validator.js";
 import { hasGrokApiKey } from "../utils/api-keys.js";
+import { trackToolCall, estimateTokens, isTrackingEnabled } from "../utils/usage-tracker.js";
 
 // Lazy load OpenRouter for Qwen models
 let callOpenRouter: any = null;
@@ -174,8 +175,17 @@ export async function executeWorkflowTool(
     return messages;
   };
 
-  // Helper to build result with model metadata
+  // Helper to build result with model metadata + tracking
   const buildResult = (result: string, actualModel: string): ToolExecutionResult => {
+    // Track workflow tool usage
+    if (isTrackingEnabled()) {
+      try {
+        const tokens = estimateTokens(result);
+        trackToolCall(`workflow:${toolName}`, actualModel, tokens);
+      } catch {
+        // Silently ignore tracking errors
+      }
+    }
     return { result, modelUsed: actualModel };
   };
 
