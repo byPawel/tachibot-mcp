@@ -172,8 +172,8 @@ export function getUsageSummary(repoPath?: string): string {
   const totalCost = sortedTools.reduce((sum, [, t]) => sum + t.totalCost, 0);
   const totalTokens = sortedTools.reduce((sum, [, t]) => sum + t.totalTokens, 0);
 
-  // Find max tool name length for alignment (cap at 18)
-  const maxNameLen = Math.min(18, Math.max(...sortedTools.map(([name]) => name.length)));
+  // Find max tool name length for alignment (cap at 28 for workflow: prefix)
+  const maxNameLen = Math.min(28, Math.max(...sortedTools.map(([name]) => name.length)));
 
   const lines: string[] = [
     ``,
