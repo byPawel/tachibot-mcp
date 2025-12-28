@@ -9,6 +9,8 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
+import { link } from "../utils/ansi-renderer.js";
+// Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to call it here
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -197,13 +199,17 @@ Cite your sources when using web data.`
       maxTokens: 5000
     });
 
-    // Format response with sources
+    // Format response with sources using ANSI
     if (result.sources && result.sources.length > 0) {
       const sourcesText = result.sources
         .slice(0, 5) // Limit to top 5 sources
-        .map((s, i) => `[${i + 1}] ${s.title || s.url}`)
+        .map((s: any, i: number) => {
+          const title = s.title || 'Source';
+          const url = s.url || '';
+          return `  ${link(url, `[${i + 1}] ${title}`)}`;
+        })
         .join('\n');
-      
+
       return `${result.content}\n\n**Sources:**\n${sourcesText}`;
     }
 
@@ -411,9 +417,25 @@ Limit search to ${max_search_results} sources for cost control.`
       maxTokens: 3000
     });
 
-    // Add cost warning
-    const estimatedCost = (max_search_results / 1000) * 0.025; // $25 per 1000 sources
-    return `${result.content}\n\n*Search used up to ${max_search_results} sources (~$${estimatedCost.toFixed(4)})*`;
+    // Format sources with ANSI links
+    let output = result.content;
+    if (result.sources && result.sources.length > 0) {
+      const sourcesText = result.sources
+        .slice(0, 10)
+        .map((s: any, i: number) => {
+          const title = s.title || 'Source';
+          const url = s.url || '';
+          return `  ${link(url, `[${i + 1}] ${title}`)}`;
+        })
+        .join('\n');
+      output += `\n\n**Sources:**\n${sourcesText}`;
+    }
+
+    // Add cost info
+    const estimatedCost = (max_search_results / 1000) * 0.025;
+    output += `\n\n*Search used up to ${max_search_results} sources (~$${estimatedCost.toFixed(4)})*`;
+
+    return output;
   }
 };
 

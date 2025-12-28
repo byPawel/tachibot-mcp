@@ -5,24 +5,10 @@
  */
 
 import { z } from "zod";
+import { getPerplexityApiKey, hasPerplexityApiKey } from "../utils/api-keys.js";
 
 // Perplexity API configuration
 const PERPLEXITY_API_URL = "https://api.perplexity.ai";
-
-// Function to get the API key (deferred reading)
-function getPerplexityApiKey(): string | undefined {
-  return process.env.PERPLEXITY_API_KEY;
-}
-
-// Debug logging function - call when needed
-function debugApiKey(): void {
-  const apiKey = getPerplexityApiKey();
-  console.error('[PERPLEXITY DEBUG] API Key present:', !!apiKey);
-  if (!apiKey) {
-    console.error('[PERPLEXITY DEBUG] Environment variables containing PERP or API found:',
-      Object.keys(process.env).filter(k => k.includes('PERP') || k.includes('API')).length);
-  }
-}
 
 // Available Perplexity models (2025 latest)
 export enum PerplexityModel {
@@ -44,8 +30,8 @@ export async function callPerplexity(
   searchRecency?: string
 ): Promise<string> {
   const apiKey = getPerplexityApiKey();
+  console.error(`[PERPLEXITY DEBUG] API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`);
   if (!apiKey) {
-    debugApiKey(); // Log debug info when key is missing
     return `[Perplexity API key not configured. Add PERPLEXITY_API_KEY to .env file]`;
   }
 
@@ -88,13 +74,31 @@ export async function callPerplexity(
     let result = data.choices?.[0]?.message?.content || "No response from Perplexity";
 
     // Add sources if available (Perplexity API changed from citations to search_results in 2025)
+    // Format with ANSI colors: cyan bullet, bold title, blue URL, dim date
+    // Use \x00RAWANSI\x00 markers to skip markdown processing in ansi-renderer
     if (data.search_results && data.search_results.length > 0) {
-      result += "\n\n**Sources:**\n";
-      data.search_results.forEach((source: any, idx: number) => {
-        result += `${idx + 1}. ${source.title || 'Untitled'} - ${source.url}`;
-        if (source.date) result += ` (${source.date})`;
-        result += '\n';
+      const cyan = '\x1b[36m';
+      const bold = '\x1b[1m';
+      const blue = '\x1b[34m';
+      const underline = '\x1b[4m';
+      const dim = '\x1b[2m';
+      const gray = '\x1b[90m';
+      const reset = '\x1b[0m';
+
+      // Start raw ANSI section (skip markdown processing)
+      result += `\n\n\x00RAWANSI\x00`;
+      result += `${bold}Sources:${reset}\n\n`;
+      data.search_results.forEach((source: any) => {
+        const title = source.title || 'Untitled';
+        const url = source.url || '';
+        const date = source.date ? ` ${dim}(${source.date})${reset}` : '';
+
+        // Format: ● Title
+        //         └─ URL (date)
+        result += `${cyan}●${reset} ${bold}${title}${reset}\n`;
+        result += `  ${gray}└─${reset} ${blue}${underline}${url}${reset}${date}\n`;
       });
+      result += `\x00/RAWANSI\x00`;
     }
     
     return result;

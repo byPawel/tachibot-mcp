@@ -21,12 +21,24 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Load .env from project root (dist/src -> go up 2 levels)
-// DON'T override - keep env vars from Claude Code settings.json (RENDER_OUTPUT, TACHIBOT_THEME, etc.)
+// Load .env with override - API keys from .env take priority
+// Theme vars (RENDER_OUTPUT, TACHIBOT_THEME) can be set in Claude Code settings
 const envPath = path.resolve(__dirname, '../../.env');
+
+// Save theme-related vars before loading .env
+const savedThemeVars = {
+  RENDER_OUTPUT: process.env.RENDER_OUTPUT,
+  TACHIBOT_THEME: process.env.TACHIBOT_THEME,
+};
+
 const envResult = dotenvConfig({
   path: envPath,
-  override: false  // Preserve env vars from Claude Code
+  override: true  // API keys from .env take priority
 });
+
+// Restore theme vars if they were set
+if (savedThemeVars.RENDER_OUTPUT) process.env.RENDER_OUTPUT = savedThemeVars.RENDER_OUTPUT;
+if (savedThemeVars.TACHIBOT_THEME) process.env.TACHIBOT_THEME = savedThemeVars.TACHIBOT_THEME;
 
 // Import centralized API key utilities
 import { hasGrokApiKey, hasOpenAIApiKey, hasPerplexityApiKey, hasGeminiApiKey, hasOpenRouterApiKey } from "./utils/api-keys.js";
