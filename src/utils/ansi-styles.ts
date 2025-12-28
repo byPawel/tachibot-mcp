@@ -444,20 +444,56 @@ export const themes: Record<ThemeName, Theme> = {
 // THEME SELECTION
 // ============================================================================
 
+// Import JSON theme loader
+import { loadJsonTheme, hasJsonTheme, applyJsonTheme, listJsonThemes } from './theme-loader.js';
+
 /**
  * Get current theme from environment
+ * Checks for JSON themes first, then falls back to built-in themes.
  * Default: 'nebula'
  */
 export function getTheme(): Theme {
-  const themeName = (process.env.TACHIBOT_THEME?.toLowerCase() || 'nebula') as ThemeName;
-  return themes[themeName] || themes.nebula;
+  const themeName = process.env.TACHIBOT_THEME?.toLowerCase() || 'nebula';
+
+  // Check for custom JSON theme first
+  if (hasJsonTheme(themeName)) {
+    const jsonTheme = loadJsonTheme(themeName);
+    if (jsonTheme) {
+      // Get base theme to extend
+      const baseThemeName = (jsonTheme.extends || 'nebula') as ThemeName;
+      const baseTheme = themes[baseThemeName] || themes.nebula;
+      return applyJsonTheme(jsonTheme, baseTheme) as Theme;
+    }
+  }
+
+  // Fall back to built-in themes
+  return themes[themeName as ThemeName] || themes.nebula;
 }
 
 /**
  * Get theme by name
  */
-export function getThemeByName(name: ThemeName): Theme {
-  return themes[name] || themes.nebula;
+export function getThemeByName(name: string): Theme {
+  // Check for custom JSON theme first
+  if (hasJsonTheme(name)) {
+    const jsonTheme = loadJsonTheme(name);
+    if (jsonTheme) {
+      const baseThemeName = (jsonTheme.extends || 'nebula') as ThemeName;
+      const baseTheme = themes[baseThemeName] || themes.nebula;
+      return applyJsonTheme(jsonTheme, baseTheme) as Theme;
+    }
+  }
+
+  return themes[name as ThemeName] || themes.nebula;
+}
+
+/**
+ * List all available themes (built-in + JSON)
+ */
+export function listAllThemes(): string[] {
+  const builtIn = Object.keys(themes);
+  const custom = listJsonThemes();
+  return [...new Set([...builtIn, ...custom])];
 }
 
 // ============================================================================

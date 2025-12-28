@@ -8,8 +8,9 @@
  *   RENDER_OUTPUT=ansi     - Full ANSI styling with colors (default)
  *   RENDER_OUTPUT=markdown - Raw markdown (no processing)
  *   RENDER_OUTPUT=plain    - Stripped plain text
+ *   RENDER_OUTPUT=ink      - Enhanced Ink-based rendering with gradients
  *
- *   TACHIBOT_THEME=nebula|cyberpunk|minimal|ocean
+ *   TACHIBOT_THEME=nebula|cyberpunk|minimal|ocean|dracula|nord|solarized
  */
 
 import { marked } from 'marked';
@@ -20,6 +21,9 @@ import chalk from 'chalk';
 // Force chalk to output colors (MCP stdio is not a TTY, so chalk auto-disables)
 chalk.level = 3;
 
+// Force gradient-string colors
+process.env.FORCE_COLOR = '3';
+
 import {
   getTheme,
   renderModelBadge,
@@ -28,10 +32,27 @@ import {
   type Theme,
 } from './ansi-styles.js';
 
+import {
+  renderGradientDivider,
+  renderGradientModelName,
+  type GradientPreset,
+} from './ink-renderer.js';
+
 // Track if marked has been configured (prevent repeated configuration)
 let markedConfigured = false;
 
-// Simple gradient using basic ANSI colors (looks cleaner than 256-color)
+// Model to gradient preset mapping
+const modelGradientPresets: Record<string, GradientPreset> = {
+  gemini: 'cristal',
+  grok: 'passion',
+  openai: 'teen',
+  perplexity: 'mind',
+  claude: 'fruit',
+  kimi: 'atlas',
+  qwen: 'morning',
+};
+
+// Simple gradient using basic ANSI colors (fallback for non-TrueColor terminals)
 function simpleGradient(width: number = 50): string {
   const colors = [
     '\x1b[36m',  // cyan
@@ -47,6 +68,29 @@ function simpleGradient(width: number = 50): string {
     result += colors[colorIdx] + '─';
   }
   return result + reset;
+}
+
+/**
+ * Get TrueColor gradient divider based on model
+ */
+function getModelGradientDivider(model?: string, width: number = 60): string {
+  const preset = model ? modelGradientPresets[model.toLowerCase()] || 'vice' : 'vice';
+  try {
+    return renderGradientDivider(width, preset);
+  } catch {
+    return simpleGradient(width);
+  }
+}
+
+/**
+ * Get gradient model badge (TrueColor)
+ */
+function getGradientModelBadge(model: string): string {
+  try {
+    return renderGradientModelName(model);
+  } catch {
+    return renderModelBadge(model);
+  }
 }
 
 // ============================================================================
@@ -256,13 +300,16 @@ function configureMarked(): void {
             });
           }
           // Replace default bullets with themed ones
-          // Use different bullets for nested levels (detect by indentation)
+          // Match: ●, *, -, anywhere in the line (including after box borders)
           return body
-            .replace(/^( *)●/gm, (_, indent) => {
-              const level = Math.floor(indent.length / 2);
-              const bullets = [theme.bullet1, theme.bullet2, theme.bullet3];
-              return indent + (bullets[level % 3] || theme.bullet1);
-            });
+            .replace(/[●\*]\s+/g, theme.bullet1 + ' ')
+            .replace(/-\s+(?=[A-Z])/g, theme.bullet1 + ' ');  // Only - before capital letter
+        },
+
+        // List item - clean up formatting
+        listitem: (text: string) => {
+          // Remove leading/trailing | from reflowed text but keep content
+          return text.replace(/^\|\s*/gm, '').replace(/\s*\|$/gm, '');
         },
 
         // Horizontal rule - use themed divider
@@ -283,8 +330,8 @@ function configureMarked(): void {
         unescape: true,
         emoji: true,
         showSectionPrefix: false,
-        reflowText: true,
-        width: 80,
+        reflowText: false,  // Disabled - causes stray | characters
+        width: 100,
       }
     ) as Parameters<typeof marked.use>[0]
   );
@@ -300,7 +347,19 @@ function renderAnsi(md: string): string {
   const theme = getCachedTheme();
 
   try {
-    let result = marked.parse(md) as string;
+    // Extract RAWANSI sections (already formatted, skip processing)
+    const rawSections: string[] = [];
+    let processedMd = md.replace(/\x00RAWANSI\x00([\s\S]*?)\x00\/RAWANSI\x00/g, (_, content) => {
+      rawSections.push(content);
+      return `\x00RAW${rawSections.length - 1}\x00`;
+    });
+
+    // Pre-process: Normalize bullet markers to ● for consistent handling
+    // Convert * and - at start of list items to ●
+    processedMd = processedMd.replace(/^(\s*)\* /gm, '$1● ');
+    processedMd = processedMd.replace(/^(\s*)- /gm, '$1● ');
+
+    let result = marked.parse(processedMd) as string;
 
     // Post-process: Convert any remaining ~~strikethrough~~ markers
     result = result.replace(/~~([^~]+)~~/g, '\x1b[9m\x1b[90m$1\x1b[0m');
@@ -355,14 +414,27 @@ function renderAnsi(md: string): string {
       };
 
       // Try to apply syntax highlighting with custom theme
+      // Skip highlighting for:
+      // - URL-heavy content (sources, citations)
+      // - Prose with citation markers like [1], [2], [3]
+      // - Content that looks like natural language (has common words)
       let highlighted: string;
-      try {
-        highlighted = cliHighlight(code, {
-          ignoreIllegals: true,
-          theme: syntaxTheme
-        });
-      } catch {
+      const hasUrls = /https?:\/\//.test(code);
+      const hasCitations = /\[\d+\]/.test(code);  // [1], [2], etc.
+      const looksLikeProse = /\b(the|and|or|but|with|from|to|as|is|are|was|were|has|have|this|that)\b/i.test(code);
+
+      if (hasUrls || hasCitations || looksLikeProse) {
+        // Don't syntax highlight prose/citations - just use plain text
         highlighted = code;
+      } else {
+        try {
+          highlighted = cliHighlight(code, {
+            ignoreIllegals: true,
+            theme: syntaxTheme
+          });
+        } catch {
+          highlighted = code;
+        }
       }
 
       const highlightedLines = highlighted.split('\n');
@@ -397,6 +469,19 @@ function renderAnsi(md: string): string {
     // Restore code blocks
     result = result.replace(/\x00CB(\d+)\x00/g, (_, idx) => codeBlocks[parseInt(idx)]);
 
+    // Post-process: Clean up stray | characters from text reflow
+    // Remove | at start of lines (not inside code blocks or tables)
+    result = result.replace(/^\s*\|\s*(?![─│┌┐└┘├┤┬┴┼╭╮╯╰])/gm, '');
+    // Remove trailing | (not part of table)
+    result = result.replace(/\s*\|\s*$/gm, '');
+
+    // Post-process: Replace remaining * bullets with themed bullet
+    const bullet = theme.bullet1;
+    // Match any: box border (with any ANSI), then "* " as bullet
+    result = result.replace(/((?:\x1b\[[\d;]*m)*│(?:\x1b\[[\d;]*m)* (?:\x1b\[[\d;]*m)*)\* /g, `$1${bullet} `);
+    // Also catch standalone "* " at line starts (outside boxes)
+    result = result.replace(/^((?:\x1b\[[\d;]*m)*)\* /gm, `$1${bullet} `);
+
     // Post-process: Style diff blocks (lines starting with +, -, @@)
     result = result.replace(/^(\+[^\n]*)/gm, '\x1b[32m$1\x1b[0m');  // Green for additions
     result = result.replace(/^(-[^\n]*)/gm, '\x1b[31m$1\x1b[0m');   // Red for deletions
@@ -416,6 +501,9 @@ function renderAnsi(md: string): string {
       // Reconstruct clean ANSI sequence
       return `\x1b[${params.join(';')}m`;
     });
+
+    // Restore RAWANSI sections (already formatted content)
+    result = result.replace(/\x00RAW(\d+)\x00/g, (_, idx) => rawSections[parseInt(idx)] || '');
 
     return result;
   } catch (error) {
