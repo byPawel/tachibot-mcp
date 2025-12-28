@@ -9,6 +9,7 @@ import { isPerplexityAvailable } from '../../../../tools/perplexity-tools.js';
 import { isGrokAvailable } from '../../../../tools/grok-tools.js';
 import { getProviderInfo } from '../../../../tools/unified-ai-provider.js';
 import { loadConfig } from '../../../../config.js';
+import { getUpdateStatus } from '../../../../utils/update-checker.js';
 
 export class TachibotStatusMode implements IFocusMode {
   readonly modeName = 'tachibot-status';
@@ -22,7 +23,21 @@ export class TachibotStatusMode implements IFocusMode {
       .map(([name]) => name);
 
     const statusInfo = canRunFocusDeep();
-    let status = `# 🔧 Focus MCP Server Status\n\n`;
+
+    // Get update status
+    const updateStatus = await getUpdateStatus();
+
+    let status = `# 🔧 TachiBot MCP Status\n\n`;
+
+    // Version info
+    status += `**Version**: ${updateStatus.currentVersion}`;
+    if (updateStatus.updateAvailable && updateStatus.latestVersion) {
+      status += ` ⚠️ Update available: ${updateStatus.latestVersion}\n`;
+      status += `  → Run: \`npm update -g tachibot-mcp\`\n`;
+    } else {
+      status += ` ✅ Up to date\n`;
+    }
+
     status += `**Mode**: ${config.isClaudeCode ? 'Claude Code' : 'Standalone'}\n`;
     if (config.isClaudeCode) {
       status += `**Claude Model**: ${config.claudeModel || 'Not detected'}\n`;
@@ -48,7 +63,10 @@ export class TachibotStatusMode implements IFocusMode {
         mode: this.modeName,
         timestamp: Date.now(),
         providers: availableProviders,
-        quality: statusInfo.quality
+        quality: statusInfo.quality,
+        version: updateStatus.currentVersion,
+        updateAvailable: updateStatus.updateAvailable,
+        latestVersion: updateStatus.latestVersion
       }
     };
   }
