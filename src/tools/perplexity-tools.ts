@@ -116,17 +116,26 @@ export const perplexityAskTool = {
     searchRecency: z.enum(["hour", "day", "week", "month", "year"]).optional()
   }),
   execute: async (args: { query: string; searchDomain?: string; searchRecency?: string }, { log }: any) => {
+    // Get current date for accurate recency context
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
     const messages = [
       {
         role: "system",
-        content: "You are a helpful research assistant. Provide accurate, up-to-date information with sources."
+        content: `You are a helpful research assistant. Today is ${currentDate}. Provide accurate, up-to-date information with sources. When searching for recent information, use the current date as reference.`
       },
       {
         role: "user",
         content: args.query
       }
     ];
-    
+
     return await callPerplexity(
       messages,
       PerplexityModel.SONAR_PRO,
@@ -150,6 +159,16 @@ export const perplexityResearchTool = {
   }),
   execute: async (args: { topic: string; questions?: string[]; depth?: string }, { log }: any) => {
     const { topic, questions, depth = "standard" } = args;
+
+    // Get current date for accurate research context
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
     // Generate research questions if not provided
     const researchQuestions = questions || [
       `What is the current state of ${topic}?`,
@@ -174,7 +193,7 @@ export const perplexityResearchTool = {
       const messages = [
         {
           role: "system",
-          content: "You are a research expert. Provide detailed, factual information with sources."
+          content: `You are a research expert. Today is ${currentDate}. Provide detailed, factual information with sources. Use the current date as reference for any time-sensitive queries.`
         },
         {
           role: "user",
@@ -219,18 +238,28 @@ export const perplexityReasonTool = {
   }),
   execute: async (args: { problem: string; context?: string; approach?: string }, { log }: any) => {
     const { problem, context, approach = "analytical" } = args;
+
+    // Get current date for accurate reasoning context
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
     const approachPrompts = {
       analytical: "Break down the problem systematically and analyze each component",
       creative: "Think outside the box and consider unconventional solutions",
       systematic: "Follow a step-by-step logical process",
       comparative: "Compare different approaches and evaluate trade-offs"
     };
-    
+
     const messages = [
       {
         role: "system",
-        content: `You are an expert reasoning system. ${approachPrompts[approach as keyof typeof approachPrompts]}.
-Provide clear, logical reasoning with evidence and examples.
+        content: `You are an expert reasoning system. Today is ${currentDate}. ${approachPrompts[approach as keyof typeof approachPrompts]}.
+Provide clear, logical reasoning with evidence and examples. Use the current date as reference for any time-sensitive information.
 ${context ? `Context: ${context}` : ''}`
       },
       {

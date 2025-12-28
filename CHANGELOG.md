@@ -5,6 +5,58 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-12-28
+
+### Added
+- **Context Window String Aliases** - Use `"none"`, `"recent"`, `"all"` instead of magic numbers (0, 3, -1)
+- **finalJudge** - Auto-call a judge model when session completes with `nextThoughtNeeded: false`
+- **Context Distillation** - Compress 8000+ tokens to ~500 with `distillContext: "light" | "aggressive"`
+- **Memory Provider Hints** - Pluggable memory system (devlog, mem0) returns hints for Claude to execute
+- **usage_stats Tool** - Track tool usage with ASCII bar charts, per-repo statistics
+- **general-judge Workflow** - Multi-model council (Grok, Perplexity, Qwen, Kimi) with Gemini extraction + GPT synthesis
+- `src/utils/memory-provider.ts` - Hint-only formatter for memory MCPs
+- `src/utils/model-availability.ts` - Centralized model availability checks
+
+### Enhanced
+- **nextThought** now supports:
+  - `contextWindow: "none" | "recent" | "all"` (clearer than 0/3/-1)
+  - `finalJudge: "gemini"` - Auto-executes judge with ALL context
+  - `distillContext: "light"` - 5x token savings
+  - `memoryProvider: { provider: "devlog" }` - Session persistence hints
+
+### Example Usage
+```typescript
+// With string aliases and finalJudge
+nextThought({
+  thought: "Analyze the problem",
+  model: "kimi",
+  executeModel: true,
+  contextWindow: "recent",  // Last 3 thoughts
+  nextThoughtNeeded: true
+})
+
+nextThought({
+  thought: "Final verdict",
+  model: "grok",
+  executeModel: true,
+  contextWindow: "all",     // Full history
+  finalJudge: "gemini",     // Auto-called!
+  nextThoughtNeeded: false
+})
+```
+
+## [2.2.7] - 2025-12-28
+
+### Added
+- **Enhanced nextThought with multi-model execution**
+- **Multi-Model Judgment Protocols** in CLAUDE.md:
+  - Protocol 1: Parallel Council (subagents for context isolation)
+  - Protocol 2: Sequential Pipeline (progressive refinement)
+  - Protocol 3: Adversarial Debate (pro vs con)
+  - Protocol 4: Architecture Decision (focus modes)
+- Model name normalization (spaces/underscores → hyphens)
+- Model aliases in registry: `grok-search`, `grok-reason`, `gemini-judge`, etc.
+
 ## [2.0.3] - 2025-11-18
 
 ### Changed

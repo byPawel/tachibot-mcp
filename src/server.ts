@@ -147,7 +147,7 @@ interface FocusArgs {
   pingPongStyle?: string;
 }
 
-/** Arguments for the 'nextThought' tool */
+/** Arguments for the 'nextThought' tool (enhanced with model execution) */
 interface NextThoughtArgs {
   thought: string;
   nextThoughtNeeded: boolean;
@@ -157,6 +157,16 @@ interface NextThoughtArgs {
   revisesThought?: number;
   branchFromThought?: number;
   model?: string;
+  executeModel?: boolean;      // Actually execute the model's tool
+  contextWindow?: number;      // How many prev thoughts as context (-1=ALL, 0=none, default=3)
+  objective?: string;          // For auto-session creation
+  distillContext?: "off" | "light";  // Distillation mode (default: off, auto-distills at 8000+ tokens)
+  finalJudge?: string;         // Model to use as final judge when session completes
+  memoryProvider?: {           // Pluggable memory MCP integration
+    provider: string;
+    saveToMemory?: boolean;
+    loadFromMemory?: boolean;
+  };
 }
 
 // ============================================================================
@@ -441,10 +451,23 @@ Focus session ready. Choose a mode to begin orchestration.`;
   },
 });
 
-// Add Sequential Thinking tool
+// Add Sequential Thinking tool (enhanced with multi-model execution)
 safeAddTool({
   name: "nextThought",
-  description: "Sequential thinking",
+  description: `Sequential thinking with optional multi-model execution. Auto-creates session if needed.
+
+**Basic** (thought logging): nextThought({ thought: "Analyze X", nextThoughtNeeded: true })
+**With execution**: nextThought({ thought: "...", model: "gemini", executeModel: true, nextThoughtNeeded: true })
+**Light distillation**: nextThought({ thought: "...", model: "gemini", executeModel: true, distillContext: "light" })
+**Judge step**: nextThought({ thought: "Final verdict", model: "gemini", executeModel: true, contextWindow: "all", nextThoughtNeeded: false })
+**Auto final judge**: nextThought({ thought: "...", model: "kimi", executeModel: true, finalJudge: "gemini", nextThoughtNeeded: false })
+**With memory save**: nextThought({ ..., memoryProvider: { provider: "devlog", saveToMemory: true } })
+
+Models: grok, gemini, openai, perplexity, kimi, qwen, think
+Context: "none" (fresh start), "recent" (last 3), "all" (full history), or a number
+Distillation: "off" (default, auto-distills at 8000+ tokens), "light" (preserves detail)
+FinalJudge: Auto-judge when session completes (uses ALL context)
+MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PROVIDER env for default`,
   parameters: NextThoughtSchema,
   execute: async (args: NextThoughtArgs, context: MCPContext): Promise<string> => {
     const { log } = context;
@@ -454,25 +477,69 @@ safeAddTool({
       if (!validation.valid) {
         throw new UserError(validation.error || "Invalid thought input");
       }
-      const thought = validation.sanitized;
 
-      const result = sequentialThinking.nextThought(
-        thought,
-        args.nextThoughtNeeded,
-        args.thoughtNumber,
-        args.totalThoughts,
-        args.isRevision,
-        args.revisesThought,
-        args.branchFromThought,
-        args.model
-      );
-      
-      log.info("Sequential thought added", { 
-        thoughtNumber: result.thoughtAdded.number,
-        model: result.thoughtAdded.model 
+      // Resolve memory provider (explicit > env default > none)
+      const defaultMemoryProvider = process.env.TACHIBOT_MEMORY_PROVIDER;
+      const memoryProvider = args.memoryProvider ?? (defaultMemoryProvider ? {
+        provider: defaultMemoryProvider,
+        saveToMemory: true,
+      } : undefined);
+
+      // Use enhanced method with model execution support
+      const result = await sequentialThinking.nextThoughtEnhanced({
+        thought: validation.sanitized,
+        nextThoughtNeeded: args.nextThoughtNeeded,
+        thoughtNumber: args.thoughtNumber,
+        totalThoughts: args.totalThoughts,
+        isRevision: args.isRevision,
+        revisesThought: args.revisesThought,
+        branchFromThought: args.branchFromThought,
+        model: args.model,
+        executeModel: args.executeModel ?? false,
+        contextWindow: args.contextWindow ?? 3,
+        objective: args.objective,
+        distillContext: args.distillContext ?? "off",
+        finalJudge: args.finalJudge,
+        memoryProvider,
       });
-      
-      return result.guidance;
+
+      log.info("Sequential thought processed", {
+        thoughtNumber: result.thoughtAdded.number,
+        model: result.thoughtAdded.model,
+        executed: args.executeModel ?? false,
+        distillMode: args.distillContext ?? "off",
+        finalJudge: args.finalJudge,
+      });
+
+      // Build response with model output if available
+      let response = "";
+      if (result.modelResponse) {
+        response = `## Model Response (${args.model}):\n\n${result.modelResponse}\n\n---\n\n`;
+      }
+
+      // Add final judge response if present
+      if (result.finalJudgeResponse) {
+        response += `## Final Judge Response (${args.finalJudge}):\n\n${result.finalJudgeResponse}\n\n---\n\n`;
+      }
+
+      response += result.guidance;
+
+      // Show distillation info if used
+      if (result.distilledContext) {
+        response += `\n\n**Context Distillation**: ~${result.distilledContext.tokenEstimate} tokens (${result.distilledContext.constraints.length} constraints, ${result.distilledContext.workingMemory.keyInsights.length} insights)`;
+      }
+
+      // Append available models info
+      if (result.availableModels && result.availableModels.length > 0) {
+        response += `\n\n**Available Models**: ${result.availableModels.join(", ")}`;
+      }
+
+      // Show memory save hint if present (Claude should act on this)
+      if (result.memorySaveHint) {
+        response += `\n\n---\n**Memory Save Hint**: Call \`${result.memorySaveHint.tool}\` with:\n\`\`\`json\n${JSON.stringify(result.memorySaveHint.input, null, 2)}\n\`\`\``;
+      }
+
+      return response;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log.error("Sequential thinking error", { error: errorMessage });

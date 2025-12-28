@@ -37,11 +37,19 @@ export class ModelProviderRegistry {
   }
 
   /**
+   * Normalize model name: lowercase + spaces/underscores to hyphens
+   * Allows "gemini judge", "gemini_judge", "GEMINI-JUDGE" all to match "gemini-judge"
+   */
+  private normalizeModelName(name: string): string {
+    return name.toLowerCase().replace(/[\s_]+/g, "-");
+  }
+
+  /**
    * Get tool name for a model
    * Returns null if no mapping found
    */
   getToolName(modelName: string): string | null {
-    const mapping = this.mappings.get(modelName.toLowerCase());
+    const mapping = this.mappings.get(this.normalizeModelName(modelName));
     return mapping?.toolName || null;
   }
 
@@ -50,7 +58,7 @@ export class ModelProviderRegistry {
    * Returns "unknown" if no mapping found
    */
   getProvider(modelName: string): string {
-    const mapping = this.mappings.get(modelName.toLowerCase());
+    const mapping = this.mappings.get(this.normalizeModelName(modelName));
     return mapping?.provider || "unknown";
   }
 
@@ -58,14 +66,14 @@ export class ModelProviderRegistry {
    * Get full mapping for a model
    */
   getMapping(modelName: string): ModelMapping | null {
-    return this.mappings.get(modelName.toLowerCase()) || null;
+    return this.mappings.get(this.normalizeModelName(modelName)) || null;
   }
 
   /**
    * Check if a model is registered
    */
   hasModel(modelName: string): boolean {
-    return this.mappings.has(modelName.toLowerCase());
+    return this.mappings.has(this.normalizeModelName(modelName));
   }
 
   /**
@@ -98,7 +106,8 @@ modelProviderRegistry.registerMany([
   { modelName: "claude", toolName: "think", provider: "anthropic", aliases: ["claude-code", "reasoning", "analysis"] },
 
   // Gemini models (all use gemini-3-pro-preview for RAW POWER)
-  { modelName: "gemini", toolName: "gemini_query", provider: "google", aliases: ["gemini-pro", "gemini-3-pro-preview", "gemini-3-pro"] },
+  // NOTE: gemini_query was never registered - using gemini_brainstorm as default (most versatile)
+  { modelName: "gemini", toolName: "gemini_brainstorm", provider: "google", aliases: ["gemini-pro", "gemini-3-pro-preview", "gemini-3-pro"] },
   { modelName: "gemini-3-pro-preview", toolName: "gemini_analyze_text", provider: "google", aliases: ["gemini-3", "gemini-analyze"] },
 
   // Perplexity models
@@ -114,5 +123,14 @@ modelProviderRegistry.registerMany([
   { modelName: "kimi", toolName: "kimi_thinking", provider: "openrouter", aliases: ["kimi-k2", "kimi-k2-thinking", "kimi-thinking"] },
 
   // Think tool
-  { modelName: "think", toolName: "think", provider: "anthropic" }
+  { modelName: "think", toolName: "think", provider: "anthropic" },
+
+  // Convenience aliases for nextThought multi-model chains
+  { modelName: "grok-search", toolName: "grok_search", provider: "x.ai" },
+  { modelName: "grok-reason", toolName: "grok_reason", provider: "x.ai" },
+  { modelName: "grok-debug", toolName: "grok_debug", provider: "x.ai" },
+  { modelName: "gemini-brainstorm", toolName: "gemini_brainstorm", provider: "google" },
+  { modelName: "gemini-analyze", toolName: "gemini_analyze_text", provider: "google", aliases: ["gemini-judge"] },
+  { modelName: "perplexity-research", toolName: "perplexity_research", provider: "perplexity" },
+  { modelName: "openai-reason", toolName: "openai_reason", provider: "openai", aliases: ["gpt-reason"] },
 ]);

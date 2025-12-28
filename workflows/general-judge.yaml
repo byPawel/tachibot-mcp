@@ -1,0 +1,276 @@
+# General Judge - Multi-model council for complex decisions
+# Usage: workflow({ name: "general-judge", query: "how to implement X" })
+#
+# For code analysis, include code in your query:
+#   workflow({ name: "general-judge", query: "analyze this code: [paste code here]" })
+#
+# Models used: Grok (search + reasoning), Perplexity (research), Qwen (code), Kimi (step-by-step)
+#              Gemini (extraction), GPT (synthesis)
+
+name: general-judge
+description: "Multi-model council: Grok + Perplexity + Qwen + Kimi analyses → Gemini extraction → GPT synthesis"
+version: "1.0"
+
+settings:
+  optimization:
+    enabled: true
+  maxCost: 1.00
+
+steps:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 0: Grok Search (real data first)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: grok-search
+    tool: grok_search
+    input:
+      query: "${query}"
+      recency: "month"
+      max_search_results: 20
+    saveToFile: true
+    maxTokens: 5000
+    output:
+      variable: grok_search_results
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 1: Parallel Analysis (grok, perplexity, qwen, kimi)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: grok-reason
+    tool: grok_reason
+    input:
+      problem: |
+        ${query}
+
+        SEARCH RESULTS:
+        ${grok_search_results}
+      approach: "first-principles"
+      context: "Analyze from first principles. Use search results as ground truth."
+    dependsOn: [grok-search]
+    saveToFile: true
+    maxTokens: 4000
+    output:
+      variable: grok_analysis
+
+  - name: perplexity-ask
+    tool: perplexity_ask
+    input:
+      query: "${query} best practices"
+      searchRecency: "month"
+    saveToFile: true
+    maxTokens: 3000
+    output:
+      variable: perplexity_analysis
+
+  - name: qwen-analyze
+    tool: qwen_coder
+    input:
+      task: "analyze"
+      code: "${query}"
+      language: "typescript"
+      requirements: |
+        Analyze this thoroughly:
+        1. If code: review for bugs, patterns, improvements
+        2. If question: provide code examples and implementation
+        3. Check against search results for known issues
+
+        SEARCH RESULTS:
+        ${grok_search_results}
+    dependsOn: [grok-search]
+    saveToFile: true
+    maxTokens: 4000
+    output:
+      variable: qwen_analysis
+
+  - name: kimi-thinking
+    tool: kimi_thinking
+    input:
+      problem: |
+        ${query}
+
+        SEARCH RESULTS:
+        ${grok_search_results}
+      approach: "step-by-step"
+      context: "Think through this systematically. Consider edge cases."
+      maxSteps: 8
+    dependsOn: [grok-search]
+    saveToFile: true
+    maxTokens: 4000
+    output:
+      variable: kimi_analysis
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 2: Gemini Extracts Best Elements (first judge)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: gemini-extract
+    tool: gemini_brainstorm
+    input:
+      prompt: |
+        **Extract the BEST elements from each AI (don't pick winner - find what's valuable in ALL):**
+
+        ---
+        **GROK SEARCH (ground truth):**
+        ${grok_search_results}
+
+        ---
+        **GROK (First Principles):**
+        ${grok_analysis}
+
+        ---
+        **PERPLEXITY (Search):**
+        ${perplexity_analysis}
+
+        ---
+        **QWEN (Code Analysis):**
+        ${qwen_analysis}
+
+        ---
+        **KIMI (Step-by-Step Thinking):**
+        ${kimi_analysis}
+
+        ---
+
+        **YOUR TASK:** Extract valuable elements for synthesis.
+
+        **OUTPUT FORMAT:**
+        ```
+        ## GROK's Best Contributions
+        - [specific insight worth keeping]
+        - [unique perspective others missed]
+
+        ## PERPLEXITY's Best Contributions
+        - [specific insight worth keeping]
+        - [real-world data/sources found]
+
+        ## QWEN's Best Contributions
+        - [code insights]
+        - [implementation details]
+
+        ## KIMI's Best Contributions
+        - [step-by-step reasoning]
+        - [edge cases found]
+
+        ## CONSENSUS (all agree on)
+        - [point 1]
+        - [point 2]
+
+        ## CONFLICTS (need resolution)
+        - [conflict 1]: X says A, Y says B
+
+        ## CORNER CASES FOUND
+        - [edge case 1] (found by: X)
+        ```
+
+        DO NOT pick a winner. Find the BEST from EACH.
+    dependsOn: [grok-search, grok-reason, perplexity-ask, qwen-analyze, kimi-thinking]
+    saveToFile: true
+    maxTokens: 4000
+    output:
+      variable: extracted_elements
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE 3: GPT Pro Synthesis (final judge)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: gpt-pro-synthesis
+    tool: openai_reason
+    input:
+      query: |
+        **General Judge SYNTHESIS for: ${query}**
+
+        ---
+        ## REAL DATA (ground truth from grok search):
+        ${grok_search_results}
+
+        ---
+        ## EXTRACTED BEST ELEMENTS (by Gemini):
+        ${extracted_elements}
+
+        ---
+        ## ORIGINAL ANALYSES:
+
+        **GROK:** ${grok_analysis}
+
+        **PERPLEXITY:** ${perplexity_analysis}
+
+        **QWEN:** ${qwen_analysis}
+
+        **KIMI:** ${kimi_analysis}
+
+        ---
+        ## YOUR TASK AS CHAIRMAN:
+
+        You are the Chairman of this council. Your job is NOT to pick a winner.
+        Your job is to SYNTHESIZE the best elements from ALL into ONE cohesive answer.
+
+        **SYNTHESIS FRAMEWORK:**
+
+        ### 1. ANSWER
+        Merge the best ideas from all council members.
+        - Take Grok's [X] because...
+        - Incorporate Perplexity's [Y] for...
+        - Add Qwen's [Z] code insight...
+        - Include Kimi's [W] edge case handling...
+
+        ### 2. CODE (if applicable)
+        ```typescript
+        // Synthesized solution combining best elements
+        ```
+
+        ### 3. CONFLICT RESOLUTION
+        For each conflict from Gemini's extraction:
+        - Conflict: [X vs Y]
+        - Resolution: [How we merge/resolve]
+        - Reasoning: [Why]
+
+        ### 4. CORNER CASES ADDRESSED
+        List all edge cases found and how the synthesis handles them.
+
+        ### 5. IMPLEMENTATION STEPS
+        1. [First step]
+        2. [Second step]
+        3. ...
+
+        ### 6. CONFIDENCE & GAPS
+        - Synthesis confidence: X%
+        - What would improve this?
+        - Any unresolved tensions?
+
+        Remember: SYNTHESIZE, don't pick. The final answer should be BETTER than any single opinion.
+      mode: "analytical"
+    dependsOn: [gemini-extract]
+    saveToFile: true
+    maxTokens: 6000
+    output:
+      variable: final_synthesis
+
+output:
+  format: detailed
+  return: |
+    # General Judge Synthesis
+
+    ## Question
+    ${query}
+
+    ---
+
+    ## Data Sources
+    - grok-search.md (real-time web data)
+    - perplexity-research.md (deep research)
+
+    ## AI Analyses
+    - grok-reason.md (first principles)
+    - qwen-analyze.md (code analysis)
+    - kimi-thinking.md (step-by-step)
+    - gemini-extract.md (best elements)
+
+    ---
+
+    ## Best Elements Extracted
+    ${extracted_elements}
+
+    ---
+
+    ## Final Synthesis
+    ${final_synthesis}
