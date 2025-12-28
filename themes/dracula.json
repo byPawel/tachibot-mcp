@@ -1,0 +1,36 @@
+{
+  "$schema": "./theme-schema.json",
+  "name": "dracula",
+  "description": "Dracula color scheme - dark purple tones",
+  "extends": "nebula",
+  "colors": {
+    "h1": {
+      "fg": "#282a36",
+      "bg": "#bd93f9",
+      "bold": true
+    },
+    "h2": {
+      "fg": "#282a36",
+      "bg": "#50fa7b",
+      "bold": true
+    },
+    "bold": "#f8f8f2",
+    "italic": "#8be9fd",
+    "code": {
+      "fg": "#f8f8f2",
+      "bg": "#44475a"
+    },
+    "link": "#8be9fd",
+    "bullet1": "#ff79c6",
+    "bullet2": "#bd93f9",
+    "bullet3": "#50fa7b",
+    "divider": "#6272a4"
+  },
+  "modelBadges": {
+    "gemini": { "bg": "#8be9fd", "fg": "#282a36", "icon": "◈" },
+    "grok": { "bg": "#ff79c6", "fg": "#282a36", "icon": "✦" },
+    "openai": { "bg": "#50fa7b", "fg": "#282a36", "icon": "⚡" },
+    "perplexity": { "bg": "#bd93f9", "fg": "#282a36", "icon": "◉" },
+    "claude": { "bg": "#ffb86c", "fg": "#282a36", "icon": "●" }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TachiBot Theme",
+  "description": "Custom theme configuration for TachiBot MCP terminal output",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Theme name (used with TACHIBOT_THEME env var)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Theme description"
+    },
+    "extends": {
+      "type": "string",
+      "enum": ["nebula", "cyberpunk", "minimal", "ocean"],
+      "description": "Base theme to extend (inherit colors from)"
+    },
+    "colors": {
+      "type": "object",
+      "description": "Color overrides (ANSI codes or hex)",
+      "properties": {
+        "h1": {
+          "type": "object",
+          "properties": {
+            "fg": { "type": "string", "description": "Foreground color (hex or ansi256)" },
+            "bg": { "type": "string", "description": "Background color (hex or ansi256)" },
+            "bold": { "type": "boolean" },
+            "underline": { "type": "boolean" }
+          }
+        },
+        "h2": {
+          "type": "object",
+          "properties": {
+            "fg": { "type": "string" },
+            "bg": { "type": "string" },
+            "bold": { "type": "boolean" }
+          }
+        },
+        "bold": { "type": "string", "description": "Bold text color" },
+        "italic": { "type": "string", "description": "Italic text color" },
+        "code": {
+          "type": "object",
+          "properties": {
+            "fg": { "type": "string" },
+            "bg": { "type": "string" }
+          }
+        },
+        "link": { "type": "string", "description": "Link color" },
+        "bullet1": { "type": "string", "description": "Primary bullet color" },
+        "bullet2": { "type": "string", "description": "Secondary bullet color" },
+        "bullet3": { "type": "string", "description": "Tertiary bullet color" },
+        "divider": { "type": "string", "description": "Divider line color" }
+      }
+    },
+    "modelBadges": {
+      "type": "object",
+      "description": "Custom model badge colors",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "fg": { "type": "string" },
+          "bg": { "type": "string" },
+          "icon": { "type": "string" }
+        }
+      }
+    }
+  }
+}

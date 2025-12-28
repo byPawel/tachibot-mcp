@@ -1,0 +1,29 @@
+{
+  "$schema": "./theme-schema.json",
+  "name": "nord",
+  "description": "Nord color scheme - arctic, north-bluish colors",
+  "extends": "ocean",
+  "colors": {
+    "h1": {
+      "fg": "#2e3440",
+      "bg": "#88c0d0",
+      "bold": true
+    },
+    "h2": {
+      "fg": "#2e3440",
+      "bg": "#a3be8c",
+      "bold": true
+    },
+    "bold": "#eceff4",
+    "italic": "#81a1c1",
+    "code": {
+      "fg": "#d8dee9",
+      "bg": "#3b4252"
+    },
+    "link": "#81a1c1",
+    "bullet1": "#88c0d0",
+    "bullet2": "#81a1c1",
+    "bullet3": "#5e81ac",
+    "divider": "#4c566a"
+  }
+}

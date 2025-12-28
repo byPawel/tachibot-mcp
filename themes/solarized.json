@@ -1,0 +1,29 @@
+{
+  "$schema": "./theme-schema.json",
+  "name": "solarized",
+  "description": "Solarized Dark color scheme",
+  "extends": "minimal",
+  "colors": {
+    "h1": {
+      "fg": "#002b36",
+      "bg": "#268bd2",
+      "bold": true
+    },
+    "h2": {
+      "fg": "#002b36",
+      "bg": "#2aa198",
+      "bold": true
+    },
+    "bold": "#93a1a1",
+    "italic": "#859900",
+    "code": {
+      "fg": "#839496",
+      "bg": "#073642"
+    },
+    "link": "#268bd2",
+    "bullet1": "#cb4b16",
+    "bullet2": "#d33682",
+    "bullet3": "#6c71c4",
+    "divider": "#586e75"
+  }
+}
