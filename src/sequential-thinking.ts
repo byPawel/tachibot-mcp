@@ -71,6 +71,18 @@ export function resolveContextWindow(value: ContextWindow | undefined): number {
   return value;
 }
 
+/** Reverse map: numeric values to string aliases */
+const CONTEXT_WINDOW_REVERSE_MAP: Record<number, ContextWindowAlias> = {
+  0: "none",
+  3: "recent",
+  [-1]: "all",
+};
+
+/** Format context window value for display (number -> friendly string) */
+export function formatContextWindow(value: number): string {
+  return CONTEXT_WINDOW_REVERSE_MAP[value] ?? String(value);
+}
+
 /**
  * Memory provider configuration for pluggable memory MCPs
  * Supports devlog-mcp, mem0, or any custom memory MCP
@@ -1029,7 +1041,7 @@ export const NextThoughtSchema = z.object({
   contextWindow: z.union([
     z.number(),
     z.enum(["none", "recent", "all"])
-  ]).optional().describe("Context window: 'none' (0), 'recent' (3), 'all' (-1), or a number"),
+  ]).optional().describe("Context window: 'none' (fresh), 'recent' (last 3), 'all' (full history). Prefer string names over numbers"),
   objective: z.string().optional().describe("Session objective (for auto-session creation)"),
   distillContext: z.enum(["off", "light"]).optional().describe("Distillation mode: off (default, auto-distills at 8000+ tokens), light (preserves detail)"),
   finalJudge: z.string().optional().describe("Model to use as final judge when session completes (e.g., 'gemini'). Called automatically when nextThoughtNeeded=false"),
