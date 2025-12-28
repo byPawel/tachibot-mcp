@@ -2131,3 +2131,1283 @@ export function renderComparisonTable(
 ): string {
   return renderTable(items, title);
 }
+
+// ============================================================================
+// BRAILLE HIGH-RESOLUTION VISUALIZATIONS
+// ============================================================================
+
+/**
+ * Braille patterns for 2x4 pixel density
+ * Each braille character represents a 2x4 grid of dots
+ * Unicode range: U+2800 to U+28FF
+ */
+const BRAILLE_BASE = 0x2800;
+
+// Dot positions in braille (binary):
+// 1 8
+// 2 16
+// 4 32
+// 64 128
+
+/**
+ * Convert 2x4 grid of booleans to braille character
+ */
+function gridToBraille(grid: boolean[][]): string {
+  const weights = [
+    [1, 8],
+    [2, 16],
+    [4, 32],
+    [64, 128],
+  ];
+
+  let value = 0;
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 2; col++) {
+      if (grid[row]?.[col]) {
+        value += weights[row][col];
+      }
+    }
+  }
+
+  return String.fromCharCode(BRAILLE_BASE + value);
+}
+
+/**
+ * Braille sparkline - ultra high-res sparkline using braille patterns
+ * Provides 2x horizontal and 4x vertical resolution vs regular sparklines
+ */
+export function brailleSparkline(values: number[], width: number = 20): string {
+  if (values.length === 0) return ' '.repeat(width);
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+
+  // We need width * 2 data points (each braille char is 2 wide)
+  const targetPoints = width * 2;
+  const step = values.length / targetPoints;
+
+  const result: string[] = [];
+
+  for (let i = 0; i < width; i++) {
+    const grid: boolean[][] = [[], [], [], []];
+
+    for (let col = 0; col < 2; col++) {
+      const idx = Math.floor((i * 2 + col) * step);
+      const val = values[Math.min(idx, values.length - 1)];
+      const normalized = (val - min) / range;  // 0-1
+      const height = Math.round(normalized * 4);  // 0-4 dots
+
+      for (let row = 0; row < 4; row++) {
+        grid[3 - row][col] = row < height;  // Bottom to top
+      }
+    }
+
+    result.push(gridToBraille(grid));
+  }
+
+  return result.join('');
+}
+
+/**
+ * Braille bar chart - horizontal bars with braille precision
+ */
+export function brailleBar(value: number, maxValue: number, width: number = 20): string {
+  const ratio = Math.min(value / maxValue, 1);
+  const fullChars = Math.floor(ratio * width);
+  const partialRatio = (ratio * width) - fullChars;
+
+  // Full braille block (all dots): ⣿
+  const full = '⣿'.repeat(fullChars);
+
+  // Partial using different dot patterns
+  let partial = '';
+  if (partialRatio > 0) {
+    const partialDots = Math.round(partialRatio * 8);
+    const patterns = [' ', '⡀', '⡄', '⡆', '⡇', '⣇', '⣧', '⣷', '⣿'];
+    partial = patterns[partialDots];
+  }
+
+  const empty = ' '.repeat(Math.max(0, width - fullChars - (partial ? 1 : 0)));
+
+  return full + partial + empty;
+}
+
+/**
+ * Braille heatmap - 2D visualization with braille patterns
+ */
+export function brailleHeatmap(data: number[][], width: number = 40): string {
+  if (data.length === 0 || data[0].length === 0) return '';
+
+  const rows = data.length;
+  const cols = data[0].length;
+  const min = Math.min(...data.flat());
+  const max = Math.max(...data.flat());
+  const range = max - min || 1;
+
+  const lines: string[] = [];
+
+  // Process 4 rows at a time (braille height)
+  for (let y = 0; y < rows; y += 4) {
+    let line = '';
+
+    // Process 2 cols at a time (braille width)
+    for (let x = 0; x < cols; x += 2) {
+      const grid: boolean[][] = [[], [], [], []];
+
+      for (let dy = 0; dy < 4; dy++) {
+        for (let dx = 0; dx < 2; dx++) {
+          const val = data[y + dy]?.[x + dx] ?? 0;
+          const normalized = (val - min) / range;
+          grid[dy][dx] = normalized > 0.5;  // Threshold
+        }
+      }
+
+      line += gridToBraille(grid);
+    }
+
+    lines.push(line);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * BrailleSparkline component
+ */
+export const BrailleSparklineComponent: React.FC<{
+  values: number[];
+  width?: number;
+  label?: string;
+  color?: string;
+  showValue?: boolean;
+}> = ({ values, width = 20, label, color = 'cyan', showValue = true }) => {
+  const latest = values[values.length - 1];
+  const trend = values.length > 1
+    ? (latest > values[values.length - 2] ? '↑' : latest < values[values.length - 2] ? '↓' : '→')
+    : '→';
+  const trendColor = trend === '↑' ? 'green' : trend === '↓' ? 'red' : 'gray';
+
+  return (
+    <Box>
+      {label && <Text color="gray">{label.padEnd(12)}</Text>}
+      <Text color={color}>{brailleSparkline(values, width)}</Text>
+      {showValue && (
+        <>
+          <Text color={trendColor}> {trend}</Text>
+          <Text color="white"> {latest?.toFixed(1)}</Text>
+        </>
+      )}
+    </Box>
+  );
+};
+
+/**
+ * Render braille sparkline to string
+ */
+export function renderBrailleSparkline(
+  values: number[],
+  options: { width?: number; label?: string; color?: string } = {}
+): string {
+  return renderInkToString(
+    <BrailleSparklineComponent values={values} {...options} />
+  );
+}
+
+// ============================================================================
+// SIDE-BY-SIDE DIFF COMPONENT
+// ============================================================================
+
+export interface DiffLine {
+  type: 'unchanged' | 'added' | 'removed' | 'modified';
+  left?: string;
+  right?: string;
+  leftNum?: number;
+  rightNum?: number;
+}
+
+/**
+ * Character-level diff highlighting
+ */
+function highlightCharDiff(left: string, right: string): { left: React.ReactNode; right: React.ReactNode } {
+  const leftChars: React.ReactNode[] = [];
+  const rightChars: React.ReactNode[] = [];
+
+  const maxLen = Math.max(left.length, right.length);
+
+  for (let i = 0; i < maxLen; i++) {
+    const lChar = left[i] || ' ';
+    const rChar = right[i] || ' ';
+
+    if (lChar === rChar) {
+      leftChars.push(<Text key={i}>{lChar}</Text>);
+      rightChars.push(<Text key={i}>{rChar}</Text>);
+    } else {
+      leftChars.push(<Text key={i} backgroundColor="red" color="white">{lChar}</Text>);
+      rightChars.push(<Text key={i} backgroundColor="green" color="white">{rChar}</Text>);
+    }
+  }
+
+  return {
+    left: <>{leftChars}</>,
+    right: <>{rightChars}</>,
+  };
+}
+
+/**
+ * Side-by-side diff viewer with character-level highlighting
+ */
+export const SideBySideDiff: React.FC<{
+  lines: DiffLine[];
+  width?: number;
+  title?: string;
+}> = ({ lines, width = 80, title }) => {
+  const halfWidth = Math.floor((width - 7) / 2);  // Account for gutter and line numbers
+
+  const lineColors: Record<DiffLine['type'], string> = {
+    unchanged: 'white',
+    added: 'green',
+    removed: 'red',
+    modified: 'yellow',
+  };
+
+  const lineIndicators: Record<DiffLine['type'], string> = {
+    unchanged: ' ',
+    added: '+',
+    removed: '-',
+    modified: '~',
+  };
+
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="gray" padding={1}>
+      {title && (
+        <Box marginBottom={1}>
+          <Gradient name="teen">
+            <Text bold>{icon('gitCommit')} {title}</Text>
+          </Gradient>
+        </Box>
+      )}
+
+      {/* Header */}
+      <Box>
+        <Text color="gray">{'─'.repeat(halfWidth + 5)}┬{'─'.repeat(halfWidth + 1)}</Text>
+      </Box>
+
+      {lines.map((line, idx) => {
+        const leftText = (line.left || '').slice(0, halfWidth).padEnd(halfWidth);
+        const rightText = (line.right || '').slice(0, halfWidth).padEnd(halfWidth);
+
+        if (line.type === 'modified' && line.left && line.right) {
+          const { left: highlightedLeft, right: highlightedRight } = highlightCharDiff(
+            line.left.slice(0, halfWidth),
+            line.right.slice(0, halfWidth)
+          );
+
+          return (
+            <Box key={idx}>
+              <Text color="gray">{String(line.leftNum || '').padStart(3)} </Text>
+              <Text color="yellow">{highlightedLeft}</Text>
+              <Text color="gray"> │ </Text>
+              <Text color="yellow">{highlightedRight}</Text>
+            </Box>
+          );
+        }
+
+        return (
+          <Box key={idx}>
+            <Text color="gray">{String(line.leftNum || '').padStart(3)} </Text>
+            <Text color={lineColors[line.type]}>
+              {lineIndicators[line.type]}{leftText}
+            </Text>
+            <Text color="gray"> │ </Text>
+            <Text color={lineColors[line.type]}>
+              {lineIndicators[line.type]}{rightText}
+            </Text>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
+
+/**
+ * Render side-by-side diff to string
+ */
+export function renderSideBySideDiff(
+  lines: DiffLine[],
+  title?: string,
+  width?: number
+): string {
+  return renderInkToString(<SideBySideDiff lines={lines} title={title} width={width} />);
+}
+
+/**
+ * Create diff lines from two strings
+ */
+export function createDiff(left: string, right: string): DiffLine[] {
+  const leftLines = left.split('\n');
+  const rightLines = right.split('\n');
+  const maxLines = Math.max(leftLines.length, rightLines.length);
+
+  const result: DiffLine[] = [];
+
+  for (let i = 0; i < maxLines; i++) {
+    const l = leftLines[i];
+    const r = rightLines[i];
+
+    if (l === r) {
+      result.push({ type: 'unchanged', left: l, right: r, leftNum: i + 1, rightNum: i + 1 });
+    } else if (l === undefined) {
+      result.push({ type: 'added', right: r, rightNum: i + 1 });
+    } else if (r === undefined) {
+      result.push({ type: 'removed', left: l, leftNum: i + 1 });
+    } else {
+      result.push({ type: 'modified', left: l, right: r, leftNum: i + 1, rightNum: i + 1 });
+    }
+  }
+
+  return result;
+}
+
+// ============================================================================
+// SEMANTIC BADGES
+// ============================================================================
+
+export type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'cached' | 'duration' | 'model' | 'custom';
+
+export interface BadgeProps {
+  text: string;
+  variant?: BadgeVariant;
+  icon?: string;
+  color?: string;
+  bgColor?: string;
+}
+
+/**
+ * Semantic badge component
+ * For inline status indicators like (CACHED), (300ms), etc.
+ */
+export const Badge: React.FC<BadgeProps> = ({
+  text,
+  variant = 'info',
+  icon: customIcon,
+  color,
+  bgColor,
+}) => {
+  const variants: Record<BadgeVariant, { icon: string; color: string; bg?: string }> = {
+    success: { icon: '✓', color: 'green' },
+    error: { icon: '✗', color: 'red' },
+    warning: { icon: '⚠', color: 'yellow' },
+    info: { icon: 'ℹ', color: 'cyan' },
+    cached: { icon: '◉', color: 'green', bg: 'green' },
+    duration: { icon: '◷', color: 'gray' },
+    model: { icon: '◈', color: 'magenta' },
+    custom: { icon: '•', color: 'white' },
+  };
+
+  const v = variants[variant];
+  const badgeIcon = customIcon || v.icon;
+  const badgeColor = color || v.color;
+
+  if (bgColor || v.bg) {
+    return (
+      <Text backgroundColor={bgColor || v.bg} color="white">
+        {' '}{badgeIcon} {text}{' '}
+      </Text>
+    );
+  }
+
+  return (
+    <Text color={badgeColor}>
+      ({badgeIcon} {text})
+    </Text>
+  );
+};
+
+/**
+ * Cached badge - shows cache hit
+ */
+export const CachedBadge: React.FC<{ tokens?: number }> = ({ tokens }) => (
+  <Badge
+    variant="cached"
+    text={tokens ? `CACHED ${tokens} tok` : 'CACHED'}
+  />
+);
+
+/**
+ * Duration badge - shows timing
+ */
+export const DurationBadge: React.FC<{ ms: number }> = ({ ms }) => (
+  <Badge
+    variant="duration"
+    text={ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`}
+  />
+);
+
+/**
+ * Model badge - shows model name with appropriate gradient
+ */
+export const ModelBadge: React.FC<{ model: string }> = ({ model }) => {
+  const gradient = modelGradients[model.toLowerCase()] || 'rainbow';
+  return (
+    <Gradient name={gradient as GradientName}>
+      <Text bold> {model} </Text>
+    </Gradient>
+  );
+};
+
+/**
+ * Badge group - multiple badges inline
+ */
+export const BadgeGroup: React.FC<{ badges: BadgeProps[] }> = ({ badges }) => (
+  <Box flexDirection="row">
+    {badges.map((badge, idx) => (
+      <Box key={idx} marginRight={1}>
+        <Badge {...badge} />
+      </Box>
+    ))}
+  </Box>
+);
+
+/**
+ * Render badges to string
+ */
+export function renderBadge(badge: BadgeProps): string {
+  return renderInkToString(<Badge {...badge} />);
+}
+
+export function renderBadgeGroup(badges: BadgeProps[]): string {
+  return renderInkToString(<BadgeGroup badges={badges} />);
+}
+
+// ============================================================================
+// DROP SHADOW EFFECTS
+// ============================================================================
+
+/**
+ * Shadow characters for drop shadow effect
+ */
+const shadowChars = {
+  bottom: '▄',
+  right: '▐',
+  corner: '▖',
+  full: '█',
+};
+
+/**
+ * Add drop shadow to a box of text
+ * Uses block characters to create shadow effect
+ */
+export function addDropShadow(content: string, shadowColor: string = 'gray'): string {
+  const lines = content.split('\n');
+  const maxWidth = Math.max(...lines.map(l => l.replace(/\x1b\[[0-9;]*m/g, '').length));
+
+  const result: string[] = [];
+
+  // Add shadow to right side of each line
+  for (const line of lines) {
+    const visibleLen = line.replace(/\x1b\[[0-9;]*m/g, '').length;
+    const padding = ' '.repeat(maxWidth - visibleLen);
+    result.push(`${line}${padding} \x1b[90m${shadowChars.right}\x1b[0m`);
+  }
+
+  // Add bottom shadow
+  const bottomShadow = ` \x1b[90m${shadowChars.bottom.repeat(maxWidth + 1)}${shadowChars.corner}\x1b[0m`;
+  result.push(bottomShadow);
+
+  return result.join('\n');
+}
+
+/**
+ * ShadowBox component - box with drop shadow
+ */
+export const ShadowBox: React.FC<{
+  children: React.ReactNode;
+  shadowColor?: string;
+  borderStyle?: BorderStyle;
+  borderColor?: string;
+}> = ({ children, shadowColor = 'gray', borderStyle = 'round', borderColor = 'cyan' }) => {
+  return (
+    <Box flexDirection="column">
+      <Box flexDirection="row">
+        <Box
+          flexDirection="column"
+          borderStyle={borderStyle}
+          borderColor={borderColor}
+          paddingX={1}
+        >
+          {children}
+        </Box>
+        <Box flexDirection="column">
+          <Text color={shadowColor}>{shadowChars.right}</Text>
+          <Text color={shadowColor}>{shadowChars.right}</Text>
+          <Text color={shadowColor}>{shadowChars.right}</Text>
+        </Box>
+      </Box>
+      <Box marginLeft={1}>
+        <Text color={shadowColor}>
+          {shadowChars.bottom.repeat(10)}{shadowChars.corner}
+        </Text>
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Render gradient box with drop shadow
+ */
+export function renderGradientBoxWithShadow(
+  content: string,
+  options: Omit<GradientBorderBoxProps, 'children'> = {}
+): string {
+  const box = renderGradientBorderBox(content, options);
+  return addDropShadow(box);
+}
+
+// ============================================================================
+// CODE MINIMAP
+// ============================================================================
+
+/**
+ * Generate VS Code style minimap of code
+ * Uses braille patterns to compress code into overview
+ */
+export function codeMinimapBraille(code: string, width: number = 20, height: number = 10): string {
+  const lines = code.split('\n');
+  const linesPerRow = Math.ceil(lines.length / height);
+
+  const result: string[] = [];
+
+  for (let y = 0; y < height; y++) {
+    let row = '';
+    const startLine = y * linesPerRow;
+    const endLine = Math.min(startLine + linesPerRow, lines.length);
+
+    // Sample lines in this section
+    const sectionLines = lines.slice(startLine, endLine);
+    const avgLineLength = sectionLines.reduce((sum, l) => sum + l.length, 0) / (sectionLines.length || 1);
+    const maxLineLength = Math.max(...sectionLines.map(l => l.length), 1);
+
+    // Generate minimap row
+    for (let x = 0; x < width; x++) {
+      const charPos = Math.floor((x / width) * maxLineLength);
+
+      // Check if any lines have content at this position
+      let hasContent = false;
+      let density = 0;
+
+      for (const line of sectionLines) {
+        if (line.length > charPos && line[charPos] !== ' ') {
+          hasContent = true;
+          density++;
+        }
+      }
+
+      if (!hasContent) {
+        row += ' ';
+      } else {
+        // Use braille density
+        const ratio = density / sectionLines.length;
+        if (ratio > 0.7) row += '⣿';
+        else if (ratio > 0.4) row += '⣦';
+        else if (ratio > 0.2) row += '⢇';
+        else row += '⠂';
+      }
+    }
+
+    result.push(row);
+  }
+
+  return result.join('\n');
+}
+
+/**
+ * CodeMinimap component
+ */
+export const CodeMinimap: React.FC<{
+  code: string;
+  width?: number;
+  height?: number;
+  highlightLine?: number;
+  color?: string;
+}> = ({ code, width = 20, height = 10, highlightLine, color = 'cyan' }) => {
+  const minimap = codeMinimapBraille(code, width, height);
+  const lines = minimap.split('\n');
+  const codeLines = code.split('\n').length;
+  const linesPerRow = Math.ceil(codeLines / height);
+
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="gray">
+      <Text color="gray" dimColor> MINIMAP </Text>
+      {lines.map((line, idx) => {
+        const isHighlighted = highlightLine !== undefined &&
+          highlightLine >= idx * linesPerRow &&
+          highlightLine < (idx + 1) * linesPerRow;
+
+        return (
+          <Text key={idx} color={isHighlighted ? 'yellow' : color}>
+            {isHighlighted ? '▶' : ' '}{line}
+          </Text>
+        );
+      })}
+    </Box>
+  );
+};
+
+/**
+ * Render code minimap to string
+ */
+export function renderCodeMinimap(
+  code: string,
+  options: { width?: number; height?: number; highlightLine?: number } = {}
+): string {
+  return renderInkToString(<CodeMinimap code={code} {...options} />);
+}
+
+// ============================================================================
+// HEATMAP MATRIX
+// ============================================================================
+
+/**
+ * Heatmap cell intensity characters
+ */
+const heatChars = ['░', '▒', '▓', '█'];
+const heatColors = ['blue', 'cyan', 'yellow', 'red'];
+
+/**
+ * HeatmapMatrix - 2D colored intensity grid
+ */
+export const HeatmapMatrix: React.FC<{
+  data: number[][];
+  rowLabels?: string[];
+  colLabels?: string[];
+  title?: string;
+}> = ({ data, rowLabels, colLabels, title }) => {
+  if (data.length === 0) return null;
+
+  const min = Math.min(...data.flat());
+  const max = Math.max(...data.flat());
+  const range = max - min || 1;
+
+  const getCell = (value: number) => {
+    const normalized = (value - min) / range;
+    const charIdx = Math.floor(normalized * (heatChars.length - 1));
+    const colorIdx = Math.floor(normalized * (heatColors.length - 1));
+    return { char: heatChars[charIdx], color: heatColors[colorIdx] };
+  };
+
+  const labelWidth = rowLabels ? Math.max(...rowLabels.map(l => l.length)) : 0;
+
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="gray" padding={1}>
+      {title && (
+        <Gradient name="vice">
+          <Text bold>{icon('chartBar')} {title}</Text>
+        </Gradient>
+      )}
+
+      {/* Column labels */}
+      {colLabels && (
+        <Box marginTop={1} marginLeft={labelWidth + 2}>
+          {colLabels.map((label, idx) => (
+            <Text key={idx} color="gray">{label[0] || ' '} </Text>
+          ))}
+        </Box>
+      )}
+
+      {/* Data rows */}
+      <Box marginTop={colLabels ? 0 : 1} flexDirection="column">
+        {data.map((row, rowIdx) => (
+          <Box key={rowIdx}>
+            {rowLabels && (
+              <Text color="gray">{rowLabels[rowIdx]?.padEnd(labelWidth) || ''} </Text>
+            )}
+            {row.map((val, colIdx) => {
+              const { char, color } = getCell(val);
+              return (
+                <Text key={colIdx} color={color}>{char}{char}</Text>
+              );
+            })}
+          </Box>
+        ))}
+      </Box>
+
+      {/* Legend */}
+      <Box marginTop={1}>
+        <Text color="gray">Low </Text>
+        {heatChars.map((char, idx) => (
+          <Text key={idx} color={heatColors[idx]}>{char}</Text>
+        ))}
+        <Text color="gray"> High</Text>
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Render heatmap matrix to string
+ */
+export function renderHeatmapMatrix(
+  data: number[][],
+  options: { rowLabels?: string[]; colLabels?: string[]; title?: string } = {}
+): string {
+  return renderInkToString(<HeatmapMatrix data={data} {...options} />);
+}
+
+// ============================================================================
+// EXPANDABLE TREE
+// ============================================================================
+
+export interface TreeNode {
+  label: string;
+  children?: TreeNode[];
+  expanded?: boolean;
+  icon?: string;
+  color?: string;
+}
+
+/**
+ * ExpandableTree - Interactive tree with +/- toggles
+ * Note: In MCP context this is static, but shows expand state
+ */
+export const ExpandableTree: React.FC<{
+  nodes: TreeNode[];
+  title?: string;
+  indent?: number;
+}> = ({ nodes, title, indent = 0 }) => {
+  const renderNode = (node: TreeNode, depth: number, isLast: boolean): React.ReactNode => {
+    const prefix = depth > 0
+      ? '│  '.repeat(depth - 1) + (isLast ? '└─ ' : '├─ ')
+      : '';
+
+    const hasChildren = node.children && node.children.length > 0;
+    const expandIcon = hasChildren
+      ? (node.expanded !== false ? '▼' : '▶')
+      : ' ';
+    const nodeIcon = node.icon || (hasChildren ? icon('folder') : icon('file'));
+
+    return (
+      <Box key={node.label} flexDirection="column">
+        <Box>
+          <Text color="gray">{prefix}</Text>
+          <Text color={hasChildren ? 'yellow' : 'gray'}>{expandIcon} </Text>
+          <Text color={node.color || 'cyan'}>{nodeIcon} </Text>
+          <Text color="white">{node.label}</Text>
+        </Box>
+        {hasChildren && node.expanded !== false && (
+          <Box flexDirection="column">
+            {node.children!.map((child, idx) =>
+              renderNode(child, depth + 1, idx === node.children!.length - 1)
+            )}
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="gray" padding={1}>
+      {title && (
+        <Gradient name="morning">
+          <Text bold>{icon('folderOpen')} {title}</Text>
+        </Gradient>
+      )}
+      <Box marginTop={title ? 1 : 0} flexDirection="column">
+        {nodes.map((node, idx) => renderNode(node, 0, idx === nodes.length - 1))}
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Render expandable tree to string
+ */
+export function renderExpandableTree(nodes: TreeNode[], title?: string): string {
+  return renderInkToString(<ExpandableTree nodes={nodes} title={title} />);
+}
+
+// ============================================================================
+// GANTT TIMELINE
+// ============================================================================
+
+export interface GanttTask {
+  name: string;
+  start: number;  // Offset from timeline start
+  duration: number;
+  status?: 'pending' | 'active' | 'completed' | 'blocked';
+  color?: string;
+}
+
+/**
+ * GanttTimeline - Horizontal bar timeline
+ */
+export const GanttTimeline: React.FC<{
+  tasks: GanttTask[];
+  title?: string;
+  width?: number;
+  unit?: string;  // e.g., 'ms', 'day', 'step'
+}> = ({ tasks, title, width = 50, unit = '' }) => {
+  if (tasks.length === 0) return null;
+
+  const maxEnd = Math.max(...tasks.map(t => t.start + t.duration));
+  const scale = (width - 20) / maxEnd;  // Reserve space for labels
+
+  const statusColors: Record<string, string> = {
+    pending: 'gray',
+    active: 'yellow',
+    completed: 'green',
+    blocked: 'red',
+  };
+
+  const barChars: Record<string, string> = {
+    pending: '░',
+    active: '▓',
+    completed: '█',
+    blocked: '▒',
+  };
+
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="gray" padding={1}>
+      {title && (
+        <Gradient name="atlas">
+          <Text bold>{icon('calendar')} {title}</Text>
+        </Gradient>
+      )}
+
+      <Box marginTop={1} flexDirection="column">
+        {tasks.map((task, idx) => {
+          const offset = Math.floor(task.start * scale);
+          const barWidth = Math.max(1, Math.floor(task.duration * scale));
+          const status = task.status || 'pending';
+          const color = task.color || statusColors[status];
+          const char = barChars[status];
+
+          return (
+            <Box key={idx}>
+              <Text color="gray">{task.name.padEnd(15).slice(0, 15)} </Text>
+              <Text>{' '.repeat(offset)}</Text>
+              <Text color={color}>{char.repeat(barWidth)}</Text>
+              <Text color="gray"> {task.duration}{unit}</Text>
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* Timeline ruler */}
+      <Box marginTop={1}>
+        <Text color="gray">{'─'.repeat(15)} </Text>
+        <Text color="gray">0</Text>
+        <Text color="gray">{' '.repeat(Math.floor((width - 20) / 2) - 2)}</Text>
+        <Text color="gray">{Math.floor(maxEnd / 2)}{unit}</Text>
+        <Text color="gray">{' '.repeat(Math.floor((width - 20) / 2) - 4)}</Text>
+        <Text color="gray">{maxEnd}{unit}</Text>
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Render Gantt timeline to string
+ */
+export function renderGanttTimeline(
+  tasks: GanttTask[],
+  options: { title?: string; width?: number; unit?: string } = {}
+): string {
+  return renderInkToString(<GanttTimeline tasks={tasks} {...options} />);
+}
+
+// ============================================================================
+// SANKEY FLOW DIAGRAM
+// ============================================================================
+
+export interface SankeyNode {
+  id: string;
+  label: string;
+  value?: number;
+}
+
+export interface SankeyLink {
+  source: string;
+  target: string;
+  value: number;
+}
+
+/**
+ * Simple ASCII Sankey diagram
+ * Shows flow between stages with proportional width
+ */
+export const SankeyDiagram: React.FC<{
+  nodes: SankeyNode[];
+  links: SankeyLink[];
+  title?: string;
+  width?: number;
+}> = ({ nodes, links, title, width = 60 }) => {
+  // Group nodes into columns (simple left-to-right layout)
+  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const sourceNodes = new Set(links.map(l => l.source));
+  const targetNodes = new Set(links.map(l => l.target));
+
+  // Left column: sources only
+  const leftNodes = nodes.filter(n => sourceNodes.has(n.id) && !targetNodes.has(n.id));
+  // Middle: both
+  const middleNodes = nodes.filter(n => sourceNodes.has(n.id) && targetNodes.has(n.id));
+  // Right: targets only
+  const rightNodes = nodes.filter(n => !sourceNodes.has(n.id) && targetNodes.has(n.id));
+
+  const maxValue = Math.max(...links.map(l => l.value));
+  const flowWidth = Math.floor(width * 0.4);
+
+  const renderFlow = (value: number) => {
+    const barWidth = Math.max(1, Math.floor((value / maxValue) * 10));
+    return '━'.repeat(barWidth);
+  };
+
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="gray" padding={1}>
+      {title && (
+        <Gradient name="vice">
+          <Text bold>{icon('split')} {title}</Text>
+        </Gradient>
+      )}
+
+      <Box marginTop={1} flexDirection="column">
+        {/* Show flows from sources to targets */}
+        {links.map((link, idx) => {
+          const source = nodeMap.get(link.source);
+          const target = nodeMap.get(link.target);
+
+          return (
+            <Box key={idx} marginBottom={idx < links.length - 1 ? 0 : 0}>
+              <Text color="cyan">{source?.label.padEnd(12).slice(0, 12)}</Text>
+              <Text color="yellow"> ━{renderFlow(link.value)}▶ </Text>
+              <Text color="green">{target?.label}</Text>
+              <Text color="gray"> ({link.value})</Text>
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Render Sankey diagram to string
+ */
+export function renderSankeyDiagram(
+  nodes: SankeyNode[],
+  links: SankeyLink[],
+  title?: string
+): string {
+  return renderInkToString(<SankeyDiagram nodes={nodes} links={links} title={title} />);
+}
+
+// ============================================================================
+// MASONRY GRID
+// ============================================================================
+
+export interface MasonryItem {
+  content: string;
+  height?: number;  // In lines
+  color?: string;
+  title?: string;
+}
+
+/**
+ * MasonryGrid - Responsive multi-column layout
+ */
+export const MasonryGrid: React.FC<{
+  items: MasonryItem[];
+  columns?: number;
+  width?: number;
+  gap?: number;
+}> = ({ items, columns = 2, width = 80, gap = 2 }) => {
+  const colWidth = Math.floor((width - gap * (columns - 1)) / columns);
+
+  // Distribute items into columns (shortest column first)
+  const columnItems: MasonryItem[][] = Array.from({ length: columns }, () => []);
+  const columnHeights = new Array(columns).fill(0);
+
+  for (const item of items) {
+    const shortestCol = columnHeights.indexOf(Math.min(...columnHeights));
+    columnItems[shortestCol].push(item);
+    columnHeights[shortestCol] += (item.height || 3) + 1;
+  }
+
+  return (
+    <Box flexDirection="row">
+      {columnItems.map((colItems, colIdx) => (
+        <Box key={colIdx} flexDirection="column" width={colWidth} marginRight={colIdx < columns - 1 ? gap : 0}>
+          {colItems.map((item, itemIdx) => (
+            <Box
+              key={itemIdx}
+              flexDirection="column"
+              borderStyle="round"
+              borderColor={item.color || 'gray'}
+              marginBottom={1}
+              paddingX={1}
+            >
+              {item.title && (
+                <Text bold color={item.color || 'cyan'}>{item.title}</Text>
+              )}
+              <Text wrap="wrap">{item.content.slice(0, colWidth * (item.height || 3))}</Text>
+            </Box>
+          ))}
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+/**
+ * Render masonry grid to string
+ */
+export function renderMasonryGrid(
+  items: MasonryItem[],
+  options: { columns?: number; width?: number; gap?: number } = {}
+): string {
+  return renderInkToString(<MasonryGrid items={items} {...options} />);
+}
+
+// ============================================================================
+// PURE REACT INK BORDER BOX (refactored from ANSI)
+// ============================================================================
+
+/**
+ * InkBorderBox - Pure React Ink border implementation
+ * Uses Ink's built-in Box borderStyle for proper rendering
+ */
+export const InkBorderBox: React.FC<{
+  children: React.ReactNode;
+  style?: BorderStyle;
+  color?: string;
+  title?: string;
+  titleGradient?: GradientPreset;
+  width?: number | string;
+  padding?: number;
+  paddingX?: number;
+  paddingY?: number;
+}> = ({
+  children,
+  style = 'round',
+  color = 'gray',
+  title,
+  titleGradient,
+  width,
+  padding,
+  paddingX = padding ?? 1,
+  paddingY = padding ?? 0,
+}) => {
+  // Ink's borderStyle prop directly supports our border types
+  const inkBorderStyle = style as 'single' | 'double' | 'round' | 'bold' | 'singleDouble' | 'doubleSingle' | 'classic';
+
+  return (
+    <Box
+      flexDirection="column"
+      borderStyle={inkBorderStyle}
+      borderColor={color}
+      paddingX={paddingX}
+      paddingY={paddingY}
+      width={width}
+    >
+      {title && (
+        <Box marginBottom={1}>
+          {titleGradient ? (
+            <Gradient name={titleGradient as GradientName}>
+              <Text bold>{title}</Text>
+            </Gradient>
+          ) : (
+            <Text bold color={color}>{title}</Text>
+          )}
+        </Box>
+      )}
+      {children}
+    </Box>
+  );
+};
+
+/**
+ * Render InkBorderBox to string
+ */
+export function renderInkBorderBox(
+  content: string | React.ReactNode,
+  options: {
+    style?: BorderStyle;
+    color?: string;
+    title?: string;
+    titleGradient?: GradientPreset;
+    width?: number;
+    padding?: number;
+  } = {}
+): string {
+  const child = typeof content === 'string' ? <Text>{content}</Text> : content;
+  return renderInkToString(<InkBorderBox {...options}>{child}</InkBorderBox>);
+}
+
+/**
+ * InkGradientBox - React Ink box with gradient title
+ * For cases where gradient borders aren't needed but gradient titles are
+ */
+export const InkGradientBox: React.FC<{
+  children: React.ReactNode;
+  title: string;
+  gradient?: GradientPreset;
+  borderStyle?: BorderStyle;
+  borderColor?: string;
+  icon?: string;
+}> = ({
+  children,
+  title,
+  gradient = 'cristal',
+  borderStyle = 'round',
+  borderColor = 'gray',
+  icon: customIcon,
+}) => {
+  return (
+    <Box
+      flexDirection="column"
+      borderStyle={borderStyle}
+      borderColor={borderColor}
+      padding={1}
+    >
+      <Box marginBottom={1}>
+        {customIcon && <Text>{customIcon} </Text>}
+        <Gradient name={gradient as GradientName}>
+          <Text bold>{title}</Text>
+        </Gradient>
+      </Box>
+      {children}
+    </Box>
+  );
+};
+
+/**
+ * Render InkGradientBox to string
+ */
+export function renderInkGradientBox(
+  content: string | React.ReactNode,
+  title: string,
+  options: {
+    gradient?: GradientPreset;
+    borderStyle?: BorderStyle;
+    borderColor?: string;
+    icon?: string;
+  } = {}
+): string {
+  const child = typeof content === 'string' ? <Text>{content}</Text> : content;
+  return renderInkToString(
+    <InkGradientBox title={title} {...options}>{child}</InkGradientBox>
+  );
+}
+
+// ============================================================================
+// MODEL RESPONSE COMPONENTS (Pure React Ink)
+// ============================================================================
+
+/**
+ * ModelResponseBox - Formatted model response with gradient header
+ * Pure React Ink implementation
+ */
+export const ModelResponseBox: React.FC<{
+  model: string;
+  content: string;
+  duration?: number;
+  tokens?: number;
+  cached?: boolean;
+}> = ({ model, content, duration, tokens, cached }) => {
+  const gradient = modelGradients[model.toLowerCase()] || 'rainbow';
+
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="gray" padding={1}>
+      {/* Header with model name and badges */}
+      <Box marginBottom={1}>
+        <Gradient name={gradient as GradientName}>
+          <Text bold> {model.toUpperCase()} </Text>
+        </Gradient>
+        {cached && (
+          <Box marginLeft={1}>
+            <Text color="green">(◉ CACHED)</Text>
+          </Box>
+        )}
+        {duration && (
+          <Box marginLeft={1}>
+            <Text color="gray">(◷ {duration}ms)</Text>
+          </Box>
+        )}
+        {tokens && (
+          <Box marginLeft={1}>
+            <Text color="gray">({tokens} tok)</Text>
+          </Box>
+        )}
+      </Box>
+
+      {/* Content */}
+      <Text wrap="wrap">{content}</Text>
+    </Box>
+  );
+};
+
+/**
+ * Render model response box to string
+ */
+export function renderModelResponseBox(
+  model: string,
+  content: string,
+  options: { duration?: number; tokens?: number; cached?: boolean } = {}
+): string {
+  return renderInkToString(
+    <ModelResponseBox model={model} content={content} {...options} />
+  );
+}
+
+/**
+ * MultiModelComparison - Side-by-side model outputs
+ * Pure React Ink implementation
+ */
+export const MultiModelComparison: React.FC<{
+  responses: Array<{
+    model: string;
+    content: string;
+    duration?: number;
+    tokens?: number;
+  }>;
+  title?: string;
+}> = ({ responses, title }) => {
+  return (
+    <Box flexDirection="column" borderStyle="double" borderColor="cyan" padding={1}>
+      {title && (
+        <Box marginBottom={1}>
+          <Gradient name="vice">
+            <Text bold>♫ {title}</Text>
+          </Gradient>
+        </Box>
+      )}
+
+      <Box flexDirection="column">
+        {responses.map((r, idx) => (
+          <Box key={idx} flexDirection="column" marginBottom={idx < responses.length - 1 ? 1 : 0}>
+            <Box>
+              <Gradient name={(modelGradients[r.model.toLowerCase()] || 'rainbow') as GradientName}>
+                <Text bold> {r.model.toUpperCase()} </Text>
+              </Gradient>
+              {r.duration && <Text color="gray"> {r.duration}ms</Text>}
+              {r.tokens && <Text color="gray"> {r.tokens} tok</Text>}
+            </Box>
+            <Box borderStyle="single" borderColor="dim" paddingX={1} marginTop={0}>
+              <Text wrap="wrap">{r.content.slice(0, 200)}{r.content.length > 200 ? '...' : ''}</Text>
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Render multi-model comparison to string
+ */
+export function renderMultiModelComparison(
+  responses: Array<{ model: string; content: string; duration?: number; tokens?: number }>,
+  title?: string
+): string {
+  return renderInkToString(<MultiModelComparison responses={responses} title={title} />);
+}
