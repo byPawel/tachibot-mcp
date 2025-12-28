@@ -22,7 +22,7 @@ export const balancedProfile: ProfileConfig = {
     openai_explain: false,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
-    gemini_analyze_text: false,
+    gemini_analyze_text: true,
     qwen_coder: true,
     kimi_thinking: true,
     qwen_competitive: false,

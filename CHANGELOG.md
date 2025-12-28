@@ -5,6 +5,21 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2025-12-28
+
+### Fixed
+- **gemini_analyze_text** and **gemini_analyze_code** now work via nextThought
+  - Added missing cases in ToolExecutionService switch statement
+  - Added parameter mapping (`text:` and `code:` params)
+- **TACHIBOT_FINAL_JUDGE** env var now properly resolves as default judge
+
+### Changed
+- **balanced profile** now includes `gemini_analyze_text: true`
+- Removed noisy memory save hint from nextThought output
+
+### Added
+- **TACHIBOT_FINAL_JUDGE** env var - Set default final judge model (e.g., `gemini`)
+
 ## [2.3.0] - 2025-12-28
 
 ### Added

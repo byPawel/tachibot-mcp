@@ -242,6 +242,18 @@ export class ToolExecutionService implements IToolExecutionEngine {
           prompt: prompt
         };
 
+      case "gemini_analyze_text":
+        return {
+          text: prompt,
+          type: "general"
+        };
+
+      case "gemini_analyze_code":
+        return {
+          code: prompt,
+          focus: "general"
+        };
+
       case "perplexity_ask":
         return {
           query: prompt
@@ -494,6 +506,26 @@ Step-by-step reasoning:
             }
           });
           return typeof geminiBrainstormResult === 'string' ? geminiBrainstormResult : JSON.stringify(geminiBrainstormResult);
+
+        case "gemini_analyze_code":
+          const { geminiAnalyzeCodeTool } = await import("../../../../tools/gemini-tools.js");
+          const geminiAnalyzeCodeResult = await geminiAnalyzeCodeTool.execute(params, {
+            log: {
+              info: (msg: string, data?: any) => console.error(`[${toolName}] ${msg}`, data),
+              error: (msg: string, data?: any) => console.error(`[${toolName}] ERROR: ${msg}`, data)
+            }
+          });
+          return typeof geminiAnalyzeCodeResult === 'string' ? geminiAnalyzeCodeResult : JSON.stringify(geminiAnalyzeCodeResult);
+
+        case "gemini_analyze_text":
+          const { geminiAnalyzeTextTool } = await import("../../../../tools/gemini-tools.js");
+          const geminiAnalyzeTextResult = await geminiAnalyzeTextTool.execute(params, {
+            log: {
+              info: (msg: string, data?: any) => console.error(`[${toolName}] ${msg}`, data),
+              error: (msg: string, data?: any) => console.error(`[${toolName}] ERROR: ${msg}`, data)
+            }
+          });
+          return typeof geminiAnalyzeTextResult === 'string' ? geminiAnalyzeTextResult : JSON.stringify(geminiAnalyzeTextResult);
 
         case "grok_code":
           const { grokCodeTool } = await import("../../../../tools/grok-tools.js");

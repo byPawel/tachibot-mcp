@@ -485,6 +485,9 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
         saveToMemory: true,
       } : undefined);
 
+      // Resolve final judge (explicit > env default > none)
+      const finalJudge = args.finalJudge ?? process.env.TACHIBOT_FINAL_JUDGE;
+
       // Use enhanced method with model execution support
       const result = await sequentialThinking.nextThoughtEnhanced({
         thought: validation.sanitized,
@@ -499,7 +502,7 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
         contextWindow: args.contextWindow ?? 3,
         objective: args.objective,
         distillContext: args.distillContext ?? "off",
-        finalJudge: args.finalJudge,
+        finalJudge,
         memoryProvider,
       });
 
@@ -508,7 +511,7 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
         model: result.thoughtAdded.model,
         executed: args.executeModel ?? false,
         distillMode: args.distillContext ?? "off",
-        finalJudge: args.finalJudge,
+        finalJudge,
       });
 
       // Build response with model output if available
@@ -519,7 +522,7 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
 
       // Add final judge response if present
       if (result.finalJudgeResponse) {
-        response += `## Final Judge Response (${args.finalJudge}):\n\n${result.finalJudgeResponse}\n\n---\n\n`;
+        response += `## Final Judge Response (${finalJudge}):\n\n${result.finalJudgeResponse}\n\n---\n\n`;
       }
 
       response += result.guidance;
@@ -534,10 +537,8 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
         response += `\n\n**Available Models**: ${result.availableModels.join(", ")}`;
       }
 
-      // Show memory save hint if present (Claude should act on this)
-      if (result.memorySaveHint) {
-        response += `\n\n---\n**Memory Save Hint**: Call \`${result.memorySaveHint.tool}\` with:\n\`\`\`json\n${JSON.stringify(result.memorySaveHint.input, null, 2)}\n\`\`\``;
-      }
+      // Memory save hint suppressed - too noisy in output
+      // If needed, user can explicitly call devlog_session_log
 
       return response;
     } catch (error) {
