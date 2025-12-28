@@ -8,6 +8,7 @@ import { z } from "zod";
 import { validateToolInput } from "../utils/input-validator.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
+// Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env

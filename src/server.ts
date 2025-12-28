@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// FORCE COLORS: Must be set BEFORE any chalk imports (chalk reads env at module load)
+// MCP uses stdio which is not a TTY, so chalk auto-disables colors
+process.env.FORCE_COLOR = '3';  // 3 = truecolor (16M colors)
+
 // CRITICAL FIX FOR MCPB: Redirect console.warn to console.error
 // This prevents FastMCP's warnings from writing to stdout (which corrupts MCP JSON-RPC)
 // FastMCP writes "[FastMCP warning] could not infer client capabilities" during init
@@ -17,11 +21,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Load .env from project root (dist/src -> go up 2 levels)
-// IMPORTANT: Use override:true to replace any env vars injected by Claude Code
+// DON'T override - keep env vars from Claude Code settings.json (RENDER_OUTPUT, TACHIBOT_THEME, etc.)
 const envPath = path.resolve(__dirname, '../../.env');
 const envResult = dotenvConfig({
   path: envPath,
-  override: true  // Force override of existing env vars
+  override: false  // Preserve env vars from Claude Code
 });
 
 // Import centralized API key utilities
@@ -44,11 +48,13 @@ import { z } from "zod";
 import { InstructionOrchestrator } from "./orchestrator-instructions.js";
 import { validateToolInput, sanitizeForLogging } from "./utils/input-validator.js";
 import { isToolEnabled, logToolConfiguration } from "./utils/tool-config.js";
+import { renderOutput } from "./utils/ansi-renderer.js";
 import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled, getUsageSummary, getAllReposSummary, getStatsJson, resetStats } from "./utils/usage-tracker.js";
+import { checkForUpdates, getUpdateStatus } from "./utils/update-checker.js";
 // import { WorkflowVisualizerLite } from "./visualizer-lite.js"; // Unused - removed
 import { collaborativeOrchestrator } from "./collaborative-orchestrator.js";
 import { TechnicalDomain } from "./reasoning-chain.js";
-import { sequentialThinking, NextThoughtSchema } from "./sequential-thinking.js";
+import { sequentialThinking, NextThoughtSchema, formatContextWindow } from "./sequential-thinking.js";
 import { getUnifiedAITools, getProviderInfo } from "./tools/unified-ai-provider.js";
 import { getAllPerplexityTools, isPerplexityAvailable } from "./tools/perplexity-tools.js";
 import { getAllGrokTools, isGrokAvailable } from "./tools/grok-tools.js";
@@ -158,7 +164,7 @@ interface NextThoughtArgs {
   branchFromThought?: number;
   model?: string;
   executeModel?: boolean;      // Actually execute the model's tool
-  contextWindow?: number;      // How many prev thoughts as context (-1=ALL, 0=none, default=3)
+  contextWindow?: number | "none" | "recent" | "all";  // How many prev thoughts as context (none=0, recent=3, all=full)
   objective?: string;          // For auto-session creation
   distillContext?: "off" | "light";  // Distillation mode (default: off, auto-distills at 8000+ tokens)
   finalJudge?: string;         // Model to use as final judge when session completes
@@ -207,6 +213,16 @@ function safeAddTool(tool: MCPTool): void {
           }
         }
 
+        // Apply ANSI rendering to string results (centralized - no need to edit each tool!)
+        // Just render everything - the ~50-100ms for large outputs is fine for CLI
+        if (typeof result === 'string') {
+          try {
+            const model = inferModelFromTool(tool.name);
+            return renderOutput(result, model || tool.name);
+          } catch {
+            return result; // Fallback to raw only on parse errors
+          }
+        }
         return result;
       }
     };
@@ -506,10 +522,16 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
         memoryProvider,
       });
 
+      // Format context window for display (show "all" instead of -1)
+      const resolvedContext = typeof args.contextWindow === "string"
+        ? args.contextWindow
+        : formatContextWindow(args.contextWindow ?? 3);
+
       log.info("Sequential thought processed", {
         thoughtNumber: result.thoughtAdded.number,
         model: result.thoughtAdded.model,
         executed: args.executeModel ?? false,
+        context: resolvedContext,
         distillMode: args.distillContext ?? "off",
         finalJudge,
       });
@@ -715,6 +737,9 @@ async function initializeServer() {
     }
 
     console.error(`Ready for orchestration!`);
+
+    // Check for updates (non-blocking, fire and forget)
+    checkForUpdates().catch(() => {}); // Silent fail
 
     // Start the server with stdio transport
     console.error("🚀 Starting server with stdio transport...");

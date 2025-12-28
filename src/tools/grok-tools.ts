@@ -11,6 +11,7 @@ import { grokSearchTool } from './grok-enhanced.js';
 import { validateToolInput } from "../utils/input-validator.js";
 import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
+// Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
