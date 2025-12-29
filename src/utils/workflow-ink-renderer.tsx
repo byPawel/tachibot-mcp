@@ -539,6 +539,137 @@ const WorkflowResultView: React.FC<{
 };
 
 // ============================================================================
+// PROGRESS BANNER COMPONENTS (for stderr streaming)
+// ============================================================================
+
+/**
+ * Live progress banner for workflow execution
+ * Rendered to stderr during workflow steps
+ *
+ * Design: Apple/Anthropic-inspired minimalism
+ * - Single gradient accent line
+ * - Clear hierarchy: name > progress > step
+ * - Refined progress bar with smooth gradient fill
+ * - Maximum 6 lines when rendered
+ */
+const WorkflowProgressBanner: React.FC<{
+  workflowName: string;
+  currentStep: number;
+  totalSteps: number;
+  stepName: string;
+  status: 'starting' | 'running' | 'completed' | 'failed';
+  elapsedTime?: number;
+  modelUsed?: string;
+}> = ({ workflowName, currentStep, totalSteps, stepName, status, elapsedTime, modelUsed }) => {
+  const progressPercent = Math.round((currentStep / totalSteps) * 100);
+  const progressBarWidth = 24;
+  const filledWidth = Math.round((currentStep / totalSteps) * progressBarWidth);
+  const emptyWidth = progressBarWidth - filledWidth;
+
+  // Status configuration - minimal and purposeful
+  const statusConfig = {
+    starting: { icon: nerdIcons.sync, color: '#F59E0B' },
+    running: { icon: nerdIcons.cpu, color: '#60A5FA' },
+    completed: { icon: nerdIcons.checkCircle, color: '#34D399' },
+    failed: { icon: nerdIcons.error, color: '#EF4444' },
+  };
+
+  const { icon: statusIcon, color: statusColor } = statusConfig[status];
+  const modelCfg = modelUsed ? getModelConfig(modelUsed) : null;
+  const modelIcon = modelUsed ? getModelIcon(modelUsed) : null;
+
+  // Workflow gradient - refined teal to indigo
+  const workflowGradient = ['#34D399', '#60A5FA', '#818CF8'];
+
+  // Progress bar gradient - matches model if available, else workflow default
+  const progressGradient = modelCfg?.gradient || workflowGradient;
+
+  return (
+    <Box flexDirection="column">
+      {/* Subtle top accent */}
+      <Box>
+        <Gradient colors={workflowGradient}>
+          {'─'.repeat(52)}
+        </Gradient>
+      </Box>
+
+      {/* Line 1: Workflow name with icon + status indicator */}
+      <Box>
+        <Text color="#34D399">{nerdIcons.cogs}</Text>
+        <Text bold color="#E5E7EB"> {workflowName}</Text>
+        <Text dimColor>  </Text>
+        <Text color={statusColor}>{statusIcon}</Text>
+      </Box>
+
+      {/* Line 2: Progress bar with percentage and time */}
+      <Box>
+        <Text dimColor>{'  '}</Text>
+        <Text color="#60A5FA">[</Text>
+        <Gradient colors={progressGradient}>
+          {'⣿'.repeat(filledWidth)}
+        </Gradient>
+        <Text color="#374151">{'⣿'.repeat(emptyWidth)}</Text>
+        <Text color="#60A5FA">]</Text>
+        <Text dimColor> </Text>
+        <Text bold color="#22C55E">{String(progressPercent).padStart(3, ' ')}%</Text>
+        {elapsedTime !== undefined && (
+          <Text dimColor>  {(elapsedTime / 1000).toFixed(1)}s</Text>
+        )}
+      </Box>
+
+      {/* Line 3: Step info with model badge */}
+      <Box>
+        <Text dimColor>{'  '}</Text>
+        <Text color="#6B7280">{currentStep}/{totalSteps}</Text>
+        <Text dimColor> </Text>
+        {modelIcon && <Text color={modelCfg?.color}>{modelIcon} </Text>}
+        <Text color="#D1D5DB">{stepName}</Text>
+      </Box>
+
+      {/* Subtle bottom accent */}
+      <Box>
+        <Gradient colors={workflowGradient}>
+          {'─'.repeat(52)}
+        </Gradient>
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Compact progress indicator (single line)
+ */
+const CompactProgressLine: React.FC<{
+  currentStep: number;
+  totalSteps: number;
+  stepName: string;
+  status: 'running' | 'completed';
+}> = ({ currentStep, totalSteps, stepName, status }) => {
+  const progressPercent = Math.round((currentStep / totalSteps) * 100);
+  const barWidth = 15;
+  const filled = Math.round((currentStep / totalSteps) * barWidth);
+  const empty = barWidth - filled;
+
+  const statusIcon = status === 'completed' ? nerdIcons.checkCircle : nerdIcons.sync;
+  const statusColor = status === 'completed' ? '#22C55E' : '#00D7FF';
+
+  return (
+    <Box>
+      <Text color={statusColor}>{statusIcon}</Text>
+      <Text dimColor> [</Text>
+      <Text color="#22C55E">{'⣿'.repeat(filled)}</Text>
+      <Text color="#374151">{'⣿'.repeat(empty)}</Text>
+      <Text dimColor>] </Text>
+      <Text bold color="#00D7FF">{progressPercent}%</Text>
+      <Text dimColor> │ </Text>
+      <Text>{currentStep}/{totalSteps}</Text>
+      <Text dimColor> │ </Text>
+      <Text color="#AF87FF">{stepName}</Text>
+    </Box>
+  );
+};
+
+// ============================================================================
 // SINGLE STEP COMPONENTS (for streaming workflow)
 // ============================================================================
 
@@ -573,11 +704,13 @@ const SingleStepHeader: React.FC<{
         <Text dimColor> │ </Text>
         <Text color="#22C55E">{progressPercent}%</Text>
       </Box>
-      {/* Progress bar */}
+      {/* Progress bar - braille with gradient */}
       <Box marginTop={1}>
         <Text dimColor>[</Text>
-        <Text color="#22C55E">{'█'.repeat(filledWidth)}</Text>
-        <Text dimColor>{'░'.repeat(emptyWidth)}</Text>
+        <Gradient colors={['#22C55E', '#34D399', '#22D3EE']}>
+          {'⣿'.repeat(filledWidth)}
+        </Gradient>
+        <Text color="#374151">{'⣿'.repeat(emptyWidth)}</Text>
         <Text dimColor>]</Text>
         {elapsedTime !== undefined && (
           <>
@@ -692,6 +825,68 @@ const WorkflowSummaryView: React.FC<{
 // ============================================================================
 // MAIN RENDER FUNCTIONS
 // ============================================================================
+
+/**
+ * Render progress banner to stderr (beautiful Ink output)
+ * Use this during workflow execution for live progress updates
+ */
+export function renderProgressBanner(options: {
+  workflowName: string;
+  currentStep: number;
+  totalSteps: number;
+  stepName: string;
+  status: 'starting' | 'running' | 'completed' | 'failed';
+  elapsedTime?: number;
+  modelUsed?: string;
+}): string {
+  const stream = new PassThrough();
+  let output = '';
+
+  stream.on('data', (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+
+  const { unmount } = render(
+    <WorkflowProgressBanner {...options} />,
+    {
+      stdout: stream as unknown as NodeJS.WriteStream,
+      exitOnCtrlC: false,
+      patchConsole: false,
+    }
+  );
+
+  unmount();
+  return output;
+}
+
+/**
+ * Render compact progress line (single line for quick updates)
+ */
+export function renderCompactProgress(options: {
+  currentStep: number;
+  totalSteps: number;
+  stepName: string;
+  status: 'running' | 'completed';
+}): string {
+  const stream = new PassThrough();
+  let output = '';
+
+  stream.on('data', (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+
+  const { unmount } = render(
+    <CompactProgressLine {...options} />,
+    {
+      stdout: stream as unknown as NodeJS.WriteStream,
+      exitOnCtrlC: false,
+      patchConsole: false,
+    }
+  );
+
+  unmount();
+  return output;
+}
 
 /**
  * Render a single workflow step (for streaming execution)
@@ -814,6 +1009,8 @@ export {
   SingleStepHeader,
   SingleStepView,
   WorkflowSummaryView,
+  WorkflowProgressBanner,
+  CompactProgressLine,
   getModelIcon,
   getModelConfig,
   extractModelFromTool,
