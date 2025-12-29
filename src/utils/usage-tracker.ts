@@ -220,14 +220,15 @@ export function getUsageSummary(repoPath?: string): string {
     const costData = topTools
       .filter(([, usage]) => usage.totalCost > 0)
       .map(([toolName, usage]) => ({
-        label: toolName, // Full name - no truncation
-        value: Math.round(usage.totalCost * 10000), // Scale for visibility
+        label: toolName,
+        value: Math.round(usage.totalCost * 10000), // Scale for pie sizing
+        displayValue: `$${usage.totalCost.toFixed(3)}`, // Show actual cost
       }));
     if (costData.length > 0) {
       lines.push(renderDonutChart(costData, {
         width: 50,
         title: 'Cost Distribution',
-        centerLabel: `$${totalCost.toFixed(3)}`
+        centerLabel: `$${totalCost.toFixed(2)}`
       }));
       lines.push(``);
     }
