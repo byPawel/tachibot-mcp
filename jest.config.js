@@ -19,9 +19,9 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
 
-  // Transform TypeScript files
+  // Transform TypeScript files (including TSX)
   transform: {
-    '^.+\\.ts$': [
+    '^.+\\.tsx?$': [
       'ts-jest',
       {
         useESM: true,
@@ -31,6 +31,7 @@ export default {
           esModuleInterop: true,
           module: 'ESNext',
           moduleResolution: 'node',
+          jsx: 'react-jsx',
         },
       },
     ],
@@ -50,5 +51,5 @@ export default {
   ],
 
   // Module file extensions
-  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'json', 'node'],
 };
