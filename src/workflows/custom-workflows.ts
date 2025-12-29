@@ -10,6 +10,7 @@ import * as path from "path";
 import * as yaml from "yaml";
 import { costMonitor } from "../optimization/cost-monitor.js";
 import { randomUUID } from "crypto";
+import { distillStepOutput, formatDistilledContext } from "./engine/StepSummarizer.js";
 
 // Load workflow limits from config
 function loadWorkflowLimits(): { stepTokenLimit: number; minLimit: number; maxLimit: number } {
@@ -955,6 +956,51 @@ export class CustomWorkflowEngine {
       // Store in variable if specified
       if (step.output?.variable) {
         session.variables[step.output.variable] = result;
+      }
+
+      // Distillation for structured context passing (Anchor & Reference pattern)
+      if (step.output?.distill) {
+        const distillVarName = step.output.distill as string;
+        console.error(` Distilling step '${step.name}' output to '${distillVarName}_distilled_context'`);
+
+        try {
+          // Create tool executor wrapper for distillation (uses this.callTool)
+          const toolExecutor = async (toolName: string, args: Record<string, any>) => {
+            const { result } = await this.callTool(toolName, args, { maxTokens: 1000 });
+            return result;
+          };
+
+          // Distill the output
+          const distilled = await distillStepOutput(
+            step.name,
+            result,
+            {
+              maxFindings: (step.output as any).distillMaxFindings ?? 5,
+              maxDecisions: (step.output as any).distillMaxDecisions ?? 3,
+              stripCode: true,
+              includeHints: (step.output as any).distillIncludeHints ?? true,
+            },
+            toolExecutor
+          );
+
+          // Format with XML tags (Anchor & Reference)
+          const contextMaxTokens = (step.output as any).contextMaxTokens ?? 5000;
+          const distilledContext = formatDistilledContext(
+            distilled,
+            result,
+            step.name,
+            { includeFullOutput: true, maxOutputTokens: contextMaxTokens }
+          );
+
+          // Store as *_context variable (distill: foo → foo_context)
+          session.variables[`${distillVarName}_context`] = distilledContext;
+          console.error(` Created variable '${distillVarName}_context' (${distilledContext.length} chars)`);
+        } catch (distillError: any) {
+          console.error(` Distillation failed for step '${step.name}': ${distillError.message}`);
+          // Fallback: store truncated raw output
+          const truncated = result.length > 5000 ? result.slice(0, 5000) + '\n...(truncated)' : result;
+          session.variables[`${distillVarName}_context`] = truncated;
+        }
       }
 
       // Truncate output for display (configurable limit)

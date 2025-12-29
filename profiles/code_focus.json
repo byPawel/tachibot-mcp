@@ -1,8 +1,9 @@
 {
-  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 16 tools)",
+  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 17 tools)",
   "tools": {
     "think": true,
     "focus": true,
+    "tachi": true,
     "nextThought": true,
     "usage_stats": true,
     "perplexity_ask": true,

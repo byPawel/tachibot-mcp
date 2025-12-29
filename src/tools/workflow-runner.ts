@@ -27,6 +27,7 @@ import {
   type RenderWorkflowOptions,
 } from '../utils/workflow-ink-renderer.js';
 import { createProgressStream } from '../utils/progress-stream.js';
+import { renderBigText, renderToolBadge } from '../utils/ink-renderer.js';
 
 /**
  * MCP Context with progress reporting capability
@@ -226,7 +227,10 @@ export function registerWorkflowTools(server: FastMCP) {
             maxSummaryLength: maxChars,
           };
 
-          return renderWorkflowResult(workflowResult, renderOptions);
+          // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
+          const flowBadge = renderToolBadge('workflow', { icon: '⎔', gradient: 'morning' });
+          const flowHeader = renderBigText('FLOW', { font: 'block', gradient: 'morning' });
+          return `${flowBadge}\n${flowHeader}\n` + renderWorkflowResult(workflowResult, renderOptions);
         }
 
         // Fallback for any other object type

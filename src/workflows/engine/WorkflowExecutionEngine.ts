@@ -460,6 +460,14 @@ async function executeWorkflowImpl(
         // DEBUG: Log step.output to understand what's being passed
         console.error(`🔍 DEBUG step.output for '${step.name}':`, JSON.stringify(step.output, null, 2));
         console.error(`🔍 DEBUG step.output?.distill = '${step.output?.distill}'`);
+        // TEMP: Write debug to file
+        const fs = await import('fs');
+        fs.writeFileSync('/tmp/distill-debug.log', `
+STEP: ${step.name}
+step.output: ${JSON.stringify(step.output, null, 2)}
+step.output?.distill: ${step.output?.distill}
+step.output keys: ${step.output ? Object.keys(step.output).join(', ') : 'null'}
+`, { flag: 'a' });
 
         // Auto-distillation for structured context passing (preferred over summary)
         if (step.output?.distill) {

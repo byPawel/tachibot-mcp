@@ -11,7 +11,7 @@
 
   "availableTools": {
     "description": "Reference: All available tools - Copy any of these to customProfile.tools to create your own selection",
-    "core": ["think", "focus", "nextThought"],
+    "core": ["think", "focus", "nextThought", "tachi"],
     "perplexity": [
       "perplexity_ask",
       "perplexity_reason",
@@ -54,6 +54,7 @@
     "tools": {
       "think": true,
       "focus": true,
+      "tachi": true,
       "nextThought": true,
       "perplexity_ask": true,
       "perplexity_reason": true,

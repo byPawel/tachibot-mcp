@@ -14,6 +14,7 @@ import { FocusModeRegistry } from './FocusModeRegistry.js';
 import { FocusResult } from '../../../domain/interfaces/IFocusMode.js';
 import type { CollaborativeOrchestrator } from '../../../collaborative-orchestrator.js';
 import { TechnicalDomain } from '../../../reasoning-chain.js';
+import { renderBigText } from '../../../utils/ink-renderer.js';
 
 type ModeHandler = (params: Record<string, unknown>) => Promise<string>;
 
@@ -32,10 +33,17 @@ export class FocusToolService implements ITool {
   async execute(params: Record<string, unknown>): Promise<FocusResult> {
     const modeName = params.mode as string || 'simple';
 
+    // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
+    const header = renderBigText('FOCUS', { font: 'block', gradient: 'cristal' });
+
     // 1. Try extracted modes first (Strategy Pattern)
     const mode = this.modeRegistry.get(modeName);
     if (mode) {
-      return mode.execute(params);
+      const result = await mode.execute(params);
+      return {
+        ...result,
+        output: header + result.output
+      };
     }
 
     // 2. Try delegate handlers (simple orchestrator calls)
@@ -43,7 +51,7 @@ export class FocusToolService implements ITool {
     if (handler) {
       const output = await handler(params);
       return {
-        output,
+        output: header + output,
         metadata: {
           mode: modeName,
           timestamp: Date.now()

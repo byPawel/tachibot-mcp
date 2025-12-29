@@ -15,6 +15,7 @@ import React from 'react';
 import { render, Box, Text } from 'ink';
 import Gradient from 'ink-gradient';
 import Spinner from 'ink-spinner';
+import BigText from 'ink-big-text';
 import gradientString from 'gradient-string';
 import { PassThrough } from 'stream';
 import { loadJsonTheme, listJsonThemes } from './theme-loader.js';
@@ -801,6 +802,76 @@ const modelGradients: Record<string, GradientPreset> = {
 export function renderGradientModelName(model: string): string {
   const preset = modelGradients[model.toLowerCase()] || 'rainbow';
   return renderGradientText(` ${model.toUpperCase()} `, preset);
+}
+
+/**
+ * BigText font options
+ */
+export type BigTextFont = 'block' | 'slick' | 'tiny' | 'grid' | 'pallet' | 'shade' | 'simple' | 'simpleBlock' | 'chrome' | '3d' | 'simple3d' | 'huge';
+
+/**
+ * Check if big headers are enabled
+ * Set TACHIBOT_BIG_HEADERS=false to disable
+ */
+export const showBigHeaders = (): boolean => {
+  return process.env.TACHIBOT_BIG_HEADERS !== 'false';
+};
+
+/**
+ * Render large ASCII art text with optional gradient
+ * Uses ink-big-text for rendering, then applies gradient-string for colors
+ * Disabled if TACHIBOT_BIG_HEADERS=false
+ */
+export function renderBigText(
+  text: string,
+  options?: {
+    font?: BigTextFont;
+    gradient?: GradientPreset;
+  }
+): string {
+  // Easy toggle - set TACHIBOT_BIG_HEADERS=false to disable
+  if (!showBigHeaders()) return '';
+
+  const font = options?.font || 'block';
+  const gradient = options?.gradient;
+
+  // Render BigText to string
+  const ascii = renderInkToString(<BigText text={text} font={font} />);
+
+  // Apply gradient if specified
+  if (gradient) {
+    const gradFn = (gradientString as unknown as Record<string, typeof gradientString.rainbow>)[gradient];
+    if (gradFn && typeof gradFn.multiline === 'function') {
+      return gradFn.multiline(ascii);
+    }
+  }
+
+  return ascii;
+}
+
+/**
+ * Render a tool name badge with gradient background
+ * e.g., " ◉ focus " with cristal gradient
+ */
+export function renderToolBadge(
+  toolName: string,
+  options?: {
+    icon?: string;
+    gradient?: GradientPreset;
+  }
+): string {
+  const icon = options?.icon || '◉';
+  const gradient = options?.gradient || 'cristal';
+  const badgeText = ` ${icon} ${toolName} `;
+
+  // Create gradient background effect using chalk
+  const gradFn = (gradientString as unknown as Record<string, typeof gradientString.rainbow>)[gradient];
+  if (gradFn) {
+    // Use inverse colors for background effect
+    const colors = gradFn(badgeText);
+    return `\x1b[7m${colors}\x1b[0m`; // ANSI inverse
+  }
+  return badgeText;
 }
 
 /**
