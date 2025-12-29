@@ -94,7 +94,7 @@ function estimateCost(model: string, tokens: number): number {
  */
 export function trackToolCall(
   toolName: string,
-  model: string,
+  model: string | null,
   tokens: number = 0,
   repoPath?: string
 ): void {
@@ -102,7 +102,9 @@ export function trackToolCall(
 
   const cwd = repoPath || process.cwd();
   const now = new Date().toISOString();
-  const cost = estimateCost(model, tokens);
+  // Use tool name for local tools (when model is null)
+  const effectiveModel = model || toolName;
+  const cost = estimateCost(effectiveModel, tokens);
 
   const data = loadStats();
 
@@ -134,7 +136,7 @@ export function trackToolCall(
   const tool = repo.tools[toolName];
   tool.calls++;
   tool.lastUsed = now;
-  tool.models[model] = (tool.models[model] || 0) + 1;
+  tool.models[effectiveModel] = (tool.models[effectiveModel] || 0) + 1;
   tool.totalTokens += tokens;
   tool.totalCost += cost;
 
@@ -257,8 +259,9 @@ export function generateReceipt(model: string, inputTokens: number, outputTokens
 /**
  * Infer model/provider from tool name
  * Used when actual model info isn't available
+ * Returns null for tools without a known model (allows fallback to tool name)
  */
-export function inferModelFromTool(toolName: string): string {
+export function inferModelFromTool(toolName: string): string | null {
   if (toolName.startsWith('grok_')) return 'grok';
   if (toolName.startsWith('openai_')) return 'openai';
   if (toolName.startsWith('gemini_')) return 'gemini';
@@ -267,7 +270,8 @@ export function inferModelFromTool(toolName: string): string {
   if (toolName.startsWith('kimi_')) return 'kimi';
   if (toolName === 'think' || toolName === 'focus') return 'openai';
   if (toolName === 'nextThought') return 'openai';
-  return 'unknown';
+  // Return null for local tools - allows fallback to tool name for display
+  return null;
 }
 
 /**

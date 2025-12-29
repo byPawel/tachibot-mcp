@@ -398,6 +398,7 @@ const Icon: React.FC<{
  * Bright, saturated gradients for dark text readability
  */
 const modelGradients: Record<string, string[]> = {
+  // AI Models
   gemini: ['#00D4FF', '#FF00D4'],      // Cyan → Magenta
   grok: ['#FF8800', '#FF4400'],        // Orange → Deep Orange
   openai: ['#00FF88', '#00DDFF'],      // Neon Green → Cyan
@@ -405,12 +406,19 @@ const modelGradients: Record<string, string[]> = {
   qwen: ['#FFD000', '#FF8800'],        // Gold → Orange
   kimi: ['#C084FC', '#F472B6'],        // Violet → Pink
   claude: ['#FB923C', '#FBBF24'],      // Orange → Yellow
+  // Orchestration Tools
   focus: ['#60A5FA', '#A78BFA'],       // Blue → Purple
   workflow: ['#34D399', '#22D3EE'],    // Green → Cyan
+  think: ['#818CF8', '#A78BFA'],       // Indigo → Violet
+  nextthought: ['#9333EA', '#4F46E5'], // Purple → Indigo
+  // Analysis Modes
   scout: ['#38BDF8', '#818CF8'],       // Sky → Indigo
   verifier: ['#4ADE80', '#A3E635'],    // Green → Lime
   challenger: ['#F87171', '#FB923C'],  // Red → Orange
-  think: ['#818CF8', '#A78BFA'],       // Indigo → Violet
+  // Local Tools
+  usage_stats: ['#06B6D4', '#0EA5E9'], // Cyan → Sky
+  list_workflows: ['#10B981', '#34D399'], // Emerald → Green
+  validate_workflow: ['#F59E0B', '#FBBF24'], // Amber → Yellow
 };
 
 /**
@@ -872,6 +880,7 @@ function generateGradientBadge(model: string): string {
 
   // Model-specific icons (Unicode - curated by multi-model consensus)
   const modelIconMap: Record<string, string> = {
+    // AI Models
     gemini: '✦',       // Four-pointed star (single-width)
     grok: '⚡',         // Lightning bolt
     openai: '✾',       // Eight-petalled floret
@@ -879,12 +888,19 @@ function generateGradientBadge(model: string): string {
     qwen: '☁',         // Cloud
     kimi: '☾',         // Crescent moon
     claude: '⚜',       // Fleur-de-lis
-    focus: '◉',
-    workflow: '⎔',
-    scout: '⊛',
-    verifier: '✓',
-    challenger: '⚔',
-    think: '◌',
+    // Orchestration Tools
+    focus: '◉',        // Fisheye
+    workflow: '⎔',     // Box with dots
+    think: '◌',        // Dotted circle
+    nextthought: '⟳',  // Clockwise arrow (chain/sequence)
+    // Analysis Modes
+    scout: '⊛',        // Circled asterisk
+    verifier: '✓',     // Check mark
+    challenger: '⚔',   // Crossed swords
+    // Local Tools
+    usage_stats: '📊',  // Chart
+    list_workflows: '📋', // Clipboard
+    validate_workflow: '✔', // Check
   };
 
   const icon = modelIconMap[modelKey] || '';
