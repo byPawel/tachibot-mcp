@@ -1,9 +1,11 @@
 /**
- * Progress Streaming Utilities
+ * Progress Streaming Utilities - React Ink Version
  *
  * Provides real-time progress updates for long-running MCP operations.
- * Users see incremental output instead of waiting for final result.
+ * Uses React Ink for beautiful colored output to stderr.
  */
+
+import { renderProgressBanner, renderCompactProgress } from './workflow-ink-renderer.js';
 
 export interface ProgressUpdate {
   type: 'start' | 'progress' | 'step' | 'complete' | 'error';
@@ -18,6 +20,8 @@ export class ProgressStream {
   private startTime: Date;
   private totalSteps: number;
   private currentStep: number = 0;
+  private workflowName: string = 'Operation';
+  private modelUsed?: string;
 
   constructor(totalSteps: number = 1) {
     this.startTime = new Date();
@@ -25,53 +29,46 @@ export class ProgressStream {
   }
 
   /**
-   * Emit progress update to stderr (visible to user in real-time)
+   * Emit progress update to stderr using React Ink
    */
   private emit(update: ProgressUpdate): void {
     this.updates.push(update);
 
-    // Format for CLI output
-    const elapsed = Math.floor((update.timestamp.getTime() - this.startTime.getTime()) / 1000);
-    const timeStr = `[${elapsed}s]`;
+    const elapsed = Date.now() - this.startTime.getTime();
 
-    let output = '';
-    switch (update.type) {
-      case 'start':
-        output = `\n🚀 ${update.message}`;
-        break;
-      case 'progress':
-        const progressBar = this.renderProgressBar(update.percentage || 0);
-        output = `\r${timeStr} ${progressBar} ${update.message}`;
-        break;
-      case 'step':
-        output = `\n${timeStr} ⚙️  Step ${this.currentStep}/${this.totalSteps}: ${update.message}`;
-        break;
-      case 'complete':
-        output = `\n\n✅ ${update.message} (completed in ${elapsed}s)`;
-        break;
-      case 'error':
-        output = `\n\n❌ ${update.message}`;
-        break;
-    }
+    // Use Ink banner for beautiful output
+    const banner = renderProgressBanner({
+      workflowName: this.workflowName,
+      currentStep: this.currentStep,
+      totalSteps: this.totalSteps,
+      stepName: update.message,
+      status: this.mapTypeToStatus(update.type),
+      elapsedTime: elapsed,
+      modelUsed: this.modelUsed,
+    });
 
-    // Write to stderr so it doesn't interfere with MCP JSON-RPC on stdout
-    console.error(output);
+    console.error(banner);
   }
 
   /**
-   * Render ASCII progress bar
+   * Map update type to status
    */
-  private renderProgressBar(percentage: number): string {
-    const width = 20;
-    const filled = Math.floor(width * (percentage / 100));
-    const empty = width - filled;
-    return `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${percentage.toFixed(0)}%`;
+  private mapTypeToStatus(type: ProgressUpdate['type']): 'starting' | 'running' | 'completed' | 'failed' {
+    switch (type) {
+      case 'start': return 'starting';
+      case 'progress':
+      case 'step': return 'running';
+      case 'complete': return 'completed';
+      case 'error': return 'failed';
+      default: return 'running';
+    }
   }
 
   /**
    * Mark operation start
    */
   start(message: string): void {
+    this.workflowName = message;
     this.emit({
       type: 'start',
       message,
@@ -86,22 +83,14 @@ export class ProgressStream {
     if (step !== undefined && total !== undefined) {
       this.currentStep = step;
       this.totalSteps = total;
-      const percentage = (step / total) * 100;
-
-      this.emit({
-        type: 'progress',
-        message,
-        percentage,
-        timestamp: new Date()
-      });
-    } else {
-      this.emit({
-        type: 'progress',
-        message,
-        percentage: undefined,
-        timestamp: new Date()
-      });
     }
+
+    this.emit({
+      type: 'progress',
+      message,
+      percentage: total ? (this.currentStep / total) * 100 : undefined,
+      timestamp: new Date()
+    });
   }
 
   /**
@@ -126,6 +115,7 @@ export class ProgressStream {
    * Mark operation complete
    */
   complete(message: string): void {
+    this.currentStep = this.totalSteps;
     this.emit({
       type: 'complete',
       message,
@@ -142,6 +132,13 @@ export class ProgressStream {
       message,
       timestamp: new Date()
     });
+  }
+
+  /**
+   * Set model being used (for display)
+   */
+  setModel(model: string): void {
+    this.modelUsed = model;
   }
 
   /**
@@ -190,6 +187,7 @@ export async function withProgress<T>(
 
 /**
  * Progress reporter for multi-model operations
+ * Uses compact Ink progress lines for model status
  */
 export class MultiModelProgressReporter {
   private stream: ProgressStream;
@@ -201,36 +199,7 @@ export class MultiModelProgressReporter {
     this.stream = new ProgressStream(models.length);
     this.results = new Map(models.map(m => [m, { status: 'pending' }]));
 
-    this.stream.start(`${operationName} with ${models.length} models`);
-    this.printModelTable();
-  }
-
-  /**
-   * Print table of models and their status
-   */
-  private printModelTable(): void {
-    console.error('\n📊 Model Status:');
-    console.error('┌' + '─'.repeat(50) + '┐');
-    this.models.forEach(model => {
-      const status = this.results.get(model)?.status || 'pending';
-      const icon = this.getStatusIcon(status);
-      const padding = ' '.repeat(Math.max(0, 40 - model.length));
-      console.error(`│ ${icon} ${model}${padding} │`);
-    });
-    console.error('└' + '─'.repeat(50) + '┘\n');
-  }
-
-  /**
-   * Get icon for status
-   */
-  private getStatusIcon(status: string): string {
-    switch (status) {
-      case 'pending': return '⏳';
-      case 'running': return '🔄';
-      case 'complete': return '✅';
-      case 'error': return '❌';
-      default: return '�';
-    }
+    this.stream.start(`${operationName} (${models.length} models)`);
   }
 
   /**
@@ -240,6 +209,7 @@ export class MultiModelProgressReporter {
     const result = this.results.get(model);
     if (result) {
       result.status = 'running';
+      this.stream.setModel(model);
       this.stream.step(`${model} processing...`);
     }
   }
@@ -254,11 +224,7 @@ export class MultiModelProgressReporter {
       result.output = output;
 
       const completed = Array.from(this.results.values()).filter(r => r.status === 'complete').length;
-      this.stream.progress(`${completed}/${this.models.length} models completed`, completed, this.models.length);
-
-      // Show preview of output
-      const preview = output.substring(0, 100).replace(/\n/g, ' ');
-      console.error(`   📝 Preview: ${preview}${output.length > 100 ? '...' : ''}`);
+      this.stream.progress(`${model} done`, completed, this.models.length);
     }
   }
 
@@ -269,7 +235,7 @@ export class MultiModelProgressReporter {
     const result = this.results.get(model);
     if (result) {
       result.status = 'error';
-      console.error(`   ⚠️  ${model} failed: ${error}`);
+      this.stream.error(`${model}: ${error}`);
     }
   }
 
@@ -280,11 +246,8 @@ export class MultiModelProgressReporter {
     const completed = Array.from(this.results.values()).filter(r => r.status === 'complete').length;
     const failed = Array.from(this.results.values()).filter(r => r.status === 'error').length;
 
-    const summary = message || `${completed} models completed${failed > 0 ? `, ${failed} failed` : ''}`;
+    const summary = message || `${completed}/${this.models.length} models done${failed > 0 ? ` (${failed} failed)` : ''}`;
     this.stream.complete(summary);
-
-    // Print final table
-    this.printModelTable();
   }
 
   /**
