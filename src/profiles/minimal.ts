@@ -5,6 +5,7 @@ export const minimalProfile: ProfileConfig = {
   tools: {
     think: true,
     focus: true,
+    tachi: true,
     nextThought: true,
     usage_stats: true,
     perplexity_ask: true,

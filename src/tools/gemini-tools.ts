@@ -25,7 +25,8 @@ export async function callGemini(
   model: string = GEMINI_MODELS.GEMINI_3_PRO,
   systemPrompt?: string,
   temperature: number = 0.7,
-  skipValidation: boolean = false
+  skipValidation: boolean = false,
+  maxTokens: number = 8000
 ): Promise<string> {
   // Try OpenRouter gateway first if enabled
   if (isGatewayEnabled()) {
@@ -35,7 +36,7 @@ export async function callGemini(
     ];
     const gatewayResult = await tryOpenRouterGateway(model, messages, {
       temperature,
-      max_tokens: 49152
+      max_tokens: maxTokens
     });
     if (gatewayResult) {
       return gatewayResult;
@@ -85,7 +86,7 @@ export async function callGemini(
       ],
       generationConfig: {
         temperature,
-        maxOutputTokens: 49152,  // 48k - compromise between quality and cost (max is 65k)
+        maxOutputTokens: maxTokens,  // Default 6k, can be overridden per-call
         candidateCount: 1,
         topK: 40,
         topP: 0.95,

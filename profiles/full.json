@@ -1,8 +1,9 @@
 {
-  "description": "All tools enabled for maximum capability (~Xk tokens, 32 tools)",
+  "description": "All tools enabled for maximum capability (~Xk tokens, 33 tools)",
   "tools": {
     "think": true,
     "focus": true,
+    "tachi": true,
     "nextThought": true,
     "usage_stats": true,
     "perplexity_ask": true,

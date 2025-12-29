@@ -12,6 +12,7 @@ export interface ToolsConfig {
   // Core reasoning tools
   think: boolean;
   focus: boolean;
+  tachi: boolean;
   nextThought: boolean;
   usage_stats: boolean;
 

@@ -1,8 +1,9 @@
 {
-  "description": "Minimal essential tools for basic tasks (~Xk tokens, 9 tools)",
+  "description": "Minimal essential tools for basic tasks (~Xk tokens, 10 tools)",
   "tools": {
     "think": true,
     "focus": true,
+    "tachi": true,
     "nextThought": true,
     "usage_stats": true,
     "perplexity_ask": true,

@@ -1,8 +1,9 @@
 {
-  "description": "Research-focused with Grok search + all Perplexity + brainstorming (~Xk tokens, 14 tools)",
+  "description": "Research-focused with Grok search + all Perplexity + brainstorming (~Xk tokens, 15 tools)",
   "tools": {
     "think": true,
     "focus": true,
+    "tachi": true,
     "nextThought": true,
     "usage_stats": true,
     "perplexity_ask": true,

@@ -898,8 +898,8 @@ function generateGradientBadge(model: string): string {
     verifier: '✓',     // Check mark
     challenger: '⚔',   // Crossed swords
     // Local Tools
-    usage_stats: '📊',  // Chart
-    list_workflows: '📋', // Clipboard
+    usage_stats: '▊',   // Bar (chart-like)
+    list_workflows: '☰', // Menu/list
     validate_workflow: '✔', // Check
   };
 

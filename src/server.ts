@@ -63,7 +63,7 @@ import { isToolEnabled, logToolConfiguration } from "./utils/tool-config.js";
 import { renderOutput } from "./utils/ansi-renderer.js";
 import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled, getUsageSummary, getAllReposSummary, getStatsJson, resetStats } from "./utils/usage-tracker.js";
 import { checkForUpdates, getUpdateStatus } from "./utils/update-checker.js";
-import { renderBigText } from "./utils/ink-renderer.js";
+import { renderBigText, renderToolBadge } from "./utils/ink-renderer.js";
 // import { WorkflowVisualizerLite } from "./visualizer-lite.js"; // Unused - removed
 import { collaborativeOrchestrator } from "./collaborative-orchestrator.js";
 import { TechnicalDomain } from "./reasoning-chain.js";
@@ -80,6 +80,7 @@ import { getAllAdvancedTools, areAdvancedModesAvailable } from "./tools/advanced
 import { isOpenAIAvailable, getAllOpenAITools } from "./tools/openai-tools.js";
 import { isGeminiAvailable, geminiBrainstormTool, geminiAnalyzeCodeTool } from "./tools/gemini-tools.js";
 import { getAllOpenRouterTools, isOpenRouterAvailable } from "./tools/openrouter-tools.js";
+import { getTachiTools } from "./tools/tachi-tool.js";
 // import { registerGPT5Tools, isGPT5Available } from "./tools/openai-gpt5-fixed.js"; // DISABLED - using regular openai-tools.ts
 import { initializeOptimizations } from "./optimization/index.js";
 import { FocusModeRegistry } from "./application/services/focus/FocusModeRegistry.js";
@@ -428,12 +429,13 @@ Ready to help synthesize your collective intelligence results!`;
       default: // simple mode
         // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
         const focusHeader = renderBigText('FOCUS', { font: 'block', gradient: 'cristal' });
-        return `${focusHeader}🎯 FOCUS MODE ACTIVE
-
+        const focusBadge = renderToolBadge('focus', { icon: '◉', gradient: 'cristal' });
+        return `${focusBadge}
+${focusHeader}
 Enhanced reasoning for: "${query}"
 ${context ? `Context: ${context}` : ''}
 
-## 🧠 Collaborative Reasoning Modes:
+▊ Collaborative Reasoning Modes:
 • **deep-reasoning**: Multi-model collaboration with critique and synthesis
 • **code-brainstorm**: Technical brainstorming for coding solutions
 • **dynamic-debate**: Models argue different perspectives with rebuttals
@@ -444,24 +446,24 @@ ${context ? `Context: ${context}` : ''}
 • **debug-detective**: Collaborative debugging session
 • **performance-council**: Team-based performance optimization
 
-## 🔧 Classic Modes:
+▊ Classic Modes:
 • **research/investigate**: Deep investigation with evidence
 • **solve/analyze**: Systematic problem-solving
 • **synthesis/integrate**: Combine multiple perspectives
 • **fact-check/verify**: Validate claims with evidence
 
-## 🚀 For Advanced Multi-Round Workflows:
+▊ For Advanced Multi-Round Workflows:
 Use the **workflow** tool for complex multi-step tasks with file-based outputs:
 • \`workflow --name brainstorm-workflow\` - 7-step comprehensive brainstorming
 • \`workflow --name pingpong-debate-3rounds\` - 3-round multi-model debate
 • Workflows bypass the 25k MCP token limit by saving results to files
 
-## 📚 Help Commands:
+▊ Help Commands:
 • \`focus --mode list-templates\` - See all available templates
 • \`focus --mode examples\` - See example workflows
 • \`workflow --action list\` - See all available workflows
 
-## Example Usage:
+▊ Example Usage:
 \`\`\`
 focus --mode deep-reasoning "How to scale a real-time collaboration system"
 focus --mode dynamic-debate "TypeScript vs JavaScript for large codebases" --temperature 0.9
@@ -474,7 +476,7 @@ workflow --name pingpong-debate-3rounds --input '{"problem": "Revolutionary feat
 workflow --name brainstorm-workflow --input '{"topic": "AI-powered code review tools"}'
 \`\`\`
 
-## 💡 Advanced Ping-Pong Features:
+▊ Advanced Ping-Pong Features:
 - **Multi-model ecosystem**: Grok + Claude Code + Qwen + OpenAI + Perplexity + Gemini
 - **Configurable rounds**: 1-30 rounds (with cost warnings)  
 - **Custom model selection**: Pick your dream team
@@ -558,7 +560,9 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
 
       // Build response with model output if available
       // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
-      let response = renderBigText('THINK', { font: 'block', gradient: 'mind' });
+      const thinkBadge = renderToolBadge('nextThought', { icon: '⟳', gradient: 'mind' });
+      const thinkHeader = renderBigText('THINK', { font: 'block', gradient: 'mind' });
+      let response = `${thinkBadge}\n${thinkHeader}\n`;
       if (result.modelResponse) {
         response += `## Model Response (${args.model}):\n\n${result.modelResponse}\n\n---\n\n`;
       }
@@ -721,6 +725,13 @@ async function initializeServer() {
       });
       console.error(`✅ Registered ${advancedTools.length} advanced mode tools`);
     }
+
+    // Register tachi tools (smart auto-routing AI assistant)
+    const tachiTools = getTachiTools();
+    tachiTools.forEach(tool => {
+      safeAddTool(tool);
+    });
+    console.error(`✅ Registered tachi tools (tachi, focus alias)`);
 
     // Log startup information
     const perplexityCount = isPerplexityAvailable() ? getAllPerplexityTools().length : 0;

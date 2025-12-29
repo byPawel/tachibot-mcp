@@ -304,9 +304,9 @@ export function inferModelFromTool(toolName: string): string | null {
   if (toolName.startsWith('perplexity_')) return 'perplexity';
   if (toolName.startsWith('qwen_')) return 'qwen';
   if (toolName.startsWith('kimi_')) return 'kimi';
-  if (toolName === 'think' || toolName === 'focus') return 'openai';
-  // nextThought uses multiple models and renders its own header - return null to skip extra badge
-  if (toolName === 'nextThought') return null;
+  if (toolName === 'think') return 'openai';
+  // Tools with custom BigText headers - return null to skip extra badge
+  if (toolName === 'focus' || toolName === 'nextThought' || toolName === 'workflow') return null;
   // Return null for local tools - allows fallback to tool name for display
   return null;
 }

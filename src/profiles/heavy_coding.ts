@@ -6,6 +6,7 @@ export const heavyCodingProfile: ProfileConfig = {
     // Core reasoning - all enabled
     think: true,
     focus: true,
+    tachi: true,
     nextThought: true,
     usage_stats: true,
 
