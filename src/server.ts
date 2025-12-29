@@ -63,6 +63,7 @@ import { isToolEnabled, logToolConfiguration } from "./utils/tool-config.js";
 import { renderOutput } from "./utils/ansi-renderer.js";
 import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled, getUsageSummary, getAllReposSummary, getStatsJson, resetStats } from "./utils/usage-tracker.js";
 import { checkForUpdates, getUpdateStatus } from "./utils/update-checker.js";
+import { renderBigText } from "./utils/ink-renderer.js";
 // import { WorkflowVisualizerLite } from "./visualizer-lite.js"; // Unused - removed
 import { collaborativeOrchestrator } from "./collaborative-orchestrator.js";
 import { TechnicalDomain } from "./reasoning-chain.js";
@@ -230,7 +231,12 @@ function safeAddTool(tool: MCPTool): void {
         if (typeof result === 'string') {
           try {
             const model = inferModelFromTool(tool.name);
-            return renderOutput(result, model || tool.name);
+            // Tools returning null handle their own rendering - skip extra badge
+            // (e.g., nextThought renders its own BigText header)
+            if (model === null) {
+              return renderOutput(result);  // No model badge
+            }
+            return renderOutput(result, model);
           } catch {
             return result; // Fallback to raw only on parse errors
           }
@@ -420,7 +426,9 @@ To synthesize results from your orchestration:
 Ready to help synthesize your collective intelligence results!`;
         
       default: // simple mode
-        return `🎯 FOCUS MODE ACTIVE
+        // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
+        const focusHeader = renderBigText('FOCUS', { font: 'block', gradient: 'cristal' });
+        return `${focusHeader}🎯 FOCUS MODE ACTIVE
 
 Enhanced reasoning for: "${query}"
 ${context ? `Context: ${context}` : ''}
@@ -549,9 +557,10 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
       });
 
       // Build response with model output if available
-      let response = "";
+      // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
+      let response = renderBigText('THINK', { font: 'block', gradient: 'mind' });
       if (result.modelResponse) {
-        response = `## Model Response (${args.model}):\n\n${result.modelResponse}\n\n---\n\n`;
+        response += `## Model Response (${args.model}):\n\n${result.modelResponse}\n\n---\n\n`;
       }
 
       // Add final judge response if present

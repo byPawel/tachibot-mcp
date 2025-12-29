@@ -20,6 +20,7 @@ import {
   renderBadgeGroup,
   renderPieChart,
   renderDonutChart,
+  renderBigText,
   icons,
 } from './ink-renderer.js';
 
@@ -184,7 +185,7 @@ export function getUsageSummary(repoPath?: string): string {
   const totalTokens = sortedTools.reduce((sum, [, t]) => sum + t.totalTokens, 0);
 
   const lines: string[] = [
-    ``,
+    renderBigText('TachiBot', { font: 'block', gradient: 'cristal' }),
     `${icons.chartBar} USAGE STATS ─ ${stats.repoName}`,
     renderGradientDivider(50, 'cristal'),
     ``,
@@ -304,7 +305,8 @@ export function inferModelFromTool(toolName: string): string | null {
   if (toolName.startsWith('qwen_')) return 'qwen';
   if (toolName.startsWith('kimi_')) return 'kimi';
   if (toolName === 'think' || toolName === 'focus') return 'openai';
-  if (toolName === 'nextThought') return 'openai';
+  // nextThought uses multiple models and renders its own header - return null to skip extra badge
+  if (toolName === 'nextThought') return null;
   // Return null for local tools - allows fallback to tool name for display
   return null;
 }
