@@ -16,5 +16,5 @@
     "jsxImportSource": "react"
   },
   "include": ["src/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "**/__tests__/**", "**/*.test.ts"]
+  "exclude": ["node_modules", "**/__tests__/**", "**/*.test.ts", "scripts/demo-all-components.ts"]
 }

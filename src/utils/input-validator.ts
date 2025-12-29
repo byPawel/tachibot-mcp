@@ -13,7 +13,7 @@ export const MAX_SYSTEM_PROMPT_LENGTH = 5000;
 // with legitimate LLM-generated content. For LLM-to-LLM calls, use skipValidation flag.
 const SUSPICIOUS_PATTERNS = [
   /<\s*script/gi,                 // XSS attempts
-  /\b(exec|eval|require)\s*\(/gi, // Code execution attempts (must be function calls)
+  /\b(exec|eval)\s*\(/gi,         // Code execution attempts (require() removed - false positives in code examples)
   /;\s*(rm|del|format|drop\s+table)/gi,  // Command/SQL injection
   /\.\.\//g,                      // Path traversal
   /\x00/g,                        // Null byte injection
