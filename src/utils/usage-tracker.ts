@@ -18,6 +18,8 @@ import {
   renderGradientDivider,
   renderGradientBorderBox,
   renderBadgeGroup,
+  renderPieChart,
+  renderDonutChart,
   icons,
 } from './ink-renderer.js';
 
@@ -188,6 +190,20 @@ export function getUsageSummary(repoPath?: string): string {
     ``,
   ];
 
+  // Pie chart for top tools usage distribution (top 6)
+  const topTools = sortedTools.slice(0, 6);
+  const pieData = topTools.map(([toolName, usage]) => ({
+    label: toolName.length > 16 ? toolName.slice(0, 14) + '..' : toolName,
+    value: usage.calls,
+  }));
+  // Add "Other" if there are more tools
+  if (sortedTools.length > 6) {
+    const otherCalls = sortedTools.slice(6).reduce((sum, [, t]) => sum + t.calls, 0);
+    pieData.push({ label: 'Other', value: otherCalls });
+  }
+  lines.push(renderPieChart(pieData, { width: 50, title: 'Tool Usage Distribution' }));
+  lines.push(``);
+
   // Build table data with braille bars
   const tableData = sortedTools.map(([toolName, usage]) => ({
     Tool: toolName.length > 24 ? toolName.slice(0, 22) + '..' : toolName,
@@ -198,6 +214,24 @@ export function getUsageSummary(repoPath?: string): string {
 
   lines.push(renderTable(tableData));
   lines.push(``);
+
+  // Donut chart for cost distribution (if there's meaningful cost data)
+  if (totalCost > 0) {
+    const costData = topTools
+      .filter(([, usage]) => usage.totalCost > 0)
+      .map(([toolName, usage]) => ({
+        label: toolName.length > 14 ? toolName.slice(0, 12) + '..' : toolName,
+        value: Math.round(usage.totalCost * 10000), // Scale for visibility
+      }));
+    if (costData.length > 0) {
+      lines.push(renderDonutChart(costData, {
+        width: 50,
+        title: 'Cost Distribution',
+        centerLabel: `$${totalCost.toFixed(3)}`
+      }));
+      lines.push(``);
+    }
+  }
 
   // Summary using key-value table
   lines.push(renderKeyValueTable({

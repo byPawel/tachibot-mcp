@@ -19,11 +19,28 @@ import {
   renderWorkflowResult,
   renderSingleStep,
   renderWorkflowSummary,
+  renderProgressBanner,
+  renderCompactProgress,
   type WorkflowResult,
   type StepResult,
   type JudgeResult,
   type RenderWorkflowOptions,
 } from '../utils/workflow-ink-renderer.js';
+import { createProgressStream } from '../utils/progress-stream.js';
+
+/**
+ * MCP Context with progress reporting capability
+ * FastMCP provides this to tool execute functions
+ */
+interface MCPToolContext {
+  log: {
+    info: (message: string, metadata?: Record<string, any>) => void;
+    error: (message: string, metadata?: Record<string, any>) => void;
+    warn: (message: string, metadata?: Record<string, any>) => void;
+    debug: (message: string, metadata?: Record<string, any>) => void;
+  };
+  reportProgress?: (progress: { progress: number; total?: number }) => Promise<void>;
+}
 
 /**
  * Register workflow tools with the MCP server
@@ -56,7 +73,7 @@ export function registerWorkflowTools(server: FastMCP) {
       compare?: boolean;
       judge?: boolean;
       judgeTool?: string;
-    }) => {
+    }, context?: MCPToolContext) => {
       try {
         // Validation: must specify exactly one
         if (!args.name && !args.file) {
@@ -68,9 +85,29 @@ export function registerWorkflowTools(server: FastMCP) {
 
         let result;
 
+        // Get workflow for progress tracking
+        const workflowDef = args.name ? workflowEngine.getWorkflow(args.name) : undefined;
+        const totalSteps = workflowDef?.steps?.length || 1;
+        const startTime = Date.now();
+
+        // Report initial progress
+        if (context?.reportProgress) {
+          await context.reportProgress({ progress: 0, total: totalSteps });
+        }
+
+        // Beautiful Ink progress banner
+        const startBanner = renderProgressBanner({
+          workflowName: args.name || args.file || 'workflow',
+          currentStep: 0,
+          totalSteps,
+          stepName: workflowDef?.steps?.[0]?.name || 'Starting...',
+          status: 'starting',
+          modelUsed: workflowDef?.steps?.[0]?.model,
+        });
+        console.error(startBanner);
+
         if (args.file) {
           // File-based execution (ad-hoc)
-          console.error(`🚀 Executing workflow from file: ${args.file}`);
           result = await workflowEngine.loadAndExecuteWorkflowFile(
             args.file,
             args.query,
@@ -82,7 +119,6 @@ export function registerWorkflowTools(server: FastMCP) {
           );
         } else {
           // Named workflow execution (discovery-based)
-          console.error(`🚀 Executing named workflow: ${args.name}`);
           result = await workflowEngine.executeWorkflow(
             args.name!,
             args.query,
@@ -93,6 +129,24 @@ export function registerWorkflowTools(server: FastMCP) {
             }
           );
         }
+
+        const elapsed = Date.now() - startTime;
+
+        // Report completion
+        if (context?.reportProgress) {
+          await context.reportProgress({ progress: totalSteps, total: totalSteps });
+        }
+
+        // Beautiful Ink completion banner
+        const completeBanner = renderProgressBanner({
+          workflowName: args.name || args.file || 'workflow',
+          currentStep: totalSteps,
+          totalSteps,
+          stepName: 'Complete',
+          status: 'completed',
+          elapsedTime: elapsed,
+        });
+        console.error(completeBanner);
 
         // ALWAYS format as string for Claude Code display
         // Format result for readability
@@ -394,9 +448,27 @@ Steps:
       query: z.string(),
       variables: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
     }),
-    execute: async (args: { name: string; query: string; variables?: Record<string, string | number | boolean> }) => {
+    execute: async (args: { name: string; query: string; variables?: Record<string, string | number | boolean> }, context?: MCPToolContext) => {
       try {
-        console.error(`🚀 Starting streaming workflow: ${args.name}`);
+        const workflow = workflowEngine.getWorkflow(args.name);
+        const totalSteps = workflow?.steps.length || 1;
+        const startTime = Date.now();
+
+        // Report progress via MCP protocol (if available)
+        if (context?.reportProgress) {
+          await context.reportProgress({ progress: 0, total: totalSteps });
+        }
+
+        // Beautiful Ink progress banner to stderr
+        const startBanner = renderProgressBanner({
+          workflowName: args.name,
+          currentStep: 0,
+          totalSteps,
+          stepName: workflow?.steps[0]?.name || 'Starting...',
+          status: 'starting',
+          modelUsed: workflow?.steps[0]?.model,
+        });
+        console.error(startBanner);
 
         const result = await workflowEngine.startWorkflowStepByStep(
           args.name,
@@ -404,9 +476,25 @@ Steps:
           { variables: args.variables }
         );
 
-        const workflow = workflowEngine.getWorkflow(args.name);
-        const totalSteps = workflow?.steps.length || 1;
         const r = result as any;
+        const elapsed = Date.now() - startTime;
+
+        // Report completion of first step
+        if (context?.reportProgress) {
+          await context.reportProgress({ progress: 1, total: totalSteps });
+        }
+
+        // Render completion progress
+        const completeBanner = renderProgressBanner({
+          workflowName: args.name,
+          currentStep: 1,
+          totalSteps,
+          stepName: r.stepName,
+          status: 'completed',
+          elapsedTime: elapsed,
+          modelUsed: workflow?.steps[0]?.model,
+        });
+        console.error(completeBanner);
 
         // Create StepResult for Ink rendering
         const stepResult: StepResult = {
@@ -449,16 +537,57 @@ Steps:
     parameters: z.object({
       sessionId: z.string(),
     }),
-    execute: async (args: { sessionId: string }) => {
+    execute: async (args: { sessionId: string }, context?: MCPToolContext) => {
       try {
+        // Get session info before execution for progress tracking
+        const sessionBefore = (workflowEngine as any).sessions?.get(args.sessionId);
+        const totalSteps = sessionBefore?.workflow?.steps?.length || 1;
+        const currentStep = (sessionBefore?.currentStepIndex || 0) + 1; // Next step to execute
+        const workflowNameBefore = sessionBefore?.workflowName || 'workflow';
+        const stepDef = sessionBefore?.workflow?.steps?.[sessionBefore?.currentStepIndex];
+        const startTime = Date.now();
+
+        // Report progress before execution
+        if (context?.reportProgress) {
+          await context.reportProgress({ progress: currentStep - 1, total: totalSteps });
+        }
+
+        // Beautiful Ink progress banner - starting step
+        const runningBanner = renderProgressBanner({
+          workflowName: workflowNameBefore,
+          currentStep: currentStep - 1,
+          totalSteps,
+          stepName: stepDef?.name || `Step ${currentStep}`,
+          status: 'running',
+          modelUsed: stepDef?.model,
+        });
+        console.error(runningBanner);
+
         const result = await workflowEngine.continueWorkflow(args.sessionId);
 
         // Get workflow info for context
         const session = (workflowEngine as any).sessions?.get(args.sessionId);
-        const workflowName = session?.workflowName || 'unknown';
-        const workflow = session?.workflow;
-        const totalSteps = workflow?.steps?.length || 1;
+        const workflowName = session?.workflowName || sessionBefore?.workflowName || 'unknown';
+        const workflow = session?.workflow || sessionBefore?.workflow;
         const r = result as any;
+        const elapsed = Date.now() - startTime;
+
+        // Report progress after execution
+        if (context?.reportProgress) {
+          await context.reportProgress({ progress: r.step, total: totalSteps });
+        }
+
+        // Beautiful Ink progress banner - step completed
+        const completeBanner = renderProgressBanner({
+          workflowName,
+          currentStep: r.step,
+          totalSteps,
+          stepName: r.stepName,
+          status: r.hasMore ? 'completed' : 'completed',
+          elapsedTime: elapsed,
+          modelUsed: workflow?.steps?.[r.step - 1]?.model,
+        });
+        console.error(completeBanner);
 
         // If workflow is complete, render summary
         if (!r.hasMore) {
@@ -496,13 +625,13 @@ Steps:
         }
 
         // Still in progress - render current step
-        const currentStepIndex = session?.currentStepIndex || 0;
-        const stepDef = workflow?.steps?.[currentStepIndex - 1]; // -1 because we just completed this step
+        const currentStepIdx = session?.currentStepIndex || 0;
+        const completedStepDef = workflow?.steps?.[currentStepIdx - 1]; // -1 because we just completed this step
 
         const stepResult: StepResult = {
           step: r.stepName,
-          tool: stepDef?.tool || 'unknown',
-          model: stepDef?.model,
+          tool: completedStepDef?.tool || 'unknown',
+          model: completedStepDef?.model,
           output: r.output,
           duration: r.duration,
         };
