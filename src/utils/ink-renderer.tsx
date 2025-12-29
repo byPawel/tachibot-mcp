@@ -1491,7 +1491,9 @@ export const SourceHeatmap: React.FC<{ sources: SourceCitation[]; title?: string
 }) => {
   const getRelevanceBar = (relevance: number) => {
     const filled = Math.round(relevance * 10);
-    return '█'.repeat(filled) + '░'.repeat(10 - filled);
+    const empty = 10 - filled;
+    // Return object so we can style differently
+    return { filled, empty };
   };
 
   const getRelevanceColor = (relevance: number) => {
@@ -1511,7 +1513,10 @@ export const SourceHeatmap: React.FC<{ sources: SourceCitation[]; title?: string
           <Box key={idx} flexDirection="column" marginBottom={idx < sources.length - 1 ? 1 : 0}>
             <Box>
               <Text color={getRelevanceColor(source.relevance)}>
-                {getRelevanceBar(source.relevance)}
+                {'█'.repeat(getRelevanceBar(source.relevance).filled)}
+              </Text>
+              <Text color="#374151">
+                {'█'.repeat(getRelevanceBar(source.relevance).empty)}
               </Text>
               <Text color="gray"> {Math.round(source.relevance * 100)}%</Text>
             </Box>
@@ -2235,6 +2240,65 @@ export function brailleBar(value: number, maxValue: number, width: number = 20):
 }
 
 /**
+ * Braille gradient progress bar - smooth gradient with braille precision
+ * Uses gradient colors for filled portion and dark blocks for empty
+ */
+export const BrailleGradientProgress: React.FC<{
+  value: number;
+  maxValue: number;
+  width?: number;
+  gradient?: 'rainbow' | 'cristal' | 'passion' | 'teen' | 'mind' | 'atlas' | 'retro';
+  showPercent?: boolean;
+  label?: string;
+}> = ({ value, maxValue, width = 30, gradient = 'cristal', showPercent = true, label }) => {
+  const ratio = Math.min(value / maxValue, 1);
+  const percent = Math.round(ratio * 100);
+  const fullChars = Math.floor(ratio * width);
+  const partialRatio = (ratio * width) - fullChars;
+
+  // Partial braille patterns (8 levels)
+  const patterns = ['⠀', '⡀', '⡄', '⡆', '⡇', '⣇', '⣧', '⣷', '⣿'];
+  const partialIdx = Math.round(partialRatio * 8);
+  const partial = partialIdx > 0 ? patterns[partialIdx] : '';
+
+  const emptyChars = Math.max(0, width - fullChars - (partial ? 1 : 0));
+  const filledStr = '⣿'.repeat(fullChars) + partial;
+  const emptyStr = '⣿'.repeat(emptyChars);
+
+  return (
+    <Box>
+      {label && <Text color="gray">{label.padEnd(12)}</Text>}
+      <Text>[</Text>
+      <Gradient name={gradient}>
+        <Text>{filledStr}</Text>
+      </Gradient>
+      <Text color="#374151">{emptyStr}</Text>
+      <Text>]</Text>
+      {showPercent && <Text color="gray"> {percent}%</Text>}
+    </Box>
+  );
+};
+
+/**
+ * Render braille gradient progress to string (for non-React contexts)
+ */
+export function renderBrailleGradientProgress(
+  value: number,
+  maxValue: number,
+  width: number = 30,
+  gradient: 'rainbow' | 'cristal' | 'passion' | 'teen' | 'mind' = 'cristal'
+): string {
+  return renderInkToString(
+    <BrailleGradientProgress
+      value={value}
+      maxValue={maxValue}
+      width={width}
+      gradient={gradient}
+    />
+  );
+}
+
+/**
  * Braille heatmap - 2D visualization with braille patterns
  */
 export function brailleHeatmap(data: number[][], width: number = 40): string {
@@ -2772,8 +2836,9 @@ export function renderCodeMinimap(
 /**
  * Heatmap cell intensity characters
  */
-const heatChars = ['░', '▒', '▓', '█'];
-const heatColors = ['blue', 'cyan', 'yellow', 'red'];
+// Use solid blocks with color intensity instead of shade patterns
+const heatChars = ['█', '█', '█', '█'];
+const heatColors = ['#1e3a5f', '#0891b2', '#eab308', '#ef4444']; // Dark blue → cyan → yellow → red
 
 /**
  * HeatmapMatrix - 2D colored intensity grid
@@ -2960,11 +3025,12 @@ export const GanttTimeline: React.FC<{
     blocked: 'red',
   };
 
+  // Use solid blocks for all states - color provides differentiation
   const barChars: Record<string, string> = {
-    pending: '░',
-    active: '▓',
+    pending: '█',
+    active: '█',
     completed: '█',
-    blocked: '▒',
+    blocked: '█',
   };
 
   return (
@@ -3547,7 +3613,7 @@ export const DonutChart: React.FC<{
     slicesWithMeta[0].sliceWidth += width - totalWidth;
   }
 
-  // Create donut with hole effect using ░ for center
+  // Create donut with hole effect using dark solid blocks for center
   const holeWidth = Math.max(4, Math.floor(width * 0.3));
   const holeStart = Math.floor((width - holeWidth) / 2);
   const holeEnd = holeStart + holeWidth;
@@ -3569,12 +3635,12 @@ export const DonutChart: React.FC<{
         ))}
       </Box>
 
-      {/* Center with hole */}
+      {/* Center with hole - use dark solid blocks */}
       {centerLabel && (
         <Box justifyContent="center" marginY={0}>
-          <Text color="gray">{'░'.repeat(holeStart)}</Text>
+          <Text color="#374151">{'█'.repeat(holeStart)}</Text>
           <Text bold color="white">{centerLabel.slice(0, holeWidth).padStart(Math.floor((holeWidth + centerLabel.length) / 2)).padEnd(holeWidth)}</Text>
-          <Text color="gray">{'░'.repeat(width - holeEnd)}</Text>
+          <Text color="#374151">{'█'.repeat(width - holeEnd)}</Text>
         </Box>
       )}
 

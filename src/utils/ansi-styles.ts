@@ -841,24 +841,51 @@ export const syntaxTheme = {
 };
 
 // ============================================================================
-// PROGRESS BAR
+// PROGRESS BAR (Braille with Gradient)
 // ============================================================================
 
 export const progressChars = {
-  filled: '█',
-  empty: '░',
-  partial: ['▏', '▎', '▍', '▌', '▋', '▊', '▉'],
+  // Braille characters for smoother progress bars
+  filled: '⣿',
+  empty: '⣿',  // Same char, different color for dark background
+  // Braille partial fill patterns (8 levels of fill)
+  partial: ['⠀', '⡀', '⡄', '⡆', '⡇', '⣇', '⣧', '⣷'],
 };
+
+// Gradient colors for progress bar fill
+const progressGradientColors = [
+  '#22C55E', // Green
+  '#34D399', // Emerald
+  '#22D3EE', // Cyan
+];
+
+/**
+ * Apply gradient colors to a string of characters
+ */
+function applyGradient(text: string, colors: string[]): string {
+  if (text.length === 0) return '';
+  const result: string[] = [];
+  for (let i = 0; i < text.length; i++) {
+    const colorIdx = Math.floor((i / text.length) * colors.length);
+    const color = colors[Math.min(colorIdx, colors.length - 1)];
+    result.push(chalk.hex(color)(text[i]));
+  }
+  return result.join('');
+}
 
 export function progressBar(percent: number, width: number = 20): string {
   const clamped = Math.max(0, Math.min(100, percent));
   const filled = Math.round((clamped / 100) * width);
   const empty = width - filled;
 
-  const bar = progressChars.filled.repeat(filled) + progressChars.empty.repeat(empty);
-  const color = clamped < 33 ? chalk.red : clamped < 66 ? chalk.yellow : chalk.green;
+  const filledBar = progressChars.filled.repeat(filled);
+  const emptyBar = progressChars.empty.repeat(empty);
+  const darkColor = chalk.hex('#374151');  // Dark gray for empty portion
 
-  return color(`[${bar}]`) + chalk.gray(` ${clamped}%`);
+  // Apply gradient to filled portion
+  const gradientFilled = applyGradient(filledBar, progressGradientColors);
+
+  return `[${gradientFilled}${darkColor(emptyBar)}]` + chalk.gray(` ${clamped}%`);
 }
 
 // ============================================================================

@@ -280,7 +280,7 @@ export const synthesizeVerifierReport = (config: {
   synthesis += `### 📊 Consensus: ${consensusPercent}%\n\n`;
   const consensusBar = Math.round(config.consensus.agreement * 10);
   synthesis += `\`\`\`\n`;
-  synthesis += `[${'█'.repeat(consensusBar)}${'░'.repeat(10 - consensusBar)}] ${consensusPercent}% agreement\n`;
+  synthesis += `[${'⣿'.repeat(consensusBar)}${'⣿'.repeat(10 - consensusBar)}] ${consensusPercent}% agreement\n`;
   synthesis += `\`\`\`\n\n`;
 
   // Model responses table
