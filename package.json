@@ -2,7 +2,7 @@
   "name": "tachibot-mcp",
   "mcpName": "io.github.byPawel/tachibot-mcp",
   "displayName": "TachiBot MCP - Universal AI Orchestrator",
-  "version": "2.7.2",
+  "version": "2.7.3",
   "type": "module",
   "main": "dist/src/server.js",
   "bin": {
@@ -67,7 +67,7 @@
   },
   "homepage": "https://github.com/byPawel/tachibot-mcp",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "license": "AGPL-3.0",
   "description": "TachiBot MCP v2.0: 31 AI tools (32 with competitive mode) with complete TypeScript schemas. Multi-model orchestration (Perplexity, Grok, OpenAI, Gemini, Qwen), YAML workflows, 5 token-optimized profiles (4k-20k tokens). Smart routing, parallel execution. Comprehensive documentation.",
@@ -95,7 +95,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "yaml": "^2.8.1",
-    "zod": "3.24.2"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
