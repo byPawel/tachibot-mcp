@@ -6,6 +6,12 @@ import { smartAPIClient } from '../utils/smart-api-client.js';
 import { providerRouter, ProviderConfig } from '../utils/provider-router.js';
 import { getSmartTimeout } from '../config/timeout-config.js';
 import { execSync } from 'child_process';
+import {
+  renderKeyValueTable,
+  renderGradientBorderBox,
+  renderGradientDivider,
+  icons,
+} from '../utils/ink-renderer.js';
 
 // Provider name constants
 const PROVIDER_PERPLEXITY = 'perplexity';
@@ -611,37 +617,72 @@ export class Scout {
   }
 
   private async synthesize(facts: FactResult | null, analyses: AnalysisResult[]): Promise<string> {
-    let synthesis = '';
-    
+    const lines: string[] = [];
+
+    lines.push(renderGradientBorderBox(
+      `${icons.search} Scout Research Report`,
+      { width: 50, gradient: 'cristal' }
+    ));
+    lines.push('');
+
     if (facts && facts.facts.length > 0) {
-      synthesis += `Current Information (${facts.timestamp}):\n`;
-      facts.facts.slice(0, 3).forEach(fact => synthesis += `• ${fact}\n`);
-      synthesis += '\n';
+      lines.push(`${icons.info} Current Information (${facts.timestamp})`);
+      lines.push(renderGradientDivider(40, 'teen'));
+      lines.push('');
+      facts.facts.slice(0, 5).forEach(fact => lines.push(`  • ${fact}`));
+      lines.push('');
     }
-    
-    synthesis += 'Analysis:\n';
+
+    lines.push(`${icons.brain} Analysis`);
+    lines.push(renderGradientDivider(40, 'mind'));
+    lines.push('');
+
     analyses.forEach(analysis => {
-      synthesis += `${analysis.model}:\n`;
-      analysis.insights.slice(0, 2).forEach(insight => synthesis += `• ${insight}\n`);
+      lines.push(`**${analysis.model}:**`);
+      analysis.insights.slice(0, 3).forEach(insight => lines.push(`  • ${insight}`));
+      lines.push('');
     });
-    
-    return synthesis;
+
+    return lines.join('\n');
   }
 
   private async synthesizeWithoutFacts(analyses: AnalysisResult[]): Promise<string> {
-    let synthesis = 'Multi-Model Analysis:\n\n';
-    
+    const lines: string[] = [];
+
+    lines.push(renderGradientBorderBox(
+      `${icons.brain} Multi-Model Analysis`,
+      { width: 50, gradient: 'mind' }
+    ));
+    lines.push('');
+
     analyses.forEach(analysis => {
-      synthesis += `${analysis.model}:\n`;
-      analysis.insights.slice(0, 3).forEach(insight => synthesis += `• ${insight}\n`);
-      synthesis += '\n';
+      lines.push(`**${analysis.model}:**`);
+      analysis.insights.slice(0, 4).forEach(insight => lines.push(`  • ${insight}`));
+      lines.push('');
     });
-    
-    return synthesis;
+
+    return lines.join('\n');
   }
 
   private async synthesizeWaterfall(facts: FactResult, verification: any): Promise<string> {
-    return `Verified Information:\n${facts.facts.join('\n')}\n\nReliability: ${facts.reliability}`;
+    const lines: string[] = [];
+
+    lines.push(renderGradientBorderBox(
+      `${icons.check} Verified Information`,
+      { width: 50, gradient: 'teen' }
+    ));
+    lines.push('');
+
+    facts.facts.forEach(fact => lines.push(`  • ${fact}`));
+    lines.push('');
+
+    lines.push(renderKeyValueTable({
+      'Reliability': facts.reliability || 'Unknown',
+      'Verified': verification?.verified ? 'Yes' : 'No',
+      'Confidence': verification?.confidence ? `${Math.round(verification.confidence * 100)}%` : 'N/A',
+    }));
+
+    return lines.join('\n');
   }
 
   private async verifyFacts(facts: FactResult): Promise<any> {
