@@ -29,6 +29,15 @@ export const isTrackingEnabled = (): boolean => {
   return process.env.TACHIBOT_USAGE_TRACKING !== 'false';
 };
 
+// Config: plain output mode (markdown instead of ANSI)
+// Set TACHIBOT_PLAIN_OUTPUT=true to disable fancy visualizations
+export const usePlainOutput = (): boolean => {
+  if (process.env.TACHIBOT_PLAIN_OUTPUT === 'true') return true;
+  if (process.env.TACHIBOT_PLAIN_OUTPUT === 'false') return false;
+  // Default: show fancy Ink visualizations (pie charts, donut charts, braille bars)
+  return false;
+};
+
 // Config: show model tags in output (default: true)
 export const showModelTags = (): boolean => {
   return process.env.TACHIBOT_SHOW_MODEL_TAGS !== 'false';
@@ -163,9 +172,59 @@ export function getAllStats(): UsageData {
 }
 
 /**
+ * Get summary of tool usage for current repo - plain markdown format
+ */
+function getUsageSummaryPlain(repoPath?: string): string {
+  const stats = getRepoStats(repoPath);
+  if (!stats) {
+    return 'No usage data for this repo yet.';
+  }
+
+  const sortedTools = Object.entries(stats.tools)
+    .sort(([, a], [, b]) => b.calls - a.calls);
+
+  if (sortedTools.length === 0) {
+    return 'No usage data for this repo yet.';
+  }
+
+  const totalCost = sortedTools.reduce((sum, [, t]) => sum + t.totalCost, 0);
+  const totalTokens = sortedTools.reduce((sum, [, t]) => sum + t.totalTokens, 0);
+
+  const lines: string[] = [
+    `## TachiBot Usage Stats - ${stats.repoName}`,
+    ``,
+    `**Period:** ${stats.firstSeen.split('T')[0]} → ${stats.lastSeen.split('T')[0]}`,
+    ``,
+    `| Tool | Calls | Cost |`,
+    `|------|------:|-----:|`,
+  ];
+
+  // Add tool rows
+  for (const [toolName, usage] of sortedTools) {
+    lines.push(`| ${toolName} | ${usage.calls} | $${usage.totalCost.toFixed(3)} |`);
+  }
+
+  lines.push(``);
+  lines.push(`### Summary`);
+  lines.push(``);
+  lines.push(`| Metric | Value |`);
+  lines.push(`|--------|------:|`);
+  lines.push(`| Total Calls | ${stats.totalCalls.toLocaleString()} |`);
+  lines.push(`| Total Tokens | ~${totalTokens.toLocaleString()} |`);
+  lines.push(`| Total Cost | **$${totalCost.toFixed(4)}** |`);
+
+  return lines.join('\n');
+}
+
+/**
  * Get summary of tool usage for current repo with Ink components
  */
 export function getUsageSummary(repoPath?: string): string {
+  // Use plain markdown output for better compatibility
+  if (usePlainOutput()) {
+    return getUsageSummaryPlain(repoPath);
+  }
+
   const stats = getRepoStats(repoPath);
   if (!stats) {
     return 'No usage data for this repo yet.';
@@ -319,9 +378,64 @@ export function estimateTokens(text: string): number {
 }
 
 /**
+ * Get all repos summary - plain markdown format
+ */
+function getAllReposSummaryPlain(): string {
+  const data = loadStats();
+  const repos = Object.values(data.repos);
+
+  if (repos.length === 0) {
+    return 'No usage data yet.';
+  }
+
+  const repoData = repos.map(repo => ({
+    name: repo.repoName,
+    calls: repo.totalCalls,
+    tokens: Object.values(repo.tools).reduce((sum, t) => sum + t.totalTokens, 0),
+    cost: Object.values(repo.tools).reduce((sum, t) => sum + t.totalCost, 0),
+  }));
+
+  repoData.sort((a, b) => b.calls - a.calls);
+
+  const grandTotal = repoData.reduce((acc, r) => ({
+    calls: acc.calls + r.calls,
+    tokens: acc.tokens + r.tokens,
+    cost: acc.cost + r.cost,
+  }), { calls: 0, tokens: 0, cost: 0 });
+
+  const lines: string[] = [
+    `## TachiBot Usage Stats - All Repos`,
+    ``,
+    `| Repo | Calls | Tokens | Cost |`,
+    `|------|------:|-------:|-----:|`,
+  ];
+
+  for (const repo of repoData) {
+    lines.push(`| ${repo.name} | ${repo.calls} | ~${(repo.tokens / 1000).toFixed(1)}k | $${repo.cost.toFixed(3)} |`);
+  }
+
+  lines.push(``);
+  lines.push(`### Summary`);
+  lines.push(``);
+  lines.push(`| Metric | Value |`);
+  lines.push(`|--------|------:|`);
+  lines.push(`| Total Repos | ${repos.length} |`);
+  lines.push(`| Total Calls | ${grandTotal.calls.toLocaleString()} |`);
+  lines.push(`| Total Tokens | ~${grandTotal.tokens.toLocaleString()} |`);
+  lines.push(`| Total Cost | **$${grandTotal.cost.toFixed(4)}** |`);
+
+  return lines.join('\n');
+}
+
+/**
  * Get all repos summary (for "all" scope) with Ink components
  */
 export function getAllReposSummary(): string {
+  // Use plain markdown output for better compatibility
+  if (usePlainOutput()) {
+    return getAllReposSummaryPlain();
+  }
+
   const data = loadStats();
   const repos = Object.values(data.repos);
 

@@ -26,7 +26,7 @@ export async function callGemini(
   systemPrompt?: string,
   temperature: number = 0.7,
   skipValidation: boolean = false,
-  maxTokens: number = 8000
+  maxTokens: number = 18000
 ): Promise<string> {
   // Try OpenRouter gateway first if enabled
   if (isGatewayEnabled()) {

@@ -15,16 +15,35 @@ import { FileReference } from './interfaces/IVariableInterpolator.js';
 
 export class WorkflowFileManager implements IWorkflowFileManager {
   /**
-   * Extracts a summary from content (first 200 chars)
+   * Default summary length - no truncation by default (10000 chars is ~2500 tokens)
+   * Can be overridden via TACHIBOT_SUMMARY_LENGTH env var
+   */
+  private getSummaryMaxLength(): number {
+    const envLength = process.env.TACHIBOT_SUMMARY_LENGTH;
+    if (envLength) {
+      const parsed = parseInt(envLength, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+    // Default: 8000 chars (~2000 tokens) - enough for Claude to act on results
+    // ANSI stripping in workflow-runner.ts handles the formatting bloat
+    return 8000;
+  }
+
+  /**
+   * Extracts a summary from content (configurable length, default 3000 chars)
    */
   extractSummary(result: unknown): string {
+    const maxLength = this.getSummaryMaxLength();
+
     // Handle null/undefined explicitly
     if (result === null) return '[null]';
     if (result === undefined) return '[undefined]';
 
     // Handle primitives (including falsy: 0, false, "")
     if (typeof result === 'string') {
-      return this.truncateString(result, 200);
+      return this.truncateString(result, maxLength);
     }
     if (typeof result === 'number' || typeof result === 'boolean') {
       return String(result);
@@ -34,12 +53,12 @@ export class WorkflowFileManager implements IWorkflowFileManager {
     if (result && typeof result === 'object' && 'summary' in result) {
       const summary = (result as any).summary;
       if (typeof summary === 'string') {
-        return this.truncateString(summary, 200);
+        return this.truncateString(summary, maxLength);
       }
       // If summary is not a string, JSON.stringify it
       try {
         const summaryStr = JSON.stringify(summary, this.getCircularReplacer());
-        return this.truncateString(summaryStr, 200);
+        return this.truncateString(summaryStr, maxLength);
       } catch (error) {
         return '[Summary unavailable]';
       }
@@ -48,7 +67,7 @@ export class WorkflowFileManager implements IWorkflowFileManager {
     // Default: JSON.stringify with circular ref handling
     try {
       const resultStr = JSON.stringify(result, this.getCircularReplacer());
-      return this.truncateString(resultStr, 200);
+      return this.truncateString(resultStr, maxLength);
     } catch (error) {
       return '[Summary unavailable]';
     }

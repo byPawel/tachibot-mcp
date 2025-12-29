@@ -28,6 +28,25 @@ import {
 } from '../utils/workflow-ink-renderer.js';
 import { createProgressStream } from '../utils/progress-stream.js';
 import { renderBigText, renderToolBadge } from '../utils/ink-renderer.js';
+import { stripAnsi } from '../utils/ansi-renderer.js';
+import { renderMarkdownToAnsi } from '../utils/ink-markdown-renderer.js';
+
+/**
+ * Check if ANSI output should be stripped for LLM context savings
+ * Default: false (keep beautiful colors)
+ * Set TACHIBOT_STRIP_ANSI=true to strip ANSI codes from output
+ */
+function shouldStripAnsi(): boolean {
+  const envVal = process.env.TACHIBOT_STRIP_ANSI?.toLowerCase();
+  return envVal === 'true' || envVal === '1';
+}
+
+/**
+ * Conditionally strip ANSI codes based on env setting
+ */
+function maybeStripAnsi(text: string): string {
+  return shouldStripAnsi() ? stripAnsi(text) : text;
+}
 
 /**
  * MCP Context with progress reporting capability
@@ -116,6 +135,7 @@ export function registerWorkflowTools(server: FastMCP) {
               variables: { query: args.query },
               truncateSteps: args.truncateSteps,
               maxStepTokens: args.maxStepTokens,
+              format: 'json',  // Get structured data for proper Ink rendering
             }
           );
         } else {
@@ -127,6 +147,7 @@ export function registerWorkflowTools(server: FastMCP) {
               variables: { query: args.query },
               truncateSteps: args.truncateSteps,
               maxStepTokens: args.maxStepTokens,
+              format: 'json',  // Get structured data for proper Ink rendering
             }
           );
         }
@@ -149,9 +170,20 @@ export function registerWorkflowTools(server: FastMCP) {
         });
         console.error(completeBanner);
 
-        // ALWAYS format as string for Claude Code display
-        // Format result for readability
+        // String result from engine - add Ink formatting
         if (typeof result === 'string') {
+          // Check if Ink formatting is enabled (default: true)
+          const useInk = process.env.TACHIBOT_INK_FORMATTING?.toLowerCase() !== 'false';
+
+          if (useInk) {
+            // Wrap with Ink header/badge + render markdown body through Ink
+            const flowBadge = renderToolBadge('workflow', { icon: '⎔', gradient: 'morning' });
+            const flowHeader = renderBigText('FLOW', { font: 'block', gradient: 'morning' });
+            const styledBody = renderMarkdownToAnsi(result);
+            const beautifulOutput = `${flowBadge}\n${flowHeader}\n${styledBody}`;
+            return maybeStripAnsi(beautifulOutput);
+          }
+
           return result;
         }
 
@@ -168,8 +200,11 @@ export function registerWorkflowTools(server: FastMCP) {
           const judgeTool = args.judgeTool || 'gemini_analyze_text';
 
           // Convert to StepResult format for Ink renderer
-          const stepResults: StepResult[] = detailed.steps.map((step: any) => {
-            let stepOutput = step.output;
+          // JSON format has: { step, summary, filePath }
+          // Need to map to: { step, tool, model, output, duration, filePath }
+          const stepResults: StepResult[] = detailed.steps.map((step: any, index: number) => {
+            // Get output from 'output' or 'summary' (JSON format uses 'summary')
+            let stepOutput = step.output ?? step.summary;
 
             // Handle FileReference objects
             if (stepOutput !== null && typeof stepOutput === 'object') {
@@ -189,10 +224,13 @@ export function registerWorkflowTools(server: FastMCP) {
               stepOutput = stepOutput.substring(0, maxChars) + '\n\n...(truncated)...';
             }
 
+            // Get tool/model from workflow definition if not in step data
+            const stepDef = workflowDef?.steps?.[index];
+
             return {
               step: step.step,
-              tool: step.tool,
-              model: step.model,
+              tool: step.tool ?? stepDef?.tool ?? 'unknown',
+              model: step.model ?? stepDef?.model,
               output: stepOutput,
               duration: step.duration,
               filePath: step.filePath,
@@ -201,11 +239,11 @@ export function registerWorkflowTools(server: FastMCP) {
 
           // Build workflow result
           const workflowResult: WorkflowResult = {
-            workflowName: detailed.workflow,
+            workflowName: detailed.workflowName ?? detailed.workflow ?? args.name ?? 'workflow',
             workflowId: detailed.workflowId,
-            duration: detailed.duration,
+            duration: detailed.duration ?? elapsed,
             steps: stepResults,
-            status: 'completed',
+            status: detailed.status ?? 'completed',
           };
 
           // AI Judge evaluation (if enabled)
@@ -230,7 +268,9 @@ export function registerWorkflowTools(server: FastMCP) {
           // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
           const flowBadge = renderToolBadge('workflow', { icon: '⎔', gradient: 'morning' });
           const flowHeader = renderBigText('FLOW', { font: 'block', gradient: 'morning' });
-          return `${flowBadge}\n${flowHeader}\n` + renderWorkflowResult(workflowResult, renderOptions);
+          // Return beautiful ANSI output (optionally stripped via TACHIBOT_STRIP_ANSI=true)
+          const beautifulOutput = `${flowBadge}\n${flowHeader}\n` + renderWorkflowResult(workflowResult, renderOptions);
+          return maybeStripAnsi(beautifulOutput);
         }
 
         // Fallback for any other object type
@@ -527,7 +567,7 @@ Steps:
           ? `\nNext: continue_workflow --sessionId ${r.sessionId}`
           : '\nWorkflow complete!';
 
-        return renderedOutput + sessionInfo + nextStep;
+        return maybeStripAnsi(renderedOutput + sessionInfo + nextStep);
       } catch (error: any) {
         return `Failed to start workflow: ${error.message}`;
       }
@@ -625,7 +665,7 @@ Steps:
             }
           );
 
-          return renderedOutput;
+          return maybeStripAnsi(renderedOutput);
         }
 
         // Still in progress - render current step
@@ -656,7 +696,7 @@ Steps:
         const sessionInfo = `\nSession: ${r.sessionId}\n`;
         const nextStep = `\nNext: continue_workflow --sessionId ${r.sessionId}`;
 
-        return renderedOutput + sessionInfo + nextStep;
+        return maybeStripAnsi(renderedOutput + sessionInfo + nextStep);
       } catch (error: any) {
         return `Failed to continue workflow: ${error.message}`;
       }

@@ -302,14 +302,12 @@ const StepResultCard: React.FC<{
         )}
       </Box>
 
-      {/* Gradient divider */}
+      {/* Simple divider (no gradient - saves tokens) */}
       <Box marginTop={1}>
-        <Gradient colors={config.gradient}>
-          {'─'.repeat(60)}
-        </Gradient>
+        <Text dimColor>{'─'.repeat(60)}</Text>
       </Box>
 
-      {/* Output - rendered with Ink Markdown */}
+      {/* Output - rendered with Ink Markdown for nice formatting */}
       <Box marginTop={1} flexDirection="column">
         <Markdown>{displayOutput}</Markdown>
       </Box>

@@ -22,6 +22,7 @@ async function executeWorkflowImpl(
     dryRun?: boolean;
     truncateSteps?: boolean;
     maxStepTokens?: number;
+    format?: 'summary' | 'detailed' | 'json';
   }
 ): Promise<string | Record<string, unknown>> {
     const workflow = parent.workflows.get(workflowName);
@@ -730,7 +731,7 @@ step.output keys: ${step.output ? Object.keys(step.output).join(', ') : 'null'}
       // Format output - prioritize runtime options over workflow YAML settings
       return parent.formatOutput(
         execution,
-        workflow.output?.format || "summary",
+        options?.format ?? workflow.output?.format ?? "summary",
         options?.truncateSteps ?? workflow.output?.truncateSteps ?? true,
         options?.maxStepTokens ?? workflow.output?.maxStepTokens ?? 2500
       );

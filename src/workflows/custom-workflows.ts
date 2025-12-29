@@ -264,29 +264,28 @@ export class CustomWorkflowEngine {
         version: "1.0",
         settings: {
           maxCost: 1.0,
-          defaultModel: "gpt-5-mini",
         },
         steps: [
           {
-            name: "Gemini Ideas",
+            name: "Initial Ideas",
             tool: "gemini_brainstorm",
             input: { prompt: "${query}" },
             maxTokens: 500,
           },
           {
-            name: "GPT-5 Creative",
-            tool: "gpt5_mini",
-            input: { prompt: "Build on these ideas with creative twists for: ${query}\n\nPrevious ideas: ${Gemini Ideas.output}" },
+            name: "Creative Expansion",
+            tool: "gemini_brainstorm",
+            input: { prompt: "Build on these ideas with creative twists for: ${query}\n\nPrevious ideas: ${Initial Ideas.output}" },
           },
           {
-            name: "Perplexity Research",
+            name: "Research",
             tool: "perplexity_research",
-            input: { prompt: "Find real-world examples and evidence for: ${query}" },
+            input: { topic: "${query}", depth: "quick" },
           },
           {
-            name: "Final Synthesis",
-            tool: "focus",
-            input: { prompt: "Synthesize all brainstorming results into top 5 creative recommendations for: ${query}\n\nIdeas to combine:\n${Gemini Ideas.output}\n${GPT-5 Creative.output}\n${Perplexity Research.output}" },
+            name: "Synthesis",
+            tool: "gemini_brainstorm",
+            input: { prompt: "Synthesize all brainstorming results into top 5 creative recommendations for: ${query}\n\nIdeas to combine:\n${Initial Ideas.output}\n${Creative Expansion.output}\n${Research.output}" },
           },
         ],
       },
@@ -430,6 +429,7 @@ export class CustomWorkflowEngine {
       dryRun?: boolean;
       truncateSteps?: boolean;
       maxStepTokens?: number;
+      format?: 'summary' | 'detailed' | 'json';
     },
   ): Promise<string | Record<string, unknown>> {
     const workflow = this.workflows.get(workflowName);
@@ -673,6 +673,7 @@ export class CustomWorkflowEngine {
       dryRun?: boolean;
       truncateSteps?: boolean;
       maxStepTokens?: number;
+      format?: 'summary' | 'detailed' | 'json';
     }
   ): Promise<string | Record<string, unknown>> {
     // Load workflow from file
@@ -935,6 +936,7 @@ export class CustomWorkflowEngine {
       const maxTokens = typeof step.maxTokens === 'number' ? step.maxTokens : 4000;
       const { result, modelUsed } = await this.callTool(step.tool, toolInput, {
         maxTokens,
+        skipValidation: true, // Skip validation for internal workflow calls (LLM-to-LLM)
       });
 
       // Create file reference for full output
@@ -966,7 +968,7 @@ export class CustomWorkflowEngine {
         try {
           // Create tool executor wrapper for distillation (uses this.callTool)
           const toolExecutor = async (toolName: string, args: Record<string, any>) => {
-            const { result } = await this.callTool(toolName, args, { maxTokens: 1000 });
+            const { result } = await this.callTool(toolName, args, { maxTokens: 1000, skipValidation: true });
             return result;
           };
 

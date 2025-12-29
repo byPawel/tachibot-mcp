@@ -560,6 +560,22 @@ function stripMarkdown(md: string): string {
 }
 
 // ============================================================================
+// ANSI ESCAPE CODE STRIPPER
+// ============================================================================
+
+/**
+ * Strip all ANSI escape codes from text
+ * Used to clean rendered output before sending to LLM context
+ * (LLM sees plain text, human sees beautiful colors via stderr)
+ */
+export function stripAnsi(text: string): string {
+  // Comprehensive ANSI regex - covers SGR, cursor, and other sequences
+  // eslint-disable-next-line no-control-regex
+  const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+  return text.replace(ansiRegex, '');
+}
+
+// ============================================================================
 // RE-EXPORTS for convenience
 // ============================================================================
 
