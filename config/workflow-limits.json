@@ -1,0 +1,9 @@
+{
+  "stepTokenLimit": 6400,
+  "minLimit": 1000,
+  "maxLimit": 50000,
+  "notes": {
+    "stepTokenLimit": "Display limit per workflow step (bigger than Cursor's 4k)",
+    "future": "When Claude gets 1M context, bump to 20000"
+  }
+}

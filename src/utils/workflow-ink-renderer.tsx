@@ -19,7 +19,7 @@ import Gradient from 'ink-gradient';
 import { PassThrough } from 'stream';
 import { loadTheme, type InkTheme } from './ink-markdown-renderer.js';
 import { SimpleTable, TableThemeProvider, type TableTheme } from './ink-table.js';
-import { nerdIcons, icons, hasNerdFontSupport } from './ink-renderer.js';
+import { nerdIcons } from './ink-renderer.js';
 
 // ============================================================================
 // TYPES
@@ -123,14 +123,14 @@ const modelConfig: Record<string, {
     color: '#60A5FA',
   },
   workflow: {
-    nerdIcon: icons.workflow || '⎔',
-    fallbackIcon: '⎔',
+    nerdIcon: nerdIcons.cogs,
+    fallbackIcon: nerdIcons.cogs,
     gradient: ['#34D399', '#22D3EE'],
     color: '#34D399',
   },
   default: {
-    nerdIcon: icons.bot || '●',
-    fallbackIcon: '●',
+    nerdIcon: nerdIcons.robot,
+    fallbackIcon: nerdIcons.robot,
     gradient: ['#888888', '#CCCCCC'],
     color: '#888888',
   },
@@ -268,12 +268,12 @@ const WorkflowHeader: React.FC<{ name: string; duration: number; stepCount: numb
 const StepResultCard: React.FC<{
   stepNum: number;
   step: StepResult;
-  maxSummaryLength: number;
-}> = ({ stepNum, step, maxSummaryLength }) => {
+  maxSummaryLength?: number;  // Ignored - no truncation
+}> = ({ stepNum, step }) => {
   const modelKey = step.model || extractModelFromTool(step.tool);
   const config = getModelConfig(modelKey);
   const icon = getModelIcon(modelKey);
-  const displayOutput = truncateText(step.output, maxSummaryLength);
+  const displayOutput = step.output;  // Full output, no truncation
 
   return (
     <Box flexDirection="column" marginBottom={1} borderStyle="round" borderColor={config.color} paddingX={1}>
