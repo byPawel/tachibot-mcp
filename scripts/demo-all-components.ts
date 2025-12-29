@@ -57,6 +57,11 @@ import {
 
   // Errors
   renderErrorAutopsy,
+
+  // Pie Charts
+  renderPieChart,
+  renderDonutChart,
+  renderCircularPie,
 } from '../src/utils/ink-renderer.js';
 
 import { renderSimpleTable } from '../src/utils/ink-table.js';
@@ -263,6 +268,34 @@ console.log('  Gemini:     ' + brailleBar(94, 100, 25) + ' 94%');
 console.log('  Grok:       ' + brailleBar(91, 100, 25) + ' 91%');
 console.log('  OpenAI:     ' + brailleBar(96, 100, 25) + ' 96%');
 console.log('  Perplexity: ' + brailleBar(88, 100, 25) + ' 88%');
+
+// ============================================================================
+// PIE CHARTS
+// ============================================================================
+
+section('PIE CHART (Horizontal Bar Style)');
+console.log(renderPieChart([
+  { label: 'Gemini', value: 42 },
+  { label: 'Grok', value: 28 },
+  { label: 'OpenAI', value: 18 },
+  { label: 'Perplexity', value: 12 },
+], { width: 50, title: 'Model Usage Distribution' }));
+
+section('DONUT CHART');
+console.log(renderDonutChart([
+  { label: 'grok_reason', value: 156 },
+  { label: 'gemini_brainstorm', value: 89 },
+  { label: 'perplexity_ask', value: 67 },
+  { label: 'openai_reason', value: 45 },
+  { label: 'workflow', value: 32 },
+], { width: 50, title: 'Tool Calls by Type', centerLabel: '389 total' }));
+
+section('CIRCULAR PIE CHART');
+console.log(renderCircularPie([
+  { label: 'Research', value: 35 },
+  { label: 'Coding', value: 45 },
+  { label: 'Review', value: 20 },
+], { radius: 5, title: 'Task Distribution' }));
 
 // ============================================================================
 // TREES & DIAGRAMS

@@ -3412,3 +3412,323 @@ export function renderMultiModelComparison(
 ): string {
   return renderInkToString(<MultiModelComparison responses={responses} title={title} />);
 }
+
+// ============================================================================
+// PIE CHART COMPONENTS
+// ============================================================================
+
+/**
+ * Pie chart data slice
+ */
+export interface PieSlice {
+  label: string;
+  value: number;
+  color?: string;
+}
+
+/**
+ * Default colors for pie slices (vibrant terminal colors)
+ */
+const PIE_COLORS = [
+  '#FF6B6B',  // Red
+  '#4ECDC4',  // Teal
+  '#45B7D1',  // Sky blue
+  '#96CEB4',  // Sage green
+  '#FFEAA7',  // Yellow
+  '#DDA0DD',  // Plum
+  '#98D8C8',  // Mint
+  '#F7DC6F',  // Gold
+  '#BB8FCE',  // Lavender
+  '#85C1E9',  // Light blue
+];
+
+/**
+ * Filled block characters for pie chart segments
+ */
+const BLOCK_FULL = '█';
+const BLOCK_HALF = '▌';
+
+/**
+ * PieChart component - horizontal stacked bar representation
+ * More readable than circular ASCII art in terminals
+ */
+export const PieChart: React.FC<{
+  data: PieSlice[];
+  width?: number;
+  title?: string;
+  showLegend?: boolean;
+  showPercentages?: boolean;
+}> = ({ data, width = 40, title, showLegend = true, showPercentages = true }) => {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  if (total === 0) return <Text color="gray">No data</Text>;
+
+  // Calculate widths for each slice
+  const slicesWithMeta = data.map((slice, idx) => {
+    const percentage = (slice.value / total) * 100;
+    const sliceWidth = Math.round((slice.value / total) * width);
+    return {
+      ...slice,
+      percentage,
+      sliceWidth,
+      color: slice.color || PIE_COLORS[idx % PIE_COLORS.length],
+    };
+  });
+
+  // Adjust for rounding errors
+  const totalWidth = slicesWithMeta.reduce((sum, s) => sum + s.sliceWidth, 0);
+  if (totalWidth < width && slicesWithMeta.length > 0) {
+    slicesWithMeta[0].sliceWidth += width - totalWidth;
+  }
+
+  return (
+    <Box flexDirection="column">
+      {title && (
+        <Box marginBottom={1}>
+          <Text bold color="cyan">{icons.chartBar} {title}</Text>
+        </Box>
+      )}
+
+      {/* The pie bar */}
+      <Box>
+        {slicesWithMeta.map((slice, idx) => (
+          <Text key={idx} color={slice.color}>
+            {BLOCK_FULL.repeat(slice.sliceWidth)}
+          </Text>
+        ))}
+      </Box>
+
+      {/* Legend */}
+      {showLegend && (
+        <Box flexDirection="column" marginTop={1}>
+          {slicesWithMeta.map((slice, idx) => (
+            <Box key={idx}>
+              <Text color={slice.color}>{BLOCK_FULL}</Text>
+              <Text> {slice.label}</Text>
+              {showPercentages && (
+                <Text color="gray"> ({slice.percentage.toFixed(1)}%)</Text>
+              )}
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+/**
+ * DonutChart component - pie chart with center label
+ */
+export const DonutChart: React.FC<{
+  data: PieSlice[];
+  width?: number;
+  title?: string;
+  centerLabel?: string;
+  showLegend?: boolean;
+}> = ({ data, width = 40, title, centerLabel, showLegend = true }) => {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  if (total === 0) return <Text color="gray">No data</Text>;
+
+  // Calculate widths for each slice
+  const slicesWithMeta = data.map((slice, idx) => {
+    const percentage = (slice.value / total) * 100;
+    const sliceWidth = Math.round((slice.value / total) * width);
+    return {
+      ...slice,
+      percentage,
+      sliceWidth,
+      color: slice.color || PIE_COLORS[idx % PIE_COLORS.length],
+    };
+  });
+
+  // Adjust for rounding errors
+  const totalWidth = slicesWithMeta.reduce((sum, s) => sum + s.sliceWidth, 0);
+  if (totalWidth < width && slicesWithMeta.length > 0) {
+    slicesWithMeta[0].sliceWidth += width - totalWidth;
+  }
+
+  // Create donut with hole effect using ░ for center
+  const holeWidth = Math.max(4, Math.floor(width * 0.3));
+  const holeStart = Math.floor((width - holeWidth) / 2);
+  const holeEnd = holeStart + holeWidth;
+
+  return (
+    <Box flexDirection="column">
+      {title && (
+        <Box marginBottom={1}>
+          <Text bold color="cyan">{icons.chartBar} {title}</Text>
+        </Box>
+      )}
+
+      {/* Top bar */}
+      <Box>
+        {slicesWithMeta.map((slice, idx) => (
+          <Text key={idx} color={slice.color}>
+            {BLOCK_FULL.repeat(slice.sliceWidth)}
+          </Text>
+        ))}
+      </Box>
+
+      {/* Center with hole */}
+      {centerLabel && (
+        <Box justifyContent="center" marginY={0}>
+          <Text color="gray">{'░'.repeat(holeStart)}</Text>
+          <Text bold color="white">{centerLabel.slice(0, holeWidth).padStart(Math.floor((holeWidth + centerLabel.length) / 2)).padEnd(holeWidth)}</Text>
+          <Text color="gray">{'░'.repeat(width - holeEnd)}</Text>
+        </Box>
+      )}
+
+      {/* Bottom bar */}
+      <Box>
+        {slicesWithMeta.map((slice, idx) => (
+          <Text key={idx} color={slice.color}>
+            {BLOCK_FULL.repeat(slice.sliceWidth)}
+          </Text>
+        ))}
+      </Box>
+
+      {/* Legend */}
+      {showLegend && (
+        <Box flexDirection="column" marginTop={1}>
+          {slicesWithMeta.map((slice, idx) => (
+            <Box key={idx}>
+              <Text color={slice.color}>{BLOCK_FULL}</Text>
+              <Text> {slice.label}: </Text>
+              <Text bold>{slice.value}</Text>
+              <Text color="gray"> ({slice.percentage.toFixed(1)}%)</Text>
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+/**
+ * Circular ASCII pie chart using Unicode arc characters
+ * Creates a visual circular representation
+ */
+export const CircularPie: React.FC<{
+  data: PieSlice[];
+  radius?: number;
+  title?: string;
+}> = ({ data, radius = 6, title }) => {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  if (total === 0) return <Text color="gray">No data</Text>;
+
+  // Create a 2D grid for the circle
+  const diameter = radius * 2 + 1;
+  const grid: string[][] = Array(diameter).fill(null).map(() =>
+    Array(diameter * 2).fill(' ')  // *2 for aspect ratio
+  );
+
+  // Fill the circle with colored segments
+  let angleOffset = -Math.PI / 2; // Start at top
+  const slicesWithMeta = data.map((slice, idx) => {
+    const percentage = slice.value / total;
+    const angleSize = percentage * 2 * Math.PI;
+    const result = {
+      ...slice,
+      startAngle: angleOffset,
+      endAngle: angleOffset + angleSize,
+      color: slice.color || PIE_COLORS[idx % PIE_COLORS.length],
+      percentage: percentage * 100,
+    };
+    angleOffset += angleSize;
+    return result;
+  });
+
+  // Fill pixels
+  for (let y = 0; y < diameter; y++) {
+    for (let x = 0; x < diameter * 2; x++) {
+      const dx = (x / 2) - radius;
+      const dy = y - radius;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance <= radius && distance > radius * 0.3) {
+        let angle = Math.atan2(dy, dx);
+        // Find which slice this angle belongs to
+        for (const slice of slicesWithMeta) {
+          let startAngle = slice.startAngle;
+          let endAngle = slice.endAngle;
+
+          // Normalize angle
+          while (angle < startAngle) angle += 2 * Math.PI;
+          while (angle > endAngle && endAngle < startAngle + 2 * Math.PI) {
+            if (angle <= endAngle + 2 * Math.PI) {
+              grid[y][x] = slice.color || '█';
+              break;
+            }
+          }
+
+          if (angle >= startAngle && angle < endAngle) {
+            grid[y][x] = slice.color || '█';
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return (
+    <Box flexDirection="column">
+      {title && (
+        <Box marginBottom={1}>
+          <Text bold color="cyan">{icons.chartBar} {title}</Text>
+        </Box>
+      )}
+
+      {/* Render circle using colored blocks */}
+      <Box flexDirection="column">
+        {grid.map((row, y) => (
+          <Box key={y}>
+            {row.map((cell, x) => {
+              if (cell === ' ') return <Text key={x}> </Text>;
+              // cell is the color
+              return <Text key={x} color={cell}>█</Text>;
+            })}
+          </Box>
+        ))}
+      </Box>
+
+      {/* Legend */}
+      <Box flexDirection="column" marginTop={1}>
+        {slicesWithMeta.map((slice, idx) => (
+          <Box key={idx}>
+            <Text color={slice.color}>{BLOCK_FULL}</Text>
+            <Text> {slice.label} ({slice.percentage.toFixed(1)}%)</Text>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Render pie chart to string (horizontal bar style)
+ */
+export function renderPieChart(
+  data: PieSlice[],
+  options: { width?: number; title?: string; showLegend?: boolean; showPercentages?: boolean } = {}
+): string {
+  return renderInkToString(<PieChart data={data} {...options} />);
+}
+
+/**
+ * Render donut chart to string
+ */
+export function renderDonutChart(
+  data: PieSlice[],
+  options: { width?: number; title?: string; centerLabel?: string; showLegend?: boolean } = {}
+): string {
+  return renderInkToString(<DonutChart data={data} {...options} />);
+}
+
+/**
+ * Render circular pie chart to string
+ */
+export function renderCircularPie(
+  data: PieSlice[],
+  options: { radius?: number; title?: string } = {}
+): string {
+  return renderInkToString(<CircularPie data={data} {...options} />);
+}
