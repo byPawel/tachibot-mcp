@@ -31,6 +31,12 @@ steps:
     maxTokens: 5000
     output:
       variable: grok_search_results
+      # Distillation: extract structured signals for step chaining
+      distill: grok_search_distilled
+      distillMaxFindings: 5
+      distillMaxDecisions: 3
+      contextMode: distill  # Creates grok_search_distilled_context with primer + full output
+      contextMaxTokens: 4000
 
   # ═══════════════════════════════════════════════════════════════════════════
   # PHASE 1: Parallel Analysis (grok, perplexity, qwen, kimi)
@@ -42,15 +48,17 @@ steps:
       problem: |
         ${query}
 
-        SEARCH RESULTS:
-        ${grok_search_results}
+        ${grok_search_distilled_context}
       approach: "first-principles"
-      context: "Analyze from first principles. Use search results as ground truth."
+      context: "Analyze from first principles. Use the distilled context (findings + reference data) as ground truth."
     dependsOn: [grok-search]
     saveToFile: true
     maxTokens: 4000
     output:
       variable: grok_analysis
+      distill: grok_analysis_distilled
+      contextMode: distill
+      contextMaxTokens: 3000
 
   - name: perplexity-ask
     tool: perplexity_ask
@@ -61,6 +69,9 @@ steps:
     maxTokens: 3000
     output:
       variable: perplexity_analysis
+      distill: perplexity_analysis_distilled
+      contextMode: distill
+      contextMaxTokens: 2500
 
   - name: qwen-analyze
     tool: qwen_coder
@@ -72,15 +83,17 @@ steps:
         Analyze this thoroughly:
         1. If code: review for bugs, patterns, improvements
         2. If question: provide code examples and implementation
-        3. Check against search results for known issues
+        3. Check against distilled search context for known issues
 
-        SEARCH RESULTS:
-        ${grok_search_results}
+        ${grok_search_distilled_context}
     dependsOn: [grok-search]
     saveToFile: true
     maxTokens: 4000
     output:
       variable: qwen_analysis
+      distill: qwen_analysis_distilled
+      contextMode: distill
+      contextMaxTokens: 3000
 
   - name: kimi-thinking
     tool: kimi_thinking
@@ -88,16 +101,18 @@ steps:
       problem: |
         ${query}
 
-        SEARCH RESULTS:
-        ${grok_search_results}
+        ${grok_search_distilled_context}
       approach: "step-by-step"
-      context: "Think through this systematically. Consider edge cases."
+      context: "Think through this systematically using the distilled context. Consider edge cases."
       maxSteps: 8
     dependsOn: [grok-search]
     saveToFile: true
     maxTokens: 4000
     output:
       variable: kimi_analysis
+      distill: kimi_analysis_distilled
+      contextMode: distill
+      contextMaxTokens: 3000
 
   # ═══════════════════════════════════════════════════════════════════════════
   # PHASE 2: Gemini Extracts Best Elements (first judge)
@@ -109,25 +124,28 @@ steps:
       prompt: |
         **Extract the BEST elements from each AI (don't pick winner - find what's valuable in ALL):**
 
+        Each analysis below includes a DISTILLED CONTEXT (key findings, decisions, issues) followed by REFERENCE MATERIAL (full output).
+        Use the distilled context for quick understanding, reference material for details.
+
         ---
         **GROK SEARCH (ground truth):**
-        ${grok_search_results}
+        ${grok_search_distilled_context}
 
         ---
         **GROK (First Principles):**
-        ${grok_analysis}
+        ${grok_analysis_distilled_context}
 
         ---
         **PERPLEXITY (Search):**
-        ${perplexity_analysis}
+        ${perplexity_analysis_distilled_context}
 
         ---
         **QWEN (Code Analysis):**
-        ${qwen_analysis}
+        ${qwen_analysis_distilled_context}
 
         ---
         **KIMI (Step-by-Step Thinking):**
-        ${kimi_analysis}
+        ${kimi_analysis_distilled_context}
 
         ---
 
@@ -168,6 +186,9 @@ steps:
     maxTokens: 4000
     output:
       variable: extracted_elements
+      distill: extracted_elements_distilled
+      contextMode: distill
+      contextMaxTokens: 3000
 
   # ═══════════════════════════════════════════════════════════════════════════
   # PHASE 3: GPT Pro Synthesis (final judge)
@@ -180,29 +201,39 @@ steps:
         **General Judge SYNTHESIS for: ${query}**
 
         ---
-        ## REAL DATA (ground truth from grok search):
-        ${grok_search_results}
+        ## DISTILLED GROUND TRUTH (from grok search):
+        ${grok_search_distilled_context}
 
         ---
         ## EXTRACTED BEST ELEMENTS (by Gemini):
-        ${extracted_elements}
+        ${extracted_elements_distilled_context}
 
         ---
-        ## ORIGINAL ANALYSES:
+        ## DISTILLED ANALYSES (key findings + reference material):
 
-        **GROK:** ${grok_analysis}
+        **GROK (First Principles):**
+        ${grok_analysis_distilled_context}
 
-        **PERPLEXITY:** ${perplexity_analysis}
+        **PERPLEXITY (Research):**
+        ${perplexity_analysis_distilled_context}
 
-        **QWEN:** ${qwen_analysis}
+        **QWEN (Code):**
+        ${qwen_analysis_distilled_context}
 
-        **KIMI:** ${kimi_analysis}
+        **KIMI (Step-by-Step):**
+        ${kimi_analysis_distilled_context}
 
         ---
         ## YOUR TASK AS CHAIRMAN:
 
         You are the Chairman of this council. Your job is NOT to pick a winner.
         Your job is to SYNTHESIZE the best elements from ALL into ONE cohesive answer.
+
+        Each distilled context above contains:
+        - KEY FINDINGS: Quick reference points
+        - DECISIONS: Conclusions made
+        - ISSUES: Warnings and concerns
+        - REFERENCE MATERIAL: Full output for details
 
         **SYNTHESIS FRAMEWORK:**
 

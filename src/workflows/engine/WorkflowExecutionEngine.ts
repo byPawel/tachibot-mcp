@@ -427,6 +427,118 @@ async function executeWorkflowImpl(
           console.error(`✅ Available variables now: [${Object.keys(variables).join(', ')}]`);
         }
 
+        // Create tool executor wrapper for summarizer/distiller
+        const toolExecutor = async (toolName: string, args: Record<string, any>) => {
+          const toolResult = await parent.callTool(toolName, args, {});
+          return toolResult.result;
+        };
+
+        // Auto-generate summary for step chaining (Anchor & Reference pattern)
+        if (step.output?.summary) {
+          const summaryConfig = {
+            maxTokens: step.output.summaryMaxTokens ?? 800,
+            stripCode: step.output.summaryStripCode ?? true,
+          };
+
+          try {
+            const { generateStepSummary } = await import('./StepSummarizer.js');
+            const summary = await generateStepSummary(
+              step.name,
+              result,
+              summaryConfig,
+              toolExecutor
+            );
+            variables[step.output.summary] = summary;
+            console.error(`✅ Generated summary in variables['${step.output.summary}'] (${summary.length} chars)`);
+          } catch (summaryError) {
+            console.error(`⚠️ Summary generation failed for ${step.name}:`, summaryError);
+            // Fallback: use existing fileRef.summary
+            variables[step.output.summary] = fileRef.summary;
+          }
+        }
+
+        // DEBUG: Log step.output to understand what's being passed
+        console.error(`🔍 DEBUG step.output for '${step.name}':`, JSON.stringify(step.output, null, 2));
+        console.error(`🔍 DEBUG step.output?.distill = '${step.output?.distill}'`);
+
+        // Auto-distillation for structured context passing (preferred over summary)
+        if (step.output?.distill) {
+          const distillConfig = {
+            maxFindings: step.output.distillMaxFindings ?? 5,
+            maxDecisions: step.output.distillMaxDecisions ?? 3,
+            stripCode: step.output.summaryStripCode ?? true,
+            includeHints: step.output.distillIncludeHints ?? true,
+          };
+
+          try {
+            const { distillStepOutput, formatDistilledContext } = await import('./StepSummarizer.js');
+            const distilled = await distillStepOutput(
+              step.name,
+              result,
+              distillConfig,
+              toolExecutor
+            );
+
+            // Store raw distilled object for programmatic access
+            variables[step.output.distill] = distilled;
+            console.error(`✅ Distilled output stored in variables['${step.output.distill}']`);
+            console.error(`   Key findings: ${distilled.keyFindings.length}, Decisions: ${distilled.decisions.length}, Issues: ${distilled.issues.length}`);
+
+            // If contextMode is 'distill', also create formatted context with full output
+            const contextMode = step.output.contextMode ?? 'none';
+            if (contextMode === 'distill') {
+              const formattedContext = formatDistilledContext(
+                distilled,
+                result,
+                step.name,
+                {
+                  includeFullOutput: true,
+                  maxOutputTokens: step.output.contextMaxTokens ?? 5000
+                }
+              );
+              variables[`${step.output.distill}_context`] = formattedContext;
+              console.error(`✅ Formatted context stored in variables['${step.output.distill}_context'] (${formattedContext.length} chars)`);
+            }
+          } catch (distillError) {
+            console.error(`⚠️ Distillation failed for ${step.name}:`, distillError);
+            // Fallback: use heuristic distillation
+            variables[step.output.distill] = {
+              keyFindings: [fileRef.summary.slice(0, 200)],
+              decisions: [],
+              dataTypes: ['unknown'],
+              issues: []
+            };
+          }
+        }
+
+        // Context mode handling for step chaining
+        if (step.output?.contextMode && step.output.contextMode !== 'none') {
+          const contextMode = step.output.contextMode;
+          const contextVarName = step.output.variable
+            ? `${step.output.variable}_context`
+            : `${step.name}_context`;
+
+          try {
+            const { formatAnchorReference, truncateToTokens } = await import('./StepSummarizer.js');
+
+            if (contextMode === 'summary' && step.output.summary) {
+              // Summary + full output
+              const summary = variables[step.output.summary] || fileRef.summary;
+              const truncatedOutput = truncateToTokens(result, step.output.contextMaxTokens ?? 5000);
+              variables[contextVarName] = formatAnchorReference(summary, truncatedOutput, step.name);
+              console.error(`✅ Summary context stored in variables['${contextVarName}']`);
+            } else if (contextMode === 'full') {
+              // Full output only (truncated)
+              const { truncateToTokens } = await import('./StepSummarizer.js');
+              variables[contextVarName] = truncateToTokens(result, step.output.contextMaxTokens ?? 5000);
+              console.error(`✅ Full context stored in variables['${contextVarName}'] (truncated to ${step.output.contextMaxTokens ?? 5000} tokens)`);
+            }
+            // 'distill' mode is handled above in the distillation block
+          } catch (contextError) {
+            console.error(`⚠️ Context formatting failed for ${step.name}:`, contextError);
+          }
+        }
+
         // Update previous output with summary for chaining
         previousOutput = fileRef.summary;
 

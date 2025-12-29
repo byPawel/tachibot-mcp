@@ -1,0 +1,35 @@
+name: distill-test
+description: Test distillation feature
+version: "1.0"
+
+steps:
+  - name: search
+    tool: grok_search
+    input:
+      query: "${query}"
+      max_search_results: 5
+    saveToFile: true
+    maxTokens: 3000
+    output:
+      variable: search_results
+      distill: search_distilled
+      contextMode: distill
+      contextMaxTokens: 2000
+
+  - name: analyze
+    tool: gemini_brainstorm
+    input:
+      prompt: |
+        Analyze this:
+
+        ${search_distilled_context}
+
+        Provide a brief summary.
+    dependsOn: [search]
+    saveToFile: true
+    maxTokens: 2000
+    output:
+      variable: analysis
+
+output:
+  format: detailed
