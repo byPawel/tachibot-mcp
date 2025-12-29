@@ -41,12 +41,25 @@ export const WorkflowStepSchema = z.object({
       save: z.boolean().optional(),
       format: z.enum(["text", "json", "markdown"]).optional(),
       variable: z.string().optional(), // Save to variable for later use
+      // Auto-summary for step chaining (Anchor & Reference pattern)
+      summary: z.string().optional(), // Variable name for summary (e.g., "step_summary")
+      summaryMaxTokens: z.number().default(800).optional(), // Max tokens for summary (500-800 recommended)
+      summaryStripCode: z.boolean().default(true).optional(), // Strip code blocks from summary
+      // Distillation for structured context passing (preferred over summary)
+      distill: z.string().optional(), // Variable name for distilled output (e.g., "step1_distilled")
+      distillMaxFindings: z.number().default(5).optional(), // Max key findings to extract
+      distillMaxDecisions: z.number().default(3).optional(), // Max decisions to extract
+      distillIncludeHints: z.boolean().default(true).optional(), // Include next step hints
+      // Context chaining mode
+      contextMode: z.enum(["none", "summary", "distill", "full"]).default("none").optional(), // How to pass context
+      contextMaxTokens: z.number().default(5000).optional(), // Max tokens for full output in context
     })
+    .passthrough() // Preserve any unknown fields (important for new distillation fields)
     .optional(),
   saveToFile: z.boolean().optional(), // Save step output to file
   loadFiles: z.array(z.string()).optional(), // Load previous step files
   promptTechnique: z.string().optional(), // Prompt engineering technique to apply
-});
+}).passthrough(); // Preserve unknown fields at step level
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Complete Workflow Schema
