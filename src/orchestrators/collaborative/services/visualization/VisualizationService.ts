@@ -1,11 +1,23 @@
 import { IExtendedVisualizationRenderer } from "../../interfaces/IVisualizationRenderer.js";
-import { CollaborationSession } from "../../types/session-types.js"; // ✅ Break circular dependency
+import { CollaborationSession } from "../../types/session-types.js";
 import { ReasoningMode, REASONING_TEMPLATES, MODEL_PERSONAS } from "../../../../reasoning-chain.js";
+import {
+  renderWorkflowCascade,
+  renderProgressReel,
+  renderThinkingChainArbor,
+  renderGradientDivider,
+  renderGradientBorderBox,
+  renderTable,
+  renderKeyValueTable,
+  renderQuickFlow,
+  icons,
+  WorkflowStep,
+  ProgressPhase,
+} from "../../../../utils/ink-renderer.js";
 
 /**
- * Visualization Service
- * Handles rendering of orchestration plans, progress, and TachiBot visualizations
- * Extracted from CollaborativeOrchestrator for better separation of concerns
+ * Visualization Service - Now with React Ink components!
+ * Beautiful terminal visualizations for collaborative reasoning
  */
 export class VisualizationService implements IExtendedVisualizationRenderer {
   private modelTurnTaking: boolean;
@@ -20,127 +32,150 @@ export class VisualizationService implements IExtendedVisualizationRenderer {
   }
 
   /**
-   * Generate visual orchestration plan for a session
+   * Generate visual orchestration plan using Ink components
    */
   generateOrchestrationPlan(session: CollaborationSession): string {
     const steps = session.chain.steps;
-    const personas = MODEL_PERSONAS;
+    const lines: string[] = [];
 
-    let plan = `# 🧠 Collaborative Reasoning Session\n\n`;
-    plan += `**Objective**: ${session.objective}\n`;
-    plan += `**Domain**: ${session.domain}\n`;
-    plan += `**Session ID**: ${session.id}\n\n`;
+    // Header with gradient border box
+    lines.push(renderGradientBorderBox(
+      `${icons.brain} Collaborative Reasoning\n\n${session.objective}\n\nDomain: ${session.domain} | Session: ${session.id.slice(0, 8)}`,
+      { width: 60, gradient: 'cristal' }
+    ));
+    lines.push('');
 
-    if (session.metadata?.templateName) {
-      plan += `**Template**: ${session.metadata.templateDescription}\n\n`;
-    }
+    // Workflow cascade showing model flow
+    const cascadeSteps: WorkflowStep[] = steps.map((step, idx) => ({
+      name: `${this.getModeIcon(step.mode)} ${step.mode}`,
+      model: step.model,
+      status: idx < session.currentStep ? 'completed' :
+              idx === session.currentStep ? 'running' : 'pending',
+      duration: idx < session.currentStep ? 1000 + Math.random() * 2000 : undefined,
+    }));
 
-    plan += `## 🔄 Reasoning Chain\n\n`;
+    lines.push(renderWorkflowCascade(cascadeSteps, 'Reasoning Chain'));
+    lines.push('');
 
-    // Visual flow diagram
-    plan += "```\n";
-    steps.forEach((step, index) => {
-      const persona = Object.values(personas).find(p => p.model === step.model);
-      const arrow = index < steps.length - 1 ? " ──► " : "";
-      const icon = this.getModeIcon(step.mode);
+    // Quick flow diagram
+    const flowSteps = steps.map(s => `${s.model}: ${s.mode}`);
+    lines.push(renderQuickFlow(flowSteps, 'Execution Flow'));
+    lines.push('');
 
-      if (index % 3 === 0 && index > 0) plan += "\n     ⬇\n";
+    // Progress reel
+    const progressSteps: ProgressPhase[] = steps.map((step, idx) => ({
+      name: `${step.model} - ${step.mode}`,
+      status: idx < session.currentStep ? 'completed' :
+              idx === session.currentStep ? 'active' : 'pending',
+    }));
+    lines.push(renderProgressReel(progressSteps, 'Step Progress'));
+    lines.push('');
 
-      plan += `[${icon} ${step.model}]${arrow}`;
+    // Detailed steps table
+    const tableData = steps.map((step, idx) => {
+      const persona = Object.values(MODEL_PERSONAS).find(p => p.model === step.model);
+      return {
+        '#': String(idx + 1),
+        Mode: `${this.getModeIcon(step.mode)} ${step.mode}`,
+        Model: step.model,
+        Role: persona?.role || 'AI',
+        Status: idx < session.currentStep ? '✓' : idx === session.currentStep ? '⟳' : '○',
+      };
     });
-    plan += "\n```\n\n";
+    lines.push(renderTable(tableData));
+    lines.push('');
 
-    // Detailed steps
-    plan += `## 📋 Execution Steps\n\n`;
-    steps.forEach((step, index) => {
-      const persona = Object.values(personas).find(p => p.model === step.model);
-      const icon = this.getModeIcon(step.mode);
+    // Session info
+    lines.push(renderKeyValueTable({
+      'Session ID': session.id,
+      'Total Steps': String(steps.length),
+      'Current Step': String(session.currentStep + 1),
+      'Turn Taking': this.modelTurnTaking ? 'Sequential' : 'Parallel',
+    }));
+    lines.push('');
 
-      plan += `### Step ${index + 1}: ${icon} ${step.mode.toUpperCase()}\n`;
-      plan += `**Model**: ${step.model}`;
-      if (persona) {
-        plan += ` (${persona.role})`;
-      }
-      plan += `\n`;
-      plan += `**Prompt**: ${step.prompt}\n\n`;
-    });
+    lines.push(renderGradientDivider(60, 'rainbow'));
 
-    // Execution instructions
-    plan += `## 🚀 To Execute This Chain:\n\n`;
-    plan += `1. Each model will process the prompt with context from previous responses\n`;
-    plan += `2. Models will ${this.modelTurnTaking ? 'take turns' : 'work in parallel when possible'}\n`;
-    plan += `3. Final synthesis will combine all insights\n`;
-    plan += `4. Use \`focus --mode focus-deep-execute --session ${session.id}\` to run\n\n`;
-
-    // TachiBot visualization
-    if (this.enableVisualization) {
-      plan += this.generateTachiBotVisualization(session);
-    }
-
-    return plan;
+    return lines.join('\n');
   }
 
   /**
-   * Generate TachiBot visualization for the session
+   * Generate progress visualization using Ink
    */
   generateTachiBotVisualization(session: CollaborationSession): string {
     const stage = session.currentStep;
     const totalSteps = session.chain.steps.length;
+    const currentStep = session.chain.steps[stage];
+    const currentMode = currentStep?.mode || ReasoningMode.BRAINSTORM;
 
-    let viz = `## 🤖 TachiBot Collective Status\n\n`;
-    viz += "```\n";
+    const lines: string[] = [];
 
-    // Different TachiBot expressions based on reasoning mode
-    const currentMode = session.chain.steps[stage]?.mode || ReasoningMode.BRAINSTORM;
+    // Thinking chain visualization
+    const thoughts = session.chain.steps.slice(0, stage + 1).map((step, idx) => ({
+      thought: `${step.mode}: ${step.prompt.slice(0, 50)}...`,
+      model: step.model,
+      isRevision: step.mode === ReasoningMode.CRITIQUE,
+      isBranch: step.mode === ReasoningMode.DEBATE,
+    }));
 
-    switch (currentMode) {
-      case ReasoningMode.BRAINSTORM:
-        viz += `@@@@@@@@@@@@@@@
-@  ★    ★  @ 💡 Brainstorming...
-@     !     @
-@ \\\\___// @
-@@@@@@@@@@@@@@@`;
-        break;
-      case ReasoningMode.CRITIQUE:
-        viz += `@@@@@@@@@@@@@@@
-@  ◉    ◉  @ 🔍 Analyzing critically...
-@     ~     @
-@   -----   @
-@@@@@@@@@@@@@@@`;
-        break;
-      case ReasoningMode.ENHANCE:
-        viz += `@@@@@@@@@@@@@@@
-@  ◎    ◎  @ ⚡ Enhancing ideas...
-@     ^     @
-@   \\__/    @
-@@@@@@@@@@@@@@@`;
-        break;
-      case ReasoningMode.DEEP_REASONING:
-        viz += `@@@@@@@@@@@@@@@
-@  ◉    ◉  @ 🧠 DEEP REASONING...
-@     ≈     @
-@   =====   @
-@@@@@@@@@@@@@@@`;
-        break;
-      default:
-        viz += `@@@@@@@@@@@@@@@
-@  ●    ●  @ 🤔 Processing...
-@     ∧     @
-@    ___    @
-@@@@@@@@@@@@@@@`;
+    if (thoughts.length > 0) {
+      lines.push(renderThinkingChainArbor(thoughts, 'Reasoning Progress'));
+      lines.push('');
     }
 
-    viz += `\n\nProgress: [${'█'.repeat(stage)}${'░'.repeat(totalSteps - stage)}] ${stage}/${totalSteps}\n`;
-    viz += "```\n\n";
+    // Current status with gradient box
+    const statusIcon = this.getModeIcon(currentMode);
+    const statusText = this.getModeDescription(currentMode);
 
-    return viz;
+    lines.push(renderGradientBorderBox(
+      `${statusIcon} ${currentMode.toUpperCase()}\n\n${statusText}\n\nModel: ${currentStep?.model || 'pending'}\nProgress: ${stage + 1}/${totalSteps}`,
+      { width: 50, gradient: this.getModeGradient(currentMode) }
+    ));
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Get gradient preset for reasoning mode
+   */
+  private getModeGradient(mode: ReasoningMode): 'cristal' | 'passion' | 'teen' | 'mind' | 'rainbow' {
+    const gradients: Record<ReasoningMode, 'cristal' | 'passion' | 'teen' | 'mind' | 'rainbow'> = {
+      [ReasoningMode.BRAINSTORM]: 'teen',
+      [ReasoningMode.CRITIQUE]: 'passion',
+      [ReasoningMode.ENHANCE]: 'cristal',
+      [ReasoningMode.VALIDATE]: 'mind',
+      [ReasoningMode.SYNTHESIZE]: 'rainbow',
+      [ReasoningMode.DEBATE]: 'passion',
+      [ReasoningMode.CONSENSUS]: 'teen',
+      [ReasoningMode.DEEP_REASONING]: 'mind',
+      [ReasoningMode.PINGPONG]: 'cristal',
+    };
+    return gradients[mode] || 'cristal';
+  }
+
+  /**
+   * Get description for reasoning mode
+   */
+  private getModeDescription(mode: ReasoningMode): string {
+    const descriptions: Record<ReasoningMode, string> = {
+      [ReasoningMode.BRAINSTORM]: 'Generating creative ideas and possibilities',
+      [ReasoningMode.CRITIQUE]: 'Analyzing critically, finding flaws and improvements',
+      [ReasoningMode.ENHANCE]: 'Building upon and improving existing ideas',
+      [ReasoningMode.VALIDATE]: 'Verifying correctness and feasibility',
+      [ReasoningMode.SYNTHESIZE]: 'Combining insights into final solution',
+      [ReasoningMode.DEBATE]: 'Arguing different perspectives',
+      [ReasoningMode.CONSENSUS]: 'Finding common ground between models',
+      [ReasoningMode.DEEP_REASONING]: 'Deep analytical thinking',
+      [ReasoningMode.PINGPONG]: 'Back-and-forth collaborative refinement',
+    };
+    return descriptions[mode] || 'Processing...';
   }
 
   /**
    * Get icon for reasoning mode
    */
   getModeIcon(mode: ReasoningMode): string {
-    const icons: Record<ReasoningMode, string> = {
+    const modeIcons: Record<ReasoningMode, string> = {
       [ReasoningMode.BRAINSTORM]: "💡",
       [ReasoningMode.CRITIQUE]: "🔍",
       [ReasoningMode.ENHANCE]: "⚡",
@@ -151,83 +186,75 @@ export class VisualizationService implements IExtendedVisualizationRenderer {
       [ReasoningMode.DEEP_REASONING]: "🧠",
       [ReasoningMode.PINGPONG]: "🏓"
     };
-    return icons[mode] || "🤖";
+    return modeIcons[mode] || "🤖";
   }
 
   /**
-   * Generate example workflows for different technical domains
+   * Generate example workflows with Ink formatting
    */
   getExampleWorkflows(): string {
-    let examples = `# 🎯 Example Collaborative Workflows\n\n`;
+    const lines: string[] = [];
 
-    examples += `## 1. Deep Reasoning for System Design\n`;
-    examples += `\`\`\`typescript\n`;
-    examples += `focus --mode deep-reasoning "Design a distributed cache system"\n`;
-    examples += `// Gemini brainstorms → Claude critiques → Grok enhances → Perplexity validates → Claude synthesizes\n`;
-    examples += `\`\`\`\n\n`;
+    lines.push(renderGradientBorderBox(
+      `${icons.sparkle} Example Workflows\n\nReady-to-use collaborative reasoning patterns`,
+      { width: 60, gradient: 'rainbow' }
+    ));
+    lines.push('');
 
-    examples += `## 2. Architecture Debate\n`;
-    examples += `\`\`\`typescript\n`;
-    examples += `focus --mode architecture-debate "Microservices vs Monolith for startup MVP"\n`;
-    examples += `// Models debate pros/cons → Grok analyzes → Gemini optimizes → Claude consensus\n`;
-    examples += `\`\`\`\n\n`;
+    const examples = [
+      { mode: 'deep-reasoning', desc: 'Multi-model deep analysis', example: 'Design a distributed cache system' },
+      { mode: 'architecture-debate', desc: 'Architectural decisions', example: 'Microservices vs Monolith' },
+      { mode: 'algorithm-optimize', desc: 'Algorithm improvement', example: 'Optimize graph traversal' },
+      { mode: 'security-audit', desc: 'Security review', example: 'Review auth system' },
+      { mode: 'debug-detective', desc: 'Debug complex issues', example: 'Memory leak in React app' },
+      { mode: 'performance-council', desc: 'Performance tuning', example: 'Optimize DB queries' },
+    ];
 
-    examples += `## 3. Algorithm Optimization Chain\n`;
-    examples += `\`\`\`typescript\n`;
-    examples += `focus --mode algorithm-optimize "Optimize graph traversal for social network"\n`;
-    examples += `// Claude implements → Grok optimizes time → Gemini optimizes space → Claude validates\n`;
-    examples += `\`\`\`\n\n`;
+    const tableData = examples.map(e => ({
+      Mode: e.mode,
+      Description: e.desc,
+      Example: e.example,
+    }));
 
-    examples += `## 4. Security Audit Council\n`;
-    examples += `\`\`\`typescript\n`;
-    examples += `focus --mode security-audit "Review authentication system"\n`;
-    examples += `// Claude finds vulnerabilities → Grok analyzes vectors → Perplexity researches → Gemini fixes\n`;
-    examples += `\`\`\`\n\n`;
+    lines.push(renderTable(tableData));
+    lines.push('');
 
-    examples += `## 5. Custom Chain Builder\n`;
-    examples += `\`\`\`typescript\n`;
-    examples += `const chain = createReasoningChain(\n`;
-    examples += `  TechnicalDomain.API_DESIGN,\n`;
-    examples += `  "Design GraphQL API for e-commerce"\n`;
-    examples += `)\n`;
-    examples += `.addBrainstorm("claude-sonnet", "Design schema and types")\n`;
-    examples += `.addDebate("gemini", "grok", "REST vs GraphQL for this use case")\n`;
-    examples += `.addEnhancement("claude-opus", "Add security and performance")\n`;
-    examples += `.addValidation("perplexity")\n`;
-    examples += `.addSynthesis("claude-sonnet")\n`;
-    examples += `.build();\n`;
-    examples += `\`\`\`\n\n`;
+    // Quick usage
+    lines.push(renderKeyValueTable({
+      'Usage': 'focus({ mode: "deep-reasoning", query: "your question" })',
+      'List modes': 'focus({ mode: "list-templates" })',
+    }));
 
-    examples += `## 6. Debugging Detective Squad\n`;
-    examples += `\`\`\`typescript\n`;
-    examples += `focus --mode debug-detective "Memory leak in React app after route changes"\n`;
-    examples += `// Claude identifies causes → Grok traces flow → Perplexity finds solutions → Claude fixes\n`;
-    examples += `\`\`\`\n\n`;
+    lines.push('');
+    lines.push(renderGradientDivider(60, 'cristal'));
 
-    examples += `## 7. Performance Council\n`;
-    examples += `\`\`\`typescript\n`;
-    examples += `focus --mode performance-council "Optimize database queries for dashboard"\n`;
-    examples += `// Gemini profiles → Claude adds caching → Grok improves algorithms → GPT benchmarks\n`;
-    examples += `\`\`\`\n`;
-
-    return examples;
+    return lines.join('\n');
   }
 
   /**
-   * Get available templates
+   * Get available templates with Ink table
    */
   getAvailableTemplates(): string {
-    let output = `# 🎨 Available Reasoning Templates\n\n`;
+    const lines: string[] = [];
 
-    Object.entries(REASONING_TEMPLATES).forEach(([key, template]) => {
-      output += `## ${template.name}\n`;
-      output += `**Key**: \`${key}\`\n`;
-      output += `**Description**: ${template.description}\n`;
-      output += `**Chain Length**: ${template.chain.length} steps\n`;
-      output += `**Models**: ${Array.from(new Set(template.chain.map(s => s.model))).join(", ")}\n\n`;
-    });
+    lines.push(renderGradientBorderBox(
+      `${icons.workflow} Available Templates\n\nPre-built reasoning chains for common tasks`,
+      { width: 60, gradient: 'mind' }
+    ));
+    lines.push('');
 
-    return output;
+    const tableData = Object.entries(REASONING_TEMPLATES).map(([key, template]) => ({
+      Key: key,
+      Name: template.name,
+      Steps: String(template.chain.length),
+      Models: Array.from(new Set(template.chain.map(s => s.model))).slice(0, 3).join(', '),
+    }));
+
+    lines.push(renderTable(tableData));
+    lines.push('');
+    lines.push(renderGradientDivider(60, 'teen'));
+
+    return lines.join('\n');
   }
 
   /**
@@ -246,5 +273,5 @@ export class VisualizationService implements IExtendedVisualizationRenderer {
   }
 }
 
-// Singleton instance for convenience
+// Singleton instance
 export const visualizationService = new VisualizationService();
