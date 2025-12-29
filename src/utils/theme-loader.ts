@@ -136,7 +136,7 @@ interface JsonThemeColors {
   divider?: string;
 }
 
-interface JsonTheme {
+export interface JsonTheme {
   name: string;
   description?: string;
   extends?: 'nebula' | 'cyberpunk' | 'minimal' | 'ocean';

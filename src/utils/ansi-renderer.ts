@@ -2,13 +2,13 @@
  * ANSI Terminal Renderer for Markdown
  *
  * Converts markdown output to beautiful ANSI-styled terminal output.
- * Uses the theme system from ansi-styles.ts.
+ * Uses the theme system from ansi-styles.ts and ink-markdown-renderer.tsx.
  *
  * Configuration:
- *   RENDER_OUTPUT=ansi     - Full ANSI styling with colors (default)
+ *   RENDER_OUTPUT=ink      - React Ink rendering with themes, gradients, tables (default)
+ *   RENDER_OUTPUT=ansi     - Legacy marked-terminal rendering
  *   RENDER_OUTPUT=markdown - Raw markdown (no processing)
  *   RENDER_OUTPUT=plain    - Stripped plain text
- *   RENDER_OUTPUT=ink      - Enhanced Ink-based rendering with gradients
  *
  *   TACHIBOT_THEME=nebula|cyberpunk|minimal|ocean|dracula|nord|solarized
  */
@@ -37,6 +37,8 @@ import {
   renderGradientModelName,
   type GradientPreset,
 } from './ink-renderer.js';
+
+import { renderMarkdownToAnsi as renderInkMarkdown } from './ink-markdown-renderer.js';
 
 // Track if marked has been configured (prevent repeated configuration)
 let markedConfigured = false;
@@ -97,7 +99,7 @@ function getGradientModelBadge(model: string): string {
 // TYPES
 // ============================================================================
 
-export type RenderMode = 'ansi' | 'markdown' | 'plain';
+export type RenderMode = 'ansi' | 'markdown' | 'plain' | 'ink';
 
 export interface RenderOptions {
   /** Model name for badge (e.g., 'grok', 'gemini') */
@@ -146,10 +148,10 @@ export function clearThemeCache(): void {
 export function getRenderMode(): RenderMode {
   if (!cachedRenderMode) {
     const mode = process.env.RENDER_OUTPUT?.toLowerCase();
-    if (mode === 'markdown' || mode === 'plain') {
+    if (mode === 'markdown' || mode === 'plain' || mode === 'ansi') {
       cachedRenderMode = mode;
     } else {
-      cachedRenderMode = 'ansi'; // default - ANSI colors preferred
+      cachedRenderMode = 'ink'; // default - React Ink with themes, gradients, proper tables
     }
   }
   return cachedRenderMode;
@@ -201,29 +203,27 @@ export function renderOutput(
 
   let output = '';
 
-  // Add model badge header with divider
-  if (options.model) {
-    if (options.durationMs !== undefined || options.tokenCount !== undefined || options.costAmount !== undefined) {
-      output = toolResultHeader({
-        model: options.model,
-        durationMs: options.durationMs,
-        tokenCount: options.tokenCount,
-        costAmount: options.costAmount,
-      });
-    } else {
-      output = renderModelBadge(options.model) + '\n';
-    }
-    // Add themed divider after badge
-    if (isAnsi) {
-      output += dividers.thin + '\n\n';
-    } else {
-      output += '\n';
-    }
-  }
-
   // Render content based on mode
   switch (mode) {
+    case 'ink':
+      // Use React Ink renderer - handles badge, gradients, tables internally
+      output = renderInkMarkdown(content, undefined, options.model);
+      break;
     case 'ansi':
+      // Add model badge header with divider for ansi mode
+      if (options.model) {
+        if (options.durationMs !== undefined || options.tokenCount !== undefined || options.costAmount !== undefined) {
+          output = toolResultHeader({
+            model: options.model,
+            durationMs: options.durationMs,
+            tokenCount: options.tokenCount,
+            costAmount: options.costAmount,
+          });
+        } else {
+          output = renderModelBadge(options.model) + '\n';
+        }
+        output += dividers.thin + '\n\n';
+      }
       output += renderAnsi(content);
       output += '\n' + simpleGradient(60) + '\n';
       break;
