@@ -1,9 +1,17 @@
 import { ModelRouter } from '../workflows/model-router.js';
 import { getVerifierModels } from '../config/model-defaults.js';
 import { createMultiModelReporter } from '../utils/progress-stream.js';
-import { TableBuilder } from '../utils/table-builder.js';
 import { smartAPIClient } from '../utils/smart-api-client.js';
 import { getSmartTimeout } from '../config/timeout-config.js';
+import {
+  renderTable,
+  renderKeyValueTable,
+  renderGradientBorderBox,
+  renderGradientDivider,
+  brailleBar,
+  icons,
+} from '../utils/ink-renderer.js';
+import { TableBuilder } from '../utils/table-builder.js';
 
 export interface VerifyOptions {
   model?: string | string[];
@@ -301,23 +309,26 @@ Please provide:
     const outlierCount = responses.length - majorityResponses.length;
     const consensusPercent = (consensus.agreement * 100).toFixed(1);
 
-    let synthesis = `## 🔍 Multi-Model Verification Report\n\n`;
+    const lines: string[] = [];
 
-    // Consensus indicator
-    synthesis += `### 📊 Consensus: ${consensusPercent}%\n\n`;
-    const consensusBar = Math.round(consensus.agreement * 10);
-    synthesis += `\`\`\`\n`;
-    synthesis += `[${'█'.repeat(consensusBar)}${'░'.repeat(10 - consensusBar)}] ${consensusPercent}% agreement\n`;
-    synthesis += `\`\`\`\n\n`;
+    // Header with gradient border box
+    lines.push(renderGradientBorderBox(
+      `${icons.search} Multi-Model Verification Report`,
+      { width: 60, gradient: 'mind' }
+    ));
+    lines.push('');
+
+    // Consensus indicator with braille bar
+    lines.push(`${icons.chartBar} Consensus: ${consensusPercent}%`);
+    lines.push(brailleBar(consensus.agreement * 100, 100, 30));
+    lines.push('');
 
     // Show all model responses in a beautiful table
-    synthesis += `### 🤖 Model Responses\n`;
+    lines.push(`${icons.brain} Model Responses`);
+    lines.push(renderGradientDivider(50, 'cristal'));
+    lines.push('');
 
-    const tableBuilder = new TableBuilder()
-      .withHeaders(['Status', 'Model', 'Conclusion', 'Confidence', 'Preview'])
-      .withAlignments(['center', 'left', 'center', 'right', 'left']);
-
-    responses.forEach((resp) => {
+    const tableData = responses.map((resp) => {
       const isMajority = majorityResponses.includes(resp);
       const statusIcon = isMajority ? '✅' : '⚠️';
       const conclusionIcon =
@@ -341,81 +352,95 @@ Please provide:
       // Clean conclusion display
       const cleanConclusion = (resp.conclusion || 'unknown').replace(/\*+/g, '').trim();
 
-      tableBuilder.addRow([
-        statusIcon,
-        resp.model,
-        `${conclusionIcon} ${cleanConclusion}`,
-        confidence,
-        previewText
-      ]);
+      return {
+        Status: statusIcon,
+        Model: resp.model,
+        Conclusion: `${conclusionIcon} ${cleanConclusion}`,
+        Confidence: confidence,
+        Preview: previewText
+      };
     });
 
-    synthesis += tableBuilder.build();
-    synthesis += `\n`;
+    lines.push(renderTable(tableData));
+    lines.push('');
 
-    // DETAILED MODEL RESPONSES - Full text from each model
-    synthesis += `### 📝 Detailed Model Responses\n\n`;
+    // Detailed model responses
+    lines.push(`${icons.file} Detailed Model Responses`);
+    lines.push(renderGradientDivider(50, 'teen'));
+    lines.push('');
+
     responses.forEach((resp, index) => {
       const isMajority = majorityResponses.includes(resp);
       const statusBadge = isMajority ? '✅ Majority' : '⚠️ Dissenting';
 
-      synthesis += `#### ${index + 1}. ${resp.model} ${statusBadge}\n\n`;
-      synthesis += `**Conclusion:** ${(resp.conclusion || 'unknown').replace(/\*+/g, '').trim()}\n`;
-      synthesis += `**Confidence:** ${resp.confidence ? `${Math.round(resp.confidence * 100)}%` : 'N/A'}\n\n`;
-      synthesis += `**Analysis:**\n`;
-      synthesis += `${resp.response || 'No response provided'}\n\n`;
-      synthesis += `---\n\n`;
+      lines.push(`**${index + 1}. ${resp.model}** ${statusBadge}`);
+      lines.push(`Conclusion: ${(resp.conclusion || 'unknown').replace(/\*+/g, '').trim()}`);
+      lines.push(`Confidence: ${resp.confidence ? `${Math.round(resp.confidence * 100)}%` : 'N/A'}`);
+      lines.push('');
+      lines.push(`${resp.response || 'No response provided'}`);
+      lines.push('');
+      lines.push(renderGradientDivider(40, 'cristal'));
+      lines.push('');
     });
 
     // Majority analysis
-    synthesis += `### 🎯 Majority View\n\n`;
-    // Clean up markdown artifacts from conclusion
+    lines.push(`${icons.starFilled} Majority View`);
+    lines.push(renderGradientDivider(50, 'passion'));
+    lines.push('');
+
     const cleanMajorityConclusion = (consensus.majorityCluster || 'unknown').replace(/\*+/g, '').trim();
-    synthesis += `**Conclusion:** ${cleanMajorityConclusion}\n`;
-    synthesis += `**Models in agreement:** ${majorityResponses.length}/${responses.length}\n\n`;
+    lines.push(`Conclusion: ${cleanMajorityConclusion}`);
+    lines.push(`Models in agreement: ${majorityResponses.length}/${responses.length}`);
+    lines.push('');
 
     if (majorityResponses.length > 0) {
-      synthesis += `**Key reasoning points:**\n`;
+      lines.push('Key reasoning points:');
       const points = this.extractKeyPoints(majorityResponses);
       if (points.length > 0) {
-        points.forEach(point => synthesis += `- ${point}\n`);
+        points.forEach(point => lines.push(`  • ${point}`));
       } else {
-        // If no bullet points found, show first sentence from each majority response
         majorityResponses.slice(0, 3).forEach(resp => {
           const firstSentence = resp.response.split(/[.!?]/)[0];
           if (firstSentence && firstSentence.length > 10) {
-            synthesis += `- ${firstSentence.trim()}.\n`;
+            lines.push(`  • ${firstSentence.trim()}.`);
           }
         });
       }
-      synthesis += `\n`;
+      lines.push('');
     }
 
     // Dissenting views
     if (outlierCount > 0) {
-      synthesis += `### ⚠️ Dissenting Views (${outlierCount})\n\n`;
+      lines.push(`${icons.alertCircle} Dissenting Views (${outlierCount})`);
+      lines.push(renderGradientDivider(50, 'passion'));
+      lines.push('');
+
       const outliers = this.findOutliers(responses);
       outliers.forEach(outlier => {
-        synthesis += `**${outlier.model}:** "${outlier.conclusion || 'unknown'}"\n`;
+        lines.push(`**${outlier.model}:** "${outlier.conclusion || 'unknown'}"`);
         const preview = (outlier.response || '').substring(0, 150).replace(/\n/g, ' ');
         if (preview) {
-          synthesis += `> ${preview}${outlier.response.length > 150 ? '...' : ''}\n\n`;
+          lines.push(`> ${preview}${outlier.response.length > 150 ? '...' : ''}`);
+          lines.push('');
         }
       });
     }
 
-    // Summary
-    synthesis += `### 📋 Summary\n\n`;
-    synthesis += `\`\`\`\n`;
-    synthesis += `Total Models:     ${responses.length}\n`;
-    synthesis += `Consensus:        ${consensusPercent}%\n`;
-    synthesis += `Majority View:    ${consensus.majorityCluster}\n`;
-    synthesis += `Agreeing Models:  ${majorityResponses.length}\n`;
-    synthesis += `Dissenting:       ${outlierCount}\n`;
-    synthesis += `High Confidence:  ${consensus.agreement >= 0.8 ? 'YES ✓' : 'NO'}\n`;
-    synthesis += `\`\`\`\n`;
+    // Summary with key-value table
+    lines.push(`${icons.chartBar} Summary`);
+    lines.push(renderGradientDivider(50, 'rainbow'));
+    lines.push('');
 
-    return synthesis;
+    lines.push(renderKeyValueTable({
+      'Total Models': String(responses.length),
+      'Consensus': `${consensusPercent}%`,
+      'Majority View': consensus.majorityCluster || 'unknown',
+      'Agreeing Models': String(majorityResponses.length),
+      'Dissenting': String(outlierCount),
+      'High Confidence': consensus.agreement >= 0.8 ? 'YES ✓' : 'NO',
+    }));
+
+    return lines.join('\n');
   }
 
   private extractConclusion(content: string): string {

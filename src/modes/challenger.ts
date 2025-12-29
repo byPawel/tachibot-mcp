@@ -23,6 +23,14 @@ import { smartAPIClient } from '../utils/smart-api-client.js';
 import { providerRouter, ProviderConfig } from '../utils/provider-router.js';
 import { getSmartTimeout } from '../config/timeout-config.js';
 import { execSync } from 'child_process';
+import {
+  renderTable,
+  renderKeyValueTable,
+  renderGradientBorderBox,
+  renderGradientDivider,
+  brailleBar,
+  icons,
+} from '../utils/ink-renderer.js';
 
 // ============================================
 // CONSTANTS
@@ -915,128 +923,154 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
     docVerificationResults?: DocVerificationResult[],
     multiModelConsensus?: any
   ): string {
-    let synthesis = `## 🔍 Critical Analysis Report\n\n`;
+    const lines: string[] = [];
+
+    // Header with gradient border box
+    lines.push(renderGradientBorderBox(
+      `${icons.search} Critical Analysis Report\n\nDevil's Advocate - Perspective Expander`,
+      { width: 60, gradient: 'passion' }
+    ));
+    lines.push('');
 
     // Show thinking process if available
     if (this.thinkingProcess.length > 0) {
-      synthesis += `### 🧠 Reasoning Process\n\n`;
+      lines.push(`${icons.brain} Reasoning Process`);
+      lines.push(renderGradientDivider(50, 'mind'));
+      lines.push('');
       this.thinkingProcess.forEach((thought, i) => {
-        synthesis += `${i + 1}. ${thought}\n`;
+        lines.push(`${i + 1}. ${thought}`);
       });
-      synthesis += `\n---\n\n`;
+      lines.push('');
     }
 
-    // Show extracted claims FIRST
-    synthesis += `### 📋 Claims Identified\n\n`;
-    claims.forEach((claim, i) => {
-      const icon = claim.type === 'fact' ? '📊' : claim.type === 'opinion' ? '💭' : claim.type === 'assumption' ? '🤔' : '📌';
-      synthesis += `${icon} **Claim ${i + 1}** [${claim.type.toUpperCase()}] (${Math.round(claim.confidence * 100)}% confidence)\n`;
-      synthesis += `> "${claim.text}"\n\n`;
-    });
+    // Show extracted claims as a table
+    lines.push(`${icons.file} Claims Identified (${claims.length})`);
+    lines.push(renderGradientDivider(50, 'cristal'));
+    lines.push('');
 
-    // Show actual challenges with full context
+    const claimsTableData = claims.map((claim, i) => {
+      const icon = claim.type === 'fact' ? '📊' : claim.type === 'opinion' ? '💭' : claim.type === 'assumption' ? '🤔' : '📌';
+      return {
+        '#': String(i + 1),
+        Type: `${icon} ${claim.type}`,
+        Confidence: `${Math.round(claim.confidence * 100)}%`,
+        Claim: claim.text.length > 60 ? `${claim.text.substring(0, 57)}...` : claim.text,
+      };
+    });
+    lines.push(renderTable(claimsTableData));
+    lines.push('');
+
+    // Show counter-arguments as a table
     if (challenges.length > 0) {
-      synthesis += `### ⚠️ Counter-Arguments Generated\n\n`;
+      lines.push(`${icons.alertCircle} Counter-Arguments Generated (${challenges.length})`);
+      lines.push(renderGradientDivider(50, 'passion'));
+      lines.push('');
+
+      const challengesTableData = challenges.map((ch, i) => {
+        const claim = claims.find(c => c.id === ch.claimId);
+        const severityIcon = ch.severity === 'high' ? '🔴' : ch.severity === 'medium' ? '🟡' : '🟢';
+        return {
+          '#': String(i + 1),
+          Severity: `${severityIcon} ${ch.severity}`,
+          Claim: (claim?.text || '').substring(0, 40) + '...',
+          Challenge: (ch.challenge || '').substring(0, 50) + '...',
+        };
+      });
+      lines.push(renderTable(challengesTableData));
+      lines.push('');
+
+      // Show full challenges below
       challenges.forEach((ch, i) => {
         const claim = claims.find(c => c.id === ch.claimId);
         const severityIcon = ch.severity === 'high' ? '🔴' : ch.severity === 'medium' ? '🟡' : '🟢';
-
-        synthesis += `${severityIcon} **Challenge #${i + 1}** (${ch.severity} severity)\n`;
-        synthesis += `**Original Claim:** "${claim?.text}"\n\n`;
-        synthesis += `**Counter-Argument:**\n${ch.challenge}\n\n`;
-
+        lines.push(`${severityIcon} **Challenge #${i + 1}** (${ch.severity} severity)`);
+        lines.push(`Original: "${claim?.text}"`);
+        lines.push('');
+        lines.push(`Counter: ${ch.challenge || 'No counter-argument'}`);
         if (ch.alternativeView) {
-          synthesis += `**Alternative View:** ${ch.alternativeView}\n\n`;
+          lines.push(`Alternative: ${ch.alternativeView}`);
         }
-        if (ch.evidence) {
-          synthesis += `**Evidence Needed:** ${ch.evidence}\n\n`;
-        }
-        synthesis += `---\n\n`;
+        lines.push(renderGradientDivider(40, 'cristal'));
+        lines.push('');
       });
     }
 
-    // Show fact-check results from Perplexity
+    // Show fact-check results as a table
     if (factCheckResults && factCheckResults.length > 0) {
-      synthesis += `### ✅ Fact Verification (Perplexity)\n\n`;
       const verified = factCheckResults.filter(r => r.verified).length;
       const disputed = factCheckResults.filter(r => !r.verified).length;
 
-      synthesis += `**Summary:** ${verified} verified, ${disputed} disputed (out of ${factCheckResults.length} checked)\n\n`;
+      lines.push(`${icons.check} Fact Verification (${verified}/${factCheckResults.length} verified)`);
+      lines.push(renderGradientDivider(50, 'teen'));
+      lines.push('');
 
-      factCheckResults.forEach((result, i) => {
-        const icon = result.verified ? '✅' : '❌';
-        const confidencePercent = Math.round(result.confidence * 100);
-        synthesis += `${icon} **Fact Check #${i + 1}** (${confidencePercent}% confidence)\n`;
-        synthesis += `**Claim:** "${result.claim.substring(0, 100)}${result.claim.length > 100 ? '...' : ''}"\n`;
-        synthesis += `**Status:** ${result.verified ? 'VERIFIED' : 'DISPUTED'}\n`;
-        if (result.findings) {
-          synthesis += `**Findings:** ${result.findings.substring(0, 300)}...\n`;
-        }
-        synthesis += `\n`;
-      });
-      synthesis += `---\n\n`;
+      const factTableData = factCheckResults.map((result, i) => ({
+        '#': String(i + 1),
+        Status: result.verified ? '✅' : '❌',
+        Confidence: `${Math.round(result.confidence * 100)}%`,
+        Claim: result.claim.substring(0, 50) + '...',
+      }));
+      lines.push(renderTable(factTableData));
+      lines.push('');
     }
 
-    // Show documentation verification from Grok
+    // Show documentation verification
     if (docVerificationResults && docVerificationResults.length > 0) {
-      synthesis += `### 📚 Documentation Verification (Grok)\n\n`;
       const docsFound = docVerificationResults.filter(r => r.docsFound).length;
 
-      synthesis += `**Summary:** ${docsFound} out of ${docVerificationResults.length} technical claims have supporting documentation\n\n`;
+      lines.push(`${icons.folder} Documentation Verification (${docsFound}/${docVerificationResults.length})`);
+      lines.push(renderGradientDivider(50, 'mind'));
+      lines.push('');
 
-      docVerificationResults.forEach((result, i) => {
-        const icon = result.docsFound ? '📖' : '❓';
-        synthesis += `${icon} **Doc Check #${i + 1}**\n`;
-        synthesis += `**Claim:** "${result.claim.substring(0, 100)}${result.claim.length > 100 ? '...' : ''}"\n`;
-        synthesis += `**Official Sources Checked:** ${result.officialSources?.join(', ') || 'None'}\n`;
-        synthesis += `**Status:** ${result.docsFound ? 'Documentation found' : 'No official docs found'}\n`;
-        if (result.summary) {
-          synthesis += `**Summary:** ${result.summary.substring(0, 250)}...\n`;
-        }
-        synthesis += `\n`;
-      });
-      synthesis += `---\n\n`;
+      const docTableData = docVerificationResults.map((result, i) => ({
+        '#': String(i + 1),
+        Status: result.docsFound ? '📖' : '❓',
+        Sources: (result.officialSources?.join(', ') || 'None').substring(0, 30),
+        Claim: result.claim.substring(0, 40) + '...',
+      }));
+      lines.push(renderTable(docTableData));
+      lines.push('');
     }
 
     // Show multi-model consensus
     if (multiModelConsensus && multiModelConsensus.consensus) {
-      synthesis += `### 🤖 Multi-Model Consensus\n\n`;
       const agreementPercent = Math.round(multiModelConsensus.agreement * 100);
-      synthesis += `**Models Used:** ${multiModelConsensus.modelsUsed.join(', ')}\n`;
-      synthesis += `**Agreement Level:** ${agreementPercent}%\n\n`;
-      synthesis += `**Consensus Analysis:**\n${multiModelConsensus.consensus}\n\n`;
-      synthesis += `---\n\n`;
+
+      lines.push(`${icons.bot} Multi-Model Consensus (${agreementPercent}%)`);
+      lines.push(renderGradientDivider(50, 'rainbow'));
+      lines.push('');
+      lines.push(brailleBar(agreementPercent, 100, 30));
+      lines.push('');
+
+      lines.push(renderKeyValueTable({
+        'Models Used': multiModelConsensus.modelsUsed.join(', '),
+        'Agreement': `${agreementPercent}%`,
+      }));
+      lines.push('');
+      lines.push(`Analysis: ${multiModelConsensus.consensus}`);
+      lines.push('');
     }
 
-    // Explain groupthink in human terms
+    // Echo chamber detection
     const groupthinkRisk = this.detectGroupthink(claims) ? 'HIGH' : 'LOW';
-    synthesis += `### 🎭 Echo Chamber Detection\n\n`;
+    const diversityScore = groupthinkRisk === 'HIGH' ? 80 : 30;
+
+    lines.push(`${icons.sparkle} Echo Chamber Detection`);
+    lines.push(renderGradientDivider(50, groupthinkRisk === 'HIGH' ? 'passion' : 'teen'));
+    lines.push('');
+
+    lines.push(`Risk Level: ${groupthinkRisk === 'HIGH' ? '⚠️ HIGH' : '✅ LOW'}`);
+    lines.push(`Diversity Score:`);
+    lines.push(brailleBar(100 - diversityScore, 100, 30));
+    lines.push('');
 
     if (groupthinkRisk === 'HIGH') {
-      synthesis += `⚠️ **HIGH GROUPTHINK RISK DETECTED**\n\n`;
-      synthesis += `**What this means:** The input shows signs of "echo chamber" thinking - where everyone agrees without challenging assumptions. This is risky because:\n`;
-      synthesis += `- No diverse perspectives are considered\n`;
-      synthesis += `- Potential flaws go unexamined\n`;
-      synthesis += `- Confirmation bias may be at play\n\n`;
-      synthesis += `**Alternative perspectives to consider:**\n`;
-      alternatives.slice(0, 3).forEach(alt => synthesis += `- ${alt}\n`);
-
-      // Visual indicator
-      synthesis += `\n📊 **Diversity Score:**\n`;
-      synthesis += `\`\`\`\n`;
-      synthesis += `[████████░░] 80%+ agreement → Echo chamber likely\n`;
-      synthesis += `\`\`\`\n`;
-    } else {
-      synthesis += `✅ **LOW GROUPTHINK RISK**\n\n`;
-      synthesis += `**What this means:** The input shows healthy diversity of thought. Different perspectives are present, reducing the risk of echo chamber effects.\n\n`;
-      synthesis += `📊 **Diversity Score:**\n`;
-      synthesis += `\`\`\`\n`;
-      synthesis += `[███░░░░░░░] <80% agreement → Healthy diversity\n`;
-      synthesis += `\`\`\`\n`;
+      lines.push('Alternative perspectives to consider:');
+      alternatives.slice(0, 3).forEach(alt => lines.push(`  • ${alt}`));
+      lines.push('');
     }
-    synthesis += `\n`;
 
-    // Visual summary with stats
+    // Summary with stats
     const factClaims = claims.filter(c => c.type === 'fact');
     const opinionClaims = claims.filter(c => c.type === 'opinion');
     const assumptionClaims = claims.filter(c => c.type === 'assumption');
@@ -1045,28 +1079,29 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
     const mediumSeverity = challenges.filter(c => c.severity === 'medium').length;
     const lowSeverity = challenges.filter(c => c.severity === 'low').length;
 
-    synthesis += `### 📊 Analysis Summary\n\n`;
-    synthesis += `**Claims Breakdown:**\n`;
-    synthesis += `\`\`\`\n`;
-    synthesis += `Total Claims: ${claims.length}\n`;
-    if (factClaims.length > 0) synthesis += `  ├─ 📊 Facts: ${factClaims.length}\n`;
-    if (opinionClaims.length > 0) synthesis += `  ├─ 💭 Opinions: ${opinionClaims.length}\n`;
-    if (assumptionClaims.length > 0) synthesis += `  ├─ 🤔 Assumptions: ${assumptionClaims.length}\n`;
-    if (conclusionClaims.length > 0) synthesis += `  └─ 📌 Conclusions: ${conclusionClaims.length}\n`;
-    synthesis += `\`\`\`\n\n`;
+    lines.push(`${icons.chartBar} Analysis Summary`);
+    lines.push(renderGradientDivider(50, 'rainbow'));
+    lines.push('');
 
-    synthesis += `**Challenges Generated:**\n`;
-    synthesis += `\`\`\`\n`;
-    synthesis += `Total Challenges: ${challenges.length}\n`;
-    if (highSeverity > 0) synthesis += `  ├─ 🔴 High Severity: ${highSeverity}\n`;
-    if (mediumSeverity > 0) synthesis += `  ├─ 🟡 Medium Severity: ${mediumSeverity}\n`;
-    if (lowSeverity > 0) synthesis += `  └─ 🟢 Low Severity: ${lowSeverity}\n`;
-    synthesis += `\`\`\`\n\n`;
+    lines.push(renderKeyValueTable({
+      'Total Claims': String(claims.length),
+      '📊 Facts': String(factClaims.length),
+      '💭 Opinions': String(opinionClaims.length),
+      '🤔 Assumptions': String(assumptionClaims.length),
+      '📌 Conclusions': String(conclusionClaims.length),
+    }));
+    lines.push('');
 
-    synthesis += `**Alternative Perspectives:** ${alternatives.length} generated\n`;
-    synthesis += `**Groupthink Risk:** ${groupthinkRisk}\n`;
+    lines.push(renderKeyValueTable({
+      'Total Challenges': String(challenges.length),
+      '🔴 High Severity': String(highSeverity),
+      '🟡 Medium Severity': String(mediumSeverity),
+      '🟢 Low Severity': String(lowSeverity),
+      'Alternatives': String(alternatives.length),
+      'Groupthink Risk': groupthinkRisk,
+    }));
 
-    return synthesis;
+    return lines.join('\n');
   }
 
   private contextToText(context: any): string {
