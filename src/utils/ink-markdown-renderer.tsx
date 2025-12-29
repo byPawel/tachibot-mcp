@@ -480,7 +480,7 @@ const ModelBadge: React.FC<{ model: string }> = ({ model }) => {
   // Model-specific icons (Unicode - curated by multi-model consensus)
   // Gemini judged: brand-appropriate symbols for each provider
   const modelIconMap: Record<string, string> = {
-    gemini: '♊',       // Gemini zodiac sign - literal branding
+    gemini: '✦',       // Four-pointed star (single-width, renders correctly)
     grok: '⚡',         // Lightning bolt - high energy
     openai: '✾',       // Eight-petalled floret - approximates logo
     perplexity: '⍟',   // Circled star - search/discovery
@@ -498,8 +498,8 @@ const ModelBadge: React.FC<{ model: string }> = ({ model }) => {
   // Get icon character
   let iconChar = badge?.icon || modelIconMap[modelKey] || '';
 
-  // Build badge text with icon - consistent spacing: " ♊ gemini "
-  const badgeText = iconChar ? ` ${iconChar} ${model} ` : ` ${model} `;
+  // Build badge text with icon - tight spacing: "♊ gemini"
+  const badgeText = iconChar ? `${iconChar} ${model}` : `${model}`;
   const gradientBadge = createGradientBgText(badgeText, gradientColors);
 
   return (
@@ -872,7 +872,7 @@ function generateGradientBadge(model: string): string {
 
   // Model-specific icons (Unicode - curated by multi-model consensus)
   const modelIconMap: Record<string, string> = {
-    gemini: '♊',       // Gemini zodiac sign
+    gemini: '✦',       // Four-pointed star (single-width)
     grok: '⚡',         // Lightning bolt
     openai: '✾',       // Eight-petalled floret
     perplexity: '⍟',   // Circled star
