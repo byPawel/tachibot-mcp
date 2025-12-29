@@ -3423,6 +3423,7 @@ export function renderMultiModelComparison(
 export interface PieSlice {
   label: string;
   value: number;
+  displayValue?: string; // Custom display value for legend (e.g., "$0.42" instead of raw number)
   color?: string;
 }
 
@@ -3593,7 +3594,7 @@ export const DonutChart: React.FC<{
             <Box key={idx}>
               <Text color={slice.color}>{BLOCK_FULL}</Text>
               <Text> {slice.label}: </Text>
-              <Text bold>{slice.value}</Text>
+              <Text bold>{slice.displayValue ?? slice.value}</Text>
               <Text color="gray"> ({slice.percentage.toFixed(1)}%)</Text>
             </Box>
           ))}
