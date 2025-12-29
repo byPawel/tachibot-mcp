@@ -193,7 +193,7 @@ export function getUsageSummary(repoPath?: string): string {
   // Pie chart for top tools usage distribution (top 6)
   const topTools = sortedTools.slice(0, 6);
   const pieData = topTools.map(([toolName, usage]) => ({
-    label: toolName.length > 16 ? toolName.slice(0, 14) + '..' : toolName,
+    label: toolName, // Full name - no truncation
     value: usage.calls,
   }));
   // Add "Other" if there are more tools
@@ -206,7 +206,7 @@ export function getUsageSummary(repoPath?: string): string {
 
   // Build table data with braille bars
   const tableData = sortedTools.map(([toolName, usage]) => ({
-    Tool: toolName.length > 24 ? toolName.slice(0, 22) + '..' : toolName,
+    Tool: toolName, // Full name - no truncation
     Usage: brailleBar(usage.calls, maxCalls, 15),
     Calls: String(usage.calls),
     Cost: `$${usage.totalCost.toFixed(3)}`,
@@ -220,7 +220,7 @@ export function getUsageSummary(repoPath?: string): string {
     const costData = topTools
       .filter(([, usage]) => usage.totalCost > 0)
       .map(([toolName, usage]) => ({
-        label: toolName.length > 14 ? toolName.slice(0, 12) + '..' : toolName,
+        label: toolName, // Full name - no truncation
         value: Math.round(usage.totalCost * 10000), // Scale for visibility
       }));
     if (costData.length > 0) {
