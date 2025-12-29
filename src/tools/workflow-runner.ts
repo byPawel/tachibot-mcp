@@ -1,5 +1,11 @@
 /**
  * Workflow Runner Tool - Execute custom workflows via MCP
+ *
+ * Features:
+ * - Execute workflows by name or file
+ * - Per-step rendering with model badges (Ink)
+ * - Comparison summary table
+ * - Optional AI judge evaluation (one call at end for all steps)
  */
 
 import { z } from 'zod';
@@ -9,6 +15,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import { isToolEnabled } from '../utils/tool-config.js';
+import {
+  renderWorkflowResult,
+  renderSingleStep,
+  renderWorkflowSummary,
+  type WorkflowResult,
+  type StepResult,
+  type JudgeResult,
+  type RenderWorkflowOptions,
+} from '../utils/workflow-ink-renderer.js';
 
 /**
  * Register workflow tools with the MCP server
@@ -19,16 +34,29 @@ export function registerWorkflowTools(server: FastMCP) {
   // Tool to execute workflows (by name or from file)
   tools.push({
     name: 'workflow',
-    description: 'Execute workflows',
+    description: 'Execute workflows with Ink rendering, comparison table, and optional AI judge',
     parameters: z.object({
-      name: z.string().optional(),
-      file: z.string().optional(),
-      query: z.string(),
+      name: z.string().optional().describe('Workflow name to execute'),
+      file: z.string().optional().describe('Workflow YAML file path'),
+      query: z.string().describe('Input query for the workflow'),
       projectPath: z.string().optional(),
-      truncateSteps: z.boolean().optional(),
-      maxStepTokens: z.number().optional(),
+      truncateSteps: z.boolean().optional().describe('Truncate step outputs (default: true)'),
+      maxStepTokens: z.number().optional().describe('Max tokens per step (default: 2500)'),
+      compare: z.boolean().optional().describe('Show comparison summary table (default: true)'),
+      judge: z.boolean().optional().describe('Enable AI judge to evaluate all steps at end'),
+      judgeTool: z.string().optional().describe('Tool for judging (default: gemini_analyze_text)'),
     }),
-    execute: async (args: { name?: string; file?: string; query: string; projectPath?: string; truncateSteps?: boolean; maxStepTokens?: number }) => {
+    execute: async (args: {
+      name?: string;
+      file?: string;
+      query: string;
+      projectPath?: string;
+      truncateSteps?: boolean;
+      maxStepTokens?: number;
+      compare?: boolean;
+      judge?: boolean;
+      judgeTool?: string;
+    }) => {
       try {
         // Validation: must specify exactly one
         if (!args.name && !args.file) {
@@ -72,32 +100,24 @@ export function registerWorkflowTools(server: FastMCP) {
           return result;
         }
 
-        // Format detailed workflow results
+        // Format detailed workflow results using Ink renderer
         if (typeof result === 'object' && result !== null && 'steps' in result) {
           const detailed = result as any;
 
-          // Determine truncation settings
-          // Default: truncate enabled, 2500 tokens (~10k chars)
+          // Determine settings
           const truncate = args.truncateSteps ?? true;
           const maxTokens = args.maxStepTokens ?? 2500;
-          const maxChars = maxTokens * 4; // 1 token ≈ 4 chars
+          const maxChars = maxTokens * 4;
+          const showComparison = args.compare ?? true;
+          const enableJudge = args.judge ?? false;
+          const judgeTool = args.judgeTool || 'gemini_analyze_text';
 
-          let output = `# Workflow: ${detailed.workflow}\n\n`;
-          output += `**Duration:** ${(detailed.duration / 1000).toFixed(1)}s\n`;
-          output += `**Steps Completed:** ${detailed.steps.length}\n\n`;
-          output += `---\n\n`;
-
-          // Format each step's output
-          for (let i = 0; i < detailed.steps.length; i++) {
-            const step = detailed.steps[i];
-            output += `## Step ${i + 1}: ${step.step}\n\n`;
-
-            // Format the step output - keep it clean and readable
+          // Convert to StepResult format for Ink renderer
+          const stepResults: StepResult[] = detailed.steps.map((step: any) => {
             let stepOutput = step.output;
 
-            // DEFENSIVE: Ensure stepOutput is a string (fix [object Object] issue)
+            // Handle FileReference objects
             if (stepOutput !== null && typeof stepOutput === 'object') {
-              // Handle FileReference objects - extract summary or stringify
               if ('summary' in stepOutput && typeof stepOutput.summary === 'string') {
                 stepOutput = stepOutput.summary;
               } else if ('content' in stepOutput && typeof stepOutput.content === 'string') {
@@ -109,22 +129,50 @@ export function registerWorkflowTools(server: FastMCP) {
               stepOutput = '[No output]';
             }
 
-            // Truncate based on settings
+            // Truncate if needed
             if (truncate && typeof stepOutput === 'string' && stepOutput.length > maxChars) {
-              const approxTokens = Math.floor(stepOutput.length / 4);
-              output += stepOutput.substring(0, maxChars) +
-                '\n\n...(output truncated: ~' + approxTokens + ' tokens, limit: ' + maxTokens + ' tokens. Use truncateSteps=false for full output)...\n\n';
-            } else {
-              output += `${stepOutput}\n\n`;
+              stepOutput = stepOutput.substring(0, maxChars) + '\n\n...(truncated)...';
             }
 
-            output += `---\n\n`;
+            return {
+              step: step.step,
+              tool: step.tool,
+              model: step.model,
+              output: stepOutput,
+              duration: step.duration,
+              filePath: step.filePath,
+            } as StepResult;
+          });
+
+          // Build workflow result
+          const workflowResult: WorkflowResult = {
+            workflowName: detailed.workflow,
+            workflowId: detailed.workflowId,
+            duration: detailed.duration,
+            steps: stepResults,
+            status: 'completed',
+          };
+
+          // AI Judge evaluation (if enabled)
+          let judgeResult: JudgeResult | undefined;
+          if (enableJudge && stepResults.length > 1) {
+            try {
+              console.error(`⚖️ Running AI judge with ${judgeTool}...`);
+              judgeResult = await runJudgeEvaluation(stepResults, judgeTool, args.query);
+            } catch (error: any) {
+              console.error(`⚠️ Judge evaluation failed: ${error.message}`);
+            }
           }
 
-          // Add final summary footer
-          output += `\n**Workflow Complete** ✓\n`;
+          // Render with Ink
+          const renderOptions: RenderWorkflowOptions = {
+            includeComparison: showComparison,
+            includeJudging: enableJudge,
+            judgeResult,
+            maxSummaryLength: maxChars,
+          };
 
-          return output;
+          return renderWorkflowResult(workflowResult, renderOptions);
         }
 
         // Fallback for any other object type
@@ -356,20 +404,38 @@ Steps:
           { variables: args.variables }
         );
 
-        const totalSteps = workflowEngine.getWorkflow(args.name)?.steps.length || '?';
-
+        const workflow = workflowEngine.getWorkflow(args.name);
+        const totalSteps = workflow?.steps.length || 1;
         const r = result as any;
-        return `# Workflow Started: ${args.name}
 
-**Session ID:** \`${r.sessionId}\`
+        // Create StepResult for Ink rendering
+        const stepResult: StepResult = {
+          step: r.stepName,
+          tool: workflow?.steps[0]?.tool || 'unknown',
+          model: workflow?.steps[0]?.model,
+          output: r.output,
+          duration: r.duration,
+        };
 
-✅ Step ${r.step}/${totalSteps}: **${r.stepName}**
+        // Render with React Ink
+        const renderedOutput = renderSingleStep(
+          stepResult,
+          r.step,
+          totalSteps,
+          args.name,
+          {
+            elapsedTime: r.duration,
+            maxSummaryLength: workflowEngine.getStepTokenLimit() * 4, // tokens -> chars
+          }
+        );
 
-${r.output}
+        // Add session info and next step guidance
+        const sessionInfo = `\nSession: ${r.sessionId}\n`;
+        const nextStep = r.hasMore
+          ? `\nNext: continue_workflow --sessionId ${r.sessionId}`
+          : '\nWorkflow complete!';
 
----
-
-${r.hasMore ? `⏭️  **Next:** Use \`continue_workflow\` with session ID \`${r.sessionId}\` to execute step ${r.step + 1}` : '✓ Workflow complete!'}`;
+        return renderedOutput + sessionInfo + nextStep;
       } catch (error: any) {
         return `Failed to start workflow: ${error.message}`;
       }
@@ -390,36 +456,74 @@ ${r.hasMore ? `⏭️  **Next:** Use \`continue_workflow\` with session ID \`${r
         // Get workflow info for context
         const session = (workflowEngine as any).sessions?.get(args.sessionId);
         const workflowName = session?.workflowName || 'unknown';
-        const totalSteps = session?.workflow?.steps.length || '?';
+        const workflow = session?.workflow;
+        const totalSteps = workflow?.steps?.length || 1;
         const r = result as any;
 
+        // If workflow is complete, render summary
         if (!r.hasMore) {
-          return `# Workflow Complete: ${workflowName}
+          // Collect all step outputs for comparison table
+          const allStepResults: StepResult[] = [];
+          if (session?.stepOutputs) {
+            for (const [stepName, fileRef] of Object.entries(session.stepOutputs)) {
+              const stepIndex = workflow?.steps?.findIndex((s: any) => s.name === stepName) || 0;
+              const stepDef = workflow?.steps?.[stepIndex];
+              allStepResults.push({
+                step: stepName,
+                tool: stepDef?.tool || 'unknown',
+                model: stepDef?.model,
+                output: (fileRef as any)?.summary || (fileRef as any)?.content || '[No output]',
+                duration: (fileRef as any)?.duration,
+              });
+            }
+          }
 
-**Session ID:** \`${r.sessionId}\`
+          const totalDuration = Date.now() - (session?.startTime || Date.now());
 
-✅ All steps completed!
+          // Render completion summary with React Ink
+          const renderedOutput = renderWorkflowSummary(
+            workflowName,
+            totalSteps,
+            totalDuration,
+            r.output, // Final step output serves as summary
+            {
+              steps: allStepResults.length > 1 ? allStepResults : undefined,
+              includeComparison: allStepResults.length > 1,
+            }
+          );
 
-Final output from step ${r.step}:
-
-${r.output}
-
----
-
-✓ Workflow finished successfully`;
+          return renderedOutput;
         }
 
-        return `# Workflow Progress: ${workflowName}
+        // Still in progress - render current step
+        const currentStepIndex = session?.currentStepIndex || 0;
+        const stepDef = workflow?.steps?.[currentStepIndex - 1]; // -1 because we just completed this step
 
-**Session ID:** \`${r.sessionId}\`
+        const stepResult: StepResult = {
+          step: r.stepName,
+          tool: stepDef?.tool || 'unknown',
+          model: stepDef?.model,
+          output: r.output,
+          duration: r.duration,
+        };
 
-✅ Step ${r.step}/${totalSteps}: **${r.stepName}**
+        const elapsedTime = Date.now() - (session?.startTime || Date.now());
 
-${r.output}
+        const renderedOutput = renderSingleStep(
+          stepResult,
+          r.step,
+          totalSteps,
+          workflowName,
+          {
+            elapsedTime,
+            maxSummaryLength: workflowEngine.getStepTokenLimit() * 4,
+          }
+        );
 
----
+        const sessionInfo = `\nSession: ${r.sessionId}\n`;
+        const nextStep = `\nNext: continue_workflow --sessionId ${r.sessionId}`;
 
-⏭️  **Next:** Call \`continue_workflow\` with session ID \`${r.sessionId}\` to execute step ${r.step + 1}`;
+        return renderedOutput + sessionInfo + nextStep;
       } catch (error: any) {
         return `Failed to continue workflow: ${error.message}`;
       }
@@ -493,4 +597,78 @@ Use \`continue_workflow\` to execute the next step.`;
   console.error('   - visualize_workflow: Show workflow structure');
 
   return tools;
+}
+
+// ============================================================================
+// AI JUDGE EVALUATION
+// ============================================================================
+
+/**
+ * Run AI judge to evaluate all workflow steps at the end
+ * One call that evaluates everything and returns rankings/scores
+ */
+async function runJudgeEvaluation(
+  steps: StepResult[],
+  judgeTool: string,
+  originalQuery: string
+): Promise<JudgeResult> {
+  // Build judge prompt with all step outputs
+  const stepSummaries = steps.map((s, i) => {
+    const firstLines = s.output.split('\n').slice(0, 5).join('\n');
+    return `### Step ${i + 1}: ${s.step} (${s.tool || 'unknown'})
+${firstLines}
+${s.output.length > 500 ? '...(truncated)' : ''}`;
+  }).join('\n\n');
+
+  const judgePrompt = `You are an impartial judge evaluating workflow step outputs.
+
+## Original Query
+${originalQuery}
+
+## Step Outputs to Evaluate
+${stepSummaries}
+
+## Your Task
+Evaluate ALL steps and provide:
+1. **Rankings**: Order steps from best to worst based on quality, relevance, and completeness
+2. **Scores**: Rate each step from 1-10
+3. **Winner**: Which step provided the best response
+4. **Reasoning**: Brief explanation of your evaluation
+
+Respond in this exact JSON format:
+{
+  "winner": "step name",
+  "rankings": ["step1", "step2", "step3"],
+  "scores": {"step1": 8, "step2": 7, "step3": 6},
+  "reasoning": "Brief explanation..."
+}`;
+
+  // Call the judge tool
+  const toolResult = await workflowEngine.callTool(judgeTool, {
+    prompt: judgePrompt,
+  }, {
+    maxTokens: 1000,
+    skipValidation: true,
+  });
+
+  // Parse judge response
+  try {
+    // Try to extract JSON from response
+    const jsonMatch = toolResult.result.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        winner: parsed.winner || undefined,
+        rankings: parsed.rankings || [],
+        scores: parsed.scores || {},
+        reasoning: parsed.reasoning || toolResult.result,
+      };
+    }
+  } catch {
+    // If parsing fails, return raw reasoning
+  }
+
+  return {
+    reasoning: toolResult.result,
+  };
 }

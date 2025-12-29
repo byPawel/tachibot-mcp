@@ -419,9 +419,10 @@ export function hasNerdFontSupport(): boolean {
     return true;
   }
 
-  // Default: no Nerd Font support (safe fallback)
-  _nerdFontSupport = false;
-  return false;
+  // Default: assume Nerd Font support (most modern dev terminals have them)
+  // Users can disable with TACHIBOT_NERD_FONTS=0 if needed
+  _nerdFontSupport = true;
+  return true;
 }
 
 /**

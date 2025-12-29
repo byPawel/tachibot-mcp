@@ -9,6 +9,108 @@ import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "yaml";
 import { costMonitor } from "../optimization/cost-monitor.js";
+import { randomUUID } from "crypto";
+
+// Load workflow limits from config
+function loadWorkflowLimits(): { stepTokenLimit: number; minLimit: number; maxLimit: number } {
+  const configPath = path.join(path.dirname(new URL(import.meta.url).pathname), '../../config/workflow-limits.json');
+  try {
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      return {
+        stepTokenLimit: config.stepTokenLimit || 6400,
+        minLimit: config.minLimit || 1000,
+        maxLimit: config.maxLimit || 50000,
+      };
+    }
+  } catch (e) {
+    console.error('[WorkflowLimits] Failed to load config, using defaults');
+  }
+  return { stepTokenLimit: 6400, minLimit: 1000, maxLimit: 50000 };
+}
+
+const WORKFLOW_LIMITS = loadWorkflowLimits();
+
+/**
+ * Session for step-by-step workflow execution
+ */
+export interface WorkflowSession {
+  sessionId: string;
+  workflowName: string;
+  workflow: Workflow;
+  currentStepIndex: number;
+  totalSteps: number;
+  variables: Record<string, string | number | boolean | null>;
+  stepOutputs: Record<string, FileReference>;
+  previousOutput: string;
+  startTime: number;
+  updatedAt: number;
+  outputDir: string;
+  status: 'running' | 'completed' | 'failed';
+  error?: {
+    code: string;
+    message: string;
+    stepIndex?: number;
+  };
+}
+
+// Session management constants (no magic numbers)
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;           // 30 minutes - session expiry
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;           // 5 minutes - cleanup check interval
+const COMPLETED_SESSION_RETENTION_MS = 5 * 60 * 1000; // 5 minutes - keep completed sessions for status checks
+
+/**
+ * Validate session ID format (UUID v4)
+ */
+function isValidSessionId(sessionId: string): boolean {
+  return /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(sessionId);
+}
+
+/**
+ * Simple async lock for session operations (prevents race conditions)
+ */
+class SessionLock {
+  private locks: Map<string, Promise<void>> = new Map();
+  private resolvers: Map<string, () => void> = new Map();
+
+  async acquire(sessionId: string): Promise<() => void> {
+    // Wait for any existing lock
+    while (this.locks.has(sessionId)) {
+      await this.locks.get(sessionId);
+    }
+
+    // Create new lock
+    let release: () => void;
+    const lockPromise = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    this.locks.set(sessionId, lockPromise);
+    this.resolvers.set(sessionId, release!);
+
+    // Return release function
+    return () => {
+      this.locks.delete(sessionId);
+      this.resolvers.delete(sessionId);
+      release!();
+    };
+  }
+
+  /**
+   * Clear all locks (for cleanup)
+   */
+  clear(): void {
+    // Resolve all pending locks to prevent hanging
+    for (const resolver of this.resolvers.values()) {
+      try {
+        resolver();
+      } catch {
+        // Ignore errors during cleanup
+      }
+    }
+    this.locks.clear();
+    this.resolvers.clear();
+  }
+}
 
 // Import shared types (breaks circular dependency)
 import {
@@ -45,6 +147,11 @@ import { WorkflowStateMachine } from "./engine/state/WorkflowStateMachine.js";
 export class CustomWorkflowEngine {
   private workflows: Map<string, Workflow> = new Map();
   private executionHistory: ExecutionRecord[] = [];
+
+  // Session management for step-by-step execution
+  public sessions: Map<string, WorkflowSession> = new Map();
+  private sessionLock: SessionLock = new SessionLock();
+  private cleanupIntervalRef: ReturnType<typeof setInterval> | null = null;
 
   // Engine modules
   private variableInterpolator: VariableInterpolator;
@@ -87,6 +194,10 @@ export class CustomWorkflowEngine {
     // Load workflows
     this.loadBuiltInWorkflows();
     this.loadUserWorkflows();
+
+    // Start session cleanup interval (stored for proper cleanup)
+    this.cleanupIntervalRef = setInterval(() => this.cleanupStaleSessions(), CLEANUP_INTERVAL_MS);
+    console.error('  ✓ Session cleanup interval started (5 min)');
   }
 
   /**
@@ -588,7 +699,8 @@ export class CustomWorkflowEngine {
   }
 
   /**
-   * Start workflow step-by-step (stub - needs implementation)
+   * Start workflow step-by-step execution
+   * Returns sessionId for continuation and first step result
    */
   async startWorkflowStepByStep(
     workflowName: string,
@@ -596,15 +708,329 @@ export class CustomWorkflowEngine {
     options?: {
       variables?: Record<string, string | number | boolean>;
     }
-  ): Promise<{ sessionId: string; firstStepResult: string }> {
-    throw new Error("Step-by-step execution not yet implemented in refactored engine");
+  ): Promise<{
+    sessionId: string;
+    step: number;
+    totalSteps: number;
+    stepName: string;
+    output: string;
+    hasMore: boolean;
+    duration: number;
+  }> {
+    const workflow = this.workflows.get(workflowName);
+    if (!workflow) {
+      throw new Error(`Workflow '${workflowName}' not found`);
+    }
+
+    // Generate session ID and output directory
+    const sessionId = randomUUID();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const outputDir = path.join(process.cwd(), 'workflow-output', workflowName, timestamp);
+
+    // Create output directory
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // Validate session ID format
+    if (!isValidSessionId(sessionId)) {
+      throw new Error(`Invalid session ID format: ${sessionId}`);
+    }
+
+    const now = Date.now();
+
+    // Initialize session with proper typing
+    const session: WorkflowSession = {
+      sessionId,
+      workflowName,
+      workflow,
+      currentStepIndex: 0,
+      totalSteps: workflow.steps.length,
+      variables: { query, ...options?.variables } as Record<string, string | number | boolean | null>,
+      stepOutputs: {},
+      previousOutput: '',
+      startTime: now,
+      updatedAt: now,
+      outputDir,
+      status: 'running',
+    };
+
+    // Store session
+    this.sessions.set(sessionId, session);
+
+    // Execute first step
+    return this.executeCurrentStep(session);
   }
 
   /**
-   * Continue workflow from session (stub - needs implementation)
+   * Continue workflow from session - executes next step
+   * Uses session lock to prevent race conditions from concurrent calls
    */
-  async continueWorkflow(sessionId: string): Promise<string> {
-    throw new Error("Continue workflow not yet implemented in refactored engine");
+  async continueWorkflow(sessionId: string): Promise<{
+    sessionId: string;
+    step: number;
+    totalSteps: number;
+    stepName: string;
+    output: string;
+    hasMore: boolean;
+    duration: number;
+  }> {
+    // Validate session ID format (before acquiring lock)
+    if (!isValidSessionId(sessionId)) {
+      throw new Error(`Invalid session ID format: ${sessionId}`);
+    }
+
+    // Acquire lock to prevent concurrent access to same session
+    const releaseLock = await this.sessionLock.acquire(sessionId);
+
+    try {
+      const session = this.sessions.get(sessionId);
+      if (!session) {
+        throw new Error(`Session '${sessionId}' not found. It may have completed or expired.`);
+      }
+
+      // Check for session timeout
+      const now = Date.now();
+      if (now - session.updatedAt > SESSION_TIMEOUT_MS) {
+        this.sessions.delete(sessionId);
+        throw new Error(`Session '${sessionId}' has expired (30 minute timeout).`);
+      }
+
+      // Update last accessed time
+      session.updatedAt = now;
+
+      if (session.status !== 'running') {
+        throw new Error(`Session '${sessionId}' is ${session.status}, cannot continue.`);
+      }
+
+      // Move to next step (atomic within lock)
+      session.currentStepIndex++;
+      session.updatedAt = Date.now();
+
+      // Check if workflow is complete (all steps executed)
+      if (session.currentStepIndex >= session.totalSteps) {
+        session.status = 'completed';
+        const duration = Date.now() - session.startTime;
+
+        // Generate final summary
+        const summary = await this.generateWorkflowSummary(session);
+
+        // Schedule session cleanup (use constant)
+        setTimeout(() => this.sessions.delete(sessionId), COMPLETED_SESSION_RETENTION_MS);
+
+        return {
+          sessionId,
+          step: session.totalSteps,
+          totalSteps: session.totalSteps,
+          stepName: 'Summary',
+          output: summary,
+          hasMore: false,
+          duration,
+        };
+      }
+
+      // Execute the current step (index already incremented)
+      return this.executeCurrentStep(session);
+    } finally {
+      // Always release lock, even on error
+      releaseLock();
+    }
+  }
+
+  /**
+   * Execute the current step in a session
+   */
+  private async executeCurrentStep(session: WorkflowSession): Promise<{
+    sessionId: string;
+    step: number;
+    totalSteps: number;
+    stepName: string;
+    output: string;
+    hasMore: boolean;
+    duration: number;
+  }> {
+    const stepStartTime = Date.now();
+    const step = session.workflow.steps[session.currentStepIndex];
+    const stepNumber = session.currentStepIndex + 1;
+
+    try {
+      // Interpolate step input
+      let inputPrompt = '';
+      if (typeof step.input === 'string') {
+        inputPrompt = await this.interpolateVariables(step.input, session.variables, session.stepOutputs);
+      } else if (step.input?.prompt) {
+        inputPrompt = await this.interpolateVariables(step.input.prompt, session.variables, session.stepOutputs);
+      }
+
+      // Add previous output context if available
+      const inputObj = typeof step.input === 'object' ? step.input : null;
+      if (session.previousOutput && inputObj?.previousStep) {
+        inputPrompt = `${inputPrompt}\n\nPrevious step output:\n${session.previousOutput}`;
+      }
+
+      // Execute the tool
+      const maxTokens = typeof step.maxTokens === 'number' ? step.maxTokens : 4000;
+      const { result, modelUsed } = await this.callTool(step.tool, inputPrompt, {
+        maxTokens,
+      });
+
+      // Create file reference for full output
+      const fileRef = await this.createFileReference(
+        step.name,
+        result,
+        session.sessionId,
+        session.workflowName,
+        true,
+        session.outputDir,
+        String(stepNumber),
+        modelUsed
+      );
+
+      // Store step output
+      session.stepOutputs[step.name] = fileRef;
+      session.previousOutput = result;
+
+      // Store in variable if specified
+      if (step.output?.variable) {
+        session.variables[step.output.variable] = result;
+      }
+
+      // Truncate output for display (configurable limit)
+      const displayOutput = this.truncateForDisplay(result, WORKFLOW_LIMITS.stepTokenLimit);
+
+      const duration = Date.now() - stepStartTime;
+
+      return {
+        sessionId: session.sessionId,
+        step: stepNumber,
+        totalSteps: session.totalSteps,
+        stepName: step.name,
+        output: displayOutput,
+        hasMore: session.currentStepIndex < session.totalSteps - 1,
+        duration,
+      };
+    } catch (error: any) {
+      session.status = 'failed';
+      session.error = {
+        code: 'STEP_EXECUTION_FAILED',
+        message: error.message || 'Unknown error occurred',
+        stepIndex: session.currentStepIndex,
+      };
+      session.updatedAt = Date.now();
+      throw new Error(`Step '${step.name}' failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate workflow summary after all steps complete
+   */
+  private async generateWorkflowSummary(session: WorkflowSession): Promise<string> {
+    const stepSummaries: string[] = [];
+
+    for (const [stepName, fileRef] of Object.entries(session.stepOutputs)) {
+      const content = await fileRef.getContent();
+      const firstLines = content.split('\n').slice(0, 5).join('\n');
+      stepSummaries.push(`### ${stepName}\n${firstLines}${content.length > 500 ? '\n...(truncated)' : ''}`);
+    }
+
+    const duration = ((Date.now() - session.startTime) / 1000).toFixed(1);
+
+    return `# Workflow Complete: ${session.workflowName}
+
+**Duration:** ${duration}s
+**Steps:** ${session.totalSteps}
+
+## Step Summaries
+
+${stepSummaries.join('\n\n')}
+
+---
+Full outputs saved to: ${session.outputDir}`;
+  }
+
+  /**
+   * Truncate output for display while preserving useful content
+   * Uses configurable token limit (default 6400 tokens ≈ 25600 chars)
+   */
+  private truncateForDisplay(content: string, tokenLimit: number = 6400): string {
+    // Rough estimate: 1 token ≈ 4 characters
+    const charLimit = tokenLimit * 4;
+
+    if (content.length <= charLimit) {
+      return content;
+    }
+
+    // Truncate with ellipsis
+    return content.substring(0, charLimit - 50) + '\n\n...(truncated, full output saved to file)';
+  }
+
+  /**
+   * Get token limit from config
+   */
+  getStepTokenLimit(): number {
+    return WORKFLOW_LIMITS.stepTokenLimit;
+  }
+
+  /**
+   * Cleanup stale sessions (called periodically)
+   * Removes sessions that have exceeded the timeout
+   */
+  cleanupStaleSessions(): number {
+    const now = Date.now();
+    const expiredSessionIds: string[] = [];
+
+    for (const [sessionId, session] of this.sessions.entries()) {
+      if (now - session.updatedAt > SESSION_TIMEOUT_MS) {
+        expiredSessionIds.push(sessionId);
+      }
+    }
+
+    for (const sessionId of expiredSessionIds) {
+      this.sessions.delete(sessionId);
+    }
+
+    if (expiredSessionIds.length > 0) {
+      console.error(`[WorkflowEngine] Cleaned up ${expiredSessionIds.length} stale sessions`);
+    }
+
+    return expiredSessionIds.length;
+  }
+
+  /**
+   * Get session by ID (with timeout check)
+   */
+  getSession(sessionId: string): WorkflowSession | undefined {
+    if (!isValidSessionId(sessionId)) {
+      return undefined;
+    }
+
+    const session = this.sessions.get(sessionId);
+    if (session && Date.now() - session.updatedAt > SESSION_TIMEOUT_MS) {
+      this.sessions.delete(sessionId);
+      return undefined;
+    }
+
+    return session;
+  }
+
+  /**
+   * Destroy the workflow engine (cleanup resources)
+   * Call this when shutting down the server
+   */
+  destroy(): void {
+    // Clear cleanup interval
+    if (this.cleanupIntervalRef) {
+      clearInterval(this.cleanupIntervalRef);
+      this.cleanupIntervalRef = null;
+    }
+
+    // Clear session locks (resolve pending locks to prevent hanging)
+    this.sessionLock.clear();
+
+    // Clear all sessions
+    this.sessions.clear();
+
+    console.error('[WorkflowEngine] Destroyed - cleanup interval cleared, locks released, sessions cleared');
   }
 }
 

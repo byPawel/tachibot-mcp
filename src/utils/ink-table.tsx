@@ -29,8 +29,12 @@
  * @license MIT
  */
 
+// Force color support FIRST
+import './color-setup.js';
+
 import React, { createContext, useContext, useMemo } from 'react';
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text, useStdout, render } from 'ink';
+import { PassThrough } from 'stream';
 
 // ============================================================================
 // TYPES
@@ -121,11 +125,22 @@ const BOX = {
 } as const;
 
 /**
- * Truncate text with ellipsis
+ * Truncate text with ellipsis at word boundary (smarter truncation)
  */
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen - 1) + '…';
+
+  // Try to truncate at word boundary
+  const truncated = text.slice(0, maxLen - 1);
+  const lastSpace = truncated.lastIndexOf(' ');
+
+  // If we can cut at a word boundary (at least 60% of maxLen), do it
+  if (lastSpace > maxLen * 0.6) {
+    return truncated.slice(0, lastSpace) + '…';
+  }
+
+  // Otherwise just truncate at maxLen
+  return truncated + '…';
 }
 
 /**
@@ -187,7 +202,8 @@ const HorizontalBorder: React.FC<HorizontalBorderProps> = ({
   colWidths,
 }) => {
   const theme = useTableTheme();
-  const segments = colWidths.map((w) => mid.repeat(w + 2)); // +2 for cell padding
+  // colWidths already include padding, so just use them directly
+  const segments = colWidths.map((w) => mid.repeat(w));
   return (
     <Text color={theme.borderColor}>
       {left}
@@ -211,10 +227,13 @@ const TableCell: React.FC<TableCellProps> = React.memo(({
   isHeader = false,
 }) => {
   const theme = useTableTheme();
-  const truncated = truncate(content, width);
 
-  // Calculate padding for alignment
-  const padTotal = Math.max(0, width - visibleLength(truncated));
+  // FIX: Account for the 2 padding spaces we add in render (' ' + text + ' ')
+  const innerWidth = Math.max(0, width - 2);
+  const truncated = truncate(content, innerWidth);
+
+  // Calculate padding for alignment based on inner width
+  const padTotal = Math.max(0, innerWidth - visibleLength(truncated));
   let padLeft = 0;
   let padRight = 0;
 
@@ -229,14 +248,17 @@ const TableCell: React.FC<TableCellProps> = React.memo(({
 
   const paddedText = ' '.repeat(padLeft) + truncated + ' '.repeat(padRight);
 
+  // Only bold headers if no background color (background already distinguishes them)
+  const shouldBold = isHeader && theme.headerBold && !theme.headerBgColor;
+
   return (
     <Text
-      bold={isHeader && theme.headerBold}
+      bold={shouldBold}
       color={isHeader ? theme.headerColor : theme.cellColor}
       backgroundColor={isHeader ? theme.headerBgColor : undefined}
+      wrap="truncate"
     >
-      {' '}
-      {paddedText}{' '}
+      {' '}{paddedText}{' '}
     </Text>
   );
 });
@@ -256,8 +278,15 @@ const TableRow: React.FC<TableRowProps> = React.memo(({
 }) => {
   const theme = useTableTheme();
 
+  // FIX: Calculate total width = sum(colWidths) + borders (numCols + 1)
+  const totalWidth = colWidths.reduce((sum, w) => sum + w, 0) + colWidths.length + 1;
+
   return (
-    <Box>
+    <Box
+      flexDirection="row"
+      flexWrap="nowrap"
+      width={totalWidth}
+    >
       <Text color={theme.borderColor}>{BOX.vertical}</Text>
       {cells.map((cell, i) => (
         <React.Fragment key={i}>
@@ -327,7 +356,8 @@ export const InkTable: React.FC<InkTableProps> = ({
         maxLen = Math.max(maxLen, visibleLength(row[col] || ''));
       }
 
-      widths.push(maxLen);
+      // Add 2 for cell padding (' content ') so we compare cell widths consistently
+      widths.push(maxLen + 2);
     }
 
     // Calculate available width for columns
@@ -347,7 +377,7 @@ export const InkTable: React.FC<InkTableProps> = ({
   const aligns = table.align || [];
 
   return (
-    <Box flexDirection="column" marginTop={1} marginBottom={1}>
+    <Box flexDirection="column">
       {/* Top border */}
       <HorizontalBorder
         left={BOX.topLeft}
@@ -442,6 +472,207 @@ export const SimpleTable: React.FC<SimpleTableProps> = ({
 };
 
 // ============================================================================
+// SMART TABLE (Auto-Split at Max Columns)
+// ============================================================================
+
+/** Row data for SmartTable */
+export interface SmartRow {
+  /** Row label (first column) */
+  label: string;
+  /** Values for each column */
+  values: string[];
+  /** Full text for Details section (optional) */
+  detail?: string;
+}
+
+export interface SmartTableProps {
+  /** Table title */
+  title?: string;
+  /** Column headers (excluding label column) */
+  headers: string[];
+  /** Row data */
+  rows: SmartRow[];
+  /** Maximum columns per table (default: 3) */
+  maxColumns?: number;
+  /** Show details section below table (default: true if any row has detail) */
+  showDetails?: boolean;
+  /** Maximum column width */
+  maxColWidth?: number;
+}
+
+/**
+ * SmartTable - Auto-splits tables with more than maxColumns
+ *
+ * @example
+ * <SmartTable
+ *   title="Comparison"
+ *   headers={['Streaming', 'Batched', 'Hybrid', 'Cards']}
+ *   rows={[
+ *     { label: 'Latency', values: ['✓ Best', '✗ Worst', '◐ Med', '◐ Med'], detail: 'Streaming has lowest latency' },
+ *     { label: 'Cost', values: ['✗ High', '✓ Low', '◐ Med', '◐ Med'], detail: 'Batched is most cost effective' },
+ *   ]}
+ *   maxColumns={3}
+ * />
+ */
+export const SmartTable: React.FC<SmartTableProps> = ({
+  title,
+  headers,
+  rows,
+  maxColumns = 3,
+  showDetails,
+  maxColWidth = 25,
+}) => {
+  // Headers go into data columns (label is always first)
+  const dataColCount = maxColumns - 1; // Reserve 1 for label column
+
+  // Split headers into chunks
+  const headerChunks: string[][] = [];
+  for (let i = 0; i < headers.length; i += dataColCount) {
+    headerChunks.push(headers.slice(i, i + dataColCount));
+  }
+
+  // Determine if we should show details
+  const hasDetails = rows.some(r => r.detail);
+  const shouldShowDetails = showDetails ?? hasDetails;
+
+  return (
+    <Box flexDirection="column">
+      {headerChunks.map((chunkHeaders, chunkIndex) => (
+        <Box key={chunkIndex} flexDirection="column" marginBottom={1}>
+          {/* Table title with part number */}
+          {title && (
+            <Text bold>
+              {title} {headerChunks.length > 1 ? `(${chunkIndex + 1}/${headerChunks.length})` : ''}
+            </Text>
+          )}
+
+          {/* Table for this chunk */}
+          <SimpleTable
+            headers={['', ...chunkHeaders]}
+            rows={rows.map(r => [
+              r.label,
+              ...r.values.slice(
+                chunkIndex * dataColCount,
+                (chunkIndex + 1) * dataColCount
+              ),
+            ])}
+            maxColWidth={maxColWidth}
+          />
+
+          {/* Details section (only show once, on last chunk) */}
+          {shouldShowDetails && chunkIndex === headerChunks.length - 1 && (
+            <Box flexDirection="column" marginTop={1}>
+              {rows.filter(r => r.detail).map((row, i) => (
+                <Text key={i} wrap="wrap">• {row.label}: {row.detail}</Text>
+              ))}
+            </Box>
+          )}
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+// ============================================================================
+// KEY VALUE CARD (For Long Content)
+// ============================================================================
+
+export interface KeyValueCardProps {
+  /** Card title */
+  title: string;
+  /** Key-value entries */
+  entries: Array<{ key: string; value: string }>;
+  /** Border color (default: blue) */
+  borderColor?: string;
+  /** Optional model name for theming */
+  model?: string;
+}
+
+/**
+ * KeyValueCard - Displays long content in a bordered card format
+ *
+ * @example
+ * <KeyValueCard
+ *   title="Step 1: Research"
+ *   entries={[
+ *     { key: 'Model', value: 'perplexity' },
+ *     { key: 'Duration', value: '2.3s' },
+ *     { key: 'Output', value: 'Found 5 key patterns...' },
+ *   ]}
+ * />
+ */
+export const KeyValueCard: React.FC<KeyValueCardProps> = ({
+  title,
+  entries,
+  borderColor = '#60A5FA',
+}) => {
+  return (
+    <Box
+      flexDirection="column"
+      borderStyle="round"
+      borderColor={borderColor}
+      paddingX={1}
+      marginBottom={1}
+    >
+      <Text bold color={borderColor}>{title}</Text>
+      <Box marginTop={1} flexDirection="column">
+        {entries.map((entry, i) => (
+          <Box key={i} flexDirection="row">
+            <Text dimColor>{entry.key.padEnd(12)}</Text>
+            <Text wrap="wrap">{entry.value}</Text>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+// ============================================================================
+// RENDER HELPERS (Ink to ANSI String)
+// ============================================================================
+
+/**
+ * Render an Ink element to an ANSI string
+ */
+function renderInkToString(element: React.ReactElement): string {
+  const stream = new PassThrough();
+  let output = '';
+  stream.on('data', (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+
+  const { unmount } = render(element, {
+    stdout: stream as unknown as NodeJS.WriteStream,
+    exitOnCtrlC: false,
+    patchConsole: false,
+  });
+
+  unmount();
+  return output;
+}
+
+/**
+ * Render SmartTable to ANSI string
+ */
+export function renderSmartTable(props: SmartTableProps): string {
+  return renderInkToString(<SmartTable {...props} />);
+}
+
+/**
+ * Render KeyValueCard to ANSI string
+ */
+export function renderKeyValueCard(props: KeyValueCardProps): string {
+  return renderInkToString(<KeyValueCard {...props} />);
+}
+
+/**
+ * Render SimpleTable to ANSI string
+ */
+export function renderSimpleTable(props: SimpleTableProps): string {
+  return renderInkToString(<SimpleTable {...props} />);
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -453,4 +684,5 @@ export {
   getTerminalWidth,
   defaultTableTheme,
   TableThemeContext,
+  renderInkToString,
 };
