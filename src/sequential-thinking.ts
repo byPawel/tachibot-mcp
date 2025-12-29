@@ -884,6 +884,9 @@ export class SequentialThinking {
     let finalJudgeResponse: string | undefined;
     if (!nextThoughtNeeded) {
       session.status = "completed";
+      // Update totalThoughts to actual count for accurate progress display
+      session.totalThoughts = session.thoughts.length;
+      session.currentThought = session.thoughts.length;
 
       // Execute final judge if configured
       if (finalJudge) {
