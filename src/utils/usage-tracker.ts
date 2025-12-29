@@ -9,6 +9,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { getModelDisplayName, MODEL_PRICING } from '../config/model-constants.js';
+import {
+  renderTable,
+  renderKeyValueTable,
+  brailleBar,
+  brailleSparkline,
+  renderReceipt,
+  renderGradientDivider,
+  renderGradientBorderBox,
+  renderBadgeGroup,
+  icons,
+} from './ink-renderer.js';
 
 // Config: enabled by default, set TACHIBOT_USAGE_TRACKING=false to disable
 export const isTrackingEnabled = (): boolean => {
@@ -18,6 +29,11 @@ export const isTrackingEnabled = (): boolean => {
 // Config: show model tags in output (default: true)
 export const showModelTags = (): boolean => {
   return process.env.TACHIBOT_SHOW_MODEL_TAGS !== 'false';
+};
+
+// Config: show receipt after tool calls (default: false, set TACHIBOT_SHOW_RECEIPT=true to enable)
+export const showReceipt = (): boolean => {
+  return process.env.TACHIBOT_SHOW_RECEIPT === 'true';
 };
 
 interface ToolUsage {
@@ -142,16 +158,7 @@ export function getAllStats(): UsageData {
 }
 
 /**
- * Create ASCII bar
- */
-function createBar(value: number, max: number, width: number = 12): string {
-  if (max === 0) return '░'.repeat(width);
-  const filled = Math.round((value / max) * width);
-  return '█'.repeat(filled) + '░'.repeat(width - filled);
-}
-
-/**
- * Get summary of tool usage for current repo with visual bars
+ * Get summary of tool usage for current repo with Ink components
  */
 export function getUsageSummary(repoPath?: string): string {
   const stats = getRepoStats(repoPath);
@@ -172,33 +179,31 @@ export function getUsageSummary(repoPath?: string): string {
   const totalCost = sortedTools.reduce((sum, [, t]) => sum + t.totalCost, 0);
   const totalTokens = sortedTools.reduce((sum, [, t]) => sum + t.totalTokens, 0);
 
-  // Find max tool name length for alignment (cap at 28 for workflow: prefix)
-  const maxNameLen = Math.min(28, Math.max(...sortedTools.map(([name]) => name.length)));
-
   const lines: string[] = [
     ``,
-    `📊 USAGE STATS ─ ${stats.repoName}`,
+    `${icons.chartBar} USAGE STATS ─ ${stats.repoName}`,
+    renderGradientDivider(50, 'cristal'),
     ``,
   ];
 
-  // Tool bars
-  for (const [toolName, usage] of sortedTools) {
-    const name = toolName.length > maxNameLen
-      ? toolName.slice(0, maxNameLen - 2) + '..'
-      : toolName.padEnd(maxNameLen);
-    const bar = createBar(usage.calls, maxCalls, 12);
-    const calls = String(usage.calls).padStart(4);
-    const cost = `$${usage.totalCost.toFixed(2)}`.padStart(6);
+  // Build table data with braille bars
+  const tableData = sortedTools.map(([toolName, usage]) => ({
+    Tool: toolName.length > 24 ? toolName.slice(0, 22) + '..' : toolName,
+    Usage: brailleBar(usage.calls, maxCalls, 15),
+    Calls: String(usage.calls),
+    Cost: `$${usage.totalCost.toFixed(3)}`,
+  }));
 
-    lines.push(`${name} ${bar} ${calls}  ${cost}`);
-  }
+  lines.push(renderTable(tableData));
+  lines.push(``);
 
-  // Footer with totals
-  lines.push(`${'─'.repeat(maxNameLen + 28)}`);
-  lines.push(`${'TOTAL'.padEnd(maxNameLen)} ${''.padStart(12)} ${String(stats.totalCalls).padStart(4)}  ${'$' + totalCost.toFixed(2).padStart(5)}`);
-  lines.push(``);
-  lines.push(`Tokens: ~${totalTokens.toLocaleString()} | Period: ${stats.firstSeen.split('T')[0]} → ${stats.lastSeen.split('T')[0]}`);
-  lines.push(``);
+  // Summary using key-value table
+  lines.push(renderKeyValueTable({
+    'Total Calls': stats.totalCalls.toLocaleString(),
+    'Total Tokens': `~${totalTokens.toLocaleString()}`,
+    'Total Cost': `$${totalCost.toFixed(4)}`,
+    'Period': `${stats.firstSeen.split('T')[0]} → ${stats.lastSeen.split('T')[0]}`,
+  }));
 
   return lines.join('\n');
 }
@@ -213,12 +218,40 @@ export function formatModelTag(model: string): string {
 }
 
 /**
- * Create output with model tag
+ * Create output with model tag and optional receipt
  */
-export function tagOutput(content: string, model: string, tokens?: number): string {
+export function tagOutput(content: string, model: string, tokens?: number, inputTokens?: number, outputTokens?: number, durationMs?: number): string {
   const tag = formatModelTag(model);
   const tokenInfo = tokens ? ` ${tokens}tok` : '';
-  return `${tag}${tokenInfo}\n\n${content}`;
+
+  let output = `${tag}${tokenInfo}\n\n${content}`;
+
+  // Append receipt if enabled
+  if (showReceipt() && (inputTokens || outputTokens)) {
+    output += '\n\n' + renderReceipt({
+      model,
+      inputTokens: inputTokens || 0,
+      outputTokens: outputTokens || tokens || 0,
+      duration: durationMs,
+    });
+  }
+
+  return output;
+}
+
+/**
+ * Generate a standalone receipt for tool output
+ */
+export function generateReceipt(model: string, inputTokens: number, outputTokens: number, cachedTokens?: number, durationMs?: number): string {
+  if (!showReceipt()) return '';
+
+  return renderReceipt({
+    model,
+    inputTokens,
+    outputTokens,
+    cachedTokens,
+    duration: durationMs,
+  });
 }
 
 /**
@@ -245,7 +278,7 @@ export function estimateTokens(text: string): number {
 }
 
 /**
- * Get all repos summary (for "all" scope) with visual bars
+ * Get all repos summary (for "all" scope) with Ink components
  */
 export function getAllReposSummary(): string {
   const data = loadStats();
@@ -267,7 +300,6 @@ export function getAllReposSummary(): string {
   repoData.sort((a, b) => b.calls - a.calls);
 
   const maxCalls = Math.max(...repoData.map(r => r.calls));
-  const maxNameLen = Math.min(20, Math.max(...repoData.map(r => r.name.length)));
   const grandTotal = repoData.reduce((acc, r) => ({
     calls: acc.calls + r.calls,
     tokens: acc.tokens + r.tokens,
@@ -276,26 +308,30 @@ export function getAllReposSummary(): string {
 
   const lines: string[] = [
     ``,
-    `📊 USAGE STATS ─ All Repos`,
+    `${icons.chartBar} USAGE STATS ─ All Repos`,
+    renderGradientDivider(50, 'rainbow'),
     ``,
   ];
 
-  for (const repo of repoData) {
-    const name = repo.name.length > maxNameLen
-      ? repo.name.slice(0, maxNameLen - 2) + '..'
-      : repo.name.padEnd(maxNameLen);
-    const bar = createBar(repo.calls, maxCalls, 10);
-    const calls = String(repo.calls).padStart(4);
-    const cost = `$${repo.cost.toFixed(2)}`.padStart(7);
+  // Build table data with braille bars
+  const tableData = repoData.map(repo => ({
+    Repo: repo.name.length > 18 ? repo.name.slice(0, 16) + '..' : repo.name,
+    Usage: brailleBar(repo.calls, maxCalls, 12),
+    Calls: String(repo.calls),
+    Tokens: `~${(repo.tokens / 1000).toFixed(1)}k`,
+    Cost: `$${repo.cost.toFixed(3)}`,
+  }));
 
-    lines.push(`${name} ${bar} ${calls} ${cost}`);
-  }
+  lines.push(renderTable(tableData));
+  lines.push(``);
 
-  lines.push(`${'─'.repeat(maxNameLen + 26)}`);
-  lines.push(`${'TOTAL'.padEnd(maxNameLen)} ${''.padStart(10)} ${String(grandTotal.calls).padStart(4)} ${'$' + grandTotal.cost.toFixed(2).padStart(6)}`);
-  lines.push(``);
-  lines.push(`Tokens: ~${grandTotal.tokens.toLocaleString()}`);
-  lines.push(``);
+  // Summary using key-value table
+  lines.push(renderKeyValueTable({
+    'Total Repos': repos.length.toString(),
+    'Total Calls': grandTotal.calls.toLocaleString(),
+    'Total Tokens': `~${grandTotal.tokens.toLocaleString()}`,
+    'Total Cost': `$${grandTotal.cost.toFixed(4)}`,
+  }));
 
   return lines.join('\n');
 }

@@ -220,10 +220,10 @@ console.log(renderProgressReel([
 
 section('THINKING CHAIN');
 console.log(renderThinkingChainArbor([
-  { thought: 'Analyzing the architecture requirements', model: 'gemini', confidence: 0.92 },
-  { thought: 'Considering microservices vs monolith', model: 'grok', confidence: 0.88 },
-  { thought: 'Evaluating scalability patterns', model: 'openai', confidence: 0.95 },
-  { thought: 'Final recommendation: hybrid approach', model: 'claude', confidence: 0.91 },
+  { thought: 'Analyzing the architecture requirements', model: 'gemini' },
+  { thought: 'Considering microservices vs monolith', model: 'grok', isRevision: true },
+  { thought: 'Evaluating scalability patterns', model: 'openai' },
+  { thought: 'Final recommendation: hybrid approach', model: 'claude', isBranch: true },
 ], 'Architecture Decision'));
 
 // ============================================================================
@@ -240,10 +240,10 @@ console.log(renderWaterfallTrace([
 
 section('SOURCE HEATMAP');
 console.log(renderSourceHeatmap([
-  { url: 'https://docs.example.com/api', relevance: 0.95, citations: 12 },
-  { url: 'https://github.com/repo/issues', relevance: 0.82, citations: 8 },
-  { url: 'https://stackoverflow.com/q/123', relevance: 0.75, citations: 5 },
-  { url: 'https://blog.tech.io/article', relevance: 0.68, citations: 3 },
+  { title: 'API Documentation', url: 'example.com/docs/api', relevance: 0.95 },
+  { title: 'GitHub Issues', url: 'example.com/issues/123', relevance: 0.82 },
+  { title: 'Q&A Thread', url: 'example.com/questions/456', relevance: 0.75 },
+  { title: 'Tutorial', url: 'example.com/tutorial', relevance: 0.68, snippet: 'Relevant excerpt...' },
 ], 'Research Sources'));
 
 section('SPARKLINES GRID');
@@ -345,7 +345,7 @@ export const ModelCard: React.FC<Props> = ({ model, content }) => {
   );
 };
 `;
-console.log(renderCodeMinimap(sampleCode, 40, 12));
+console.log(renderCodeMinimap(sampleCode, { width: 40, height: 12 }));
 
 // ============================================================================
 // DIFF VIEW
@@ -360,7 +360,7 @@ const newCode = `function greet(name: string) {
   console.log(\`Hello \${name}!\`);
   return { success: true };
 }`;
-console.log(renderSideBySideDiff(createDiff(oldCode, newCode), 'Old', 'New'));
+console.log(renderSideBySideDiff(createDiff(oldCode, newCode), 'Code Comparison', 60));
 
 // ============================================================================
 // BADGES
@@ -402,10 +402,8 @@ section('ERROR AUTOPSY');
 console.log(renderErrorAutopsy({
   type: 'APIError',
   message: 'Rate limit exceeded for grok-4-1-fast-reasoning',
-  code: 429,
-  stack: `at GrokClient.call (grok-tools.ts:142)
-at FocusToolService.execute (focus-tool.ts:89)
-at Server.handleRequest (server.ts:234)`,
+  model: 'grok',
+  culprit: 'GrokClient.call (grok-tools.ts:142)',
   suggestion: 'Wait 60 seconds or switch to a different model'
 }));
 
