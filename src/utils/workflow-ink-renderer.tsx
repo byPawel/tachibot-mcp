@@ -17,7 +17,7 @@ import React from 'react';
 import { render, Box, Text } from 'ink';
 import Gradient from 'ink-gradient';
 import { PassThrough } from 'stream';
-import { loadTheme, type InkTheme } from './ink-markdown-renderer.js';
+import { loadTheme, Markdown, type InkTheme } from './ink-markdown-renderer.js';
 import { SimpleTable, TableThemeProvider, type TableTheme } from './ink-table.js';
 import { nerdIcons } from './ink-renderer.js';
 
@@ -309,11 +309,9 @@ const StepResultCard: React.FC<{
         </Gradient>
       </Box>
 
-      {/* Output - show all lines, no truncation */}
+      {/* Output - rendered with Ink Markdown */}
       <Box marginTop={1} flexDirection="column">
-        {displayOutput.split('\n').map((line, i) => (
-          <Text key={i}>{line}</Text>
-        ))}
+        <Markdown>{displayOutput}</Markdown>
       </Box>
 
       {/* File path */}
