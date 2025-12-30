@@ -12,6 +12,8 @@
  * - Dependency Inversion: Functions depend on types, not concrete implementations
  */
 
+import { icon } from '../../../utils/ink-renderer.js';
+
 // ============================================================================
 // Type Definitions (no 'any')
 // ============================================================================
@@ -274,21 +276,21 @@ export const synthesizeVerifierReport = (config: {
   const outlierCount = config.responses.length - majorityResponses.length;
   const consensusPercent = (config.consensus.agreement * 100).toFixed(1);
 
-  let synthesis = `## 🔍 Multi-Model Verification Report\n\n`;
+  let synthesis = `## ${icon('search')} Multi-Model Verification Report\n\n`;
 
   // Consensus indicator
-  synthesis += `### 📊 Consensus: ${consensusPercent}%\n\n`;
+  synthesis += `### ${icon('chart')} Consensus: ${consensusPercent}%\n\n`;
   const consensusBar = Math.round(config.consensus.agreement * 10);
   synthesis += `\`\`\`\n`;
   synthesis += `[${'⣿'.repeat(consensusBar)}${'⣿'.repeat(10 - consensusBar)}] ${consensusPercent}% agreement\n`;
   synthesis += `\`\`\`\n\n`;
 
   // Model responses table
-  synthesis += `### 🤖 Model Responses\n\n`;
+  synthesis += `### ${icon('cpu')} Model Responses\n\n`;
   synthesis += buildResponseTable(config.responses, majorityResponses);
 
   // Majority analysis
-  synthesis += `### 🎯 Majority View\n\n`;
+  synthesis += `### ${icon('target')} Majority View\n\n`;
   synthesis += `**Conclusion:** ${config.consensus.majorityCluster}\n`;
   synthesis += `**Models in agreement:** ${majorityResponses.length}/${config.responses.length}\n\n`;
 
@@ -312,7 +314,7 @@ export const synthesizeVerifierReport = (config: {
 
   // Dissenting views
   if (outlierCount > 0) {
-    synthesis += `### ⚠️ Dissenting Views (${outlierCount})\n\n`;
+    synthesis += `### ${icon('warning')} Dissenting Views (${outlierCount})\n\n`;
     config.outliers.forEach(outlier => {
       synthesis += `**${outlier.model}:** "${outlier.conclusion || 'unknown'}"\n`;
       const preview = (outlier.response || '').substring(0, 150).replace(/\n/g, ' ');
@@ -323,14 +325,14 @@ export const synthesizeVerifierReport = (config: {
   }
 
   // Summary
-  synthesis += `### 📋 Summary\n\n`;
+  synthesis += `### ${icon('list')} Summary\n\n`;
   synthesis += `\`\`\`\n`;
   synthesis += `Total Models:     ${config.responses.length}\n`;
   synthesis += `Consensus:        ${consensusPercent}%\n`;
   synthesis += `Majority View:    ${config.consensus.majorityCluster}\n`;
   synthesis += `Agreeing Models:  ${majorityResponses.length}\n`;
   synthesis += `Dissenting:       ${outlierCount}\n`;
-  synthesis += `High Confidence:  ${config.consensus.agreement >= 0.8 ? 'YES ✓' : 'NO'}\n`;
+  synthesis += `High Confidence:  ${config.consensus.agreement >= 0.8 ? `YES ${icon('check')}` : 'NO'}\n`;
   synthesis += `\`\`\`\n`;
 
   return synthesis;
@@ -376,11 +378,11 @@ const buildResponseTable = (
 
   responses.forEach((resp) => {
     const isMajority = majorityResponses.includes(resp);
-    const statusIcon = isMajority ? '✅' : '⚠️';
+    const statusIcon = isMajority ? icon('check') : icon('warning');
     const conclusionIcon =
-      resp.conclusion === 'true' ? '✓' :
-      resp.conclusion === 'false' ? '✗' :
-      resp.conclusion === 'uncertain' ? '❓' : '❔';
+      resp.conclusion === 'true' ? icon('check') :
+      resp.conclusion === 'false' ? icon('error') :
+      resp.conclusion === 'uncertain' ? icon('question') : '?';
 
     const confidence = resp.confidence ? `${Math.round(resp.confidence * 100)}%` : 'N/A';
     const preview = (resp.response || '').substring(0, 60).replace(/\n/g, ' ').trim();

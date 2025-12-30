@@ -11,11 +11,12 @@ export const MAX_SYSTEM_PROMPT_LENGTH = 5000;
 // Patterns to detect potential injection attempts
 // NOTE: Role injection (user:/assistant:/system:) pattern removed due to false positives
 // with legitimate LLM-generated content. For LLM-to-LLM calls, use skipValidation flag.
+// NOTE: Path traversal (../) pattern removed - too many false positives in architecture
+// discussions and code examples mentioning relative paths.
 const SUSPICIOUS_PATTERNS = [
   /<\s*script/gi,                 // XSS attempts
   /\b(exec|eval)\s*\(/gi,         // Code execution attempts (require() removed - false positives in code examples)
   /;\s*(rm|del|format|drop\s+table)/gi,  // Command/SQL injection
-  /\.\.\//g,                      // Path traversal
   /\x00/g,                        // Null byte injection
 ];
 

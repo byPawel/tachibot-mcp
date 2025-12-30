@@ -10,6 +10,7 @@ import { ToolExecutionService } from "./orchestrators/collaborative/services/too
 import { ReasoningMode } from "./reasoning-chain.js";
 import { isModelAvailable, getAvailableModelNames } from "./utils/model-availability.js";
 import { formatMemorySaveHint, MemorySaveData, MemorySaveHint } from "./utils/memory-provider.js";
+import { icon } from "./utils/ink-renderer.js";
 
 export interface Thought {
   number: number;
@@ -305,24 +306,24 @@ export class SequentialThinking {
 
     // Suggest next steps based on progress
     if (progress < 30) {
-      guidance += "🔍 **Early Stage**: Focus on understanding and decomposing the problem.\n";
+      guidance += `${icon('search')} **Early Stage**: Focus on understanding and decomposing the problem.\n`;
       guidance += "Consider: What are the key components? What constraints exist?\n";
     } else if (progress < 60) {
-      guidance += "🔧 **Middle Stage**: Explore solutions and alternatives.\n";
+      guidance += `${icon('wrench')} **Middle Stage**: Explore solutions and alternatives.\n`;
       guidance += "Consider: What approaches could work? What are the trade-offs?\n";
       guidance += "You may want to branch to explore alternatives.\n";
     } else if (progress < 90) {
-      guidance += "🎯 **Late Stage**: Refine and validate your approach.\n";
+      guidance += `${icon('target')} **Late Stage**: Refine and validate your approach.\n`;
       guidance += "Consider: Are there edge cases? Can we optimize further?\n";
       guidance += "You may want to revise earlier thoughts with new insights.\n";
     } else {
-      guidance += "✨ **Final Stage**: Synthesize and conclude.\n";
+      guidance += `${icon('sparkle')} **Final Stage**: Synthesize and conclude.\n`;
       guidance += "Consider: What's the final solution? What are the next steps?\n";
     }
 
     // Check if revision might be helpful
     if (thoughtsSoFar > 3 && !session.thoughts.some(t => t.isRevision)) {
-      guidance += "\n💡 **Tip**: Consider revising earlier thoughts if new insights emerged.\n";
+      guidance += `\n${icon('lightbulb')} **Tip**: Consider revising earlier thoughts if new insights emerged.\n`;
     }
 
     return guidance;
@@ -332,7 +333,7 @@ export class SequentialThinking {
    * Generate a summary of the thinking session
    */
   private generateSummary(session: ThinkingSession): string {
-    let summary = `## 🎯 Thinking Session Complete\n\n`;
+    let summary = `## ${icon('target')} Thinking Session Complete\n\n`;
     summary += `**Objective**: ${session.objective || "Not specified"}\n`;
     summary += `**Total Thoughts**: ${session.thoughts.length}\n`;
     

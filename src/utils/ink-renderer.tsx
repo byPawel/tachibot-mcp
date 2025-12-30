@@ -351,6 +351,29 @@ export const nerdIcons = {
   bookmark: '',      // nf-fa-bookmark
 
   // ═══════════════════════════════════════════════════════════
+  // REASONING / ANALYSIS (replaces emojis)
+  // ═══════════════════════════════════════════════════════════
+  target: '󰀘',        // nf-md-bullseye (replaces 🎯)
+  scales: '󰖷',        // nf-md-scale_balance (replaces ⚖️)
+  eye: '',           // nf-fa-eye (replaces 👀)
+  eyeSlash: '',      // nf-fa-eye_slash
+  building: '',      // nf-fa-building (replaces 🏗️)
+  handshake: '󱢏',     // nf-md-handshake (replaces 🤝)
+  flask: '',         // nf-fa-flask (replaces 🧪)
+  sword: '󰓥',         // nf-md-sword (replaces ⚔️)
+  swords: '󰚔',        // nf-md-sword_cross
+  money: '',         // nf-fa-dollar (replaces 💰)
+  branch: '',        // nf-oct-git_branch (replaces 🌿)
+  lightbulb: '',     // nf-fa-lightbulb_o (replaces 💡)
+  compass: '',       // nf-fa-compass
+  flag: '',          // nf-fa-flag
+  trophy: '',        // nf-fa-trophy
+  shield: '',        // nf-fa-shield
+  puzzle: '󰘗',        // nf-md-puzzle (replaces 🧩)
+  thumbUp: '',       // nf-fa-thumbs_up
+  thumbDown: '',     // nf-fa-thumbs_down
+
+  // ═══════════════════════════════════════════════════════════
   // POWERLINE
   // ═══════════════════════════════════════════════════════════
   plRight: '',       // Powerline right arrow
@@ -558,6 +581,27 @@ export function icon(name: string): string {
     bookmark: '▶',
     clock: '◷',
     calendar: '▦',
+
+    // Reasoning/Analysis
+    target: '◎',
+    scales: '⚖',
+    eye: '◉',
+    eyeSlash: '◌',
+    building: '▣',
+    handshake: '≡',
+    flask: '⚗',
+    sword: '†',
+    swords: '⚔',
+    money: '$',
+    branch: '⎇',
+    lightbulb: '✦',
+    compass: '◎',
+    flag: '⚑',
+    trophy: '◆',
+    shield: '◇',
+    puzzle: '▦',
+    thumbUp: '+',
+    thumbDown: '-',
 
     // Powerline (no fallback - just empty)
     plRight: '',
@@ -818,6 +862,16 @@ export const showBigHeaders = (): boolean => {
 };
 
 /**
+ * Strip ANSI escape codes from text
+ */
+function stripAnsiCodes(text: string): string {
+  // Comprehensive ANSI regex - covers SGR, cursor, and other sequences
+  // eslint-disable-next-line no-control-regex
+  const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
+  return text.replace(ansiRegex, '');
+}
+
+/**
  * Render large ASCII art text with optional gradient
  * Uses ink-big-text for rendering, then applies gradient-string for colors
  * Disabled if TACHIBOT_BIG_HEADERS=false
@@ -835,14 +889,19 @@ export function renderBigText(
   const font = options?.font || 'block';
   const gradient = options?.gradient;
 
-  // Render BigText to string
-  const ascii = renderInkToString(<BigText text={text} font={font} />);
+  // Render BigText to string and strip any ANSI codes from Ink
+  let ascii = stripAnsiCodes(renderInkToString(<BigText text={text} font={font} />));
 
   // Apply gradient if specified
   if (gradient) {
     const gradFn = (gradientString as unknown as Record<string, typeof gradientString.rainbow>)[gradient];
     if (gradFn && typeof gradFn.multiline === 'function') {
-      return gradFn.multiline(ascii);
+      // Normalize line widths for proper gradient alignment
+      // gradient-string.multiline() applies colors per-line, so lines must be equal width
+      const lines = ascii.split('\n');
+      const maxWidth = Math.max(...lines.map(l => l.length));
+      const normalized = lines.map(l => l.padEnd(maxWidth)).join('\n');
+      return gradFn.multiline(normalized);
     }
   }
 

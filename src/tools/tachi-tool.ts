@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod";
-import { renderBigText } from "../utils/ink-renderer.js";
+import { renderBigText, icon } from "../utils/ink-renderer.js";
 
 // Import tool executors
 import { callGemini, isGeminiAvailable } from "./gemini-tools.js";
@@ -131,14 +131,15 @@ function routeIntent(query: string): RouteResult {
 // MODE HANDLERS
 // ============================================================================
 
-const MODE_ICONS: Record<Mode, string> = {
-  research: "🔍",
-  solve: "🔧",
-  verify: "✓",
-  creative: "💡",
-  architect: "🏗️",
-  judge: "⚖️",
-};
+// Use icon() for Nerd Font support with Unicode fallback
+const getModeIcon = (mode: Mode): string => ({
+  research: icon('search'),
+  solve: icon('wrench'),
+  verify: icon('check'),
+  creative: icon('lightbulb'),
+  architect: icon('building'),
+  judge: icon('scales'),
+}[mode]);
 
 const MODE_HEADERS: Record<Mode, string> = {
   research: "RESEARCH",
@@ -208,7 +209,7 @@ async function solveHandler(query: string): Promise<string> {
       0.2,
       6000
     );
-    results.push(`**🔧 Qwen Analysis:**\n${qwenResult}`);
+    results.push(`**${icon('wrench')} Qwen Analysis:**\n${qwenResult}`);
   } catch {
     // Qwen failed, continue with Grok
   }
@@ -230,7 +231,7 @@ async function solveHandler(query: string): Promise<string> {
           maxTokens: 2000
         }
       );
-      results.push(`\n**🔍 Related Solutions:**\n${searchResult.content}`);
+      results.push(`\n**${icon('search')} Related Solutions:**\n${searchResult.content}`);
     } catch {
       // Search failed, continue
     }
@@ -255,7 +256,7 @@ async function solveHandler(query: string): Promise<string> {
 async function verifyHandler(query: string): Promise<string> {
   const judgePrompt = `You are a critical analyst and judge. For the given question or statement:
 1. Analyze for correctness, accuracy, and potential issues
-2. Provide a clear verdict: ✅ VALID, ❌ INVALID, or ⚠️ NEEDS MORE CONTEXT
+2. Provide a clear verdict: VALID, INVALID, or NEEDS MORE CONTEXT
 3. Support your verdict with evidence and reasoning
 4. List any caveats or edge cases
 5. Confidence score (0-100%)`;
@@ -264,7 +265,7 @@ async function verifyHandler(query: string): Promise<string> {
   if (isGeminiAvailable()) {
     try {
       const result = await callGemini(query, undefined, judgePrompt);
-      return `**⚖️ Gemini Judge:**\n${result}`;
+      return `**${icon('scales')} Gemini Judge:**\n${result}`;
     } catch {
       // Fall through to GPT
     }
@@ -282,7 +283,7 @@ async function verifyHandler(query: string): Promise<string> {
         0.3,
         4000
       );
-      return `**⚖️ GPT Judge:**\n${result}`;
+      return `**${icon('scales')} GPT Judge:**\n${result}`;
     } catch {
       // Fall through to Grok
     }
@@ -294,7 +295,7 @@ async function verifyHandler(query: string): Promise<string> {
       { role: "system", content: judgePrompt },
       { role: "user", content: query }
     ]);
-    return `**⚖️ Grok Judge:**\n${result}`;
+    return `**${icon('scales')} Grok Judge:**\n${result}`;
   } catch (error) {
     return `[Verification failed: ${error instanceof Error ? error.message : "Unknown error"}]`;
   }
@@ -343,7 +344,7 @@ async function architectHandler(query: string): Promise<string> {
         maxTokens: 2500
       }
     );
-    results.push(`**🔍 Context & Patterns:**\n${searchResult.content}`);
+    results.push(`**${icon('search')} Context & Patterns:**\n${searchResult.content}`);
   } catch {
     // Search failed, continue
   }
@@ -403,7 +404,7 @@ Provide:
 3. RISKS: Main risks to watch for
 4. NEXT STEPS: Concrete action items`
       );
-      results.push(`\n**⚖️ Final Verdict (Gemini):**\n${judgeResult}`);
+      results.push(`\n**${icon('scales')} Final Verdict (Gemini):**\n${judgeResult}`);
     } catch {
       // Judge failed
     }
@@ -473,7 +474,7 @@ Provide:
 3. DISAGREEMENTS: Where they differed and why
 4. CONFIDENCE: Your confidence level (0-100%)`
       );
-      results.push(`\n**⚖️ FINAL VERDICT (Gemini Judge):**\n${finalVerdict}`);
+      results.push(`\n**${icon('scales')} FINAL VERDICT (Gemini Judge):**\n${finalVerdict}`);
     } catch {
       // Judge failed
     }
@@ -557,12 +558,12 @@ Examples:
     log.info(`Tachi routing to ${resolvedMode}${routeInfo}`);
 
     // Build response with header
-    const icon = MODE_ICONS[resolvedMode];
+    const modeIcon = getModeIcon(resolvedMode);
     const headerText = MODE_HEADERS[resolvedMode];
 
     // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
     let response = renderBigText(headerText, { font: "block", gradient: "cristal" });
-    response += `\n${icon} **${resolvedMode.toUpperCase()} MODE**${routeInfo}\n\n`;
+    response += `\n${modeIcon} **${resolvedMode.toUpperCase()} MODE**${routeInfo}\n\n`;
     response += `---\n\n`;
 
     // Execute mode handler

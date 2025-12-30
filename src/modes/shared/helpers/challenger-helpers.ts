@@ -18,6 +18,8 @@
  * - Dependency Inversion: Functions depend on types, not concrete implementations
  */
 
+import { icon } from '../../../utils/ink-renderer.js';
+
 // ============================================================================
 // Type Definitions (no 'any')
 // ============================================================================
@@ -279,11 +281,11 @@ export const synthesizeChallengerReport = (config: {
   third_way?: readonly ThirdWayAlternative[] | null;
   thoroughness: 'minimal' | 'standard' | 'deep';
 }): string => {
-  let synthesis = `## 🎯 Devil's Advocate Analysis\n\n`;
+  let synthesis = `## ${icon('target')} Devil's Advocate Analysis\n\n`;
 
   // Tone Analysis Section
-  synthesis += `### 📢 Tone Analysis\n\n`;
-  synthesis += `**Status:** ${config.tone_analysis.detected ? '⚠️ Uncontested Tone Detected' : '✅ Healthy Debate Room'}\n`;
+  synthesis += `### ${icon('comment')} Tone Analysis\n\n`;
+  synthesis += `**Status:** ${config.tone_analysis.detected ? `${icon('warning')} Uncontested Tone Detected` : `${icon('check')} Healthy Debate Room`}\n`;
   synthesis += `**Severity:** ${config.tone_analysis.severity.toUpperCase()}\n`;
   synthesis += `**Message:** ${config.tone_analysis.message}\n\n`;
 
@@ -296,7 +298,7 @@ export const synthesizeChallengerReport = (config: {
   }
 
   // Claims Analysis
-  synthesis += `### 🔍 Claims Analyzed: ${config.claims.length}\n\n`;
+  synthesis += `### ${icon('search')} Claims Analyzed: ${config.claims.length}\n\n`;
 
   if (config.claims.length > 0) {
     synthesis += buildClaimsTable(config.claims.slice(0, 5));
@@ -305,7 +307,7 @@ export const synthesizeChallengerReport = (config: {
 
   // Fact-Check Results
   if (config.fact_check) {
-    synthesis += `### ✓ Fact-Check Results\n\n`;
+    synthesis += `### ${icon('check')} Fact-Check Results\n\n`;
     synthesis += formatFactCheckResults(config.fact_check);
     synthesis += `\n`;
   }
@@ -339,13 +341,13 @@ export const synthesizeChallengerReport = (config: {
   }
 
   // Summary
-  synthesis += `### 📋 Summary\n\n`;
+  synthesis += `### ${icon('list')} Summary\n\n`;
   synthesis += `\`\`\`\n`;
   synthesis += `Thoroughness:        ${config.thoroughness}\n`;
   synthesis += `Claims Analyzed:     ${config.claims.length}\n`;
-  synthesis += `Tone Detected:       ${config.tone_analysis.detected ? 'YES ⚠️' : 'NO ✅'}\n`;
-  synthesis += `Fact-Checked:        ${config.fact_check ? 'YES ✓' : 'NO'}\n`;
-  synthesis += `Counter-Evidence:    ${config.counter_evidence ? 'YES ✓' : 'NO'}\n`;
+  synthesis += `Tone Detected:       ${config.tone_analysis.detected ? `YES ${icon('warning')}` : `NO ${icon('check')}`}\n`;
+  synthesis += `Fact-Checked:        ${config.fact_check ? `YES ${icon('check')}` : 'NO'}\n`;
+  synthesis += `Counter-Evidence:    ${config.counter_evidence ? `YES ${icon('check')}` : 'NO'}\n`;
   synthesis += `Opposite Views:      ${config.opposite_views?.length || 0}\n`;
   synthesis += `Third-Way Options:   ${config.third_way?.length || 0}\n`;
   synthesis += `\`\`\`\n`;
@@ -615,7 +617,7 @@ const buildClaimsTable = (claims: readonly Claim[]): string => {
   claims.forEach(claim => {
     const priority = (claim.priority * 100).toFixed(0) + '%';
     const claimText = claim.claim.length > 80 ? claim.claim.substring(0, 77) + '...' : claim.claim;
-    const testable = claim.testable ? '✓' : '✗';
+    const testable = claim.testable ? icon('check') : icon('error');
 
     table += `| ${priority} | ${claimText} | ${testable} |\n`;
   });
