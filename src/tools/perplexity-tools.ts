@@ -30,7 +30,6 @@ export async function callPerplexity(
   searchRecency?: string
 ): Promise<string> {
   const apiKey = getPerplexityApiKey();
-  console.error(`[PERPLEXITY DEBUG] API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`);
   if (!apiKey) {
     return `[Perplexity API key not configured. Add PERPLEXITY_API_KEY to .env file]`;
   }
