@@ -2,7 +2,7 @@
   "name": "tachibot-mcp",
   "mcpName": "io.github.byPawel/tachibot-mcp",
   "displayName": "TachiBot MCP - Universal AI Orchestrator",
-  "version": "2.7.6",
+  "version": "2.7.7",
   "type": "module",
   "main": "dist/src/server.js",
   "bin": {
@@ -78,7 +78,7 @@
     "cli-highlight": "^2.1.11",
     "cli-table3": "^0.6.5",
     "dotenv": "^16.4.5",
-    "fastmcp": "^1.21.0",
+    "fastmcp": "^3.26.7",
     "gradient-string": "^3.0.0",
     "ink": "^6.6.0",
     "ink-big-text": "^2.0.0",
