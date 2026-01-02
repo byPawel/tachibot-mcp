@@ -1,5 +1,5 @@
 {
-  "description": "Balanced set for general use (~Xk tokens, 21 tools)",
+  "description": "Balanced set for general use (~Xk tokens, 22 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -23,6 +23,7 @@
     "gemini_analyze_code": true,
     "gemini_analyze_text": true,
     "qwen_coder": true,
+    "qwen_algo": true,
     "kimi_thinking": true,
     "qwen_competitive": false,
     "workflow": true,

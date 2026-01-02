@@ -84,6 +84,7 @@ export const KNOWN_TOOLS = [
 
   // Qwen
   'qwen_coder',
+  'qwen_algo',
   'qwq_reason',
 
   // Advanced modes

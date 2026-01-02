@@ -256,6 +256,52 @@ export const openRouterMultiModelTool = {
 };
 
 /**
+ * Algorithm Optimization Tool
+ * Deep algorithmic reasoning with QwQ-32B
+ */
+export const qwenAlgoTool = {
+  name: "qwen_algo",
+  description: "Algorithm optimization and complexity analysis using QwQ-32B reasoning model",
+  parameters: z.object({
+    problem: z.string().describe("The algorithm problem or code to analyze"),
+    context: z.string().optional().describe("Additional context: current performance, constraints"),
+    focus: z.enum(["optimize", "complexity", "data-structure", "memory", "general"])
+      .optional()
+      .default("general")
+      .describe("Focus area for analysis")
+  }),
+  execute: async (args: {
+    problem: string;
+    context?: string;
+    focus?: string;
+  }, { log }: any) => {
+    const focusPrompts: Record<string, string> = {
+      optimize: "Focus on performance optimization, bottlenecks, and algorithmic improvements.",
+      complexity: "Focus on time/space complexity analysis (best, average, worst case).",
+      "data-structure": "Focus on data structure selection and tradeoffs.",
+      memory: "Focus on memory optimization and GC pressure reduction.",
+      general: "Provide comprehensive algorithmic analysis."
+    };
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are an expert algorithm analyst. ${focusPrompts[args.focus || 'general']}
+Provide clear analysis with Big-O notation and concrete improvement suggestions.`
+      },
+      {
+        role: "user",
+        content: args.context
+          ? `Context: ${args.context}\n\nProblem:\n${args.problem}`
+          : args.problem
+      }
+    ];
+
+    return await callOpenRouter(messages, OpenRouterModel.QWQ_32B, 0.3, 8000);
+  }
+};
+
+/**
  * Code Competition Tool
  * Competitive programming and algorithm challenges
  */
@@ -369,6 +415,7 @@ export function getAllOpenRouterTools() {
     qwqReasoningTool,
     qwenGeneralTool,
     openRouterMultiModelTool,
+    qwenAlgoTool,
     qwenCompetitiveTool,
     kimiThinkingTool
   ];

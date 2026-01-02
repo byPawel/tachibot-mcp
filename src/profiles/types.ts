@@ -42,6 +42,7 @@ export interface ToolsConfig {
 
   // OpenRouter tools
   qwen_coder: boolean;
+  qwen_algo: boolean;
   kimi_thinking: boolean;
   qwen_competitive: boolean;
 

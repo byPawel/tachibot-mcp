@@ -271,6 +271,24 @@ export async function executeWorkflowTool(
           qwenModel
         );
 
+      case "qwen_algo":
+        if (!callOpenRouter) {
+          return buildResult("[Qwen algo tool requires OpenRouter API key. Add OPENROUTER_API_KEY to .env]", "error");
+        }
+        // Extract focus mode from input if available
+        const algoFocus = typeof input === 'object' && input.focus ? input.focus : 'general';
+        const algoSystemPrompt = systemPrompt || `You are QwQ-32B, an expert algorithmic reasoning model.
+Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide implementation guidance.`;
+        return buildResult(
+          await callOpenRouter(
+            toMessages(prompt, algoSystemPrompt),
+            OpenRouterModel.QWQ_32B,
+            0.2, // Low temperature for precise algorithmic analysis
+            maxTokens,
+          ),
+          OpenRouterModel.QWQ_32B
+        );
+
       // ============ KIMI TOOLS (via OpenRouter) ============
       case "kimi_thinking":
         if (!callOpenRouter) {
@@ -681,6 +699,14 @@ export function getAvailableTools(): string[] {
       "grok_debug",
       "grok_brainstorm",
       "grok_search",
+    );
+  }
+  if (process.env.OPENROUTER_API_KEY) {
+    tools.push(
+      "qwen_coder",
+      "qwen_algo",
+      "qwq_reason",
+      "kimi_thinking",
     );
   }
 

@@ -886,7 +886,8 @@ export function renderBigText(
   // Easy toggle - set TACHIBOT_BIG_HEADERS=false to disable
   if (!showBigHeaders()) return '';
 
-  const font = options?.font || 'block';
+  // Use 'simple' font by default - 'block' uses Unicode chars that break in many terminals
+  const font = options?.font || 'simple';
   const gradient = options?.gradient;
 
   // Render BigText to string and strip any ANSI codes from Ink

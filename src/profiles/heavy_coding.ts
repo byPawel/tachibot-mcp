@@ -36,6 +36,7 @@ export const heavyCodingProfile: ProfileConfig = {
 
     // OpenRouter - coders enabled
     qwen_coder: true,
+    qwen_algo: true,
     kimi_thinking: true,
     qwen_competitive: false,
 

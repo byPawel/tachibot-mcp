@@ -580,14 +580,7 @@ Examples:
   },
 };
 
-// Also export as focus (alias)
-export const focusTool = {
-  ...tachiTool,
-  name: "focus",
-  description: tachiTool.description.replace(/tachi/g, "focus"),
-};
-
-// Export for registration
+// Export for registration (removed focus alias - was wasting tokens)
 export function getTachiTools() {
-  return [tachiTool, focusTool];
+  return [tachiTool];
 }

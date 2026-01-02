@@ -269,6 +269,11 @@ export const TOOL_DEFAULTS = {
     maxTokens: 4000,
     temperature: 0.5,
   },
+  qwen_algo: {
+    model: QWEN_MODELS.QWQ_32B,
+    maxTokens: 8000,
+    temperature: 0.2,
+  },
   kimi_thinking: {
     model: CURRENT_MODELS.openrouter.kimi,
     maxTokens: 16000,

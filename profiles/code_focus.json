@@ -1,5 +1,5 @@
 {
-  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 17 tools)",
+  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 18 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -23,6 +23,7 @@
     "gemini_analyze_code": true,
     "gemini_analyze_text": false,
     "qwen_coder": true,
+    "qwen_algo": true,
     "kimi_thinking": true,
     "qwen_competitive": false,
     "workflow": true,

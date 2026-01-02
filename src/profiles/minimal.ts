@@ -25,6 +25,7 @@ export const minimalProfile: ProfileConfig = {
     gemini_analyze_code: false,
     gemini_analyze_text: false,
     qwen_coder: true,
+    qwen_algo: false,
     kimi_thinking: false,
     qwen_competitive: false,
     workflow: true,

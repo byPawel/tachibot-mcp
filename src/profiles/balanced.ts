@@ -25,6 +25,7 @@ export const balancedProfile: ProfileConfig = {
     gemini_analyze_code: true,
     gemini_analyze_text: true,
     qwen_coder: true,
+    qwen_algo: true,
     kimi_thinking: true,
     qwen_competitive: false,
     workflow: true,
