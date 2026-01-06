@@ -5,9 +5,9 @@
  * Uses the theme system from ansi-styles.ts and ink-markdown-renderer.tsx.
  *
  * Configuration:
- *   RENDER_OUTPUT=ink      - React Ink rendering with themes, gradients, tables (default)
+ *   RENDER_OUTPUT=markdown - Raw markdown, no processing (default, ~1x tokens)
+ *   RENDER_OUTPUT=ink      - React Ink rendering with themes, gradients, tables (~12x tokens)
  *   RENDER_OUTPUT=ansi     - Legacy marked-terminal rendering
- *   RENDER_OUTPUT=markdown - Raw markdown (no processing)
  *   RENDER_OUTPUT=plain    - Stripped plain text
  *
  *   TACHIBOT_THEME=nebula|cyberpunk|minimal|ocean|dracula|nord|solarized
@@ -148,10 +148,10 @@ export function clearThemeCache(): void {
 export function getRenderMode(): RenderMode {
   if (!cachedRenderMode) {
     const mode = process.env.RENDER_OUTPUT?.toLowerCase();
-    if (mode === 'markdown' || mode === 'plain' || mode === 'ansi') {
+    if (mode === 'ink' || mode === 'plain' || mode === 'ansi') {
       cachedRenderMode = mode;
     } else {
-      cachedRenderMode = 'ink'; // default - React Ink with themes, gradients, proper tables
+      cachedRenderMode = 'markdown'; // default - raw markdown (~1x tokens vs ink's ~12x)
     }
   }
   return cachedRenderMode;
