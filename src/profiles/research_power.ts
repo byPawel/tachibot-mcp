@@ -24,6 +24,7 @@ export const researchPowerProfile: ProfileConfig = {
     gemini_brainstorm: true,
     gemini_analyze_code: false,
     gemini_analyze_text: false,
+    gemini_search: true,
     qwen_coder: true,
     qwen_algo: false,
     kimi_thinking: true,

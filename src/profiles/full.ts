@@ -24,6 +24,7 @@ export const fullProfile: ProfileConfig = {
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: true,
+    gemini_search: true,
     qwen_coder: true,
     qwen_algo: true,
     kimi_thinking: true,

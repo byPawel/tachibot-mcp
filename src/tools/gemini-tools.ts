@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { validateToolInput } from "../utils/input-validator.js";
+import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
@@ -19,13 +19,17 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 
 /**
  * Call Gemini API directly
+ * @param validationContext - Context for input validation (default: 'llm-orchestration')
+ *   - 'user-input': Strict validation for direct user input
+ *   - 'code-analysis': Relaxed for code analysis tools
+ *   - 'llm-orchestration': Medium for LLM-to-LLM calls
  */
 export async function callGemini(
   prompt: string,
   model: string = GEMINI_MODELS.GEMINI_3_PRO,
   systemPrompt?: string,
   temperature: number = 0.7,
-  skipValidation: boolean = false,
+  validationContext: ValidationContext = 'llm-orchestration',
   maxTokens: number = 18000
 ): Promise<string> {
   // Try OpenRouter gateway first if enabled
@@ -49,20 +53,17 @@ export async function callGemini(
     return `[Gemini API key not configured. Add GOOGLE_API_KEY to .env file]`;
   }
 
-  // Validate and sanitize prompt (skip for internal workflow calls)
-  let sanitizedPrompt = prompt;
-  if (!skipValidation) {
-    const promptValidation = validateToolInput(prompt);
-    if (!promptValidation.valid) {
-      return `[Error: ${promptValidation.error}]`;
-    }
-    sanitizedPrompt = promptValidation.sanitized;
+  // Validate and sanitize prompt with context-aware rules
+  const promptValidation = validateToolInput(prompt, validationContext);
+  if (!promptValidation.valid) {
+    return `[Error: ${promptValidation.error}]`;
   }
+  const sanitizedPrompt = promptValidation.sanitized;
 
   // Validate and sanitize system prompt if provided
   let sanitizedSystemPrompt = systemPrompt;
-  if (systemPrompt && !skipValidation) {
-    const systemValidation = validateToolInput(systemPrompt);
+  if (systemPrompt) {
+    const systemValidation = validateToolInput(systemPrompt, validationContext);
     if (!systemValidation.valid) {
       return `[Error: ${systemValidation.error}]`;
     }
@@ -191,13 +192,17 @@ export const geminiQueryTool = {
     } else if (args.model === "pro") {
       model = GEMINI_MODELS.PRO;
     }
-    return await callGemini(args.prompt, model);
+    // Skip validation - queries may contain code or LLM-generated content
+    return await callGemini(args.prompt, model, undefined, 0.7, 'llm-orchestration');
   }
 };
 
 /**
  * Gemini Brainstorm Tool
  * Collaborative problem-solving and ideation
+ *
+ * Note: skipValidation is used for internal LLM-to-LLM calls where input
+ * has already been validated at the MCP entry point (server.ts).
  */
 export const geminiBrainstormTool = {
   name: "gemini_brainstorm",
@@ -219,7 +224,8 @@ IMPORTANT: Output a detailed written response with:
 
 Provide your complete analysis as visible text output.`;
 
-    const response = await callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.9);
+    // Skip validation for internal calls - input validated at MCP layer
+    const response = await callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.9, 'llm-orchestration');
 
     // If multiple rounds requested, we could iterate here
     // For now, return the single response
@@ -257,11 +263,13 @@ Provide:
 3. Specific recommendations for improvement
 4. Code quality score (1-10) with justification`;
 
+    // Skip validation - code analysis naturally contains patterns that trigger false positives
     return await callGemini(
       `Analyze this code:\n\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\``,
       GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
-      0.3
+      0.3,
+      'llm-orchestration'  // skipValidation for code content
     );
   }
 };
@@ -293,11 +301,13 @@ ${args.type === 'sentiment' ? '- Overall sentiment\n- Confidence score\n- Emotio
 ${args.type === 'entities' ? '- People\n- Organizations\n- Locations\n- Other entities' : ''}
 ${args.type === 'key-points' ? '- Main arguments\n- Supporting points\n- Conclusions' : ''}`;
 
+    // Skip validation - text analysis may contain patterns from LLM discussions
     return await callGemini(
       `Analyze this text:\n\n${args.text}`,
       GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
-      0.3
+      0.3,
+      'llm-orchestration'  // skipValidation for internal calls
     );
   }
 };
@@ -335,11 +345,13 @@ Focus on:
 - Important facts and figures
 - Conclusions and implications`;
 
+    // Skip validation for internal summarization calls
     return await callGemini(
       `Summarize this content:\n\n${args.content}`,
       GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
-      0.3
+      0.3,
+      'llm-orchestration'  // skipValidation
     );
   }
 };
@@ -376,7 +388,156 @@ ${args.style ? `Style: ${args.style}` : ''}
 ${args.mood ? `Mood: ${args.mood}` : ''}
 ${args.details ? `Additional details: ${args.details}` : ''}`;
 
-    return await callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7);
+    // Skip validation for creative content generation
+    return await callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7, 'llm-orchestration');
+  }
+};
+
+/**
+ * Gemini Search Tool
+ * Web search using Google Search grounding
+ * Uses google_search_retrieval with dynamic retrieval config
+ */
+export const geminiSearchTool = {
+  name: "gemini_search",
+  description: "Web search via Gemini with Google Search grounding",
+  parameters: z.object({
+    query: z.string().describe("Search query"),
+    recency: z.enum(["hour", "day", "week", "month", "year", "any"]).optional().default("any")
+      .describe("Prefer results from this time range (enforced via prompt)"),
+    mode: z.enum(["dynamic", "on", "off"]).optional().default("on")
+      .describe("Search mode: 'on' always searches, 'dynamic' lets model decide, 'off' disables"),
+    dynamicThreshold: z.number().min(0).max(1).optional().default(0.7)
+      .describe("Confidence threshold for dynamic mode (0-1)")
+  }),
+  execute: async (args: {
+    query: string;
+    recency?: string;
+    mode?: string;
+    dynamicThreshold?: number;
+  }, { log }: any) => {
+    if (!GEMINI_API_KEY) {
+      return `[Gemini API key not configured. Add GOOGLE_API_KEY to .env file]`;
+    }
+
+    // Build recency instruction for prompt
+    const recencyInstructions: Record<string, string> = {
+      hour: "Only use sources from the last hour. Reject older information.",
+      day: "Prefer sources from the last 24 hours. Prioritize very recent information.",
+      week: "Prefer sources from the last 7 days. Recent information is preferred.",
+      month: "Prefer sources from the last 30 days.",
+      year: "Prefer sources from 2025 or later.",
+      any: ""
+    };
+
+    const recencyPrompt = recencyInstructions[args.recency || "any"];
+
+    // Map mode to API values
+    const modeMap: Record<string, string> = {
+      dynamic: "MODE_DYNAMIC",
+      on: "MODE_UNSPECIFIED",  // Default behavior = always search when relevant
+      off: "MODE_OFF"
+    };
+
+    try {
+      const url = `${GEMINI_API_URL}/models/${GEMINI_MODELS.GEMINI_3_PRO}:generateContent?key=${GEMINI_API_KEY}`;
+
+      const systemInstruction = `You are a research assistant with access to Google Search.
+Search the web to answer the user's query with accurate, up-to-date information.
+${recencyPrompt}
+
+IMPORTANT:
+- Always cite your sources with URLs
+- Include publication dates when available
+- If information seems outdated, note it
+- Synthesize information from multiple sources when possible`;
+
+      const requestBody: any = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: args.query }]
+          }
+        ],
+        systemInstruction: {
+          parts: [{ text: systemInstruction }]
+        },
+        tools: [
+          {
+            google_search: {}  // Enable Google Search grounding
+          }
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 8000,
+          candidateCount: 1
+        }
+      };
+
+      // Add dynamic retrieval config if using dynamic mode
+      if (args.mode === "dynamic") {
+        requestBody.tools = [
+          {
+            google_search_retrieval: {
+              dynamic_retrieval_config: {
+                mode: modeMap[args.mode],
+                dynamic_threshold: args.dynamicThreshold || 0.7
+              }
+            }
+          }
+        ];
+      }
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini Search API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json() as any;
+
+      // Extract response text
+      const candidate = data.candidates?.[0];
+      const text = candidate?.content?.parts?.[0]?.text;
+
+      // Extract grounding metadata for sources
+      const groundingMetadata = candidate?.groundingMetadata;
+      let sources = "";
+
+      if (groundingMetadata?.webSearchQueries) {
+        sources += `\n\n**Search queries used:** ${groundingMetadata.webSearchQueries.join(", ")}`;
+      }
+
+      if (groundingMetadata?.groundingChunks) {
+        sources += "\n\n**Sources:**";
+        for (const chunk of groundingMetadata.groundingChunks) {
+          if (chunk.web) {
+            sources += `\n- [${chunk.web.title || "Source"}](${chunk.web.uri})`;
+          }
+        }
+      }
+
+      // Log token usage
+      const usage = data.usageMetadata;
+      if (usage) {
+        console.error(`📊 Gemini Search tokens: ${usage.promptTokenCount || 0} input, ${usage.candidatesTokenCount || 0} output, ${usage.totalTokenCount || 0} total`);
+      }
+
+      if (!text) {
+        return "[No search results from Gemini]";
+      }
+
+      return text + sources;
+    } catch (error) {
+      return `[Gemini Search error: ${error instanceof Error ? error.message : String(error)}]`;
+    }
   }
 };
 
@@ -394,13 +555,14 @@ export function getAllGeminiTools() {
   if (!isGeminiAvailable()) {
     return [];
   }
-  
+
   return [
     geminiQueryTool,
     geminiBrainstormTool,
     geminiAnalyzeCodeTool,
     geminiAnalyzeTextTool,
     geminiSummarizeTool,
-    geminiImagePromptTool
+    geminiImagePromptTool,
+    geminiSearchTool
   ];
 }

@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const heavyCodingProfile: ProfileConfig = {
-  description: "Heavy coding with all reasoning & code tools (~14k tokens, 22 tools)",
+  description: "Heavy coding with all reasoning & code tools (~14k tokens, 26 tools)",
   tools: {
     // Core reasoning - all enabled
     think: true,
@@ -33,6 +33,7 @@ export const heavyCodingProfile: ProfileConfig = {
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: true,
+    gemini_search: true,
 
     // OpenRouter - coders enabled
     qwen_coder: true,

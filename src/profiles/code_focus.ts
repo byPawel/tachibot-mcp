@@ -24,6 +24,7 @@ export const codeFocusProfile: ProfileConfig = {
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: false,
+    gemini_search: false,
     qwen_coder: true,
     qwen_algo: true,
     kimi_thinking: true,

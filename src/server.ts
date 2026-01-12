@@ -669,40 +669,32 @@ if (isOpenAIAvailable()) {
 // Async initialization function to handle dynamic imports and startup
 async function initializeServer() {
   try {
-    // Register select Gemini tools (brainstorm and analyze)
+    // Register select Gemini tools (brainstorm, analyze, search)
     if (isGeminiAvailable()) {
-      const { geminiAnalyzeTextTool } = await import("./tools/gemini-tools.js");
+      const { geminiAnalyzeTextTool, geminiSearchTool } = await import("./tools/gemini-tools.js");
       const geminiTools = [
         geminiBrainstormTool,     // Creative brainstorming
         geminiAnalyzeCodeTool,    // Code analysis
-        geminiAnalyzeTextTool     // Text analysis (sentiment, summary, etc.)
+        geminiAnalyzeTextTool,    // Text analysis (sentiment, summary, etc.)
+        geminiSearchTool          // Web search with Google Search grounding
       ];
       geminiTools.forEach(tool => {
         safeAddTool(tool);
       });
-      console.error(`✅ Registered ${geminiTools.length} Gemini tools (brainstorm, code analysis, text analysis)`);
+      console.error(`✅ Registered ${geminiTools.length} Gemini tools (brainstorm, code analysis, text analysis, search)`);
     }
 
-    // Register OpenRouter tools (Qwen3 Coder, Kimi - selective based on flags)
+    // Register OpenRouter tools (Qwen, Kimi - filtered by profile via safeAddTool)
     if (isOpenRouterAvailable()) {
-      const { qwenCoderTool, qwenCompetitiveTool, kimiThinkingTool } = await import("./tools/openrouter-tools.js");
+      const { qwenCoderTool, qwenAlgoTool, qwenCompetitiveTool, kimiThinkingTool } = await import("./tools/openrouter-tools.js");
 
-      // Always register qwen_coder
+      // safeAddTool checks isToolEnabled internally
       safeAddTool(qwenCoderTool);
-      let toolCount = 1;
-
-      // Always register kimi_thinking (advanced agentic reasoning)
+      safeAddTool(qwenAlgoTool);
+      safeAddTool(qwenCompetitiveTool);
       safeAddTool(kimiThinkingTool);
-      toolCount++;
 
-      // Optional: Enable for competitive programming (LeetCode grinding)
-      if (process.env.ENABLE_QWEN_COMPETITIVE === 'true') {
-        safeAddTool(qwenCompetitiveTool);
-        toolCount++;
-        console.error(`🏆 Competitive programming mode enabled (qwen_competitive)`);
-      }
-
-      console.error(`✅ Registered ${toolCount} OpenRouter tools (Qwen3, Kimi)`);
+      console.error(`✅ Registered OpenRouter tools (Qwen, Kimi)`);
     }
 
 

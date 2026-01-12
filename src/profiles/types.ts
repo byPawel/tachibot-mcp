@@ -39,6 +39,7 @@ export interface ToolsConfig {
   gemini_brainstorm: boolean;
   gemini_analyze_code: boolean;
   gemini_analyze_text: boolean;
+  gemini_search: boolean;
 
   // OpenRouter tools
   qwen_coder: boolean;
