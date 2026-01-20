@@ -63,7 +63,7 @@ import { isToolEnabled, logToolConfiguration } from "./utils/tool-config.js";
 import { renderOutput } from "./utils/ansi-renderer.js";
 import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled, getUsageSummary, getAllReposSummary, getStatsJson, resetStats } from "./utils/usage-tracker.js";
 import { checkForUpdates, getUpdateStatus } from "./utils/update-checker.js";
-import { renderBigText, renderToolBadge } from "./utils/ink-renderer.js";
+// import { renderBigText, renderToolBadge } from "./utils/ink-renderer.js";  // Disabled - plain text only
 // import { WorkflowVisualizerLite } from "./visualizer-lite.js"; // Unused - removed
 import { collaborativeOrchestrator } from "./collaborative-orchestrator.js";
 import { TechnicalDomain } from "./reasoning-chain.js";
@@ -85,6 +85,7 @@ import { getTachiTools } from "./tools/tachi-tool.js";
 import { initializeOptimizations } from "./optimization/index.js";
 import { FocusModeRegistry } from "./application/services/focus/FocusModeRegistry.js";
 import { FocusToolService } from "./application/services/focus/FocusTool.service.js";
+import { FocusExecutionService } from "./application/services/focus/FocusExecutionService.js";
 import { TachibotStatusMode } from "./application/services/focus/modes/tachibot-status.mode.js";
 import { FocusDeepMode } from "./application/services/focus/modes/focus-deep.mode.js";
 
@@ -110,9 +111,13 @@ const focusModeRegistry = new FocusModeRegistry();
 focusModeRegistry.register(new TachibotStatusMode());
 focusModeRegistry.register(new FocusDeepMode());
 
+// Initialize FocusExecutionService for executeNow mode
+const focusExecutionService = new FocusExecutionService();
+
 const focusToolService = new FocusToolService(
   focusModeRegistry,
-  collaborativeOrchestrator
+  collaborativeOrchestrator,
+  focusExecutionService
 );
 
 // Initialize orchestrator
@@ -384,7 +389,7 @@ safeAddTool({
           // Full response
           return `${orchestrator.formatInstructions(plan)}
 
-🎯 **Next Steps**: Execute the tools above in sequence, then call focus with mode="reflect" to synthesize results.`;
+🎯 NEXT STEPS: Execute the tools above in sequence, then call focus with mode="reflect" to synthesize results.`;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           log.error("Orchestration error", { error: errorMessage });
@@ -407,18 +412,19 @@ Use one of the workflow modes to generate an execution plan.`;
       case "reflect":
       case "review":
         return `🪞 REFLECTION MODE - COLLECTIVE SYNTHESIS
+${'═'.repeat(40)}
 
-## 🧠 TachiBot Collective Synthesis
+🧠 TachiBot Collective Synthesis
 
 To synthesize results from your orchestration:
 
-1. **Review Outputs**: Examine results from each tool in the workflow
-2. **Identify Patterns**: Look for convergent themes and insights
-3. **Resolve Contradictions**: Address any conflicting information
-4. **Extract Key Insights**: Distill the most important findings
-5. **Create Action Plan**: Develop next steps based on synthesis
+1. Review Outputs - Examine results from each tool in the workflow
+2. Identify Patterns - Look for convergent themes and insights
+3. Resolve Contradictions - Address any conflicting information
+4. Extract Key Insights - Distill the most important findings
+5. Create Action Plan - Develop next steps based on synthesis
 
-### Tips for Effective Synthesis:
+TIPS FOR EFFECTIVE SYNTHESIS:
 • Compare creative ideas with analytical validation
 • Look for unexpected connections between tools
 • Consider both immediate and long-term implications
@@ -427,43 +433,44 @@ To synthesize results from your orchestration:
 Ready to help synthesize your collective intelligence results!`;
         
       default: // simple mode
-        // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
-        const focusHeader = renderBigText('FOCUS', { font: 'block', gradient: 'cristal' });
-        const focusBadge = renderToolBadge('focus', { icon: '◉', gradient: 'cristal' });
-        return `${focusBadge}
-${focusHeader}
-Enhanced reasoning for: "${query}"
+        // BigText header disabled - plain text only
+        const focusHeader = '';
+        const focusBadge = '';
+        return `Enhanced reasoning for: "${query}"
 ${context ? `Context: ${context}` : ''}
 
-▊ Collaborative Reasoning Modes:
-• **deep-reasoning**: Multi-model collaboration with critique and synthesis
-• **code-brainstorm**: Technical brainstorming for coding solutions
-• **dynamic-debate**: Models argue different perspectives with rebuttals
-• **architecture-debate**: Models debate architectural approaches
-• **algorithm-optimize**: Iterative algorithm improvement
-• **security-audit**: Multi-model security analysis
-• **api-design**: Collaborative API design
-• **debug-detective**: Collaborative debugging session
-• **performance-council**: Team-based performance optimization
+COLLABORATIVE REASONING MODES
+${'─'.repeat(30)}
+• deep-reasoning - Multi-model collaboration with critique and synthesis
+• code-brainstorm - Technical brainstorming for coding solutions
+• dynamic-debate - Models argue different perspectives with rebuttals
+• architecture-debate - Models debate architectural approaches
+• algorithm-optimize - Iterative algorithm improvement
+• security-audit - Multi-model security analysis
+• api-design - Collaborative API design
+• debug-detective - Collaborative debugging session
+• performance-council - Team-based performance optimization
 
-▊ Classic Modes:
-• **research/investigate**: Deep investigation with evidence
-• **solve/analyze**: Systematic problem-solving
-• **synthesis/integrate**: Combine multiple perspectives
-• **fact-check/verify**: Validate claims with evidence
+CLASSIC MODES
+${'─'.repeat(30)}
+• research/investigate - Deep investigation with evidence
+• solve/analyze - Systematic problem-solving
+• synthesis/integrate - Combine multiple perspectives
+• fact-check/verify - Validate claims with evidence
 
-▊ For Advanced Multi-Round Workflows:
-Use the **workflow** tool for complex multi-step tasks with file-based outputs:
+FOR ADVANCED MULTI-ROUND WORKFLOWS
+${'─'.repeat(30)}
+Use the workflow tool for complex multi-step tasks with file-based outputs:
 • \`workflow --name brainstorm-workflow\` - 7-step comprehensive brainstorming
 • \`workflow --name pingpong-debate-3rounds\` - 3-round multi-model debate
 • Workflows bypass the 25k MCP token limit by saving results to files
 
-▊ Help Commands:
+HELP COMMANDS
 • \`focus --mode list-templates\` - See all available templates
 • \`focus --mode examples\` - See example workflows
 • \`workflow --action list\` - See all available workflows
 
-▊ Example Usage:
+EXAMPLE USAGE
 \`\`\`
 focus --mode deep-reasoning "How to scale a real-time collaboration system"
 focus --mode dynamic-debate "TypeScript vs JavaScript for large codebases" --temperature 0.9
@@ -559,10 +566,10 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
       });
 
       // Build response with model output if available
-      // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
-      const thinkBadge = renderToolBadge('nextThought', { icon: '⟳', gradient: 'mind' });
-      const thinkHeader = renderBigText('THINK', { font: 'block', gradient: 'mind' });
-      let response = `${thinkBadge}\n${thinkHeader}\n`;
+      // BigText header disabled - plain text only
+      const thinkBadge = '';
+      const thinkHeader = '';
+      let response = '';
       if (result.modelResponse) {
         response += `## Model Response (${args.model}):\n\n${result.modelResponse}\n\n---\n\n`;
       }
@@ -622,6 +629,30 @@ safeAddTool({
       return getAllReposSummary();
     }
     return getUsageSummary();
+  },
+});
+
+// Continue Focus Tool - continue a focus session
+safeAddTool({
+  name: "continue_focus",
+  description: "Continue a focus session",
+  parameters: z.object({
+    sessionId: z.string().describe("The session ID returned from a previous focus call"),
+  }),
+  execute: async (args: { sessionId: string }, context: MCPContext): Promise<string> => {
+    const { log } = context;
+    const { sessionId } = args;
+
+    log.info("Continuing focus session", { sessionId });
+
+    try {
+      const result = await focusExecutionService.continueFocus(sessionId);
+      return result.output;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log.error("Continue focus error", { error: errorMessage, sessionId });
+      return `Error continuing focus session: ${errorMessage}`;
+    }
   },
 });
 

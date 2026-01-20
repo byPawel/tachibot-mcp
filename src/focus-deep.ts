@@ -282,7 +282,7 @@ export function canRunFocusDeep(): {
 } {
   const config = loadConfig();
   const models: string[] = [];
-  
+
   if (config.isClaudeCode) {
     models.push("claude");
   }
@@ -293,14 +293,61 @@ export function canRunFocusDeep(): {
     models.push("perplexity");
   }
   models.push("think"); // Always available
-  
+
   const quality = models.length >= 4 ? "optimal" :
                    models.length >= 3 ? "good" :
                    "basic";
-  
+
   return {
     available: true, // Always available, just varies in quality
     models,
     quality
   };
+}
+
+/**
+ * Execute a Focus-Deep step with actual tool execution
+ * Uses ToolExecutionService for model calls
+ */
+export async function executeFocusDeepStepWithTools(
+  step: FocusDeepStep,
+  context: string,
+  toolService: { executeRealTool: (model: string, prompt: string, mode: any) => Promise<string> }
+): Promise<{ output: string; model: string; duration: number }> {
+  const startTime = Date.now();
+
+  // Build the full prompt with context
+  let fullPrompt = context;
+  if (step.reasoning) {
+    fullPrompt += `\n\n**Why this step**: ${step.reasoning}`;
+  }
+  fullPrompt += `\n\n**Task**: ${step.prompt}`;
+
+  try {
+    // Execute using the tool service
+    // Import ReasoningMode dynamically to avoid circular dependency
+    const { ReasoningMode } = await import("./reasoning-chain.js");
+    const output = await toolService.executeRealTool(
+      step.model,
+      fullPrompt,
+      ReasoningMode.DEEP_REASONING
+    );
+
+    const duration = Date.now() - startTime;
+
+    return {
+      output,
+      model: step.model,
+      duration
+    };
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    return {
+      output: `[Error executing ${step.model}: ${errorMsg}]`,
+      model: step.model,
+      duration
+    };
+  }
 }

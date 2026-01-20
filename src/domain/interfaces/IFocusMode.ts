@@ -19,8 +19,14 @@ export interface IFocusMode {
   readonly description?: string;
 
   /**
+   * Whether this mode supports step-by-step execution via FocusExecutionService
+   * When true, the mode can be executed with executeNow: true for actual model calls
+   */
+  readonly supportsExecution?: boolean;
+
+  /**
    * Execute the focus mode with given parameters
-   * @param params Mode-specific parameters
+   * @param params Mode-specific parameters (includes executeNow for execution control)
    * @returns Promise resolving to FocusResult
    */
   execute(params: Record<string, unknown>): Promise<FocusResult>;
