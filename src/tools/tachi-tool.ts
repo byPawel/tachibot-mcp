@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod";
-import { renderBigText, icon } from "../utils/ink-renderer.js";
+// import { renderBigText, icon } from "../utils/ink-renderer.js";
 
 // Import tool executors
 import { callGemini, isGeminiAvailable } from "./gemini-tools.js";
@@ -22,6 +22,8 @@ import { callPerplexity } from "./perplexity-tools.js";
 import { callOpenRouter, OpenRouterModel } from "./openrouter-tools.js";
 import { callOpenAI, isOpenAIAvailable } from "./openai-tools.js";
 import { OPENAI_MODELS } from "../config/model-constants.js";
+import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import { stripFormatting } from "../utils/format-stripper.js";
 
 // ============================================================================
 // TYPES
@@ -131,24 +133,16 @@ function routeIntent(query: string): RouteResult {
 // MODE HANDLERS
 // ============================================================================
 
-// Use icon() for Nerd Font support with Unicode fallback
+// Clean emoji icons for each mode
 const getModeIcon = (mode: Mode): string => ({
-  research: icon('search'),
-  solve: icon('wrench'),
-  verify: icon('check'),
-  creative: icon('lightbulb'),
-  architect: icon('building'),
-  judge: icon('scales'),
+  research: '🔍',
+  solve: '🔧',
+  verify: '⚖️',
+  creative: '💡',
+  architect: '🏗',
+  judge: '🎯',
 }[mode]);
 
-const MODE_HEADERS: Record<Mode, string> = {
-  research: "RESEARCH",
-  solve: "SOLVE",
-  verify: "VERIFY",
-  creative: "CREATE",
-  architect: "ARCHITECT",
-  judge: "JUDGE",
-};
 
 /**
  * Research Mode: Web search + synthesis
@@ -161,7 +155,7 @@ async function researchHandler(query: string): Promise<string> {
       {
         role: "system",
         content: `You are a research assistant with live web search. Search for: "${query}".
-Focus on recent, accurate information. Provide sources.`
+Focus on recent, accurate information. Provide sources.${FORMAT_INSTRUCTION}`
       },
       { role: "user", content: query }
     ];
@@ -185,7 +179,7 @@ Focus on recent, accurate information. Provide sources.`
       return await callGemini(
         query,
         undefined,
-        "You are a research assistant. Provide comprehensive, well-sourced information."
+        `You are a research assistant. Provide comprehensive, well-sourced information.${FORMAT_INSTRUCTION}`
       );
     }
   }
@@ -202,14 +196,14 @@ async function solveHandler(query: string): Promise<string> {
   try {
     const qwenResult = await callOpenRouter(
       [
-        { role: "system", content: "You are Qwen3-Coder. Debug and solve the code problem. Provide working code." },
+        { role: "system", content: `You are Qwen3-Coder. Debug and solve the code problem. Provide working code.${FORMAT_INSTRUCTION}` },
         { role: "user", content: query }
       ],
-      OpenRouterModel.QWEN3_CODER_PLUS,
+      OpenRouterModel.QWEN3_CODER,
       0.2,
       6000
     );
-    results.push(`**${icon('wrench')} Qwen Analysis:**\n${qwenResult}`);
+    results.push(`🔧 QWEN ANALYSIS\n${'─'.repeat(30)}\n${qwenResult}`);
   } catch {
     // Qwen failed, continue with Grok
   }
@@ -220,7 +214,7 @@ async function solveHandler(query: string): Promise<string> {
     try {
       const searchResult = await callGrokEnhanced(
         [
-          { role: "system", content: "Search for solutions to this coding problem. Find relevant Stack Overflow, docs, or GitHub issues." },
+          { role: "system", content: `Search for solutions to this coding problem. Find relevant Stack Overflow, docs, or GitHub issues.${FORMAT_INSTRUCTION}` },
           { role: "user", content: query }
         ],
         {
@@ -231,7 +225,7 @@ async function solveHandler(query: string): Promise<string> {
           maxTokens: 2000
         }
       );
-      results.push(`\n**${icon('search')} Related Solutions:**\n${searchResult.content}`);
+      results.push(`\n🔍 RELATED SOLUTIONS\n${'─'.repeat(30)}\n${searchResult.content}`);
     } catch {
       // Search failed, continue
     }
@@ -242,7 +236,7 @@ async function solveHandler(query: string): Promise<string> {
     return await callGemini(
       query,
       undefined,
-      "You are a senior software engineer. Solve this problem step by step with code."
+      `You are a senior software engineer. Solve this problem step by step with code.${FORMAT_INSTRUCTION}`
     );
   }
 
@@ -259,13 +253,13 @@ async function verifyHandler(query: string): Promise<string> {
 2. Provide a clear verdict: VALID, INVALID, or NEEDS MORE CONTEXT
 3. Support your verdict with evidence and reasoning
 4. List any caveats or edge cases
-5. Confidence score (0-100%)`;
+5. Confidence score (0-100%)${FORMAT_INSTRUCTION}`;
 
   // Try Gemini first (preferred judge)
   if (isGeminiAvailable()) {
     try {
       const result = await callGemini(query, undefined, judgePrompt);
-      return `**${icon('scales')} Gemini Judge:**\n${result}`;
+      return `⚖️ GEMINI JUDGE\n${'─'.repeat(30)}\n${result}`;
     } catch {
       // Fall through to GPT
     }
@@ -283,7 +277,7 @@ async function verifyHandler(query: string): Promise<string> {
         0.3,
         4000
       );
-      return `**${icon('scales')} GPT Judge:**\n${result}`;
+      return `⚖️ GPT JUDGE\n${'─'.repeat(30)}\n${result}`;
     } catch {
       // Fall through to Grok
     }
@@ -295,7 +289,7 @@ async function verifyHandler(query: string): Promise<string> {
       { role: "system", content: judgePrompt },
       { role: "user", content: query }
     ]);
-    return `**${icon('scales')} Grok Judge:**\n${result}`;
+    return `⚖️ GROK JUDGE\n${'─'.repeat(30)}\n${result}`;
   } catch (error) {
     return `[Verification failed: ${error instanceof Error ? error.message : "Unknown error"}]`;
   }
@@ -314,7 +308,7 @@ async function creativeHandler(query: string): Promise<string> {
 1. Provide at least 5 distinct approaches or ideas
 2. For each, explain the concept and potential benefits
 3. Include one "wild card" unconventional idea
-4. End with a recommended starting point`
+4. End with a recommended starting point${FORMAT_INSTRUCTION}`
     );
     return result;
   } catch (error) {
@@ -333,7 +327,7 @@ async function architectHandler(query: string): Promise<string> {
   try {
     const searchResult = await callGrokEnhanced(
       [
-        { role: "system", content: "Search for architecture patterns, best practices, and real-world examples for this design decision." },
+        { role: "system", content: `Search for architecture patterns, best practices, and real-world examples for this design decision.${FORMAT_INSTRUCTION}` },
         { role: "user", content: query }
       ],
       {
@@ -344,7 +338,7 @@ async function architectHandler(query: string): Promise<string> {
         maxTokens: 2500
       }
     );
-    results.push(`**${icon('search')} Context & Patterns:**\n${searchResult.content}`);
+    results.push(`🔍 CONTEXT & PATTERNS\n${'─'.repeat(30)}\n${searchResult.content}`);
   } catch {
     // Search failed, continue
   }
@@ -356,7 +350,7 @@ ${query}
 Provide:
 1. Key tradeoffs (pros/cons)
 2. Scalability considerations
-3. Your recommendation with reasoning`;
+3. Your recommendation with reasoning${FORMAT_INSTRUCTION}`;
 
   // Try Qwen for technical analysis
   try {
@@ -365,11 +359,11 @@ Provide:
         { role: "system", content: reasoningPrompt },
         { role: "user", content: query }
       ],
-      OpenRouterModel.QWEN3_CODER_PLUS,
+      OpenRouterModel.QWEN3_CODER,
       0.3,
       3000
     );
-    results.push(`\n**🤖 Qwen Analysis:**\n${qwenResult}`);
+    results.push(`\n🤖 QWEN ANALYSIS\n${'─'.repeat(30)}\n${qwenResult}`);
   } catch {
     // Continue
   }
@@ -386,7 +380,7 @@ Provide:
         0.3,
         3000
       );
-      results.push(`\n**🧠 GPT Analysis:**\n${gptResult}`);
+      results.push(`\n🧠 GPT ANALYSIS\n${'─'.repeat(30)}\n${gptResult}`);
     } catch {
       // Continue
     }
@@ -402,16 +396,16 @@ Provide:
 1. VERDICT: Clear recommendation
 2. KEY REASONS: Top 3 reasons for this choice
 3. RISKS: Main risks to watch for
-4. NEXT STEPS: Concrete action items`
+4. NEXT STEPS: Concrete action items${FORMAT_INSTRUCTION}`
       );
-      results.push(`\n**${icon('scales')} Final Verdict (Gemini):**\n${judgeResult}`);
+      results.push(`\n⚖️ FINAL VERDICT (GEMINI)\n${'═'.repeat(30)}\n${judgeResult}`);
     } catch {
       // Judge failed
     }
   }
 
   if (results.length === 0) {
-    return await callGemini(query, undefined, "You are a software architect. Provide architecture guidance.");
+    return await callGemini(query, undefined, `You are a software architect. Provide architecture guidance.${FORMAT_INSTRUCTION}`);
   }
 
   return results.join("\n\n---\n");
@@ -428,7 +422,7 @@ async function judgeHandler(query: string): Promise<string> {
 Provide:
 1. Your assessment
 2. Strengths and weaknesses
-3. Score (1-10) with reasoning`;
+3. Score (1-10) with reasoning${FORMAT_INSTRUCTION}`;
 
   // Collect opinions from multiple models in parallel
   const modelPromises: Promise<void>[] = [];
@@ -438,15 +432,15 @@ Provide:
     callGrok([
       { role: "system", content: judgePrompt },
       { role: "user", content: query }
-    ]).then(r => { results.push(`**🦖 Grok:**\n${r}`); }).catch(() => {})
+    ]).then(r => { results.push(`🦖 GROK\n${'─'.repeat(30)}\n${r}`); }).catch(() => {})
   );
 
   // Qwen opinion
   modelPromises.push(
     callOpenRouter(
       [{ role: "system", content: judgePrompt }, { role: "user", content: query }],
-      OpenRouterModel.QWEN3_CODER_PLUS, 0.3, 2000
-    ).then(r => { results.push(`**🤖 Qwen:**\n${r}`); }).catch(() => {})
+      OpenRouterModel.QWEN3_CODER, 0.3, 2000
+    ).then(r => { results.push(`🤖 QWEN\n${'─'.repeat(30)}\n${r}`); }).catch(() => {})
   );
 
   // GPT opinion
@@ -455,7 +449,7 @@ Provide:
       callOpenAI(
         [{ role: "system", content: judgePrompt }, { role: "user", content: query }],
         OPENAI_MODELS.DEFAULT, 0.3, 2000
-      ).then(r => { results.push(`**🧠 GPT:**\n${r}`); }).catch(() => {})
+      ).then(r => { results.push(`🧠 GPT\n${'─'.repeat(30)}\n${r}`); }).catch(() => {})
     );
   }
 
@@ -472,9 +466,9 @@ Provide:
 1. FINAL VERDICT: Clear winner/decision
 2. CONSENSUS: Where models agreed
 3. DISAGREEMENTS: Where they differed and why
-4. CONFIDENCE: Your confidence level (0-100%)`
+4. CONFIDENCE: Your confidence level (0-100%)${FORMAT_INSTRUCTION}`
       );
-      results.push(`\n**${icon('scales')} FINAL VERDICT (Gemini Judge):**\n${finalVerdict}`);
+      results.push(`\n⚖️ FINAL VERDICT (GEMINI JUDGE)\n${'═'.repeat(30)}\n${finalVerdict}`);
     } catch {
       // Judge failed
     }
@@ -559,12 +553,12 @@ Examples:
 
     // Build response with header
     const modeIcon = getModeIcon(resolvedMode);
-    const headerText = MODE_HEADERS[resolvedMode];
 
-    // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
-    let response = renderBigText(headerText, { font: "block", gradient: "cristal" });
-    response += `\n${modeIcon} **${resolvedMode.toUpperCase()} MODE**${routeInfo}\n\n`;
-    response += `---\n\n`;
+    // Plain text header with structure
+    let response = '';
+    response += `\n${'━'.repeat(35)}\n`;
+    response += `${modeIcon}  ${resolvedMode.toUpperCase()} MODE${routeInfo}\n`;
+    response += `${'━'.repeat(35)}\n\n`;
 
     // Execute mode handler
     try {
@@ -576,7 +570,7 @@ Examples:
       response += `[Error in ${resolvedMode} mode: ${errorMsg}]`;
     }
 
-    return response;
+    return stripFormatting(response);
   },
 };
 

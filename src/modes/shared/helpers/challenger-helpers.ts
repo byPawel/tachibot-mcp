@@ -18,7 +18,20 @@
  * - Dependency Inversion: Functions depend on types, not concrete implementations
  */
 
-import { icon } from '../../../utils/ink-renderer.js';
+// import { icon } from '../../../utils/ink-renderer.js';
+// Ink disabled - using plain emojis instead
+const icon = (name: string): string => {
+  const icons: Record<string, string> = {
+    target: '>',
+    comment: '#',
+    warning: '!',
+    check: '+',
+    search: '?',
+    list: '-',
+    error: 'x',
+  };
+  return icons[name] || '*';
+};
 
 // ============================================================================
 // Type Definitions (no 'any')

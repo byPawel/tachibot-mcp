@@ -3,6 +3,7 @@ import { ReasoningMode } from "../../../../reasoning-chain.js";
 import { ToolRouter, ToolCategory } from "../../../../tools/tool-router.js";
 import { modelProviderRegistry } from "../../registries/ModelProviderRegistry.js";
 import { HierarchicalMemoryManager, MemoryTier } from "../../../../memory/index.js";
+import { stripFormatting } from "../../../../utils/format-stripper.js";
 
 /**
  * Tool Execution Service
@@ -89,7 +90,8 @@ export class ToolExecutionService implements IToolExecutionEngine {
         return `[${model} returned empty response for: ${prompt.substring(0, 50)}...]`;
       }
 
-      return result;
+      // Strip formatting (removes **bold**, *italic*, ANSI codes) for clean CLI output
+      return stripFormatting(result);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.error(`❌ Error executing ${toolName}:`, errorMsg);

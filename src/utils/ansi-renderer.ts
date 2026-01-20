@@ -32,13 +32,19 @@ import {
   type Theme,
 } from './ansi-styles.js';
 
-import {
-  renderGradientDivider,
-  renderGradientModelName,
-  type GradientPreset,
-} from './ink-renderer.js';
+// import {
+//   renderGradientDivider,
+//   renderGradientModelName,
+//   type GradientPreset,
+// } from './ink-renderer.js';
+// Ink disabled - using plain text functions
+type GradientPreset = string;
+const renderGradientDivider = (width: number = 50, preset?: GradientPreset): string => '-'.repeat(width);
+const renderGradientModelName = (model: string): string => `[${model.toUpperCase()}]`;
 
-import { renderMarkdownToAnsi as renderInkMarkdown } from './ink-markdown-renderer.js';
+// import { renderMarkdownToAnsi as renderInkMarkdown } from './ink-markdown-renderer.js';
+// Ink disabled - plain passthrough
+const renderInkMarkdown = (content: string, _options?: unknown, _model?: string): string => content;
 
 // Track if marked has been configured (prevent repeated configuration)
 let markedConfigured = false;

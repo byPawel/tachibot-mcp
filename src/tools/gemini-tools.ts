@@ -8,6 +8,8 @@ import { z } from "zod";
 import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
+import { stripFormatting } from "../utils/format-stripper.js";
+import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 // NOTE: dotenv is loaded in server.ts before any imports
@@ -193,7 +195,7 @@ export const geminiQueryTool = {
       model = GEMINI_MODELS.PRO;
     }
     // Skip validation - queries may contain code or LLM-generated content
-    return await callGemini(args.prompt, model, undefined, 0.7, 'llm-orchestration');
+    return stripFormatting(await callGemini(args.prompt, model, undefined, 0.7, 'llm-orchestration'));
   }
 };
 
@@ -213,23 +215,17 @@ export const geminiBrainstormTool = {
     maxRounds: z.number().optional().default(1)
   }),
   execute: async (args: { prompt: string; claudeThoughts?: string; maxRounds?: number }, { log }: any) => {
-    const systemPrompt = `You are a creative brainstorming partner. Generate innovative ideas and solutions.
-${args.claudeThoughts ? `\nBuilding on these initial thoughts: ${args.claudeThoughts}` : ''}
-
-IMPORTANT: Output a detailed written response with:
-1. Multiple creative approaches (at least 3)
-2. Unconventional or "out of the box" ideas
-3. Potential challenges for each approach
-4. Quick feasibility assessment
-
-Provide your complete analysis as visible text output.`;
+    const systemPrompt = `Creative brainstorming partner.
+${args.claudeThoughts ? `Building on: ${args.claudeThoughts}` : ''}
+Generate: multiple approaches, unconventional ideas, challenges, feasibility.
+${FORMAT_INSTRUCTION}`;
 
     // Skip validation for internal calls - input validated at MCP layer
     const response = await callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.9, 'llm-orchestration');
 
     // If multiple rounds requested, we could iterate here
     // For now, return the single response
-    return response;
+    return stripFormatting(response);
   }
 };
 
@@ -254,23 +250,18 @@ export const geminiAnalyzeCodeTool = {
       general: "Provide a comprehensive analysis covering all aspects"
     };
 
-    const systemPrompt = `You are an expert code reviewer. Analyze the following ${args.language || ''} code.
+    const systemPrompt = `Expert code reviewer. ${args.language || ''} code.
 ${focusPrompts[(args.focus as keyof typeof focusPrompts) || 'general']}.
-
-Provide:
-1. Summary of what the code does
-2. ${args.focus === 'security' ? 'Security vulnerabilities' : 'Issues found'}
-3. Specific recommendations for improvement
-4. Code quality score (1-10) with justification`;
+${FORMAT_INSTRUCTION}`;
 
     // Skip validation - code analysis naturally contains patterns that trigger false positives
-    return await callGemini(
+    return stripFormatting(await callGemini(
       `Analyze this code:\n\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\``,
       GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
       0.3,
       'llm-orchestration'  // skipValidation for code content
-    );
+    ));
   }
 };
 
@@ -294,21 +285,17 @@ export const geminiAnalyzeTextTool = {
       general: "Provide comprehensive text analysis including sentiment, key points, and entities"
     };
 
-    const systemPrompt = `You are a text analysis expert. ${analysisPrompts[(args.type as keyof typeof analysisPrompts) || 'general']}.
-
-Format your response clearly with:
-${args.type === 'sentiment' ? '- Overall sentiment\n- Confidence score\n- Emotional indicators' : ''}
-${args.type === 'entities' ? '- People\n- Organizations\n- Locations\n- Other entities' : ''}
-${args.type === 'key-points' ? '- Main arguments\n- Supporting points\n- Conclusions' : ''}`;
+    const systemPrompt = `Text analysis expert. ${analysisPrompts[(args.type as keyof typeof analysisPrompts) || 'general']}.
+${FORMAT_INSTRUCTION}`;
 
     // Skip validation - text analysis may contain patterns from LLM discussions
-    return await callGemini(
+    return stripFormatting(await callGemini(
       `Analyze this text:\n\n${args.text}`,
       GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
       0.3,
       'llm-orchestration'  // skipValidation for internal calls
-    );
+    ));
   }
 };
 
@@ -343,16 +330,17 @@ ${formatGuides[(args.format as keyof typeof formatGuides) || 'paragraph']}.
 Focus on:
 - Main ideas and key arguments
 - Important facts and figures
-- Conclusions and implications`;
+- Conclusions and implications
+${FORMAT_INSTRUCTION}`;
 
     // Skip validation for internal summarization calls
-    return await callGemini(
+    return stripFormatting(await callGemini(
       `Summarize this content:\n\n${args.content}`,
       GEMINI_MODELS.GEMINI_3_PRO,
       systemPrompt,
       0.3,
       'llm-orchestration'  // skipValidation
-    );
+    ));
   }
 };
 
@@ -381,7 +369,8 @@ Include:
 5. Color palette
 6. Additional details for richness
 
-Make it specific and visually descriptive.`;
+Make it specific and visually descriptive.
+${FORMAT_INSTRUCTION}`;
 
     const userPrompt = `Create an image prompt for: ${args.description}
 ${args.style ? `Style: ${args.style}` : ''}
@@ -389,7 +378,7 @@ ${args.mood ? `Mood: ${args.mood}` : ''}
 ${args.details ? `Additional details: ${args.details}` : ''}`;
 
     // Skip validation for creative content generation
-    return await callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7, 'llm-orchestration');
+    return stripFormatting(await callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7, 'llm-orchestration'));
   }
 };
 
@@ -512,11 +501,11 @@ IMPORTANT:
       let sources = "";
 
       if (groundingMetadata?.webSearchQueries) {
-        sources += `\n\n**Search queries used:** ${groundingMetadata.webSearchQueries.join(", ")}`;
+        sources += `\n\nSearch queries used: ${groundingMetadata.webSearchQueries.join(", ")}`;
       }
 
       if (groundingMetadata?.groundingChunks) {
-        sources += "\n\n**Sources:**";
+        sources += "\n\nSOURCES:";
         for (const chunk of groundingMetadata.groundingChunks) {
           if (chunk.web) {
             sources += `\n- [${chunk.web.title || "Source"}](${chunk.web.uri})`;

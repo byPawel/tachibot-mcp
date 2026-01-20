@@ -9,20 +9,65 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { getModelDisplayName, MODEL_PRICING } from '../config/model-constants.js';
-import {
-  renderTable,
-  renderKeyValueTable,
-  brailleBar,
-  brailleSparkline,
-  renderReceipt,
-  renderGradientDivider,
-  renderGradientBorderBox,
-  renderBadgeGroup,
-  renderPieChart,
-  renderDonutChart,
-  renderBigText,
-  icons,
-} from './ink-renderer.js';
+// import {
+//   renderTable,
+//   renderKeyValueTable,
+//   brailleBar,
+//   brailleSparkline,
+//   renderReceipt,
+//   renderGradientDivider,
+//   renderGradientBorderBox,
+//   renderBadgeGroup,
+//   renderPieChart,
+//   renderDonutChart,
+//   renderBigText,
+//   icons,
+// } from './ink-renderer.js';
+// Ink disabled - using plain text functions
+const renderTable = (data: Record<string, string>[]): string => {
+  if (data.length === 0) return '';
+  const keys = Object.keys(data[0]);
+  const header = '| ' + keys.join(' | ') + ' |';
+  const separator = '|' + keys.map(() => '---').join('|') + '|';
+  const rows = data.map(row => '| ' + keys.map(k => row[k] || '').join(' | ') + ' |');
+  return [header, separator, ...rows].join('\n');
+};
+const renderKeyValueTable = (data: Record<string, string | number>): string => {
+  return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join('\n');
+};
+const brailleBar = (value: number, max: number, width: number = 20): string => {
+  const filled = Math.round((value / max) * width);
+  return '[' + '#'.repeat(filled) + '-'.repeat(width - filled) + ']';
+};
+const brailleSparkline = (_data: number[]): string => '';
+const renderReceipt = (_opts: { model: string; inputTokens: number; outputTokens: number; cachedTokens?: number; duration?: number }): string => '';
+const renderGradientDivider = (width: number = 50, _preset?: string): string => '-'.repeat(width);
+const renderGradientBorderBox = (content: string, _opts?: { width?: number; gradient?: string }): string => content;
+const renderBadgeGroup = (_badges: string[]): string => '';
+const renderPieChart = (_data: { label: string; value: number }[], _opts?: { width?: number; title?: string }): string => '';
+const renderDonutChart = (_data: { label: string; value: number; displayValue?: string }[], _opts?: { width?: number; title?: string; centerLabel?: string }): string => '';
+const renderBigText = (text: string, _opts?: { font?: string; gradient?: string }): string => `== ${text} ==`;
+const icons = {
+  chartBar: '|',
+  brain: '*',
+  search: '?',
+  check: '+',
+  error: 'x',
+  warning: '!',
+  info: 'i',
+  sparkle: '*',
+  starFilled: '*',
+  alertCircle: '!',
+  file: '#',
+  folder: '#',
+  bot: '@',
+  comment: '#',
+  list: '-',
+  target: '>',
+  workflow: '>',
+  cpu: '#',
+  question: '?',
+};
 
 // Config: enabled by default, set TACHIBOT_USAGE_TRACKING=false to disable
 export const isTrackingEnabled = (): boolean => {
@@ -30,12 +75,12 @@ export const isTrackingEnabled = (): boolean => {
 };
 
 // Config: plain output mode (markdown instead of ANSI)
-// Set TACHIBOT_PLAIN_OUTPUT=true to disable fancy visualizations
+// Default: plain (fewer tokens). Set TACHIBOT_PLAIN_OUTPUT=false for fancy Ink visuals
 export const usePlainOutput = (): boolean => {
-  if (process.env.TACHIBOT_PLAIN_OUTPUT === 'true') return true;
-  if (process.env.TACHIBOT_PLAIN_OUTPUT === 'false') return false;
-  // Default: show fancy Ink visualizations (pie charts, donut charts, braille bars)
-  return false;
+  const value = process.env.TACHIBOT_PLAIN_OUTPUT?.toLowerCase();
+  if (value === 'false') return false;
+  // Default: plain mode (less tokens, better for LLM context)
+  return true;
 };
 
 // Config: show model tags in output (default: true)

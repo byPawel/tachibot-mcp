@@ -4,6 +4,8 @@
  */
 
 import { z } from "zod";
+import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import { stripFormatting } from "../utils/format-stripper.js";
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env
@@ -13,33 +15,38 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Available OpenRouter models (verified names)
 export enum OpenRouterModel {
-  // Qwen models - Premium models with credits
-  QWEN3_CODER_PLUS = "qwen/qwen3-coder-plus",            // Proprietary Qwen3 Coder Plus (480B MoE) - BEST for coding
-  QWEN3_CODER = "qwen/qwen3-coder",                      // 480B MoE, 35B active - BEST for coding
+  // Qwen models - Use QWEN3_CODER (routes via Google, not broken Alibaba)
+  QWEN3_CODER = "qwen/qwen3-coder",                      // 480B MoE - PRIMARY (routes via Google)
+  QWEN3_CODER_PLUS = "qwen/qwen3-coder-plus",           // Alibaba-only, BROKEN free tier issues
+  QWEN3_CODER_FLASH = "qwen/qwen3-coder-flash",          // Fast/cheap alternative
   QWEN3_30B = "qwen/qwen3-30b-a3b-instruct-2507",        // 30B MoE model
   QWEN3_235B_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // 235B thinking model
-  QWQ_32B = "qwen/qwq-32b",                              // Deep reasoning (QwQ is Qwen's reasoning model)
+  QWQ_32B = "qwen/qwq-32b",                              // Deep reasoning
 
   // Moonshot AI models
-  KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - Leading open-source agentic reasoning model (256k context)
+  KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - agentic reasoning (256k context)
 }
 
+// Fallback map for when providers hit quota limits
+const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
+  [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
+};
+
 /**
- * Call OpenRouter API
+ * Call OpenRouter API with auto-fallback on provider quota errors
  */
 export async function callOpenRouter(
   messages: Array<{ role: string; content: string }>,
   model: OpenRouterModel = OpenRouterModel.QWEN3_CODER,
   temperature: number = 0.7,
-  maxTokens: number = 20480  // 20k for comprehensive code analysis
+  maxTokens: number = 20480,
+  _isRetry: boolean = false
 ): Promise<string> {
   if (!OPENROUTER_API_KEY) {
     return `[OpenRouter API key not configured. Add OPENROUTER_API_KEY to .env file]`;
   }
 
   try {
-    // Kimi K2 Thinking requires special reasoning parameters
-    const isKimiThinking = model === OpenRouterModel.KIMI_K2_THINKING;
     const requestBody: any = {
       model,
       messages,
@@ -47,9 +54,6 @@ export async function callOpenRouter(
       max_tokens: maxTokens,
       stream: false
     };
-
-    // Kimi K2 Thinking has built-in reasoning - no special params needed
-    // OpenRouter auto-enables reasoning for this model
 
     const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
@@ -63,14 +67,32 @@ export async function callOpenRouter(
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`OpenRouter API error: ${response.statusText} - ${error}`);
+      const errorText = await response.text();
+
+      // Check for Alibaba free tier quota error - auto-fallback
+      if (!_isRetry && errorText.includes("FreeTierOnly") && MODEL_FALLBACKS[model]) {
+        const fallback = MODEL_FALLBACKS[model]!;
+        console.error(`[OpenRouter] ${model} hit provider quota, falling back to ${fallback}`);
+        return callOpenRouter(messages, fallback, temperature, maxTokens, true);
+      }
+
+      throw new Error(`OpenRouter API error: ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json() as any;
-    return data.choices?.[0]?.message?.content || "No response from OpenRouter";
+    const content = data.choices?.[0]?.message?.content || "No response from OpenRouter";
+    return stripFormatting(content);
   } catch (error) {
-    return `[OpenRouter error: ${error instanceof Error ? error.message : String(error)}]`;
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    // Also catch quota errors from thrown exceptions
+    if (!_isRetry && errorMsg.includes("FreeTierOnly") && MODEL_FALLBACKS[model]) {
+      const fallback = MODEL_FALLBACKS[model]!;
+      console.error(`[OpenRouter] ${model} hit provider quota, falling back to ${fallback}`);
+      return callOpenRouter(messages, fallback, temperature, maxTokens, true);
+    }
+
+    return `[OpenRouter error: ${errorMsg}]`;
   }
 }
 
@@ -109,7 +131,8 @@ export const qwenCoderTool = {
     const systemPrompt = `You are Qwen3-Coder, an advanced code generation model.
 Task: ${taskPrompts[args.task as keyof typeof taskPrompts]}
 ${args.language ? `Language: ${args.language}` : ''}
-Focus on: clean code, best practices, performance, and maintainability.`;
+Focus on: clean code, best practices, performance, and maintainability.
+${FORMAT_INSTRUCTION}`;
     
     const requirementsText = args.requirements || "Analyze and provide insights";
     const userPrompt = args.code
@@ -121,7 +144,7 @@ Focus on: clean code, best practices, performance, and maintainability.`;
       { role: "user", content: userPrompt }
     ];
     
-    const model = args.useFree === true ? OpenRouterModel.QWEN3_30B : OpenRouterModel.QWEN3_CODER_PLUS;
+    const model = args.useFree === true ? OpenRouterModel.QWEN3_30B : OpenRouterModel.QWEN3_CODER;
     return await callOpenRouter(messages, model, 0.2, 8000);
   }
 };
@@ -160,7 +183,8 @@ export const qwqReasoningTool = {
         content: `You are QwQ, specialized in deep reasoning and problem-solving.
 ${approachPrompts[args.approach as keyof typeof approachPrompts || 'step-by-step']}.
 Show your thinking process clearly.
-${args.context ? `Context: ${args.context}` : ''}`
+${args.context ? `Context: ${args.context}` : ''}
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -199,7 +223,8 @@ export const qwenGeneralTool = {
       {
         role: "system",
         content: `You are Qwen3, a helpful AI assistant.
-${modePrompts[args.mode as keyof typeof modePrompts || 'chat']}.`
+${modePrompts[args.mode as keyof typeof modePrompts || 'chat']}.
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -230,7 +255,7 @@ export const openRouterMultiModelTool = {
   execute: async (args: { query: string; model: string; temperature?: number }, { log }: any) => {
     const modelMap = {
       "qwen-coder": OpenRouterModel.QWEN3_CODER,
-      "qwen-coder-plus": OpenRouterModel.QWEN3_CODER_PLUS,
+      "qwen-coder-plus": OpenRouterModel.QWEN3_CODER,
       "qwq-32b": OpenRouterModel.QWQ_32B,
       "kimi-k2-thinking": OpenRouterModel.KIMI_K2_THINKING
     };
@@ -287,7 +312,8 @@ export const qwenAlgoTool = {
       {
         role: "system",
         content: `You are an expert algorithm analyst. ${focusPrompts[args.focus || 'general']}
-Provide clear analysis with Big-O notation and concrete improvement suggestions.`
+Provide clear analysis with Big-O notation and concrete improvement suggestions.
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -333,7 +359,8 @@ ${args.constraints ? `Constraints: ${args.constraints}` : ''}
 Provide:
 1. Approach explanation
 2. Complete working code
-3. Time and space complexity analysis`
+3. Time and space complexity analysis
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -382,7 +409,8 @@ ${approachPrompts[args.approach as keyof typeof approachPrompts || 'step-by-step
 Show your complete thinking process with clear reasoning chains.
 Use up to ${args.maxSteps} reasoning steps if needed for complex problems.
 ${args.context ? `Context: ${args.context}` : ''}
-Focus on: thorough analysis, logical reasoning, and actionable insights.`
+Focus on: thorough analysis, logical reasoning, and actionable insights.
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",

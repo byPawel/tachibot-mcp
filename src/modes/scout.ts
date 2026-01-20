@@ -6,12 +6,29 @@ import { smartAPIClient } from '../utils/smart-api-client.js';
 import { providerRouter, ProviderConfig } from '../utils/provider-router.js';
 import { getSmartTimeout } from '../config/timeout-config.js';
 import { execSync } from 'child_process';
-import {
-  renderKeyValueTable,
-  renderGradientBorderBox,
-  renderGradientDivider,
-  icons,
-} from '../utils/ink-renderer.js';
+// import {
+//   renderKeyValueTable,
+//   renderGradientBorderBox,
+//   renderGradientDivider,
+//   icons,
+// } from '../utils/ink-renderer.js';
+// Ink disabled - using plain text functions
+const renderKeyValueTable = (data: Record<string, string | number | undefined>): string => {
+  return Object.entries(data)
+    .filter(([_, v]) => v !== undefined)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('\n');
+};
+const renderGradientBorderBox = (content: string, _opts?: { width?: number; gradient?: string }): string => {
+  return `--- ${content} ---`;
+};
+const renderGradientDivider = (width: number = 50, _preset?: string): string => '-'.repeat(width);
+const icons = {
+  search: '?',
+  brain: '*',
+  info: 'i',
+  check: '+',
+};
 
 // Provider name constants
 const PROVIDER_PERPLEXITY = 'perplexity';

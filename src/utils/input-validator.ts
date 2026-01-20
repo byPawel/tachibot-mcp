@@ -1,6 +1,11 @@
 /**
  * Input Validation and Sanitization Utilities
  * Prevents prompt injection, XSS, and other security issues
+ *
+ * Security Model:
+ * - User input is validated at MCP entry point (server.ts)
+ * - Context-aware validation allows code patterns in appropriate contexts
+ * - Defense in depth maintained - validation never fully skipped
  */
 
 // Security constants
@@ -8,17 +13,28 @@ export const MAX_INPUT_LENGTH = 50000; // 50k chars max
 export const MAX_PROMPT_LENGTH = 20000;
 export const MAX_SYSTEM_PROMPT_LENGTH = 5000;
 
-// Patterns to detect potential injection attempts
-// NOTE: Role injection (user:/assistant:/system:) pattern removed due to false positives
-// with legitimate LLM-generated content. For LLM-to-LLM calls, use skipValidation flag.
-// NOTE: Path traversal (../) pattern removed - too many false positives in architecture
-// discussions and code examples mentioning relative paths.
-const SUSPICIOUS_PATTERNS = [
-  /<\s*script/gi,                 // XSS attempts
-  /\b(exec|eval)\s*\(/gi,         // Code execution attempts (require() removed - false positives in code examples)
-  /;\s*(rm|del|format|drop\s+table)/gi,  // Command/SQL injection
-  /\x00/g,                        // Null byte injection
+/**
+ * Validation context determines which rules to apply
+ * - 'user-input': Strict validation for direct user input
+ * - 'code-analysis': Relaxed rules for code analysis (allows exec/eval patterns)
+ * - 'llm-orchestration': Medium validation for LLM-to-LLM calls
+ */
+export type ValidationContext = 'user-input' | 'code-analysis' | 'llm-orchestration';
+
+// Patterns always blocked (even in code analysis) - these are truly dangerous
+const CRITICAL_PATTERNS = [
+  /\x00/g,                        // Null byte injection - never legitimate
 ];
+
+// Patterns blocked in user-input context but allowed in code contexts
+const USER_INPUT_PATTERNS = [
+  /<\s*script/gi,                 // XSS attempts - block in user input
+  /\b(exec|eval)\s*\(/gi,         // Code execution - block in user input
+  /;\s*(rm|del|format|drop\s+table)/gi,  // Command/SQL injection
+];
+
+// Legacy: Combined patterns for backward compatibility (default behavior)
+const SUSPICIOUS_PATTERNS = [...CRITICAL_PATTERNS, ...USER_INPUT_PATTERNS];
 
 /**
  * Sanitize user input - remove control characters and limit length
@@ -40,9 +56,33 @@ export function sanitizeInput(input: string, maxLength: number = MAX_INPUT_LENGT
 }
 
 /**
- * Validate and sanitize tool input
+ * Get patterns to check based on validation context
  */
-export function validateToolInput(input: any): { valid: boolean; sanitized?: any; error?: string } {
+function getPatternsForContext(context: ValidationContext): RegExp[] {
+  switch (context) {
+    case 'code-analysis':
+      // Only block critical patterns - code analysis needs exec/eval patterns
+      return CRITICAL_PATTERNS;
+    case 'llm-orchestration':
+      // Block critical patterns - LLM-to-LLM content is semi-trusted
+      // Note: XSS and code execution patterns allowed because LLMs discuss code
+      return CRITICAL_PATTERNS;
+    case 'user-input':
+    default:
+      // Full validation for direct user input
+      return SUSPICIOUS_PATTERNS;
+  }
+}
+
+/**
+ * Validate and sanitize tool input
+ * @param input - The input to validate
+ * @param context - The validation context (default: 'user-input' for strict validation)
+ */
+export function validateToolInput(
+  input: any,
+  context: ValidationContext = 'user-input'
+): { valid: boolean; sanitized?: any; error?: string } {
   try {
     if (typeof input === 'string') {
       // Check for empty input
@@ -61,8 +101,9 @@ export function validateToolInput(input: any): { valid: boolean; sanitized?: any
         };
       }
 
-      // Check for suspicious patterns
-      for (const pattern of SUSPICIOUS_PATTERNS) {
+      // Check for suspicious patterns based on context
+      const patterns = getPatternsForContext(context);
+      for (const pattern of patterns) {
         if (pattern.test(input)) {
           return {
             valid: false,
@@ -78,16 +119,16 @@ export function validateToolInput(input: any): { valid: boolean; sanitized?: any
     }
 
     if (typeof input === 'object' && input !== null) {
-      // Recursively sanitize object properties
+      // Recursively sanitize object properties with same context
       const sanitized: any = Array.isArray(input) ? [] : {};
 
       for (const [key, value] of Object.entries(input)) {
         if (typeof value === 'string') {
-          const result = validateToolInput(value);
+          const result = validateToolInput(value, context);
           if (!result.valid) return result;
           sanitized[key] = result.sanitized;
         } else if (typeof value === 'object') {
-          const result = validateToolInput(value);
+          const result = validateToolInput(value, context);
           if (!result.valid) return result;
           sanitized[key] = result.sanitized;
         } else {

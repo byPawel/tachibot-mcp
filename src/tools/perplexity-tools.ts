@@ -6,6 +6,8 @@
 
 import { z } from "zod";
 import { getPerplexityApiKey, hasPerplexityApiKey } from "../utils/api-keys.js";
+import { stripFormatting } from "../utils/format-stripper.js";
+import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 
 // Perplexity API configuration
 const PERPLEXITY_API_URL = "https://api.perplexity.ai";
@@ -72,32 +74,15 @@ export async function callPerplexity(
     // Extract the response and citations
     let result = data.choices?.[0]?.message?.content || "No response from Perplexity";
 
-    // Add sources if available (Perplexity API changed from citations to search_results in 2025)
-    // Format with ANSI colors: cyan bullet, bold title, blue URL, dim date
-    // Use \x00RAWANSI\x00 markers to skip markdown processing in ansi-renderer
+    // Add sources if available (plain text - no ANSI)
     if (data.search_results && data.search_results.length > 0) {
-      const cyan = '\x1b[36m';
-      const bold = '\x1b[1m';
-      const blue = '\x1b[34m';
-      const underline = '\x1b[4m';
-      const dim = '\x1b[2m';
-      const gray = '\x1b[90m';
-      const reset = '\x1b[0m';
-
-      // Start raw ANSI section (skip markdown processing)
-      result += `\n\n\x00RAWANSI\x00`;
-      result += `${bold}Sources:${reset}\n\n`;
+      result += `\n\nSources:\n`;
       data.search_results.forEach((source: any) => {
         const title = source.title || 'Untitled';
         const url = source.url || '';
-        const date = source.date ? ` ${dim}(${source.date})${reset}` : '';
-
-        // Format: ● Title
-        //         └─ URL (date)
-        result += `${cyan}●${reset} ${bold}${title}${reset}\n`;
-        result += `  ${gray}└─${reset} ${blue}${underline}${url}${reset}${date}\n`;
+        const date = source.date ? ` (${source.date})` : '';
+        result += `- ${title}\n  ${url}${date}\n`;
       });
-      result += `\x00/RAWANSI\x00`;
     }
     
     return result;
@@ -131,7 +116,7 @@ export const perplexityAskTool = {
     const messages = [
       {
         role: "system",
-        content: `You are a helpful research assistant. Today is ${currentDate}. Provide accurate, up-to-date information with sources. When searching for recent information, use the current date as reference.`
+        content: `Research assistant. Today: ${currentDate}. Provide accurate info with sources.${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -139,12 +124,12 @@ export const perplexityAskTool = {
       }
     ];
 
-    return await callPerplexity(
+    return stripFormatting(await callPerplexity(
       messages,
       PerplexityModel.SONAR_PRO,
       args.searchDomain,
       args.searchRecency
-    );
+    ));
   }
 };
 
@@ -196,7 +181,7 @@ export const perplexityResearchTool = {
       const messages = [
         {
           role: "system",
-          content: `You are a research expert. Today is ${currentDate}. Provide detailed, factual information with sources. Use the current date as reference for any time-sensitive queries.`
+          content: `Research expert. Today: ${currentDate}. Factual info with sources.${FORMAT_INSTRUCTION}`
         },
         {
           role: "user",
@@ -212,7 +197,7 @@ export const perplexityResearchTool = {
     const synthesisMessages = [
       {
         role: "system",
-        content: "You are a research synthesizer. Create a concise summary of the key findings."
+        content: `Research synthesizer. Concise summary of key findings.${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -222,8 +207,8 @@ export const perplexityResearchTool = {
     
     const synthesis = await callPerplexity(synthesisMessages, PerplexityModel.SONAR_PRO);
     research += `## Synthesis\n\n${synthesis}`;
-    
-    return research;
+
+    return stripFormatting(research);
   }
 };
 
@@ -261,9 +246,8 @@ export const perplexityReasonTool = {
     const messages = [
       {
         role: "system",
-        content: `You are an expert reasoning system. Today is ${currentDate}. ${approachPrompts[approach as keyof typeof approachPrompts]}.
-Provide clear, logical reasoning with evidence and examples. Use the current date as reference for any time-sensitive information.
-${context ? `Context: ${context}` : ''}`
+        content: `Expert reasoning. Today: ${currentDate}. ${approachPrompts[approach as keyof typeof approachPrompts]}.
+${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -271,7 +255,7 @@ ${context ? `Context: ${context}` : ''}`
       }
     ];
     
-    return await callPerplexity(messages, PerplexityModel.SONAR_REASONING_PRO);
+    return stripFormatting(await callPerplexity(messages, PerplexityModel.SONAR_REASONING_PRO));
   }
 };
 
@@ -304,7 +288,7 @@ ${args.context ? `Additional context: ${args.context}` : ''}`
       }
     ];
     
-    return await callPerplexity(messages, PerplexityModel.SONAR_PRO, "general", "month");
+    return stripFormatting(await callPerplexity(messages, PerplexityModel.SONAR_PRO, "general", "month"));
   }
 };
 
@@ -339,7 +323,7 @@ Focus on:
       }
     ];
     
-    return await callPerplexity(messages, PerplexityModel.SONAR_PRO);
+    return stripFormatting(await callPerplexity(messages, PerplexityModel.SONAR_PRO));
   }
 };
 

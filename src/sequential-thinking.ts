@@ -10,7 +10,20 @@ import { ToolExecutionService } from "./orchestrators/collaborative/services/too
 import { ReasoningMode } from "./reasoning-chain.js";
 import { isModelAvailable, getAvailableModelNames } from "./utils/model-availability.js";
 import { formatMemorySaveHint, MemorySaveData, MemorySaveHint } from "./utils/memory-provider.js";
-import { icon } from "./utils/ink-renderer.js";
+import { stripFormatting } from "./utils/format-stripper.js";
+import { FORMAT_INSTRUCTION } from "./utils/format-constants.js";
+// import { icon } from "./utils/ink-renderer.js";
+// Ink disabled - using plain emojis instead
+const icon = (name: string): string => {
+  const icons: Record<string, string> = {
+    search: '🔍',
+    wrench: '🔧',
+    target: '🎯',
+    sparkle: '✨',
+    lightbulb: '💡',
+  };
+  return icons[name] || '•';
+};
 
 export interface Thought {
   number: number;
@@ -821,12 +834,12 @@ export class SequentialThinking {
     if (effectiveMode !== "off" && session.thoughts.length > 0) {
       // Use Context Distillation for efficient MCP calls
       distilledContext = this.distillContext(session, thought, contextWindow, effectiveMode as DistillationMode);
-      promptContext = this.formatDistilledContext(distilledContext);
+      promptContext = `${this.formatDistilledContext(distilledContext)}\n\n${FORMAT_INSTRUCTION}`;
     } else {
       // Use raw context (original behavior)
       promptContext = rawContext
-        ? `## Previous Thoughts Context:\n${rawContext}\n\n---\n\n## Current Task:\n${thought}`
-        : thought;
+        ? `## Previous Thoughts Context:\n${rawContext}\n\n---\n\n## Current Task:\n${thought}\n\n${FORMAT_INSTRUCTION}`
+        : `${thought}\n\n${FORMAT_INSTRUCTION}`;
     }
 
     // Execute model tool if requested
@@ -943,14 +956,16 @@ export class SequentialThinking {
       parts.push(`## Most Recent Analysis\n${lastModelResponse}`);
     }
 
-    // Judge instruction
+    // Judge instruction (no bold markers in instructions - clean formatting)
     parts.push(`## Your Task: Final Judgment
 Analyze the complete reasoning chain above and provide:
-1. **Verdict**: Is the conclusion sound? (Yes/No/Partial)
-2. **Confidence**: How confident are you? (High/Medium/Low)
-3. **Key Strengths**: What was done well?
-4. **Weaknesses/Gaps**: What was missed or flawed?
-5. **Final Recommendation**: Concise actionable summary`);
+1. Verdict: Is the conclusion sound? (Yes/No/Partial)
+2. Confidence: How confident are you? (High/Medium/Low)
+3. Key Strengths: What was done well?
+4. Weaknesses/Gaps: What was missed or flawed?
+5. Final Recommendation: Concise actionable summary
+
+${FORMAT_INSTRUCTION}`);
 
     return parts.join("\n\n");
   }

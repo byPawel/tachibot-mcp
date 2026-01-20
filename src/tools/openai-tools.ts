@@ -11,6 +11,8 @@ import { fileURLToPath } from 'url';
 import { validateToolInput } from "../utils/input-validator.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { OPENAI_MODELS, OPENAI_REASONING, CURRENT_MODELS, TOOL_DEFAULTS } from "../config/model-constants.js";
+import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import { stripFormatting } from "../utils/format-stripper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -303,7 +305,7 @@ export async function callOpenAI(
 
       console.error(`🔍 TRACE: ${currentModel} SUCCESS - Response length: ${result.length}`);
 
-      return result;
+      return stripFormatting(result);
 
     } catch (error) {
       lastError = `${currentModel}: ${error instanceof Error ? error.message : String(error)}`;
@@ -457,7 +459,7 @@ async function callOpenAIWithCustomParams(
 
     console.error(`🔍 TRACE: ${model} SUCCESS - Response length: ${result.length}`);
 
-    return result;
+    return stripFormatting(result);
 
   } catch (error) {
     const errorMsg = `${model}: ${error instanceof Error ? error.message : String(error)}`;
@@ -494,7 +496,7 @@ export const gpt5ReasonTool = {
     const messages = [
       {
         role: "system",
-        content: `You are GPT-5, the most advanced reasoning model.\n${modePrompts[args.mode as keyof typeof modePrompts || 'analytical']}.\nProvide step-by-step reasoning with clear explanations.\n${args.context ? `Context: ${args.context}` : ''}`
+        content: `You are GPT-5, the most advanced reasoning model.\n${modePrompts[args.mode as keyof typeof modePrompts || 'analytical']}.\nProvide step-by-step reasoning with clear explanations.\n${args.context ? `Context: ${args.context}` : ''}\n${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -529,7 +531,7 @@ export const gpt5MiniReasonTool = {
     const messages = [
       {
         role: "system",
-        content: `You are GPT-5-mini, optimized for efficient reasoning.\n${modePrompts[args.mode as keyof typeof modePrompts || 'analytical']}.\nProvide clear, step-by-step reasoning.\n${args.context ? `Context: ${args.context}` : ''}`
+        content: `You are GPT-5-mini, optimized for efficient reasoning.\n${modePrompts[args.mode as keyof typeof modePrompts || 'analytical']}.\nProvide clear, step-by-step reasoning.\n${args.context ? `Context: ${args.context}` : ''}\n${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -564,7 +566,8 @@ export const openaiGpt5ReasonTool = {
         content: `You are an expert reasoner using advanced analytical capabilities.
 ${modePrompts[args.mode as keyof typeof modePrompts || 'analytical']}.
 Provide step-by-step reasoning with clear explanations.
-${args.context ? `Context: ${args.context}` : ''}`
+${args.context ? `Context: ${args.context}` : ''}
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -618,7 +621,8 @@ export const openAIBrainstormTool = {
 Generate ${quantity} distinct ideas.
 Style: ${stylePrompts[style as keyof typeof stylePrompts]}
 ${constraints ? `Constraints: ${constraints}` : ''}
-Format: Number each idea and provide a brief explanation.`
+Format: Number each idea and provide a brief explanation.
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -655,7 +659,8 @@ export const openaiCodeReviewTool = {
 Provide a thorough code review with specific, actionable feedback.
 ${focusText}
 ${args.language ? `Language: ${args.language}` : ''}
-Format: Use sections for different aspects, be specific about line numbers or functions.`
+Format: Use sections for different aspects, be specific about line numbers or functions.
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -699,7 +704,8 @@ export const openaiExplainTool = {
         content: `You are an expert educator.
 ${levelPrompts[args.level as keyof typeof levelPrompts || 'intermediate']}.
 ${stylePrompts[args.style as keyof typeof stylePrompts || 'simple']}.
-Make the explanation clear, engaging, and memorable.`
+Make the explanation clear, engaging, and memorable.
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",

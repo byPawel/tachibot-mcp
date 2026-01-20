@@ -12,7 +12,7 @@ import {
   TOOL_DEFAULTS,
   GEMINI_MODELS,
 } from "../config/model-constants.js";
-import { validateToolInput } from "../utils/input-validator.js";
+import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
 import { hasGrokApiKey } from "../utils/api-keys.js";
 import { trackToolCall, estimateTokens, isTrackingEnabled } from "../utils/usage-tracker.js";
 
@@ -60,7 +60,8 @@ export interface ToolCallOptions {
   maxTokens?: number;
   temperature?: number;
   systemPrompt?: string;
-  skipValidation?: boolean; // Skip input validation for internal workflow calls
+  skipValidation?: boolean; // Deprecated - use validationContext instead
+  validationContext?: ValidationContext; // Context for input validation (default: 'llm-orchestration' for workflows)
 }
 
 export type ToolInput =
@@ -133,22 +134,21 @@ export async function executeWorkflowTool(
     }
   }
 
-  // Validate and sanitize input (skip for internal workflow calls)
-  console.error(`🔒 Validation check: skipValidation=${options.skipValidation}, options=${JSON.stringify(options)}`);
-  if (options.skipValidation === true) {
-    console.error(`⏭️  ✅ SKIPPING VALIDATION (internal workflow call)`);
-  } else {
-    console.error(`🔍 Running validation on prompt (length: ${prompt.length})`);
-    const validation = validateToolInput(prompt);
-    console.error(`🔍 Validation result: valid=${validation.valid}, error=${validation.error}`);
-    if (!validation.valid) {
-      console.error(`❌ Validation failed: ${validation.error}`);
-      console.error(`❌ Failed prompt length: ${prompt.length}`);
-      console.error(`❌ Failed prompt preview: "${prompt.substring(0, 500)}..."`);
-      return { result: `[Error: ${validation.error}]`, modelUsed: "error" };
-    }
-    prompt = validation.sanitized;
+  // Validate and sanitize input with context-aware rules
+  // Workflows default to 'llm-orchestration' context (allows code patterns)
+  const validationContext: ValidationContext = options.validationContext ??
+    (options.skipValidation ? 'llm-orchestration' : 'llm-orchestration'); // Workflow calls use llm-orchestration
+  console.error(`🔒 Validation context: ${validationContext}`);
+  console.error(`🔍 Running validation on prompt (length: ${prompt.length})`);
+  const validation = validateToolInput(prompt, validationContext);
+  console.error(`🔍 Validation result: valid=${validation.valid}, error=${validation.error}`);
+  if (!validation.valid) {
+    console.error(`❌ Validation failed: ${validation.error}`);
+    console.error(`❌ Failed prompt length: ${prompt.length}`);
+    console.error(`❌ Failed prompt preview: "${prompt.substring(0, 500)}..."`);
+    return { result: `[Error: ${validation.error}]`, modelUsed: "error" };
   }
+  prompt = validation.sanitized;
 
   // Get defaults for this specific tool, fallback to generic defaults
   const toolDefaults = TOOL_DEFAULTS[
@@ -205,7 +205,7 @@ export async function executeWorkflowTool(
             actualModel,
             systemPrompt,
             temperature,
-            options.skipValidation || false, // Pass skipValidation flag to Gemini
+            validationContext, // Pass validation context to Gemini
           ),
           actualModel
         );
@@ -309,6 +309,8 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
       case "openai_brainstorm":
       case "openai_analyze":
         actualModel = (model || OPENAI_MODELS.FULL) as OpenAIModel;
+        // OpenAI still uses boolean - convert from context (llm-orchestration = skip validation)
+        const skipValidationAnalyze = validationContext !== 'user-input';
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -317,7 +319,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
             maxTokens,
             "low", // reasoningEffort
             false, // requireConfirmation
-            options.skipValidation || false, // skipValidation for workflow calls
+            skipValidationAnalyze,
           ),
           actualModel
         );
@@ -325,6 +327,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
       case "openai_reason":
         // GPT-5 Pro with high reasoning effort for complex reasoning
         actualModel = OPENAI_MODELS.PRO as OpenAIModel;
+        const skipValidationReason = validationContext !== 'user-input';
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt),
@@ -333,7 +336,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
             maxTokens,
             "high", // reasoningEffort
             false, // requireConfirmation
-            options.skipValidation || false,
+            skipValidationReason,
           ),
           actualModel
         );
@@ -341,6 +344,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
       case "openai_code_review":
         // GPT-5.1 codex-mini for code review (medium reasoning)
         actualModel = OPENAI_MODELS.CODEX_MINI as OpenAIModel;
+        const skipValidationCodeReview = validationContext !== 'user-input';
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt || "You are an expert code reviewer. Provide thorough code review with specific, actionable feedback."),
@@ -349,7 +353,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
             maxTokens,
             "medium", // reasoningEffort
             false,
-            options.skipValidation || false,
+            skipValidationCodeReview,
           ),
           actualModel
         );
@@ -357,6 +361,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
       case "openai_explain":
         // GPT-5.1 codex-mini for explanations (low reasoning)
         actualModel = OPENAI_MODELS.CODEX_MINI as OpenAIModel;
+        const skipValidationExplain = validationContext !== 'user-input';
         return buildResult(
           await callOpenAI(
             toMessages(prompt, systemPrompt || "You are an expert educator. Provide clear, engaging explanations."),
@@ -365,7 +370,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
             maxTokens,
             "low", // reasoningEffort
             false,
-            options.skipValidation || false,
+            skipValidationExplain,
           ),
           actualModel
         );

@@ -8,8 +8,10 @@ import { config } from "dotenv";
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { grokSearchTool } from './grok-enhanced.js';
-import { validateToolInput } from "../utils/input-validator.js";
+import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
 import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
+import { stripFormatting } from "../utils/format-stripper.js";
+import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
@@ -39,13 +41,18 @@ export enum GrokModel {
 
 /**
  * Call Grok API
+ * @param validationContext - Context for input validation (default: 'llm-orchestration')
+ *   - 'user-input': Strict validation for direct user input
+ *   - 'code-analysis': Relaxed for code analysis tools
+ *   - 'llm-orchestration': Medium for LLM-to-LLM calls
  */
 export async function callGrok(
   messages: Array<{ role: string; content: string }>,
   model: GrokModel = GrokModel.GROK_4_1_FAST_REASONING, // Updated 2025-11-22: Use latest Grok 4.1 by default
   temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased default for comprehensive responses
-  forceVisibleOutput: boolean = true
+  forceVisibleOutput: boolean = true,
+  validationContext: ValidationContext = 'llm-orchestration'
 ): Promise<string> {
   // Try OpenRouter gateway first if enabled
   if (isGatewayEnabled()) {
@@ -64,9 +71,9 @@ export async function callGrok(
     return `[Grok API key not configured. Add XAI_API_KEY to .env file]`;
   }
 
-  // Validate and sanitize message content
+  // Validate and sanitize message content with context-aware rules
   const validatedMessages = messages.map((msg) => {
-    const validation = validateToolInput(msg.content);
+    const validation = validateToolInput(msg.content, validationContext);
     if (!validation.valid) {
       throw new Error(validation.error || "Invalid message content");
     }
@@ -117,7 +124,8 @@ export async function callGrok(
       // If Grok 4 returns no visible content, retry with Grok 3 for visible output
       if (isGrok4 && forceVisibleOutput) {
         console.error(`Grok 4 used ${data.usage.completion_tokens_details.reasoning_tokens} reasoning tokens with no output. Retrying with Grok 3...`);
-        return callGrok(validatedMessages, GrokModel.GROK_3, temperature, maxTokens, false);
+        // Messages already validated - use same context for retry
+        return callGrok(validatedMessages, GrokModel.GROK_3, temperature, maxTokens, false, validationContext);
       }
       return `[Grok ${model} performed deep reasoning with ${data.usage.completion_tokens_details.reasoning_tokens} tokens]`;
     }
@@ -153,9 +161,10 @@ export const grokReasonTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.1, an expert at logical reasoning and problem-solving with enhanced emotional intelligence.
+        content: `You are Grok 4.1, an expert at logical reasoning and problem-solving.
 ${approachPrompts[approach as keyof typeof approachPrompts]}.
-${context ? `Context: ${context}` : ''}`
+${context ? `Context: ${context}` : ''}
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -168,7 +177,8 @@ ${context ? `Context: ${context}` : ''}`
     const maxTokens = useHeavy ? 100000 : 16384; // 100k for heavy, 16k for normal reasoning
     log?.info(`Using Grok model: ${model} for deep reasoning (max tokens: ${maxTokens}, cost: ${useHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50'})`);
 
-    return await callGrok(messages, model, 0.7, maxTokens, true);
+    // Use llm-orchestration context - input may contain code patterns
+    return stripFormatting(await callGrok(messages, model, 0.7, maxTokens, true, 'llm-orchestration'));
   }
 };
 
@@ -198,10 +208,11 @@ export const grokCodeTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.1 Fast, an expert programmer and code analyst with advanced tool-calling capabilities.
+        content: `You are Grok 4.1 Fast, expert programmer and code analyst.
 Task: ${taskPrompts[task as keyof typeof taskPrompts]}
 ${language ? `Language: ${language}` : ''}
-${requirements ? `Requirements: ${requirements}` : ''}`
+${requirements ? `Requirements: ${requirements}` : ''}
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -210,7 +221,8 @@ ${requirements ? `Requirements: ${requirements}` : ''}`
     ];
 
     log?.info(`Using Grok 4.1 Fast Non-Reasoning (2M context, tool-calling optimized, $0.20/$0.50)`);
-    return await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.2, 4000, true);
+    // Use code-analysis context - code content naturally contains patterns
+    return stripFormatting(await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.2, 4000, true, 'code-analysis'));
   }
 };
 
@@ -246,12 +258,13 @@ export const grokDebugTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok Code Fast, an expert debugger.
-Analyze the issue systematically:
-1. Identify the root cause
-2. Explain why it's happening
-3. Provide a clear solution
-4. Suggest preventive measures`
+        content: `You are Grok, expert debugger.
+Analyze systematically:
+1. Root cause
+2. Why it happens
+3. Solution
+4. Prevention
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -260,7 +273,8 @@ Analyze the issue systematically:
     ];
 
     log?.info(`Using Grok 4.1 Fast Non-Reasoning for debugging (tool-calling optimized, $0.20/$0.50)`);
-    return await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.3, 3000, true);
+    // Use code-analysis context - debug content may contain error patterns
+    return stripFormatting(await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.3, 3000, true, 'code-analysis'));
   }
 };
 
@@ -281,11 +295,11 @@ export const grokArchitectTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok, an expert system architect.
-Design a robust, scalable architecture using first principles.
-Consider: reliability, scalability, maintainability, security, and cost.
-${scale ? `Target scale: ${scale}` : ''}
-${constraints ? `Constraints: ${constraints}` : ''}`
+        content: `You are Grok, expert system architect.
+Design robust, scalable architecture.
+${scale ? `Scale: ${scale}` : ''}
+${constraints ? `Constraints: ${constraints}` : ''}
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -294,7 +308,8 @@ ${constraints ? `Constraints: ${constraints}` : ''}`
     ];
 
     log?.info(`Using Grok 4.1 Fast Reasoning for architecture (latest model, $0.20/$0.50)`);
-    return await callGrok(messages, GrokModel.GROK_4_1_FAST_REASONING, 0.6, 4000, true);
+    // Use llm-orchestration context - architecture content may contain technical patterns
+    return stripFormatting(await callGrok(messages, GrokModel.GROK_4_1_FAST_REASONING, 0.6, 4000, true, 'llm-orchestration'));
   }
 };
 
@@ -316,9 +331,9 @@ export const grokBrainstormTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok, witty and ingenious. Generate ${numIdeas} innovative, practical ideas tailored to the request.
-Challenge assumptions cleverly while staying grounded in real-world feasibility. Deliver context-relevant solutions with smart, actionable twists.
-${constraints ? `Constraints: ${constraints}` : ''}`
+        content: `You are Grok. Generate ${numIdeas} innovative ideas.
+${constraints ? `Constraints: ${constraints}` : ''}
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -330,7 +345,8 @@ ${constraints ? `Constraints: ${constraints}` : ''}`
     const model = forceHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1_FAST_REASONING;
     log?.info(`Brainstorming with Grok model: ${model} (Heavy: ${forceHeavy}, cost: ${forceHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50 - latest 4.1'})`);
 
-    return await callGrok(messages, model, 0.95, 4000); // High temperature for creativity
+    // Use llm-orchestration context - brainstorm content may contain LLM-generated patterns
+    return stripFormatting(await callGrok(messages, model, 0.95, 4000, true, 'llm-orchestration')); // High temperature for creativity
   }
 };
 

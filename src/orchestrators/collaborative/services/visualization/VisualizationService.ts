@@ -1,19 +1,68 @@
 import { IExtendedVisualizationRenderer } from "../../interfaces/IVisualizationRenderer.js";
 import { CollaborationSession } from "../../types/session-types.js";
 import { ReasoningMode, REASONING_TEMPLATES, MODEL_PERSONAS } from "../../../../reasoning-chain.js";
-import {
-  renderWorkflowCascade,
-  renderProgressReel,
-  renderThinkingChainArbor,
-  renderGradientDivider,
-  renderGradientBorderBox,
-  renderTable,
-  renderKeyValueTable,
-  renderQuickFlow,
-  icons,
-  WorkflowStep,
-  ProgressPhase,
-} from "../../../../utils/ink-renderer.js";
+// import {
+//   renderWorkflowCascade,
+//   renderProgressReel,
+//   renderThinkingChainArbor,
+//   renderGradientDivider,
+//   renderGradientBorderBox,
+//   renderTable,
+//   renderKeyValueTable,
+//   renderQuickFlow,
+//   icons,
+//   WorkflowStep,
+//   ProgressPhase,
+// } from "../../../../utils/ink-renderer.js";
+// Ink disabled - using plain text functions
+interface WorkflowStep {
+  name: string;
+  model: string;
+  status: 'completed' | 'running' | 'pending';
+  duration?: number;
+}
+interface ProgressPhase {
+  name: string;
+  status: 'completed' | 'active' | 'pending';
+}
+const renderWorkflowCascade = (steps: WorkflowStep[], title: string): string => {
+  const lines = [`## ${title}`];
+  steps.forEach((s, i) => lines.push(`${i + 1}. [${s.status}] ${s.name} (${s.model})`));
+  return lines.join('\n');
+};
+const renderProgressReel = (phases: ProgressPhase[], title: string): string => {
+  const lines = [`## ${title}`];
+  phases.forEach(p => lines.push(`- [${p.status}] ${p.name}`));
+  return lines.join('\n');
+};
+const renderThinkingChainArbor = (thoughts: { thought: string; model: string; isRevision?: boolean; isBranch?: boolean }[], title: string): string => {
+  const lines = [`## ${title}`];
+  thoughts.forEach((t, i) => lines.push(`${i + 1}. (${t.model}) ${t.thought}`));
+  return lines.join('\n');
+};
+const renderGradientDivider = (width: number = 50, _preset?: string): string => '-'.repeat(width);
+const renderGradientBorderBox = (content: string, _opts?: { width?: number; gradient?: string }): string => {
+  return `--- ${content} ---`;
+};
+const renderTable = (data: Record<string, string>[]): string => {
+  if (data.length === 0) return '';
+  const keys = Object.keys(data[0]);
+  const header = '| ' + keys.join(' | ') + ' |';
+  const separator = '|' + keys.map(() => '---').join('|') + '|';
+  const rows = data.map(row => '| ' + keys.map(k => row[k] || '').join(' | ') + ' |');
+  return [header, separator, ...rows].join('\n');
+};
+const renderKeyValueTable = (data: Record<string, string | number>): string => {
+  return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join('\n');
+};
+const renderQuickFlow = (steps: string[], title: string): string => {
+  return `## ${title}\n${steps.join(' -> ')}`;
+};
+const icons = {
+  brain: '*',
+  sparkle: '*',
+  workflow: '>',
+};
 
 /**
  * Visualization Service - Now with React Ink components!

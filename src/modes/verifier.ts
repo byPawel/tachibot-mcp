@@ -3,14 +3,44 @@ import { getVerifierModels } from '../config/model-defaults.js';
 import { createMultiModelReporter } from '../utils/progress-stream.js';
 import { smartAPIClient } from '../utils/smart-api-client.js';
 import { getSmartTimeout } from '../config/timeout-config.js';
-import {
-  renderTable,
-  renderKeyValueTable,
-  renderGradientBorderBox,
-  renderGradientDivider,
-  brailleBar,
-  icons,
-} from '../utils/ink-renderer.js';
+// import {
+//   renderTable,
+//   renderKeyValueTable,
+//   renderGradientBorderBox,
+//   renderGradientDivider,
+//   brailleBar,
+//   icons,
+// } from '../utils/ink-renderer.js';
+// Ink disabled - using plain text functions
+const renderTable = (data: Record<string, string>[]): string => {
+  if (data.length === 0) return '';
+  const keys = Object.keys(data[0]);
+  const header = '| ' + keys.join(' | ') + ' |';
+  const separator = '|' + keys.map(() => '---').join('|') + '|';
+  const rows = data.map(row => '| ' + keys.map(k => row[k] || '').join(' | ') + ' |');
+  return [header, separator, ...rows].join('\n');
+};
+const renderKeyValueTable = (data: Record<string, string | number>): string => {
+  return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join('\n');
+};
+const renderGradientBorderBox = (content: string, _opts?: { width?: number; gradient?: string }): string => {
+  return `--- ${content} ---`;
+};
+const renderGradientDivider = (width: number = 50, _preset?: string): string => '-'.repeat(width);
+const brailleBar = (value: number, max: number, width: number = 20): string => {
+  const filled = Math.round((value / max) * width);
+  return '[' + '#'.repeat(filled) + '-'.repeat(width - filled) + ']';
+};
+const icons = {
+  search: '?',
+  brain: '*',
+  check: '+',
+  alertCircle: '!',
+  file: '#',
+  starFilled: '*',
+  chartBar: '|',
+  warning: '!',
+};
 import { TableBuilder } from '../utils/table-builder.js';
 
 export interface VerifyOptions {

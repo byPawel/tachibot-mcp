@@ -4,6 +4,8 @@
  */
 
 import { z } from "zod";
+import { stripFormatting } from "../utils/format-stripper.js";
+import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 
 // Check if we have Anthropic API key
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -348,12 +350,12 @@ export class ClaudeCodeIntegration {
 
   private getModePrefix(mode: string): string {
     const prefixes: Record<string, string> = {
-      analyze: '🔍 **Analysis**',
-      plan: '📋 **Planning**',
-      synthesize: '🔄 **Synthesis**',
-      reflect: '💭 **Reflection**'
+      analyze: '🔍 ANALYSIS',
+      plan: '📋 PLANNING',
+      synthesize: '🔄 SYNTHESIS',
+      reflect: '💭 REFLECTION'
     };
-    return prefixes[mode] || '🤔 **Reasoning**';
+    return prefixes[mode] || '🤔 REASONING';
   }
 
   private addToHistory(message: any): void {
@@ -423,7 +425,7 @@ export class ClaudeCodeIntegration {
 // Export the tool for MCP registration
 export const claudeIntegrationTool = {
   name: 'think',
-  description: 'Claude reasoning and analysis tool with structured thinking',
+  description: 'Log reasoning',
   inputSchema: z.object({
     thought: z.string().optional(),
     prompt: z.string().optional(),
@@ -433,6 +435,7 @@ export const claudeIntegrationTool = {
   }),
   execute: async (args: any, context: any) => {
     const integration = new ClaudeCodeIntegration();
-    return await integration.executeThink(args);
+    const result = await integration.executeThink(args);
+    return stripFormatting(result);
   }
 };

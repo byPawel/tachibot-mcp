@@ -10,6 +10,8 @@ import { fileURLToPath } from 'url';
 import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { link } from "../utils/ansi-renderer.js";
+import { stripFormatting } from "../utils/format-stripper.js";
+import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to call it here
 
 const __filename = fileURLToPath(import.meta.url);
@@ -180,7 +182,8 @@ export const grokScoutTool = {
         content: `You are Grok in research mode with live search capability.
 ${variantPrompts[variant as keyof typeof variantPrompts]}.
 Use live search to find the most current and relevant information.
-Cite your sources when using web data.`
+Cite your sources when using web data.
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -210,10 +213,10 @@ Cite your sources when using web data.`
         })
         .join('\n');
 
-      return `${result.content}\n\n**Sources:**\n${sourcesText}`;
+      return stripFormatting(`${result.content}\n\nSources:\n${sourcesText}`);
     }
 
-    return result.content;
+    return stripFormatting(result.content);
   }
 };
 
@@ -255,7 +258,8 @@ export const grokReasonEnhanced = {
 ${approachPrompts[approach as keyof typeof approachPrompts]}.
 ${context ? `Context: ${context}` : ''}
 Maximum reasoning steps: ${maxSteps}
-${enableLiveSearch ? 'Use live search for current information when needed.' : ''}`
+${enableLiveSearch ? 'Use live search for current information when needed.' : ''}
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -279,10 +283,10 @@ ${enableLiveSearch ? 'Use live search for current information when needed.' : ''
     // Add usage info if Heavy mode
     if (useHeavy && result.usage) {
       const costEstimate = (result.usage.total_tokens / 1000) * 0.015; // Rough estimate
-      return `${result.content}\n\n---\n*Heavy mode used: ${result.usage.total_tokens} tokens (~$${costEstimate.toFixed(3)})*`;
+      return stripFormatting(`${result.content}\n\n---\nHeavy mode used: ${result.usage.total_tokens} tokens (~$${costEstimate.toFixed(3)})`);
     }
 
-    return result.content;
+    return stripFormatting(result.content);
   }
 };
 
@@ -349,18 +353,18 @@ export const grokFunctionTool = {
       
       // Check if Grok made tool calls
       const toolCalls = data.choices?.[0]?.message?.tool_calls || [];
-      
+
       if (toolCalls.length > 0) {
-        const callsDesc = toolCalls.map((tc: any) => 
+        const callsDesc = toolCalls.map((tc: any) =>
           `- ${tc.function.name}(${tc.function.arguments})`
         ).join('\n');
-        
-        return `Grok-4 would call these functions:\n${callsDesc}\n\n${data.choices?.[0]?.message?.content || ''}`;
+
+        return stripFormatting(`Grok-4 would call these functions:\n${callsDesc}\n\n${data.choices?.[0]?.message?.content || ''}`);
       }
-      
-      return data.choices?.[0]?.message?.content || "No function calls made";
+
+      return stripFormatting(data.choices?.[0]?.message?.content || "No function calls made");
     } catch (error) {
-      return `Function calling error: ${error}`;
+      return stripFormatting(`Function calling error: ${error}`);
     }
   }
 };
@@ -393,7 +397,8 @@ export const grokSearchTool = {
         content: `You are Grok-3 with live search. Search for: "${query}".
 ${recencyPrompt}
 Provide concise, factual results with sources.
-Limit search to ${max_search_results} sources for cost control.`
+Limit search to ${max_search_results} sources for cost control.
+${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -428,14 +433,14 @@ Limit search to ${max_search_results} sources for cost control.`
           return `  ${link(url, `[${i + 1}] ${title}`)}`;
         })
         .join('\n');
-      output += `\n\n**Sources:**\n${sourcesText}`;
+      output += `\n\nSources:\n${sourcesText}`;
     }
 
     // Add cost info
     const estimatedCost = (max_search_results / 1000) * 0.025;
-    output += `\n\n*Search used up to ${max_search_results} sources (~$${estimatedCost.toFixed(4)})*`;
+    output += `\n\nSearch used up to ${max_search_results} sources (~$${estimatedCost.toFixed(4)})`;
 
-    return output;
+    return stripFormatting(output);
   }
 };
 

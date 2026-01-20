@@ -15,38 +15,75 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import { isToolEnabled } from '../utils/tool-config.js';
-import {
-  renderWorkflowResult,
-  renderSingleStep,
-  renderWorkflowSummary,
-  renderProgressBanner,
-  renderCompactProgress,
-  type WorkflowResult,
-  type StepResult,
-  type JudgeResult,
-  type RenderWorkflowOptions,
-} from '../utils/workflow-ink-renderer.js';
-import { createProgressStream } from '../utils/progress-stream.js';
-import { renderBigText, renderToolBadge } from '../utils/ink-renderer.js';
-import { stripAnsi } from '../utils/ansi-renderer.js';
-import { renderMarkdownToAnsi } from '../utils/ink-markdown-renderer.js';
+// INK DISABLED - Using plain text to save tokens
+// import {
+//   renderWorkflowResult,
+//   renderSingleStep,
+//   renderWorkflowSummary,
+//   renderProgressBanner,
+//   renderCompactProgress,
+//   type WorkflowResult,
+//   type StepResult,
+//   type JudgeResult,
+//   type RenderWorkflowOptions,
+// } from '../utils/workflow-ink-renderer.js';
+// import { createProgressStream } from '../utils/progress-stream.js';
+// import { renderBigText, renderToolBadge } from '../utils/ink-renderer.js';
+// import { stripAnsi } from '../utils/ansi-renderer.js';
+// import { renderMarkdownToAnsi } from '../utils/ink-markdown-renderer.js';
 
-/**
- * Check if ANSI output should be stripped for LLM context savings
- * Default: false (keep beautiful colors)
- * Set TACHIBOT_STRIP_ANSI=true to strip ANSI codes from output
- */
-function shouldStripAnsi(): boolean {
-  const envVal = process.env.TACHIBOT_STRIP_ANSI?.toLowerCase();
-  return envVal === 'true' || envVal === '1';
+// Plain text types (no Ink)
+interface StepResult {
+  step: string;
+  tool?: string;
+  model?: string;
+  output: string;
+  duration?: number;
+  filePath?: string;
 }
 
-/**
- * Conditionally strip ANSI codes based on env setting
- */
-function maybeStripAnsi(text: string): string {
-  return shouldStripAnsi() ? stripAnsi(text) : text;
+interface WorkflowResult {
+  workflowName: string;
+  workflowId?: string;
+  duration: number;
+  steps: StepResult[];
+  status: 'completed' | 'failed' | 'running';
 }
+
+interface JudgeResult {
+  winner?: string;
+  reasoning: string;
+  scores?: Record<string, number>;
+  rankings?: string[];
+}
+
+// Plain text render functions (no Ink)
+function renderProgressBanner(_opts: any): string {
+  return ''; // Disabled - saves tokens
+}
+
+function renderWorkflowResultPlain(result: WorkflowResult): string {
+  const lines: string[] = [];
+  lines.push(`## ${result.workflowName}`);
+  lines.push(`Status: ${result.status} | Duration: ${(result.duration / 1000).toFixed(1)}s`);
+  lines.push('');
+  for (const step of result.steps) {
+    lines.push(`### ${step.step} (${step.tool || 'unknown'})`);
+    if (step.model) lines.push(`Model: ${step.model}`);
+    lines.push(step.output);
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+function renderSingleStepPlain(step: StepResult, stepNum: number, total: number, workflowName: string): string {
+  return `## ${workflowName} - Step ${stepNum}/${total}: ${step.step}\n\n${step.output}`;
+}
+
+function renderWorkflowSummaryPlain(name: string, steps: number, duration: number, output: string): string {
+  return `## ${name} Complete\n\nSteps: ${steps} | Duration: ${(duration / 1000).toFixed(1)}s\n\n${output}`;
+}
+
 
 /**
  * MCP Context with progress reporting capability
@@ -170,21 +207,9 @@ export function registerWorkflowTools(server: FastMCP) {
         });
         console.error(completeBanner);
 
-        // String result from engine - add Ink formatting
+        // String result from engine - plain text (Ink disabled)
         if (typeof result === 'string') {
-          // Check if Ink formatting is enabled (default: true)
-          const useInk = process.env.TACHIBOT_INK_FORMATTING?.toLowerCase() !== 'false';
-
-          if (useInk) {
-            // Wrap with Ink header/badge + render markdown body through Ink
-            const flowBadge = renderToolBadge('workflow', { icon: '⎔', gradient: 'morning' });
-            const flowHeader = renderBigText('FLOW', { font: 'block', gradient: 'morning' });
-            const styledBody = renderMarkdownToAnsi(result);
-            const beautifulOutput = `${flowBadge}\n${flowHeader}\n${styledBody}`;
-            return maybeStripAnsi(beautifulOutput);
-          }
-
-          return result;
+          return result; // Plain text - no Ink formatting
         }
 
         // Format detailed workflow results using Ink renderer
@@ -257,20 +282,8 @@ export function registerWorkflowTools(server: FastMCP) {
             }
           }
 
-          // Render with Ink
-          const renderOptions: RenderWorkflowOptions = {
-            includeComparison: showComparison,
-            includeJudging: enableJudge,
-            judgeResult,
-            maxSummaryLength: maxChars,
-          };
-
-          // BigText header (disabled via TACHIBOT_BIG_HEADERS=false)
-          const flowBadge = renderToolBadge('workflow', { icon: '⎔', gradient: 'morning' });
-          const flowHeader = renderBigText('FLOW', { font: 'block', gradient: 'morning' });
-          // Return beautiful ANSI output (optionally stripped via TACHIBOT_STRIP_ANSI=true)
-          const beautifulOutput = `${flowBadge}\n${flowHeader}\n` + renderWorkflowResult(workflowResult, renderOptions);
-          return maybeStripAnsi(beautifulOutput);
+          // Plain text render (Ink disabled)
+          return renderWorkflowResultPlain(workflowResult);
         }
 
         // Fallback for any other object type
@@ -549,17 +562,8 @@ Steps:
           duration: r.duration,
         };
 
-        // Render with React Ink
-        const renderedOutput = renderSingleStep(
-          stepResult,
-          r.step,
-          totalSteps,
-          args.name,
-          {
-            elapsedTime: r.duration,
-            maxSummaryLength: workflowEngine.getStepTokenLimit() * 4, // tokens -> chars
-          }
-        );
+        // Plain text render (Ink disabled)
+        const renderedOutput = renderSingleStepPlain(stepResult, r.step, totalSteps, args.name);
 
         // Add session info and next step guidance
         const sessionInfo = `\nSession: ${r.sessionId}\n`;
@@ -567,7 +571,7 @@ Steps:
           ? `\nNext: continue_workflow --sessionId ${r.sessionId}`
           : '\nWorkflow complete!';
 
-        return maybeStripAnsi(renderedOutput + sessionInfo + nextStep);
+        return renderedOutput + sessionInfo + nextStep;
       } catch (error: any) {
         return `Failed to start workflow: ${error.message}`;
       }
@@ -653,19 +657,10 @@ Steps:
 
           const totalDuration = Date.now() - (session?.startTime || Date.now());
 
-          // Render completion summary with React Ink
-          const renderedOutput = renderWorkflowSummary(
-            workflowName,
-            totalSteps,
-            totalDuration,
-            r.output, // Final step output serves as summary
-            {
-              steps: allStepResults.length > 1 ? allStepResults : undefined,
-              includeComparison: allStepResults.length > 1,
-            }
-          );
+          // Plain text render (Ink disabled)
+          const renderedOutput = renderWorkflowSummaryPlain(workflowName, totalSteps, totalDuration, r.output);
 
-          return maybeStripAnsi(renderedOutput);
+          return renderedOutput;
         }
 
         // Still in progress - render current step
@@ -680,23 +675,12 @@ Steps:
           duration: r.duration,
         };
 
-        const elapsedTime = Date.now() - (session?.startTime || Date.now());
-
-        const renderedOutput = renderSingleStep(
-          stepResult,
-          r.step,
-          totalSteps,
-          workflowName,
-          {
-            elapsedTime,
-            maxSummaryLength: workflowEngine.getStepTokenLimit() * 4,
-          }
-        );
+        const renderedOutput = renderSingleStepPlain(stepResult, r.step, totalSteps, workflowName);
 
         const sessionInfo = `\nSession: ${r.sessionId}\n`;
         const nextStep = `\nNext: continue_workflow --sessionId ${r.sessionId}`;
 
-        return maybeStripAnsi(renderedOutput + sessionInfo + nextStep);
+        return renderedOutput + sessionInfo + nextStep;
       } catch (error: any) {
         return `Failed to continue workflow: ${error.message}`;
       }
@@ -726,21 +710,25 @@ Steps:
 
         const duration = ((Date.now() - session.startTime) / 1000).toFixed(1);
 
-        return `# Workflow Session Status
+        return `WORKFLOW SESSION STATUS
+${'═'.repeat(40)}
 
-**Workflow:** ${session.workflowName}
-**Session ID:** \`${args.sessionId}\`
-**Status:** Running
+Workflow: ${session.workflowName}
+Session ID: ${args.sessionId}
+Status: Running
 
-**Progress:** ${completed}/${totalSteps} steps completed
-**Current Step:** ${currentStep} - ${session.workflow.steps[session.currentStepIndex]?.name || 'N/A'}
-**Remaining:** ${remaining} steps
-**Duration:** ${duration}s
+PROGRESS
+${'─'.repeat(20)}
+- Completed: ${completed}/${totalSteps} steps
+- Current Step: ${currentStep} - ${session.workflow.steps[session.currentStepIndex]?.name || 'N/A'}
+- Remaining: ${remaining} steps
+- Duration: ${duration}s
 
-**Latest Output:**
+LATEST OUTPUT
+${'─'.repeat(20)}
 ${session.previousOutput?.substring(0, 500) || 'No output yet'}${session.previousOutput?.length > 500 ? '...' : ''}
 
-Use \`continue_workflow\` to execute the next step.`;
+Use continue_workflow to execute the next step.`;
       } catch (error: any) {
         return `Failed to get workflow status: ${error.message}`;
       }
@@ -803,10 +791,10 @@ ${stepSummaries}
 
 ## Your Task
 Evaluate ALL steps and provide:
-1. **Rankings**: Order steps from best to worst based on quality, relevance, and completeness
-2. **Scores**: Rate each step from 1-10
-3. **Winner**: Which step provided the best response
-4. **Reasoning**: Brief explanation of your evaluation
+1. RANKINGS: Order steps from best to worst based on quality, relevance, and completeness
+2. SCORES: Rate each step from 1-10
+3. WINNER: Which step provided the best response
+4. REASONING: Brief explanation of your evaluation
 
 Respond in this exact JSON format:
 {

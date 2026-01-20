@@ -855,10 +855,18 @@ export type BigTextFont = 'block' | 'slick' | 'tiny' | 'grid' | 'pallet' | 'shad
 
 /**
  * Check if big headers are enabled
- * Set TACHIBOT_BIG_HEADERS=false to disable
+ * Default: disabled (plain mode). Set TACHIBOT_BIG_HEADERS=true to enable fancy ASCII art
  */
 export const showBigHeaders = (): boolean => {
-  return process.env.TACHIBOT_BIG_HEADERS !== 'false';
+  const plainOutput = process.env.TACHIBOT_PLAIN_OUTPUT?.toLowerCase();
+  const bigHeaders = process.env.TACHIBOT_BIG_HEADERS?.toLowerCase();
+
+  // Explicit fancy mode requested
+  if (plainOutput === 'false') return true;
+  // Explicit big headers requested
+  if (bigHeaders === 'true') return true;
+  // Default: no big headers (saves tokens)
+  return false;
 };
 
 /**
@@ -2229,20 +2237,35 @@ export function DataTable<T extends ScalarDict>({
 
 /**
  * Render a data table to string
+ * Default: Markdown table (plain mode). Set TACHIBOT_PLAIN_OUTPUT=false for fancy Ink tables
  */
 export function renderTable<T extends ScalarDict>(
   data: T[],
   title?: string,
   options: { gradient?: string; borderStyle?: BorderStyle } = {}
 ): string {
-  return renderInkToString(
-    <DataTable
-      data={data}
-      title={title}
-      titleGradient={options.gradient}
-      borderStyle={options.borderStyle}
-    />
-  );
+  const plainOutput = process.env.TACHIBOT_PLAIN_OUTPUT?.toLowerCase();
+
+  // Fancy mode: Ink table with borders
+  if (plainOutput === 'false') {
+    return renderInkToString(
+      <DataTable
+        data={data}
+        title={title}
+        titleGradient={options.gradient}
+        borderStyle={options.borderStyle}
+      />
+    );
+  }
+
+  // Default: Markdown table - token efficient + preserves structure
+  if (data.length === 0) return '';
+  const keys = Object.keys(data[0]);
+  const header = `| ${keys.join(' | ')} |`;
+  const separator = `|${keys.map(() => '---').join('|')}|`;
+  const rows = data.map(row => `| ${keys.map(k => String(row[k] ?? '')).join(' | ')} |`);
+  const table = [header, separator, ...rows].join('\n');
+  return title ? `**${title}**\n${table}` : table;
 }
 
 /**
@@ -3903,22 +3926,30 @@ export const CircularPie: React.FC<{
 
 /**
  * Render pie chart to string (horizontal bar style)
+ * Default: skip (plain mode). Set TACHIBOT_PLAIN_OUTPUT=false for fancy charts
  */
 export function renderPieChart(
   data: PieSlice[],
   options: { width?: number; title?: string; showLegend?: boolean; showPercentages?: boolean } = {}
 ): string {
-  return renderInkToString(<PieChart data={data} {...options} />);
+  if (process.env.TACHIBOT_PLAIN_OUTPUT?.toLowerCase() === 'false') {
+    return renderInkToString(<PieChart data={data} {...options} />);
+  }
+  return '';
 }
 
 /**
  * Render donut chart to string
+ * Default: skip (plain mode). Set TACHIBOT_PLAIN_OUTPUT=false for fancy charts
  */
 export function renderDonutChart(
   data: PieSlice[],
   options: { width?: number; title?: string; centerLabel?: string; showLegend?: boolean } = {}
 ): string {
-  return renderInkToString(<DonutChart data={data} {...options} />);
+  if (process.env.TACHIBOT_PLAIN_OUTPUT?.toLowerCase() === 'false') {
+    return renderInkToString(<DonutChart data={data} {...options} />);
+  }
+  return '';
 }
 
 /**

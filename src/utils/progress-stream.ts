@@ -5,7 +5,18 @@
  * Uses React Ink for beautiful colored output to stderr.
  */
 
-import { renderProgressBanner, renderCompactProgress } from './workflow-ink-renderer.js';
+// import { renderProgressBanner, renderCompactProgress } from './workflow-ink-renderer.js';
+// Ink disabled - using plain text functions that return empty strings
+const renderProgressBanner = (_opts: {
+  workflowName: string;
+  currentStep: number;
+  totalSteps: number;
+  stepName: string;
+  status: string;
+  elapsedTime: number;
+  modelUsed?: string;
+}): string => '';
+const renderCompactProgress = (_opts: unknown): string => '';
 
 export interface ProgressUpdate {
   type: 'start' | 'progress' | 'step' | 'complete' | 'error';
