@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
+import { withHeartbeat } from "../utils/streaming-helper.js";
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env
@@ -152,7 +153,7 @@ export const qwenCoderTool = {
     requirements?: string; // Changed: Optional
     language?: string;
     useFree?: boolean
-  }, { log }: any) => {
+  }, { log, reportProgress }: any) => {
     const taskPrompts = {
       generate: "Generate new code according to requirements",
       review: "Review code for quality, bugs, and improvements",
@@ -162,25 +163,30 @@ export const qwenCoderTool = {
       explain: "Explain how the code works in detail",
       analyze: "Analyze code for patterns, complexity, architecture, and provide insights"
     };
-    
+
     const systemPrompt = `You are Qwen3-Coder, an advanced code generation model.
 Task: ${taskPrompts[args.task as keyof typeof taskPrompts]}
 ${args.language ? `Language: ${args.language}` : ''}
 Focus on: clean code, best practices, performance, and maintainability.
 ${FORMAT_INSTRUCTION}`;
-    
+
     const requirementsText = args.requirements || "Analyze and provide insights";
     const userPrompt = args.code
       ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequirements: ${requirementsText}`
       : requirementsText;
-    
+
     const messages = [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt }
     ];
-    
+
     const model = args.useFree === true ? OpenRouterModel.QWEN3_30B : OpenRouterModel.QWEN3_CODER;
-    return await callOpenRouter(messages, model, 0.2, 8000);
+    // Use heartbeat to prevent MCP timeout
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, model, 0.2, 8000),
+      reportFn
+    );
   }
 };
 
@@ -336,7 +342,7 @@ export const qwenAlgoTool = {
     problem: string;
     context?: string;
     focus?: string;
-  }, { log }: any) => {
+  }, { log, reportProgress }: any) => {
     const focusPrompts: Record<string, string> = {
       optimize: "Focus on performance optimization, bottlenecks, and algorithmic improvements.",
       complexity: "Focus on time/space complexity analysis (best, average, worst case).",
@@ -360,7 +366,12 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    return await callOpenRouter(messages, OpenRouterModel.QWQ_32B, 0.3, 8000);
+    // Use heartbeat to prevent MCP timeout
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.QWQ_32B, 0.3, 8000),
+      reportFn
+    );
   }
 };
 
@@ -432,7 +443,7 @@ export const kimiThinkingTool = {
     context?: string;
     approach?: string;
     maxSteps?: number
-  }, { log }: any) => {
+  }, { log, reportProgress }: any) => {
     const approachPrompts = {
       "step-by-step": "Break down the problem into clear steps and solve systematically",
       analytical: "Analyze the problem deeply, considering multiple perspectives and implications",
@@ -454,12 +465,16 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    // Optimized for speed: lower tokens (3k), temp (0.4), top_p (0.9), penalties to reduce verbosity
-    return await callOpenRouter(messages, OpenRouterModel.KIMI_K2_THINKING, 0.4, 3000, {
-      top_p: 0.9,
-      presence_penalty: 0.1,
-      frequency_penalty: 0.2
-    });
+    // Use heartbeat to prevent MCP timeout during reasoning
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_THINKING, 0.4, 3000, {
+        top_p: 0.9,
+        presence_penalty: 0.1,
+        frequency_penalty: 0.2
+      }),
+      reportFn
+    );
   }
 };
 

@@ -13,6 +13,7 @@ import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
+import { withHeartbeat } from "../utils/streaming-helper.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 const __filename = fileURLToPath(import.meta.url);
@@ -151,7 +152,7 @@ export const grokReasonTool = {
     context: z.string().optional().describe("Additional context for the problem"),
     useHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for complex tasks")
   }),
-  execute: async (args: { problem: string; approach?: string; context?: string; useHeavy?: boolean }, { log }: any) => {
+  execute: async (args: { problem: string; approach?: string; context?: string; useHeavy?: boolean }, { log, reportProgress }: any) => {
     const { problem, approach = "first-principles", context, useHeavy } = args;
     const approachPrompts = {
       analytical: "Break down the problem systematically and analyze each component",
@@ -159,7 +160,7 @@ export const grokReasonTool = {
       systematic: "Follow a step-by-step logical process",
       "first-principles": "Break down to fundamental truths and build up from there"
     };
-    
+
     const messages = [
       {
         role: "system",
@@ -179,8 +180,13 @@ ${FORMAT_INSTRUCTION}`
     const maxTokens = useHeavy ? 100000 : 16384; // 100k for heavy, 16k for normal reasoning
     log?.info(`Using Grok model: ${model} for deep reasoning (max tokens: ${maxTokens}, cost: ${useHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50'})`);
 
-    // Use llm-orchestration context - input may contain code patterns
-    return stripFormatting(await callGrok(messages, model, 0.7, maxTokens, true, 'llm-orchestration'));
+    // Use heartbeat to prevent MCP timeout during long reasoning operations
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGrok(messages, model, 0.7, maxTokens, true, 'llm-orchestration'),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -198,7 +204,7 @@ export const grokCodeTool = {
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
     requirements: z.string().optional().describe("Specific requirements or focus areas")
   }),
-  execute: async (args: { task: string; code: string; language?: string; requirements?: string }, { log }: any) => {
+  execute: async (args: { task: string; code: string; language?: string; requirements?: string }, { log, reportProgress }: any) => {
     const { task, code, language, requirements } = args;
     const taskPrompts = {
       analyze: "Analyze this code for logic, structure, and potential issues",
@@ -224,8 +230,13 @@ ${FORMAT_INSTRUCTION}`
     ];
 
     log?.info(`Using Grok 4.1 Fast Non-Reasoning (2M context, tool-calling optimized, $0.20/$0.50)`);
-    // Use code-analysis context - code content naturally contains patterns
-    return stripFormatting(await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.2, 4000, true, 'code-analysis'));
+    // Use heartbeat to prevent MCP timeout
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGrok(messages, GrokModel.GROK_4_1_FAST, 0.2, 4000, true, 'code-analysis'),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -242,7 +253,7 @@ export const grokDebugTool = {
     error: z.string().optional().describe("Error message or stack trace"),
     context: z.string().optional().describe("Additional context about the environment or conditions")
   }),
-  execute: async (args: { issue: string; code?: string; error?: string; context?: string }, { log }: any) => {
+  execute: async (args: { issue: string; code?: string; error?: string; context?: string }, { log, reportProgress }: any) => {
     const { issue, code, error, context } = args;
     let prompt = `Debug this issue: ${issue}\n`;
 
@@ -257,7 +268,7 @@ export const grokDebugTool = {
     if (context) {
       prompt += `\nContext: ${context}\n`;
     }
-    
+
     const messages = [
       {
         role: "system",
@@ -276,8 +287,13 @@ ${FORMAT_INSTRUCTION}`
     ];
 
     log?.info(`Using Grok 4.1 Fast Non-Reasoning for debugging (tool-calling optimized, $0.20/$0.50)`);
-    // Use code-analysis context - debug content may contain error patterns
-    return stripFormatting(await callGrok(messages, GrokModel.GROK_4_1_FAST, 0.3, 3000, true, 'code-analysis'));
+    // Use heartbeat to prevent MCP timeout
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGrok(messages, GrokModel.GROK_4_1_FAST, 0.3, 3000, true, 'code-analysis'),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -295,7 +311,7 @@ export const grokArchitectTool = {
       .optional()
       .describe("Expected scale - must be one of: small, medium, large, enterprise")
   }),
-  execute: async (args: { requirements: string; constraints?: string; scale?: string }, { log }: any) => {
+  execute: async (args: { requirements: string; constraints?: string; scale?: string }, { log, reportProgress }: any) => {
     const { requirements, constraints, scale } = args;
     const messages = [
       {
@@ -313,8 +329,13 @@ ${FORMAT_INSTRUCTION}`
     ];
 
     log?.info(`Using Grok 4.1 Fast Reasoning for architecture (latest model, $0.20/$0.50)`);
-    // Use llm-orchestration context - architecture content may contain technical patterns
-    return stripFormatting(await callGrok(messages, GrokModel.GROK_4_1_FAST_REASONING, 0.6, 4000, true, 'llm-orchestration'));
+    // Use heartbeat to prevent MCP timeout
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGrok(messages, GrokModel.GROK_4_1_FAST_REASONING, 0.6, 4000, true, 'llm-orchestration'),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -331,7 +352,7 @@ export const grokBrainstormTool = {
     numIdeas: z.number().optional().describe("Number of ideas to generate (default: 5)"),
     forceHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for deeper creativity")
   }),
-  execute: async (args: { topic: string; constraints?: string; numIdeas?: number; forceHeavy?: boolean }, { log }: any) => {
+  execute: async (args: { topic: string; constraints?: string; numIdeas?: number; forceHeavy?: boolean }, { log, reportProgress }: any) => {
     const { topic, constraints, numIdeas = 5, forceHeavy = false } = args; // Changed: Default to cheap model
     const messages = [
       {
@@ -350,8 +371,13 @@ ${FORMAT_INSTRUCTION}`
     const model = forceHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1_FAST_REASONING;
     log?.info(`Brainstorming with Grok model: ${model} (Heavy: ${forceHeavy}, cost: ${forceHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50 - latest 4.1'})`);
 
-    // Use llm-orchestration context - brainstorm content may contain LLM-generated patterns
-    return stripFormatting(await callGrok(messages, model, 0.95, 4000, true, 'llm-orchestration')); // High temperature for creativity
+    // Use heartbeat to prevent MCP timeout
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGrok(messages, model, 0.95, 4000, true, 'llm-orchestration'),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 

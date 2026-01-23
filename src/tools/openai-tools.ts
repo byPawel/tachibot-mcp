@@ -13,6 +13,7 @@ import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gate
 import { OPENAI_MODELS, OPENAI_REASONING, CURRENT_MODELS, TOOL_DEFAULTS } from "../config/model-constants.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
+import { withHeartbeat } from "../utils/streaming-helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -561,7 +562,7 @@ export const openaiGpt5ReasonTool = {
       .default("analytical")
       .describe("Reasoning mode - must be one of: mathematical, scientific, logical, analytical")
   }),
-  execute: async (args: { query: string; context?: string; mode?: string }, { log }: any) => {
+  execute: async (args: { query: string; context?: string; mode?: string }, { log, reportProgress }: any) => {
     const modePrompts = {
       mathematical: "Focus on mathematical proofs, calculations, and formal logic",
       scientific: "Apply scientific method and empirical reasoning",
@@ -584,8 +585,12 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    // Use GPT-5.2-thinking with high reasoning effort for complex reasoning
-    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 4000, "high");
+    // Use heartbeat to prevent MCP timeout during reasoning
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 4000, "high"),
+      reportFn
+    );
   }
 };
 
@@ -664,7 +669,7 @@ export const openaiCodeReviewTool = {
       .optional()
       .describe("Focus areas - array of: security, performance, readability, bugs, best-practices")
   }),
-  execute: async (args: { code: string; language?: string; focusAreas?: string[] }, { log }: any) => {
+  execute: async (args: { code: string; language?: string; focusAreas?: string[] }, { log, reportProgress }: any) => {
     const focusText = args.focusAreas
       ? `Focus especially on: ${args.focusAreas.join(', ')}`
       : "Review all aspects: security, performance, readability, bugs, and best practices";
@@ -685,7 +690,12 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.3, 4000, "medium");
+    // Use heartbeat to prevent MCP timeout
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.3, 4000, "medium"),
+      reportFn
+    );
   }
 };
 

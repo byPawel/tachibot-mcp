@@ -134,7 +134,10 @@ const registeredTools = new Set<string>();
 // TypeScript Type Definitions for MCP Tools
 // ============================================================================
 
-/** MCP tool execution context with logging capabilities */
+/** MCP tool execution context with logging and streaming capabilities
+ * Note: This is a partial type - actual FastMCP Context has more properties.
+ * Tools receive the full FastMCP Context which includes reportProgress and streamContent.
+ */
 interface MCPContext {
   log: {
     info: (message: string, metadata?: Record<string, any>) => void;
@@ -142,6 +145,12 @@ interface MCPContext {
     warn: (message: string, metadata?: Record<string, any>) => void;
     debug: (message: string, metadata?: Record<string, any>) => void;
   };
+  /** Report progress to keep connection alive during long operations (provided by FastMCP) */
+  reportProgress?: (progress: { progress: number; total: number }) => Promise<void>;
+  /** Stream partial content - FastMCP extension (provided by FastMCP) */
+  streamContent?: (content: any) => Promise<void>;
+  /** Allow additional FastMCP context properties */
+  [key: string]: any;
 }
 
 /** Base MCP tool interface matching FastMCP structure */
