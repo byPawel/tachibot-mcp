@@ -243,18 +243,25 @@ function safeAddTool(tool: MCPTool): void {
         }
 
         // Apply ANSI rendering to string results (centralized - no need to edit each tool!)
-        // Just render everything - the ~50-100ms for large outputs is fine for CLI
+        // Return as TextContent for Claude Code Desktop compatibility
+        // Plain strings work in CLI but Desktop needs { type: "text", text: "..." }
         if (typeof result === 'string') {
           try {
             const model = inferModelFromTool(tool.name);
             // Tools returning null handle their own rendering - skip extra badge
             // (e.g., nextThought renders its own BigText header)
+            let renderedText: string;
             if (model === null) {
-              return renderOutput(result);  // No model badge
+              renderedText = renderOutput(result);  // No model badge
+            } else {
+              renderedText = renderOutput(result, model);
             }
-            return renderOutput(result, model);
+            // Return as TextContent object for Claude Code Desktop compatibility
+            // Adds ~12 tokens fixed overhead, negligible for typical responses
+            return { type: "text" as const, text: renderedText };
           } catch {
-            return result; // Fallback to raw only on parse errors
+            // Fallback to TextContent with raw result on parse errors
+            return { type: "text" as const, text: result };
           }
         }
         return result;

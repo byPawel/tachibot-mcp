@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getPerplexityApiKey, hasPerplexityApiKey } from "../utils/api-keys.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import { withHeartbeat } from "../utils/streaming-helper.js";
 
 // Perplexity API configuration
 const PERPLEXITY_API_URL = "https://api.perplexity.ai";
@@ -16,7 +17,7 @@ const PERPLEXITY_API_URL = "https://api.perplexity.ai";
 export enum PerplexityModel {
   // Models from Perplexity API docs
   SONAR_PRO = "sonar",  // Changed from "sonar-pro" to "sonar"
-  SONAR_REASONING_PRO = "sonar-reasoning",  // Changed to match API
+  SONAR_REASONING_PRO = "sonar-reasoning-pro",  // Full name required
   SONAR_DEEP_RESEARCH = "sonar-deep-research",
   SONAR = "sonar",
   SONAR_SMALL = "sonar-small"
@@ -107,7 +108,7 @@ export const perplexityAskTool = {
       .optional()
       .describe("How recent the results should be - must be one of: hour, day, week, month, year")
   }),
-  execute: async (args: { query: string; searchDomain?: string; searchRecency?: string }, { log }: any) => {
+  execute: async (args: { query: string; searchDomain?: string; searchRecency?: string }, { log, reportProgress }: any) => {
     // Get current date for accurate recency context
     const now = new Date();
     const currentDate = now.toLocaleDateString('en-US', {
@@ -128,12 +129,12 @@ export const perplexityAskTool = {
       }
     ];
 
-    return stripFormatting(await callPerplexity(
-      messages,
-      PerplexityModel.SONAR_PRO,
-      args.searchDomain,
-      args.searchRecency
-    ));
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callPerplexity(messages, PerplexityModel.SONAR_PRO, args.searchDomain, args.searchRecency),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -147,12 +148,13 @@ export const perplexityResearchTool = {
   parameters: z.object({
     topic: z.string().describe("The research topic (REQUIRED - put your topic here)"),
     questions: z.array(z.string()).optional().describe("Specific questions to research"),
-    depth: z.enum(["quick", "standard", "deep"])
+    depth: z.string()
       .optional()
-      .describe("Research depth - must be one of: quick, standard, deep")
+      .describe("Research depth (e.g., quick, standard, deep)")
   }),
-  execute: async (args: { topic: string; questions?: string[]; depth?: string }, { log }: any) => {
+  execute: async (args: { topic: string; questions?: string[]; depth?: string }, { log, reportProgress }: any) => {
     const { topic, questions, depth = "standard" } = args;
+    const reportFn = reportProgress ?? (async () => {});
 
     // Get current date for accurate research context
     const now = new Date();
@@ -180,41 +182,46 @@ export const perplexityResearchTool = {
          `What are the best practices and recommendations for ${topic}?`] :
         researchQuestions;
 
-    let research = `# Research Report: ${topic}\n\n`;
-    
-    // Conduct research for each question
-    for (const question of questionsToAsk) {
-      const messages = [
+    // Wrap entire research process in heartbeat since it makes multiple calls
+    const result = await withHeartbeat(async () => {
+      let research = `# Research Report: ${topic}\n\n`;
+
+      // Conduct research for each question
+      for (const question of questionsToAsk) {
+        const messages = [
+          {
+            role: "system",
+            content: `Research expert. Today: ${currentDate}. Factual info with sources.${FORMAT_INSTRUCTION}`
+          },
+          {
+            role: "user",
+            content: question
+          }
+        ];
+
+        const answer = await callPerplexity(messages, PerplexityModel.SONAR_PRO);
+        research += `## ${question}\n\n${answer}\n\n`;
+      }
+
+      // Add synthesis
+      const synthesisMessages = [
         {
           role: "system",
-          content: `Research expert. Today: ${currentDate}. Factual info with sources.${FORMAT_INSTRUCTION}`
+          content: `Research synthesizer. Concise summary of key findings.${FORMAT_INSTRUCTION}`
         },
         {
           role: "user",
-          content: question
+          content: `Synthesize these research findings into key insights:\n\n${research}`
         }
       ];
-      
-      const answer = await callPerplexity(messages, PerplexityModel.SONAR_PRO);
-      research += `## ${question}\n\n${answer}\n\n`;
-    }
-    
-    // Add synthesis
-    const synthesisMessages = [
-      {
-        role: "system",
-        content: `Research synthesizer. Concise summary of key findings.${FORMAT_INSTRUCTION}`
-      },
-      {
-        role: "user",
-        content: `Synthesize these research findings into key insights:\n\n${research}`
-      }
-    ];
-    
-    const synthesis = await callPerplexity(synthesisMessages, PerplexityModel.SONAR_PRO);
-    research += `## Synthesis\n\n${synthesis}`;
 
-    return stripFormatting(research);
+      const synthesis = await callPerplexity(synthesisMessages, PerplexityModel.SONAR_PRO);
+      research += `## Synthesis\n\n${synthesis}`;
+
+      return research;
+    }, reportFn);
+
+    return stripFormatting(result);
   }
 };
 
@@ -228,12 +235,13 @@ export const perplexityReasonTool = {
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
-    approach: z.enum(["analytical", "creative", "systematic", "comparative"])
+    approach: z.string()
       .optional()
-      .describe("Reasoning approach - must be one of: analytical, creative, systematic, comparative")
+      .describe("Reasoning approach (e.g., analytical, creative, systematic, comparative)")
   }),
-  execute: async (args: { problem: string; context?: string; approach?: string }, { log }: any) => {
+  execute: async (args: { problem: string; context?: string; approach?: string }, { log, reportProgress }: any) => {
     const { problem, context, approach = "analytical" } = args;
+    const reportFn = reportProgress ?? (async () => {});
 
     // Get current date for accurate reasoning context
     const now = new Date();
@@ -263,7 +271,11 @@ ${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
       }
     ];
     
-    return stripFormatting(await callPerplexity(messages, PerplexityModel.SONAR_REASONING_PRO));
+    const result = await withHeartbeat(
+      () => callPerplexity(messages, PerplexityModel.SONAR_REASONING_PRO),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 

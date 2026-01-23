@@ -146,9 +146,9 @@ export const grokReasonTool = {
   description: "Deep reasoning. Put your PROBLEM or QUESTION in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem or question to reason about (REQUIRED - put your question here)"),
-    approach: z.enum(["analytical", "creative", "systematic", "first-principles"])
+    approach: z.string()
       .optional()
-      .describe("Reasoning approach - must be one of: analytical, creative, systematic, first-principles"),
+      .describe("Reasoning approach (e.g., analytical, creative, systematic, first-principles)"),
     context: z.string().optional().describe("Additional context for the problem"),
     useHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for complex tasks")
   }),
@@ -198,8 +198,8 @@ export const grokCodeTool = {
   name: "grok_code",
   description: "Code analysis. Put the CODE in the 'code' parameter, NOT in 'task'.",
   parameters: z.object({
-    task: z.enum(["analyze", "optimize", "debug", "review", "refactor"])
-      .describe("Code task - must be one of: analyze, optimize, debug, review, refactor"),
+    task: z.string()
+      .describe("Code task (e.g., analyze, optimize, debug, review, refactor)"),
     code: z.string().describe("The actual source code to analyze (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
     requirements: z.string().optional().describe("Specific requirements or focus areas")
@@ -307,9 +307,9 @@ export const grokArchitectTool = {
   parameters: z.object({
     requirements: z.string().describe("The architecture requirements or design question (REQUIRED - put your question here)"),
     constraints: z.string().optional().describe("Technical or business constraints to consider"),
-    scale: z.enum(["small", "medium", "large", "enterprise"])
+    scale: z.string()
       .optional()
-      .describe("Expected scale - must be one of: small, medium, large, enterprise")
+      .describe("Expected scale (e.g., small, medium, large, enterprise)")
   }),
   execute: async (args: { requirements: string; constraints?: string; scale?: string }, { log, reportProgress }: any) => {
     const { requirements, constraints, scale } = args;

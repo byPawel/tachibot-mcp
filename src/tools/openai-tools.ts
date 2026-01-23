@@ -557,10 +557,10 @@ export const openaiGpt5ReasonTool = {
   parameters: z.object({
     query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
-    mode: z.enum(["mathematical", "scientific", "logical", "analytical"])
+    mode: z.string()
       .optional()
       .default("analytical")
-      .describe("Reasoning mode - must be one of: mathematical, scientific, logical, analytical")
+      .describe("Reasoning mode (e.g., mathematical, scientific, logical, analytical)")
   }),
   execute: async (args: { query: string; context?: string; mode?: string }, { log, reportProgress }: any) => {
     const modePrompts = {
@@ -606,9 +606,9 @@ export const openAIBrainstormTool = {
     problem: z.string().describe("The problem or topic to brainstorm about (REQUIRED - put your question here)"),
     constraints: z.string().optional().describe("Any constraints to consider in brainstorming"),
     quantity: z.number().optional().describe("Number of ideas to generate (default: 5)"),
-    style: z.enum(["innovative", "practical", "wild", "systematic"])
+    style: z.string()
       .optional()
-      .describe("Brainstorming style - must be one of: innovative, practical, wild, systematic"),
+      .describe("Brainstorming style (e.g., innovative, practical, wild, systematic)"),
     model: z.enum(["gpt-5.2", "gpt-5.2-pro"])
       .optional()
       .describe("Model to use - gpt-5.2 (default) or gpt-5.2-pro (more expensive)"),

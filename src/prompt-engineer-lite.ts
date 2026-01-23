@@ -37,7 +37,16 @@ export class PromptEngineerLite {
 
     // Debate
     ['adversarial', (q) => `For "${q}": First argue strongly FOR this position with best evidence. Then argue strongly AGAINST with counterarguments. Finally, synthesize a balanced view.`],
-    ['persona_simulation', (q) => `Simulate expert debate on "${q}": Have a skeptic raise concerns, an optimist highlight benefits, a pragmatist focus on implementation, and a visionary explore possibilities. Synthesize insights.`]
+    ['persona_simulation', (q) => `Simulate expert debate on "${q}": Have a skeptic raise concerns, an optimist highlight benefits, a pragmatist focus on implementation, and a visionary explore possibilities. Synthesize insights.`],
+
+    // Judgment (Council of Experts)
+    ['council_of_experts', (q) => `Multi-model council analysis for "${q}":
+1. GATHER PERSPECTIVES: Consider this from multiple expert angles (researcher, engineer, skeptic, innovator)
+2. EXTRACT BEST ELEMENTS: What's the most valuable insight from each perspective?
+3. IDENTIFY CONSENSUS: Where do all perspectives agree?
+4. RESOLVE CONFLICTS: Where perspectives differ, weigh the tradeoffs
+5. SYNTHESIZE VERDICT: Combine the best elements into a unified, actionable answer
+Output format: Perspectives → Best Elements → Consensus → Conflicts → Final Synthesis`]
   ]);
 
   // Compact technique mapping (aliases to canonical names)
@@ -75,7 +84,12 @@ export class PromptEngineerLite {
     'principles': 'constitutional',
     'improve_prompt': 'meta_prompting',
     'critic': 'adversarial',
-    'debate': 'persona_simulation'
+    'debate': 'persona_simulation',
+
+    // Judgment aliases
+    'judge': 'council_of_experts',
+    'council': 'council_of_experts',
+    'expert_council': 'council_of_experts'
   };
 
   applyTechnique(tool: string, technique: string, query: string, prev?: ToolResult[]): string {
@@ -131,7 +145,9 @@ export class PromptEngineerLite {
       'meta_prompting': 'Improve prompt',
       // Debate
       'adversarial': 'Pro/Con',
-      'persona_simulation': 'Expert debate'
+      'persona_simulation': 'Expert debate',
+      // Judgment
+      'council_of_experts': 'Council judge'
     };
     const key = this.techniqueMap[technique] || technique;
     return desc[key] || technique;

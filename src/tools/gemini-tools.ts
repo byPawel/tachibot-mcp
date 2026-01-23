@@ -10,6 +10,7 @@ import { GEMINI_MODELS } from "../config/model-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import { withHeartbeat } from "../utils/streaming-helper.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 // NOTE: dotenv is loaded in server.ts before any imports
@@ -190,7 +191,7 @@ export const geminiQueryTool = {
       .default("gemini-3")
       .describe("Model variant - must be one of: gemini-3 (default), pro, flash")
   }),
-  execute: async (args: { prompt: string; model?: string }, { log }: any) => {
+  execute: async (args: { prompt: string; model?: string }, { log, reportProgress }: any) => {
     let model: string = GEMINI_MODELS.GEMINI_3_PRO; // Default to Gemini 3
     if (args.model === "flash") {
       model = GEMINI_MODELS.FLASH;
@@ -198,7 +199,12 @@ export const geminiQueryTool = {
       model = GEMINI_MODELS.PRO;
     }
     // Skip validation - queries may contain code or LLM-generated content
-    return stripFormatting(await callGemini(args.prompt, model, undefined, 0.7, 'llm-orchestration'));
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGemini(args.prompt, model, undefined, 0.7, 'llm-orchestration'),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -217,14 +223,18 @@ export const geminiBrainstormTool = {
     claudeThoughts: z.string().optional().describe("Claude's initial thoughts to build upon"),
     maxRounds: z.number().optional().default(1).describe("Number of brainstorming rounds (default: 1)")
   }),
-  execute: async (args: { prompt: string; claudeThoughts?: string; maxRounds?: number }, { log }: any) => {
+  execute: async (args: { prompt: string; claudeThoughts?: string; maxRounds?: number }, { log, reportProgress }: any) => {
     const systemPrompt = `Creative brainstorming partner.
 ${args.claudeThoughts ? `Building on: ${args.claudeThoughts}` : ''}
 Generate: multiple approaches, unconventional ideas, challenges, feasibility.
 ${FORMAT_INSTRUCTION}`;
 
     // Skip validation for internal calls - input validated at MCP layer
-    const response = await callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.9, 'llm-orchestration');
+    const reportFn = reportProgress ?? (async () => {});
+    const response = await withHeartbeat(
+      () => callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.9, 'llm-orchestration'),
+      reportFn
+    );
 
     // If multiple rounds requested, we could iterate here
     // For now, return the single response
@@ -242,10 +252,10 @@ export const geminiAnalyzeCodeTool = {
   parameters: z.object({
     code: z.string().describe("The actual source code to analyze (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
-    focus: z.enum(["quality", "security", "performance", "bugs", "general"]).optional().default("general").describe("Analysis focus area - must be one of: quality, security, performance, bugs, general")
+    focus: z.string().optional().default("general").describe("Analysis focus (e.g., quality, security, performance, bugs, general)")
   }),
-  execute: async (args: { code: string; language?: string; focus?: string }, { log }: any) => {
-    const focusPrompts = {
+  execute: async (args: { code: string; language?: string; focus?: string }, { log, reportProgress }: any) => {
+    const focusPrompts: Record<string, string> = {
       quality: "Focus on code quality, readability, and best practices",
       security: "Focus on security vulnerabilities and potential exploits",
       performance: "Focus on performance bottlenecks and optimization opportunities",
@@ -253,18 +263,24 @@ export const geminiAnalyzeCodeTool = {
       general: "Provide a comprehensive analysis covering all aspects"
     };
 
+    const focusText = focusPrompts[args.focus || 'general'] || `Focus on: ${args.focus}`;
     const systemPrompt = `Expert code reviewer. ${args.language || ''} code.
-${focusPrompts[(args.focus as keyof typeof focusPrompts) || 'general']}.
+${focusText}.
 ${FORMAT_INSTRUCTION}`;
 
     // Skip validation - code analysis naturally contains patterns that trigger false positives
-    return stripFormatting(await callGemini(
-      `Analyze this code:\n\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\``,
-      GEMINI_MODELS.GEMINI_3_PRO,
-      systemPrompt,
-      0.3,
-      'llm-orchestration'  // skipValidation for code content
-    ));
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGemini(
+        `Analyze this code:\n\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\``,
+        GEMINI_MODELS.GEMINI_3_PRO,
+        systemPrompt,
+        0.3,
+        'llm-orchestration'
+      ),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -277,13 +293,13 @@ export const geminiAnalyzeTextTool = {
   description: "Text analysis. Put the TEXT in the 'text' parameter, NOT in 'type'.",
   parameters: z.object({
     text: z.string().describe("The text to analyze (REQUIRED - put your text here)"),
-    type: z.enum(["sentiment", "summary", "entities", "key-points", "general"])
+    type: z.string()
       .optional()
       .default("general")
-      .describe("Analysis type - must be one of: sentiment, summary, entities, key-points, general")
+      .describe("Analysis type (e.g., sentiment, summary, entities, key-points, general)")
   }),
-  execute: async (args: { text: string; type?: string }, { log }: any) => {
-    const analysisPrompts = {
+  execute: async (args: { text: string; type?: string }, { log, reportProgress }: any) => {
+    const analysisPrompts: Record<string, string> = {
       sentiment: "Analyze the sentiment (positive, negative, neutral) with confidence scores",
       summary: "Provide a concise summary of the main points",
       entities: "Extract all named entities (people, places, organizations, etc.)",
@@ -291,17 +307,23 @@ export const geminiAnalyzeTextTool = {
       general: "Provide comprehensive text analysis including sentiment, key points, and entities"
     };
 
-    const systemPrompt = `Text analysis expert. ${analysisPrompts[(args.type as keyof typeof analysisPrompts) || 'general']}.
+    const analysisText = analysisPrompts[args.type || 'general'] || `Perform ${args.type} analysis`;
+    const systemPrompt = `Text analysis expert. ${analysisText}.
 ${FORMAT_INSTRUCTION}`;
 
     // Skip validation - text analysis may contain patterns from LLM discussions
-    return stripFormatting(await callGemini(
-      `Analyze this text:\n\n${args.text}`,
-      GEMINI_MODELS.GEMINI_3_PRO,
-      systemPrompt,
-      0.3,
-      'llm-orchestration'  // skipValidation for internal calls
-    ));
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGemini(
+        `Analyze this text:\n\n${args.text}`,
+        GEMINI_MODELS.GEMINI_3_PRO,
+        systemPrompt,
+        0.3,
+        'llm-orchestration'
+      ),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -323,7 +345,7 @@ export const geminiSummarizeTool = {
       .default("paragraph")
       .describe("Output format - must be one of: paragraph, bullet-points, outline")
   }),
-  execute: async (args: { content: string; length?: string; format?: string }, { log }: any) => {
+  execute: async (args: { content: string; length?: string; format?: string }, { log, reportProgress }: any) => {
     const lengthGuides = {
       brief: "1-2 sentences capturing the essence",
       moderate: "1-2 paragraphs with main points",
@@ -346,13 +368,18 @@ Focus on:
 ${FORMAT_INSTRUCTION}`;
 
     // Skip validation for internal summarization calls
-    return stripFormatting(await callGemini(
-      `Summarize this content:\n\n${args.content}`,
-      GEMINI_MODELS.GEMINI_3_PRO,
-      systemPrompt,
-      0.3,
-      'llm-orchestration'  // skipValidation
-    ));
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGemini(
+        `Summarize this content:\n\n${args.content}`,
+        GEMINI_MODELS.GEMINI_3_PRO,
+        systemPrompt,
+        0.3,
+        'llm-orchestration'
+      ),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -369,7 +396,7 @@ export const geminiImagePromptTool = {
     mood: z.string().optional().describe("Mood or atmosphere (e.g., 'serene', 'dramatic')"),
     details: z.string().optional().describe("Additional details to include")
   }),
-  execute: async (args: { description: string; style?: string; mood?: string; details?: string }, { log }: any) => {
+  execute: async (args: { description: string; style?: string; mood?: string; details?: string }, { log, reportProgress }: any) => {
     const systemPrompt = `You are an expert at creating detailed image generation prompts.
 Transform the user's description into a detailed, effective prompt for image generation.
 
@@ -390,7 +417,12 @@ ${args.mood ? `Mood: ${args.mood}` : ''}
 ${args.details ? `Additional details: ${args.details}` : ''}`;
 
     // Skip validation for creative content generation
-    return stripFormatting(await callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7, 'llm-orchestration'));
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7, 'llm-orchestration'),
+      reportFn
+    );
+    return stripFormatting(result);
   }
 };
 
@@ -416,7 +448,7 @@ export const geminiSearchTool = {
     recency?: string;
     mode?: string;
     dynamicThreshold?: number;
-  }, { log }: any) => {
+  }, { log, reportProgress }: any) => {
     if (!GEMINI_API_KEY) {
       return `[Gemini API key not configured. Add GOOGLE_API_KEY to .env file]`;
     }

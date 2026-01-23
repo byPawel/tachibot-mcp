@@ -128,6 +128,9 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "adversarial", alias: "critic", description: "Argue FOR then AGAINST, find counterarguments, synthesize" },
     { name: "persona_simulation", alias: "debate", description: "Simulate experts debating (single prompt, not real multi-agent)" },
   ],
+  judgment: [
+    { name: "council_of_experts", alias: "judge", description: "Multi-model council: gather diverse perspectives, extract best elements, synthesize final verdict" },
+  ],
 };
 
 // All technique names for validation
@@ -151,9 +154,9 @@ function generateToken(): string {
  */
 export const listPromptTechniquesTool = {
   name: "list_prompt_techniques",
-  description: "Discover available prompt engineering techniques. Shows all 21 techniques organized by category.",
+  description: "Discover available prompt engineering techniques. Shows all 22 techniques organized by category.",
   parameters: z.object({
-    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate"])
+    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment"])
       .optional()
       .default("all")
       .describe("Filter by category (default: all)")

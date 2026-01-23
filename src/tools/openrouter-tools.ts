@@ -200,10 +200,10 @@ export const qwqReasoningTool = {
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
-    approach: z.enum(["step-by-step", "mathematical", "logical", "creative"])
+    approach: z.string()
       .optional()
       .default("step-by-step")
-      .describe("Reasoning approach - must be one of: step-by-step, mathematical, logical, creative"),
+      .describe("Reasoning approach (e.g., step-by-step, mathematical, logical, creative)"),
     useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)")
   }),
   execute: async (args: { 
@@ -248,10 +248,10 @@ export const qwenGeneralTool = {
   description: "General-purpose assistance with Qwen3. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("Your question or request (REQUIRED - put your question here)"),
-    mode: z.enum(["chat", "analysis", "creative", "technical"])
+    mode: z.string()
       .optional()
       .default("chat")
-      .describe("Interaction mode - must be one of: chat, analysis, creative, technical"),
+      .describe("Interaction mode (e.g., chat, analysis, creative, technical)"),
     useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)")
   }),
   execute: async (args: { query: string; mode?: string; useFree?: boolean }, { log }: any) => {
@@ -333,10 +333,10 @@ export const qwenAlgoTool = {
   parameters: z.object({
     problem: z.string().describe("The algorithm problem or code to analyze (REQUIRED - put your question/code here)"),
     context: z.string().optional().describe("Additional context: current performance, constraints"),
-    focus: z.enum(["optimize", "complexity", "data-structure", "memory", "general"])
+    focus: z.string()
       .optional()
       .default("general")
-      .describe("Analysis focus - must be one of: optimize, complexity, data-structure, memory, general")
+      .describe("Analysis focus (e.g., optimize, complexity, data-structure, memory, correctness, general)")
   }),
   execute: async (args: {
     problem: string;
@@ -432,10 +432,10 @@ export const kimiThinkingTool = {
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
-    approach: z.enum(["step-by-step", "analytical", "creative", "systematic"])
+    approach: z.string()
       .optional()
       .default("step-by-step")
-      .describe("Reasoning approach - must be one of: step-by-step, analytical, creative, systematic"),
+      .describe("Reasoning approach (e.g., step-by-step, analytical, creative, systematic)"),
     maxSteps: z.number().optional().default(3).describe("Maximum reasoning steps (default: 3)")
   }),
   execute: async (args: {
