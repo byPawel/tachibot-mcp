@@ -369,7 +369,7 @@ ${FORMAT_INSTRUCTION}`
     // Use heartbeat to prevent MCP timeout
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.QWQ_32B, 0.3, 8000),
+      () => callOpenRouter(messages, OpenRouterModel.QWQ_32B, 0.3, 5000),
       reportFn
     );
   }
