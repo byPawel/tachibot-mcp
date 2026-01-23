@@ -60,11 +60,18 @@ const SESSION_TIMEOUT_MS = 30 * 60 * 1000;           // 30 minutes - session exp
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;           // 5 minutes - cleanup check interval
 const COMPLETED_SESSION_RETENTION_MS = 5 * 60 * 1000; // 5 minutes - keep completed sessions for status checks
 
+// Session ID validation patterns (compiled once at module load)
+const UUID_V4_PATTERN = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const COLLABORATIVE_SESSION_PATTERN = /^session_\d+_[a-f0-9]+$/i;
+
 /**
- * Validate session ID format (UUID v4)
+ * Validate session ID format
+ * Accepts:
+ * - UUID v4: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (workflow engine)
+ * - Collaborative: session_<timestamp>_<hex> (collaborative orchestrator / focus modes)
  */
 function isValidSessionId(sessionId: string): boolean {
-  return /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(sessionId);
+  return UUID_V4_PATTERN.test(sessionId) || COLLABORATIVE_SESSION_PATTERN.test(sessionId);
 }
 
 /**
@@ -780,6 +787,15 @@ export class CustomWorkflowEngine {
     // Validate session ID format (before acquiring lock)
     if (!isValidSessionId(sessionId)) {
       throw new Error(`Invalid session ID format: ${sessionId}`);
+    }
+
+    // Detect focus session format and give helpful guidance
+    // Focus sessions use collaborative orchestrator, not workflow engine
+    if (COLLABORATIVE_SESSION_PATTERN.test(sessionId) && !UUID_V4_PATTERN.test(sessionId)) {
+      throw new Error(
+        `Session '${sessionId}' is a Focus session. ` +
+        `Use 'continue_focus' tool instead of 'continue_workflow'.`
+      );
     }
 
     // Acquire lock to prevent concurrent access to same session

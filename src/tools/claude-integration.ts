@@ -425,13 +425,15 @@ export class ClaudeCodeIntegration {
 // Export the tool for MCP registration
 export const claudeIntegrationTool = {
   name: 'think',
-  description: 'Log reasoning',
+  description: 'Log reasoning. Put your THOUGHT in the thought/prompt/content parameter.',
   inputSchema: z.object({
-    thought: z.string().optional(),
-    prompt: z.string().optional(),
-    content: z.string().optional(),
-    context: z.any().optional(),
-    mode: z.enum(['analyze', 'plan', 'synthesize', 'reflect']).optional()
+    thought: z.string().optional().describe("The thought or reasoning to log (put your reasoning here)"),
+    prompt: z.string().optional().describe("Alternative: the prompt to process"),
+    content: z.string().optional().describe("Alternative: the content to process"),
+    context: z.any().optional().describe("Additional context for the reasoning"),
+    mode: z.enum(['analyze', 'plan', 'synthesize', 'reflect'])
+      .optional()
+      .describe("Reasoning mode - must be one of: analyze, plan, synthesize, reflect")
   }),
   execute: async (args: any, context: any) => {
     const integration = new ClaudeCodeIntegration();

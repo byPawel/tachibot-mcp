@@ -25,7 +25,7 @@
       "grok_brainstorm",
       "grok_search"
     ],
-    "openai": ["openai_brainstorm", "openai_reason", "openai_code_review", "openai_explain"],
+    "openai": ["openai_brainstorm", "openai_reason", "openai_code_review", "openai_explain", "openai_search"],
     "gemini": [
       "gemini_brainstorm",
       "gemini_analyze_code",
@@ -69,6 +69,7 @@
       "openai_reason": true,
       "openai_code_review": true,
       "openai_explain": true,
+      "openai_search": true,
       "gemini_brainstorm": true,
       "gemini_analyze_code": true,
       "gemini_analyze_text": true,

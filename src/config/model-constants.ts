@@ -146,6 +146,7 @@ export const CURRENT_MODELS = {
     brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (gpt-5.2 + effort=medium)
     code: OPENAI_MODELS.DEFAULT,          // Code tasks (gpt-5.2 + effort=medium)
     explain: OPENAI_MODELS.DEFAULT,       // Explanations (gpt-5.2 + effort=low)
+    search: OPENAI_MODELS.DEFAULT,        // Web search (gpt-5.2 + web_search tool)
     // Premium option for opt-in (use sparingly - 12x more expensive)
     premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.2-pro - 88.4% GPQA, $21/$168)
   },
@@ -196,6 +197,12 @@ export const TOOL_DEFAULTS = {
     reasoning_effort: OPENAI_REASONING.LOW,
     maxTokens: 1500,
     temperature: 0.7,
+  },
+  openai_search: {
+    model: CURRENT_MODELS.openai.search,
+    reasoning_effort: OPENAI_REASONING.LOW,
+    maxTokens: 6000,
+    temperature: 0.3,
   },
 
   // Gemini tools

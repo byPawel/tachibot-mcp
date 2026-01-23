@@ -21,6 +21,7 @@ export const codeFocusProfile: ProfileConfig = {
     openai_brainstorm: false,
     openai_code_review: true,
     openai_explain: false,
+    openai_search: false,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: false,
@@ -38,5 +39,8 @@ export const codeFocusProfile: ProfileConfig = {
     workflow_status: false,
     validate_workflow: true,
     validate_workflow_file: false,
+    list_prompt_techniques: true,
+    preview_prompt_technique: true,
+    execute_prompt_technique: true,
   }
 };

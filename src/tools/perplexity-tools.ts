@@ -97,11 +97,15 @@ export async function callPerplexity(
  */
 export const perplexityAskTool = {
   name: "perplexity_ask",
-  description: "Web search",
+  description: "Web search. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
-    query: z.string(),
-    searchDomain: z.enum(["general", "academic", "news", "social"]).optional(),
-    searchRecency: z.enum(["hour", "day", "week", "month", "year"]).optional()
+    query: z.string().describe("The search query or question (REQUIRED - put your question here)"),
+    searchDomain: z.enum(["general", "academic", "news", "social"])
+      .optional()
+      .describe("Search domain - must be one of: general, academic, news, social"),
+    searchRecency: z.enum(["hour", "day", "week", "month", "year"])
+      .optional()
+      .describe("How recent the results should be - must be one of: hour, day, week, month, year")
   }),
   execute: async (args: { query: string; searchDomain?: string; searchRecency?: string }, { log }: any) => {
     // Get current date for accurate recency context
@@ -139,11 +143,13 @@ export const perplexityAskTool = {
  */
 export const perplexityResearchTool = {
   name: "perplexity_research",
-  description: "Deep research",
+  description: "Deep research. Put your TOPIC in the 'topic' parameter.",
   parameters: z.object({
-    topic: z.string(),
-    questions: z.array(z.string()).optional(),
-    depth: z.enum(["quick", "standard", "deep"]).optional()
+    topic: z.string().describe("The research topic (REQUIRED - put your topic here)"),
+    questions: z.array(z.string()).optional().describe("Specific questions to research"),
+    depth: z.enum(["quick", "standard", "deep"])
+      .optional()
+      .describe("Research depth - must be one of: quick, standard, deep")
   }),
   execute: async (args: { topic: string; questions?: string[]; depth?: string }, { log }: any) => {
     const { topic, questions, depth = "standard" } = args;
@@ -218,11 +224,13 @@ export const perplexityResearchTool = {
  */
 export const perplexityReasonTool = {
   name: "perplexity_reason",
-  description: "Reasoning with search",
+  description: "Reasoning with search. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
-    problem: z.string(),
-    context: z.string().optional(),
-    approach: z.enum(["analytical", "creative", "systematic", "comparative"]).optional()
+    problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    approach: z.enum(["analytical", "creative", "systematic", "comparative"])
+      .optional()
+      .describe("Reasoning approach - must be one of: analytical, creative, systematic, comparative")
   }),
   execute: async (args: { problem: string; context?: string; approach?: string }, { log }: any) => {
     const { problem, context, approach = "analytical" } = args;
@@ -265,10 +273,10 @@ ${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
  */
 export const perplexityFactCheckTool = {
   name: "perplexity_fact_check",
-  description: `Fact-check claims`,
+  description: "Fact-check claims. Put the CLAIM in the 'claim' parameter.",
   parameters: z.object({
-    claim: z.string(),
-    context: z.string().optional()
+    claim: z.string().describe("The claim to fact-check (REQUIRED - put the statement to verify here)"),
+    context: z.string().optional().describe("Additional context about the claim")
   }),
   execute: async (args: { claim: string; context?: string }, { log }: any) => {
     const messages = [
@@ -298,11 +306,11 @@ ${args.context ? `Additional context: ${args.context}` : ''}`
  */
 export const perplexityCodeSearchTool = {
   name: "perplexity_code_search",
-  description: `Code search`,
+  description: "Code search. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
-    query: z.string(),
-    language: z.string().optional(),
-    framework: z.string().optional()
+    query: z.string().describe("What code/implementation to search for (REQUIRED - put your question here)"),
+    language: z.string().optional().describe("Programming language to focus on"),
+    framework: z.string().optional().describe("Framework to focus on")
   }),
   execute: async (args: { query: string; language?: string; framework?: string }, { log }: any) => {
     const searchQuery = `${args.language || ''} ${args.framework || ''} ${args.query} code example implementation`.trim();

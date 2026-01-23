@@ -473,12 +473,15 @@ async function callOpenAIWithCustomParams(
  */
 export const gpt5ReasonTool = {
   name: "gpt5_reason",
-  description: "Advanced reasoning using GPT-5",
+  description: "Advanced reasoning using GPT-5. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
-    query: z.string(),
-    context: z.string().optional(),
-    mode: z.enum(["mathematical", "scientific", "logical", "analytical"]).optional().default("analytical"),
-    confirmUsage: z.boolean().optional().default(false)
+    query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    mode: z.enum(["mathematical", "scientific", "logical", "analytical"])
+      .optional()
+      .default("analytical")
+      .describe("Reasoning mode - must be one of: mathematical, scientific, logical, analytical"),
+    confirmUsage: z.boolean().optional().default(false).describe("Confirm usage of expensive GPT-5 model")
   }),
   execute: async (args: { query: string; context?: string; mode?: string; confirmUsage?: boolean }, { log }: any) => {
     // Check if user confirmed GPT-5 usage
@@ -514,11 +517,14 @@ export const gpt5ReasonTool = {
  */
 export const gpt5MiniReasonTool = {
   name: "gpt5_mini_reason",
-  description: "Cost-efficient reasoning using GPT-5-mini",
+  description: "Cost-efficient reasoning using GPT-5-mini. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
-    query: z.string(),
-    context: z.string().optional(),
-    mode: z.enum(["mathematical", "scientific", "logical", "analytical"]).optional().default("analytical")
+    query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    mode: z.enum(["mathematical", "scientific", "logical", "analytical"])
+      .optional()
+      .default("analytical")
+      .describe("Reasoning mode - must be one of: mathematical, scientific, logical, analytical")
   }),
   execute: async (args: { query: string; context?: string; mode?: string }, { log }: any) => {
     const modePrompts = {
@@ -546,11 +552,14 @@ export const gpt5MiniReasonTool = {
 
 export const openaiGpt5ReasonTool = {
   name: "openai_reason",
-  description: "Mathematical reasoning using GPT-5.2-thinking with high reasoning effort",
+  description: "Mathematical reasoning using GPT-5.2-thinking. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
-    query: z.string(),
-    context: z.string().optional(),
-    mode: z.enum(["mathematical", "scientific", "logical", "analytical"]).optional().default("analytical")
+    query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    mode: z.enum(["mathematical", "scientific", "logical", "analytical"])
+      .optional()
+      .default("analytical")
+      .describe("Reasoning mode - must be one of: mathematical, scientific, logical, analytical")
   }),
   execute: async (args: { query: string; context?: string; mode?: string }, { log }: any) => {
     const modePrompts = {
@@ -587,15 +596,21 @@ ${FORMAT_INSTRUCTION}`
  */
 export const openAIBrainstormTool = {
   name: "openai_brainstorm",
-  description: "Creative brainstorming",
+  description: "Creative brainstorming. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
-    problem: z.string(),
-    constraints: z.string().optional(),
-    quantity: z.number().optional(),
-    style: z.enum(["innovative", "practical", "wild", "systematic"]).optional(),
-    model: z.enum(["gpt-5.2", "gpt-5.2-pro"]).optional(),
-    reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh"]).optional(),
-    max_tokens: z.number().optional()
+    problem: z.string().describe("The problem or topic to brainstorm about (REQUIRED - put your question here)"),
+    constraints: z.string().optional().describe("Any constraints to consider in brainstorming"),
+    quantity: z.number().optional().describe("Number of ideas to generate (default: 5)"),
+    style: z.enum(["innovative", "practical", "wild", "systematic"])
+      .optional()
+      .describe("Brainstorming style - must be one of: innovative, practical, wild, systematic"),
+    model: z.enum(["gpt-5.2", "gpt-5.2-pro"])
+      .optional()
+      .describe("Model to use - gpt-5.2 (default) or gpt-5.2-pro (more expensive)"),
+    reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh"])
+      .optional()
+      .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh"),
+    max_tokens: z.number().optional().describe("Maximum tokens for response")
   }),
   execute: async (args: { problem: string; constraints?: string; quantity?: number; style?: string; model?: string; reasoning_effort?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
     const {
@@ -641,11 +656,13 @@ ${FORMAT_INSTRUCTION}`
  */
 export const openaiCodeReviewTool = {
   name: "openai_code_review",
-  description: "Code review",
+  description: "Code review. Put the CODE in the 'code' parameter, NOT in 'focusAreas'.",
   parameters: z.object({
-    code: z.string(),
-    language: z.string().optional(),
-    focusAreas: z.array(z.enum(["security", "performance", "readability", "bugs", "best-practices"])).optional()
+    code: z.string().describe("The actual source code to review (REQUIRED - put your code here)"),
+    language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
+    focusAreas: z.array(z.enum(["security", "performance", "readability", "bugs", "best-practices"]))
+      .optional()
+      .describe("Focus areas - array of: security, performance, readability, bugs, best-practices")
   }),
   execute: async (args: { code: string; language?: string; focusAreas?: string[] }, { log }: any) => {
     const focusText = args.focusAreas
@@ -678,11 +695,17 @@ ${FORMAT_INSTRUCTION}`
  */
 export const openaiExplainTool = {
   name: "openai_explain",
-  description: "Explain concepts",
+  description: "Explain concepts. Put the TOPIC in the 'topic' parameter.",
   parameters: z.object({
-    topic: z.string(),
-    level: z.enum(["beginner", "intermediate", "expert"]).optional().default("intermediate"),
-    style: z.enum(["technical", "simple", "analogy", "visual"]).optional().default("simple")
+    topic: z.string().describe("The topic or concept to explain (REQUIRED - put your question here)"),
+    level: z.enum(["beginner", "intermediate", "expert"])
+      .optional()
+      .default("intermediate")
+      .describe("Explanation level - must be one of: beginner, intermediate, expert"),
+    style: z.enum(["technical", "simple", "analogy", "visual"])
+      .optional()
+      .default("simple")
+      .describe("Explanation style - must be one of: technical, simple, analogy, visual")
   }),
   execute: async (args: { topic: string; level?: string; style?: string }, { log }: any) => {
     const levelPrompts = {
@@ -718,6 +741,145 @@ ${FORMAT_INSTRUCTION}`
 };
 
 /**
+ * Call OpenAI Responses API with web_search tool enabled
+ * Uses GPT-5.2 with real-time web search capability
+ */
+async function callOpenAIWithSearch(
+  query: string,
+  options: {
+    searchContextSize?: "low" | "medium" | "high";
+    userLocation?: { country?: string; city?: string; region?: string };
+    maxTokens?: number;
+  } = {}
+): Promise<string> {
+  const { searchContextSize = "medium", userLocation, maxTokens = 6000 } = options;
+
+  if (!OPENAI_API_KEY) {
+    return `[OpenAI API key not configured. Add OPENAI_API_KEY to .env file]`;
+  }
+
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Build web_search tool configuration
+  const webSearchTool: any = {
+    type: "web_search",
+    search_context_size: searchContextSize,
+  };
+
+  if (userLocation) {
+    webSearchTool.user_location = userLocation;
+  }
+
+  const requestBody = {
+    model: OPENAI_MODELS.DEFAULT, // gpt-5.2
+    input: [
+      {
+        role: "system",
+        content: `You are a helpful research assistant with real-time web search capability. Today is ${currentDate}. Search the web to provide accurate, up-to-date information with citations. Always include sources.`,
+      },
+      {
+        role: "user",
+        content: query,
+      },
+    ],
+    tools: [webSearchTool],
+    max_output_tokens: maxTokens,
+  };
+
+  console.error(`🔍 TRACE: callOpenAIWithSearch - query: ${query.substring(0, 50)}...`);
+
+  try {
+    const response = await fetch(OPENAI_RESPONSES_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error(`🔍 TRACE: OpenAI search failed - ${response.status}: ${error}`);
+      return `[OpenAI search error: ${response.statusText}]`;
+    }
+
+    const data = await response.json() as any;
+
+    // Extract text content from response
+    let textContent = "";
+    let citations: string[] = [];
+
+    if (data.output && Array.isArray(data.output)) {
+      for (const outputItem of data.output) {
+        if (outputItem.content && Array.isArray(outputItem.content)) {
+          for (const contentItem of outputItem.content) {
+            if (contentItem.type === "output_text" || contentItem.type === "text") {
+              textContent += contentItem.text || "";
+              // Extract annotations/citations if present
+              if (contentItem.annotations && Array.isArray(contentItem.annotations)) {
+                for (const annotation of contentItem.annotations) {
+                  if (annotation.type === "url_citation" && annotation.url) {
+                    citations.push(`- [${annotation.title || annotation.url}](${annotation.url})`);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Append citations if found
+    if (citations.length > 0) {
+      textContent += "\n\nSources:\n" + [...new Set(citations)].join("\n");
+    }
+
+    return stripFormatting(textContent || "No search results found");
+  } catch (error) {
+    console.error(`🔍 TRACE: OpenAI search exception:`, error);
+    return `[OpenAI search error: ${error instanceof Error ? error.message : String(error)}]`;
+  }
+}
+
+/**
+ * OpenAI Search Tool
+ * Web search using GPT-5.2 with real-time web search capability
+ */
+export const openaiSearchTool = {
+  name: "openai_search",
+  description: "Web search using GPT-5.2 with real-time web access. Put your QUERY in the 'query' parameter.",
+  parameters: z.object({
+    query: z.string().describe("The search query (REQUIRED - put your question here)"),
+    searchContextSize: z
+      .enum(["low", "medium", "high"])
+      .optional()
+      .default("medium")
+      .describe("Search depth - low (fast), medium (balanced), high (comprehensive)"),
+    country: z.string().optional().describe("Country for location-aware results (e.g., 'US', 'UK')"),
+    city: z.string().optional().describe("City for location-aware results"),
+  }),
+  execute: async (
+    args: { query: string; searchContextSize?: "low" | "medium" | "high"; country?: string; city?: string },
+    { log }: any
+  ) => {
+    const userLocation =
+      args.country || args.city ? { country: args.country, city: args.city } : undefined;
+
+    return await callOpenAIWithSearch(args.query, {
+      searchContextSize: args.searchContextSize,
+      userLocation,
+      maxTokens: 6000,
+    });
+  },
+};
+
+/**
  * Check if OpenAI is available
  */
 export function isOpenAIAvailable(): boolean {
@@ -736,6 +898,7 @@ export function getAllOpenAITools() {
     openaiGpt5ReasonTool,  // GPT-5.2-thinking reasoning (high effort)
     openAIBrainstormTool,  // GPT-5.2-thinking brainstorming (medium effort)
     openaiCodeReviewTool,  // GPT-5.2-thinking code review (medium effort)
-    openaiExplainTool      // GPT-5.2-thinking explanations (low effort)
+    openaiExplainTool,     // GPT-5.2-thinking explanations (low effort)
+    openaiSearchTool       // GPT-5.2 web search (via web_search tool)
   ];
 }

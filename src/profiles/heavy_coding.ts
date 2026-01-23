@@ -23,11 +23,12 @@ export const heavyCodingProfile: ProfileConfig = {
     grok_brainstorm: true,
     grok_search: true,
 
-    // OpenAI - reason & brainstorm only
+    // OpenAI - reason, brainstorm, search
     openai_reason: true,
     openai_brainstorm: true,
     openai_code_review: false,
     openai_explain: false,
+    openai_search: true,
 
     // Gemini - all enabled
     gemini_brainstorm: true,
@@ -51,5 +52,8 @@ export const heavyCodingProfile: ProfileConfig = {
     workflow_status: false,
     validate_workflow: false,
     validate_workflow_file: false,
+    list_prompt_techniques: true,
+    preview_prompt_technique: true,
+    execute_prompt_technique: true,
   }
 };

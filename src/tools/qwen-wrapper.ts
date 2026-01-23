@@ -11,28 +11,31 @@ import { qwenCoderTool, qwqReasoningTool, qwenGeneralTool, qwenCompetitiveTool, 
  */
 export const qwenTool = {
   name: "qwen",
-  description: "Access Qwen3-Coder, QwQ reasoning, and other OpenRouter models",
+  description: "Access Qwen3-Coder, QwQ reasoning, and other OpenRouter models. Select 'tool' type first, then provide the main input.",
   parameters: z.object({
     tool: z.enum(["coder", "reason", "general", "competitive", "multi"])
-      ,
-    
+      .describe("Which tool to use - must be one of: coder, reason, general, competitive, multi"),
+
     // Coder parameters
-    task: z.enum(["generate", "review", "optimize", "debug", "refactor", "explain"]).optional()
-      ,
-    code: z.string().optional(),
-    requirements: z.string().optional(),
-    language: z.string().optional(),
-    
+    task: z.enum(["generate", "review", "optimize", "debug", "refactor", "explain"])
+      .optional()
+      .describe("For coder tool - task type: generate, review, optimize, debug, refactor, explain"),
+    code: z.string().optional().describe("For coder tool - source code to analyze"),
+    requirements: z.string().optional().describe("For coder tool - requirements or description"),
+    language: z.string().optional().describe("Programming language"),
+
     // Reasoning parameters
-    problem: z.string().optional(),
-    approach: z.enum(["logical", "mathematical", "systematic", "critical"]).optional(),
-    
+    problem: z.string().optional().describe("For reason/competitive tool - the problem to solve (put your question here)"),
+    approach: z.enum(["logical", "mathematical", "systematic", "critical"])
+      .optional()
+      .describe("For reason tool - approach: logical, mathematical, systematic, critical"),
+
     // General/Multi parameters
-    query: z.string().optional(),
-    model: z.string().optional(),
-    
+    query: z.string().optional().describe("For general/multi tool - your question or request (put your question here)"),
+    model: z.string().optional().describe("For multi tool - specific model to use"),
+
     // Common
-    useFree: z.boolean().optional().default(false)
+    useFree: z.boolean().optional().default(false).describe("Use free tier model")
   }),
   
   execute: async (args: any, { log }: any) => {

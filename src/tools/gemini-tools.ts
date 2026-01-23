@@ -182,10 +182,13 @@ export async function callGemini(
  */
 export const geminiQueryTool = {
   name: "gemini_query",
-  description: "Query Gemini",
+  description: "Query Gemini. Put your PROMPT in the 'prompt' parameter.",
   parameters: z.object({
-    prompt: z.string(),
-    model: z.enum(["gemini-3", "pro", "flash"]).optional().default("gemini-3")
+    prompt: z.string().describe("Your question or request (REQUIRED - put your question here)"),
+    model: z.enum(["gemini-3", "pro", "flash"])
+      .optional()
+      .default("gemini-3")
+      .describe("Model variant - must be one of: gemini-3 (default), pro, flash")
   }),
   execute: async (args: { prompt: string; model?: string }, { log }: any) => {
     let model: string = GEMINI_MODELS.GEMINI_3_PRO; // Default to Gemini 3
@@ -208,11 +211,11 @@ export const geminiQueryTool = {
  */
 export const geminiBrainstormTool = {
   name: "gemini_brainstorm",
-  description: "Brainstorming",
+  description: "Brainstorming. Put your PROMPT in the 'prompt' parameter.",
   parameters: z.object({
-    prompt: z.string(),
-    claudeThoughts: z.string().optional(),
-    maxRounds: z.number().optional().default(1)
+    prompt: z.string().describe("The topic or problem to brainstorm about (REQUIRED - put your topic here)"),
+    claudeThoughts: z.string().optional().describe("Claude's initial thoughts to build upon"),
+    maxRounds: z.number().optional().default(1).describe("Number of brainstorming rounds (default: 1)")
   }),
   execute: async (args: { prompt: string; claudeThoughts?: string; maxRounds?: number }, { log }: any) => {
     const systemPrompt = `Creative brainstorming partner.
@@ -235,11 +238,11 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const geminiAnalyzeCodeTool = {
   name: "gemini_analyze_code",
-  description: "Code analysis",
+  description: "Analyze code for bugs, quality, security, or performance issues. Put the CODE in the 'code' parameter, NOT in 'focus'.",
   parameters: z.object({
-    code: z.string(),
-    language: z.string().optional(),
-    focus: z.enum(["quality", "security", "performance", "bugs", "general"]).optional().default("general")
+    code: z.string().describe("The actual source code to analyze (REQUIRED - put your code here)"),
+    language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
+    focus: z.enum(["quality", "security", "performance", "bugs", "general"]).optional().default("general").describe("Analysis focus area - must be one of: quality, security, performance, bugs, general")
   }),
   execute: async (args: { code: string; language?: string; focus?: string }, { log }: any) => {
     const focusPrompts = {
@@ -271,10 +274,13 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const geminiAnalyzeTextTool = {
   name: "gemini_analyze_text",
-  description: "Text analysis",
+  description: "Text analysis. Put the TEXT in the 'text' parameter, NOT in 'type'.",
   parameters: z.object({
-    text: z.string(),
-    type: z.enum(["sentiment", "summary", "entities", "key-points", "general"]).optional().default("general")
+    text: z.string().describe("The text to analyze (REQUIRED - put your text here)"),
+    type: z.enum(["sentiment", "summary", "entities", "key-points", "general"])
+      .optional()
+      .default("general")
+      .describe("Analysis type - must be one of: sentiment, summary, entities, key-points, general")
   }),
   execute: async (args: { text: string; type?: string }, { log }: any) => {
     const analysisPrompts = {
@@ -305,11 +311,17 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const geminiSummarizeTool = {
   name: "gemini_summarize",
-  description: "Summarization",
+  description: "Summarization. Put the CONTENT in the 'content' parameter.",
   parameters: z.object({
-    content: z.string(),
-    length: z.enum(["brief", "moderate", "detailed"]).optional().default("moderate"),
-    format: z.enum(["paragraph", "bullet-points", "outline"]).optional().default("paragraph")
+    content: z.string().describe("The content to summarize (REQUIRED - put your text here)"),
+    length: z.enum(["brief", "moderate", "detailed"])
+      .optional()
+      .default("moderate")
+      .describe("Summary length - must be one of: brief, moderate, detailed"),
+    format: z.enum(["paragraph", "bullet-points", "outline"])
+      .optional()
+      .default("paragraph")
+      .describe("Output format - must be one of: paragraph, bullet-points, outline")
   }),
   execute: async (args: { content: string; length?: string; format?: string }, { log }: any) => {
     const lengthGuides = {
@@ -350,12 +362,12 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const geminiImagePromptTool = {
   name: "gemini_image_prompt",
-  description: "Image prompt generation",
+  description: "Image prompt generation. Put the DESCRIPTION in the 'description' parameter.",
   parameters: z.object({
-    description: z.string(),
-    style: z.string().optional(),
-    mood: z.string().optional(),
-    details: z.string().optional()
+    description: z.string().describe("What you want in the image (REQUIRED - describe the image)"),
+    style: z.string().optional().describe("Artistic style (e.g., 'watercolor', 'photorealistic')"),
+    mood: z.string().optional().describe("Mood or atmosphere (e.g., 'serene', 'dramatic')"),
+    details: z.string().optional().describe("Additional details to include")
   }),
   execute: async (args: { description: string; style?: string; mood?: string; details?: string }, { log }: any) => {
     const systemPrompt = `You are an expert at creating detailed image generation prompts.

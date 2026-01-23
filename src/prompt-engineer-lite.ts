@@ -7,38 +7,75 @@ export class PromptEngineerLite {
     ['alt_view', (q) => `"${q}" from 5 angles: child, scientist, artist, strategist, futurist.`],
     ['creative_use', (q, c) => `Creative applications of "${q}"${c ? ' findings' : ''} across domains.`],
     ['innovate', (q) => `Generate creative, unconventional solutions for "${q}". Consider multiple approaches: rethinking existing processes, drawing inspiration from other domains, removing constraints, and combining different methods. Provide 3+ novel, practical approaches.`],
-    
-    // Research  
+
+    // Research
     ['investigate', (q) => `5W1H analysis of "${q}": Who/What/When/Where/Why/How + recent developments.`],
-    ['evidence', (q, c) => `Evidence for "${q}": support, contradict, cases, stats, experts.`],
-    
+    ['evidence', (q, _c) => `Evidence for "${q}": support, contradict, cases, stats, experts.`],
+
     // Analytical
-    ['analyze', (q, c) => `"${q}" systematic: components→relationships→patterns→strengths/risks→conclusions.`],
+    ['analyze', (q, _c) => `"${q}" systematic: components→relationships→patterns→strengths/risks→conclusions.`],
     ['first_prin', (q) => `"${q}" first principles: truths→assumptions→atomic units→rebuild.`],
-    ['feasible', (q, c) => `"${q}" feasibility: technical/economic/time/resources/risks/metrics.`],
-    
+    ['feasible', (q, _c) => `"${q}" feasibility: technical/economic/time/resources/risks/metrics.`],
+
     // Reflective
-    ['reflect', (q, c) => `"${q}" reflection: patterns, surprises, key insight, gaps, next steps.`],
-    ['patterns', (q, c) => `"${q}" patterns: themes, causality, cycles, anomalies, system insights.`],
+    ['reflect', (q, _c) => `"${q}" reflection: patterns, surprises, key insight, gaps, next steps.`],
+    ['patterns', (q, _c) => `"${q}" patterns: themes, causality, cycles, anomalies, system insights.`],
     ['decompose', (q) => `"${q}" breakdown: core→sub-problems→dependencies→constraints→steps.`],
-    ['integrate', (q) => `"${q}" synthesis: convergent themes, complements, contradictions, meta-pattern.`]
+    ['integrate', (q) => `"${q}" synthesis: convergent themes, complements, contradictions, meta-pattern.`],
+
+    // Reasoning (2025-2026 patterns)
+    ['chain_of_thought', (q) => `Think step-by-step about "${q}": 1) Identify the core question, 2) Break into sub-problems, 3) Apply logical reasoning to each, 4) Synthesize conclusion.`],
+    ['tree_of_thoughts', (q) => `For "${q}": Branch into 3 distinct solution paths, explore each path's implications, evaluate pros/cons, prune weak branches, synthesize best elements.`],
+    ['graph_of_thoughts', (q) => `Map "${q}" as an idea graph: identify key concept nodes, draw connection edges (supports/contradicts/depends), find feedback loops and central hubs.`],
+
+    // Verification
+    ['self_consistency', (q) => `For "${q}": Generate 3 independent solutions, compare approaches, identify consensus points, vote on best answer, explain confidence level.`],
+    ['constitutional', (q) => `Solve "${q}", then critique your answer against: accuracy (is it factually correct?), safety (any risks?), helpfulness (does it address the need?). Revise based on critique.`],
+
+    // Meta
+    ['meta_prompting', (q) => `First, write a better prompt for "${q}" that would get a more useful response. Then, answer using that improved prompt.`],
+
+    // Debate
+    ['adversarial', (q) => `For "${q}": First argue strongly FOR this position with best evidence. Then argue strongly AGAINST with counterarguments. Finally, synthesize a balanced view.`],
+    ['persona_simulation', (q) => `Simulate expert debate on "${q}": Have a skeptic raise concerns, an optimist highlight benefits, a pragmatist focus on implementation, and a visionary explore possibilities. Synthesize insights.`]
   ]);
 
-  // Compact technique mapping
+  // Compact technique mapping (aliases to canonical names)
   private techniqueMap: Record<string, string> = {
+    // Existing aliases
     'what_if_speculation': 'what_if',
     'alternative_perspectives': 'alt_view',
+    'perspectives': 'alt_view',
     'creative_applications': 'creative_use',
+    'applications': 'creative_use',
     'innovative_solutions': 'innovate',
+    'solutions': 'innovate',
     'comprehensive_investigation': 'investigate',
+    '5w1h': 'investigate',
     'evidence_gathering': 'evidence',
+    'facts': 'evidence',
     'systematic_analysis': 'analyze',
+    'systematic': 'analyze',
     'first_principles': 'first_prin',
     'feasibility_analysis': 'feasible',
+    'feasibility': 'feasible',
     'quick_reflection': 'reflect',
     'pattern_recognition': 'patterns',
+    'connections': 'patterns',
     'problem_decomposition': 'decompose',
-    'integration_reflection': 'integrate'
+    'breakdown': 'decompose',
+    'integration_reflection': 'integrate',
+    'synthesize': 'integrate',
+
+    // New technique aliases (2025-2026)
+    'step_by_step': 'chain_of_thought',
+    'explore_paths': 'tree_of_thoughts',
+    'idea_map': 'graph_of_thoughts',
+    'consensus': 'self_consistency',
+    'principles': 'constitutional',
+    'improve_prompt': 'meta_prompting',
+    'critic': 'adversarial',
+    'debate': 'persona_simulation'
   };
 
   applyTechnique(tool: string, technique: string, query: string, prev?: ToolResult[]): string {
@@ -66,19 +103,35 @@ export class PromptEngineerLite {
 
   getTechniqueDescription(technique: string): string {
     const desc: Record<string, string> = {
+      // Creative
       'what_if': 'What if...',
       'alt_view': 'Multi-angle',
       'creative_use': 'Applications',
       'innovate': 'Innovation',
+      // Research
       'investigate': '5W1H',
       'evidence': 'Evidence',
+      // Analytical
       'analyze': 'Analysis',
       'first_prin': 'First principles',
       'feasible': 'Feasibility',
+      // Reflective
       'reflect': 'Reflection',
       'patterns': 'Patterns',
       'decompose': 'Breakdown',
-      'integrate': 'Synthesis'
+      'integrate': 'Synthesis',
+      // Reasoning (2025-2026)
+      'chain_of_thought': 'Step-by-step',
+      'tree_of_thoughts': 'Explore paths',
+      'graph_of_thoughts': 'Idea map',
+      // Verification
+      'self_consistency': 'Consensus',
+      'constitutional': 'Principles check',
+      // Meta
+      'meta_prompting': 'Improve prompt',
+      // Debate
+      'adversarial': 'Pro/Con',
+      'persona_simulation': 'Expert debate'
     };
     const key = this.techniqueMap[technique] || technique;
     return desc[key] || technique;

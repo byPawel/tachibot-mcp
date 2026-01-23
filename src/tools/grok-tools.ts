@@ -142,12 +142,14 @@ export async function callGrok(
  */
 export const grokReasonTool = {
   name: "grok_reason",
-  description: "Deep reasoning",
+  description: "Deep reasoning. Put your PROBLEM or QUESTION in the 'problem' parameter.",
   parameters: z.object({
-    problem: z.string(),
-    approach: z.enum(["analytical", "creative", "systematic", "first-principles"]).optional(),
-    context: z.string().optional(),
-    useHeavy: z.boolean().optional()
+    problem: z.string().describe("The problem or question to reason about (REQUIRED - put your question here)"),
+    approach: z.enum(["analytical", "creative", "systematic", "first-principles"])
+      .optional()
+      .describe("Reasoning approach - must be one of: analytical, creative, systematic, first-principles"),
+    context: z.string().optional().describe("Additional context for the problem"),
+    useHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for complex tasks")
   }),
   execute: async (args: { problem: string; approach?: string; context?: string; useHeavy?: boolean }, { log }: any) => {
     const { problem, approach = "first-principles", context, useHeavy } = args;
@@ -188,12 +190,13 @@ ${FORMAT_INSTRUCTION}`
  */
 export const grokCodeTool = {
   name: "grok_code",
-  description: "Code analysis",
+  description: "Code analysis. Put the CODE in the 'code' parameter, NOT in 'task'.",
   parameters: z.object({
-    task: z.enum(["analyze", "optimize", "debug", "review", "refactor"]),
-    code: z.string(),
-    language: z.string().optional(),
-    requirements: z.string().optional()
+    task: z.enum(["analyze", "optimize", "debug", "review", "refactor"])
+      .describe("Code task - must be one of: analyze, optimize, debug, review, refactor"),
+    code: z.string().describe("The actual source code to analyze (REQUIRED - put your code here)"),
+    language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
+    requirements: z.string().optional().describe("Specific requirements or focus areas")
   }),
   execute: async (args: { task: string; code: string; language?: string; requirements?: string }, { log }: any) => {
     const { task, code, language, requirements } = args;
@@ -232,12 +235,12 @@ ${FORMAT_INSTRUCTION}`
  */
 export const grokDebugTool = {
   name: "grok_debug",
-  description: "Debug assistance",
+  description: "Debug assistance. Describe the ISSUE in the 'issue' parameter.",
   parameters: z.object({
-    issue: z.string(),
-    code: z.string().optional(),
-    error: z.string().optional(),
-    context: z.string().optional()
+    issue: z.string().describe("Description of the issue or bug (REQUIRED - put your problem here)"),
+    code: z.string().optional().describe("Relevant code that has the issue"),
+    error: z.string().optional().describe("Error message or stack trace"),
+    context: z.string().optional().describe("Additional context about the environment or conditions")
   }),
   execute: async (args: { issue: string; code?: string; error?: string; context?: string }, { log }: any) => {
     const { issue, code, error, context } = args;
@@ -284,11 +287,13 @@ ${FORMAT_INSTRUCTION}`
  */
 export const grokArchitectTool = {
   name: "grok_architect",
-  description: "Architecture design",
+  description: "Architecture design. Put your REQUIREMENTS in the 'requirements' parameter.",
   parameters: z.object({
-    requirements: z.string(),
-    constraints: z.string().optional(),
-    scale: z.enum(["small", "medium", "large", "enterprise"]).optional()
+    requirements: z.string().describe("The architecture requirements or design question (REQUIRED - put your question here)"),
+    constraints: z.string().optional().describe("Technical or business constraints to consider"),
+    scale: z.enum(["small", "medium", "large", "enterprise"])
+      .optional()
+      .describe("Expected scale - must be one of: small, medium, large, enterprise")
   }),
   execute: async (args: { requirements: string; constraints?: string; scale?: string }, { log }: any) => {
     const { requirements, constraints, scale } = args;
@@ -319,12 +324,12 @@ ${FORMAT_INSTRUCTION}`
  */
 export const grokBrainstormTool = {
   name: "grok_brainstorm",
-  description: "Creative brainstorming",
+  description: "Creative brainstorming. Put your TOPIC in the 'topic' parameter.",
   parameters: z.object({
-    topic: z.string(),
-    constraints: z.string().optional(),
-    numIdeas: z.number().optional(),
-    forceHeavy: z.boolean().optional()
+    topic: z.string().describe("The topic to brainstorm about (REQUIRED - put your idea/topic here)"),
+    constraints: z.string().optional().describe("Any constraints or requirements to consider"),
+    numIdeas: z.number().optional().describe("Number of ideas to generate (default: 5)"),
+    forceHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for deeper creativity")
   }),
   execute: async (args: { topic: string; constraints?: string; numIdeas?: number; forceHeavy?: boolean }, { log }: any) => {
     const { topic, constraints, numIdeas = 5, forceHeavy = false } = args; // Changed: Default to cheap model

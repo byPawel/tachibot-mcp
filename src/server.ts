@@ -81,6 +81,7 @@ import { isOpenAIAvailable, getAllOpenAITools } from "./tools/openai-tools.js";
 import { isGeminiAvailable, geminiBrainstormTool, geminiAnalyzeCodeTool } from "./tools/gemini-tools.js";
 import { getAllOpenRouterTools, isOpenRouterAvailable } from "./tools/openrouter-tools.js";
 import { getTachiTools } from "./tools/tachi-tool.js";
+import { getPromptTechniqueTools } from "./tools/prompt-technique-tools.js";
 // import { registerGPT5Tools, isGPT5Available } from "./tools/openai-gpt5-fixed.js"; // DISABLED - using regular openai-tools.ts
 import { initializeOptimizations } from "./optimization/index.js";
 import { FocusModeRegistry } from "./application/services/focus/FocusModeRegistry.js";
@@ -755,6 +756,13 @@ async function initializeServer() {
       safeAddTool(tool);
     });
     console.error(`✅ Registered tachi tools (tachi, focus alias)`);
+
+    // Register prompt technique tools (transparent prompt engineering)
+    const promptTechniqueTools = getPromptTechniqueTools();
+    promptTechniqueTools.forEach(tool => {
+      safeAddTool(tool);
+    });
+    console.error(`✅ Registered ${promptTechniqueTools.length} prompt technique tools`);
 
     // Log startup information
     const perplexityCount = isPerplexityAvailable() ? getAllPerplexityTools().length : 0;

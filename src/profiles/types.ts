@@ -34,6 +34,7 @@ export interface ToolsConfig {
   openai_brainstorm: boolean;
   openai_code_review: boolean;
   openai_explain: boolean;
+  openai_search: boolean;
 
   // Gemini tools
   gemini_brainstorm: boolean;
@@ -57,4 +58,9 @@ export interface ToolsConfig {
   workflow_status: boolean;
   validate_workflow: boolean;
   validate_workflow_file: boolean;
+
+  // Prompt technique tools
+  list_prompt_techniques: boolean;
+  preview_prompt_technique: boolean;
+  execute_prompt_technique: boolean;
 }

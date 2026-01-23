@@ -89,12 +89,13 @@ export const lmstudioQueryTool = {
  */
 export const lmstudioCodeTool = {
   name: "lmstudio_code",
-  description: "Generate or analyze code using local models",
+  description: "Generate or analyze code. Put REQUIREMENTS in 'requirements' parameter and CODE in 'code' parameter.",
   parameters: z.object({
-    task: z.enum(["generate", "explain", "review", "fix", "optimize"]).describe("The code task to perform"),
-    code: z.string().optional().describe("Code to analyze (for explain/review/fix/optimize)"),
-    requirements: z.string().describe("Requirements or description for the task"),
-    language: z.string().optional().describe("Programming language")
+    task: z.enum(["generate", "explain", "review", "fix", "optimize"])
+      .describe("Code task - must be one of: generate, explain, review, fix, optimize"),
+    code: z.string().optional().describe("Code to analyze (for explain/review/fix/optimize tasks)"),
+    requirements: z.string().describe("Requirements or description for the task (REQUIRED - put your request here)"),
+    language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')")
   }),
   execute: async (args: { task: string; code?: string; requirements: string; language?: string }, { log }: any) => {
     const systemPrompts = {
@@ -122,14 +123,14 @@ export const lmstudioCodeTool = {
  */
 export const lmstudioReasoningTool = {
   name: "lmstudio_reason",
-  description: "Perform step-by-step reasoning using local models",
+  description: "Perform step-by-step reasoning using local models. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
-    problem: z.string().describe("The problem to solve"),
+    problem: z.string().describe("The problem to solve (REQUIRED - put your question here)"),
     approach: z.enum(["analytical", "creative", "systematic", "exploratory"])
       .optional()
       .default("systematic")
-      .describe("Reasoning approach"),
-    steps: z.number().optional().default(5).describe("Number of reasoning steps")
+      .describe("Reasoning approach - must be one of: analytical, creative, systematic, exploratory"),
+    steps: z.number().optional().default(5).describe("Number of reasoning steps (default: 5)")
   }),
   execute: async (args: { problem: string; approach?: string; steps?: number }, { log }: any) => {
     const systemPrompt = `You are a logical reasoning system. Use ${args.approach} thinking.
@@ -152,12 +153,13 @@ Be thorough but concise.`;
  */
 export const lmstudioCreativeTool = {
   name: "lmstudio_creative",
-  description: "Creative writing and ideation with local models",
+  description: "Creative writing and ideation. Put your PROMPT in the 'prompt' parameter, NOT in 'task'.",
   parameters: z.object({
-    task: z.enum(["story", "brainstorm", "names", "concepts", "scenarios"]).describe("Creative task type"),
-    prompt: z.string().describe("The creative prompt"),
+    task: z.enum(["story", "brainstorm", "names", "concepts", "scenarios"])
+      .describe("Creative task type - must be one of: story, brainstorm, names, concepts, scenarios"),
+    prompt: z.string().describe("The creative prompt (REQUIRED - put your creative request here)"),
     style: z.string().optional().describe("Style or tone guidelines"),
-    count: z.number().optional().default(3).describe("Number of variations to generate")
+    count: z.number().optional().default(3).describe("Number of variations to generate (default: 3)")
   }),
   execute: async (args: { task: string; prompt: string; style?: string; count?: number }, { log }: any) => {
     const taskPrompts = {
@@ -183,13 +185,13 @@ Be imaginative and original.`;
  */
 export const lmstudioChatTool = {
   name: "lmstudio_chat",
-  description: "Have a conversation with local models",
+  description: "Have a conversation with local models. Put your MESSAGE in the 'message' parameter.",
   parameters: z.object({
-    message: z.string().describe("Your message to the model"),
+    message: z.string().describe("Your message to the model (REQUIRED - put your message here)"),
     persona: z.enum(["assistant", "expert", "tutor", "friend", "advisor"])
       .optional()
       .default("assistant")
-      .describe("The persona for the model to adopt")
+      .describe("Persona to adopt - must be one of: assistant, expert, tutor, friend, advisor")
   }),
   execute: async (args: { message: string; persona?: string }, { log }: any) => {
     const personas = {

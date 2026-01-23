@@ -21,6 +21,7 @@ export const fullProfile: ProfileConfig = {
     openai_brainstorm: true,
     openai_code_review: true,
     openai_explain: true,
+    openai_search: true,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: true,
@@ -38,5 +39,8 @@ export const fullProfile: ProfileConfig = {
     workflow_status: true,
     validate_workflow: true,
     validate_workflow_file: true,
+    list_prompt_techniques: true,
+    preview_prompt_technique: true,
+    execute_prompt_technique: true,
   }
 };

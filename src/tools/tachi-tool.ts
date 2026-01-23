@@ -507,7 +507,7 @@ async function executeMode(mode: Mode, query: string): Promise<string> {
 
 export const tachiTool = {
   name: "tachi",
-  description: `Smart AI assistant - just describe what you need.
+  description: `Smart AI assistant - just describe what you need. Put your QUERY in the 'query' parameter.
 
 Auto-routes to the best mode based on your query:
 • Research: "what is...", "how does...", "explain..."
@@ -523,12 +523,12 @@ Examples:
   tachi "microservices vs monolith for 10M users"
   tachi "judge: React vs Vue vs Svelte"`,
   parameters: z.object({
-    query: z.string().describe("What you need help with"),
+    query: z.string().describe("What you need help with (REQUIRED - put your question here)"),
     mode: z
       .enum(["auto", "research", "solve", "verify", "creative", "architect", "judge"])
       .default("auto")
       .optional()
-      .describe("Force specific mode (default: auto-detect from query)"),
+      .describe("Force specific mode - must be one of: auto, research, solve, verify, creative, architect, judge"),
   }),
   execute: async (
     { query, mode = "auto" }: { query: string; mode?: string },
