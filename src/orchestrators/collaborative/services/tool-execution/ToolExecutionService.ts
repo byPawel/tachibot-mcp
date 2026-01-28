@@ -226,6 +226,25 @@ export class ToolExecutionService implements IToolExecutionEngine {
           maxSteps: 10
         };
 
+      case "qwen_reason":
+        return {
+          problem: prompt,
+          approach: "mathematical"
+        };
+
+      case "minimax_code":
+        return {
+          task: "fix",
+          code: prompt,
+          language: "typescript"
+        };
+
+      case "minimax_agent":
+        return {
+          task: prompt,
+          outputFormat: "both"
+        };
+
       case "grok_reason":
         return {
           problem: prompt,
@@ -458,6 +477,36 @@ Step-by-step reasoning:
             }
           });
           return typeof kimiResult === 'string' ? kimiResult : JSON.stringify(kimiResult);
+
+        case "qwen_reason":
+          const { qwenReasonTool } = await import("../../../../tools/openrouter-tools.js");
+          const qwenReasonResult = await qwenReasonTool.execute(params, {
+            log: {
+              info: (msg: string, data?: any) => console.error(`[${toolName}] ${msg}`, data),
+              error: (msg: string, data?: any) => console.error(`[${toolName}] ERROR: ${msg}`, data)
+            }
+          });
+          return typeof qwenReasonResult === 'string' ? qwenReasonResult : JSON.stringify(qwenReasonResult);
+
+        case "minimax_code":
+          const { minimaxCodeTool } = await import("../../../../tools/openrouter-tools.js");
+          const minimaxCodeResult = await minimaxCodeTool.execute(params, {
+            log: {
+              info: (msg: string, data?: any) => console.error(`[${toolName}] ${msg}`, data),
+              error: (msg: string, data?: any) => console.error(`[${toolName}] ERROR: ${msg}`, data)
+            }
+          });
+          return typeof minimaxCodeResult === 'string' ? minimaxCodeResult : JSON.stringify(minimaxCodeResult);
+
+        case "minimax_agent":
+          const { minimaxAgentTool } = await import("../../../../tools/openrouter-tools.js");
+          const minimaxAgentResult = await minimaxAgentTool.execute(params, {
+            log: {
+              info: (msg: string, data?: any) => console.error(`[${toolName}] ${msg}`, data),
+              error: (msg: string, data?: any) => console.error(`[${toolName}] ERROR: ${msg}`, data)
+            }
+          });
+          return typeof minimaxAgentResult === 'string' ? minimaxAgentResult : JSON.stringify(minimaxAgentResult);
 
         case "perplexity_reason":
           const { perplexityReasonTool } = await import("../../../../tools/perplexity-tools.js");

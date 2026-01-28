@@ -120,7 +120,14 @@ modelProviderRegistry.registerMany([
   { modelName: "gpt5-mini", toolName: "gpt5_mini_reason", provider: "openai", aliases: ["gpt-5-mini"] },
 
   // Kimi models (Moonshot AI)
-  { modelName: "kimi", toolName: "kimi_thinking", provider: "openrouter", aliases: ["kimi-k2", "kimi-k2-thinking", "kimi-thinking"] },
+  { modelName: "kimi", toolName: "kimi_thinking", provider: "openrouter", aliases: ["kimi-k2", "kimi-k2-thinking", "kimi-thinking", "kimi-k2.5"] },
+
+  // Qwen reason (heavy math/reasoning)
+  { modelName: "qwen-reason", toolName: "qwen_reason", provider: "openrouter", aliases: ["qwen_reason", "qwen-max", "qwen-thinking"] },
+
+  // MiniMax models (cheap agentic)
+  { modelName: "minimax", toolName: "minimax_agent", provider: "openrouter", aliases: ["minimax-agent", "minimax-m2.1"] },
+  { modelName: "minimax-code", toolName: "minimax_code", provider: "openrouter", aliases: ["minimax_code"] },
 
   // Think tool
   { modelName: "think", toolName: "think", provider: "anthropic" },
