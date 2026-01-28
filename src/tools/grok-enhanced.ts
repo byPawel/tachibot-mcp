@@ -21,6 +21,7 @@ config({ path: path.resolve(__dirname, '../../../.env') });
 // Grok API configuration
 const GROK_API_KEY = getGrokApiKey();
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
+const GROK_RESPONSES_URL = "https://api.x.ai/v1/responses"; // New Agent Tools API endpoint (Jan 2025)
 
 // Grok models - Updated 2025-11-22 with correct API model names
 export enum GrokModel {
@@ -77,6 +78,80 @@ export async function callGrokEnhanced(
   } = options;
 
   try {
+    // Use different endpoint and format for search vs non-search
+    if (enableLiveSearch) {
+      // NEW Agent Tools API (Jan 2025) - uses /v1/responses endpoint
+      // with 'input' instead of 'messages' and tools array
+      const searchRequestBody = {
+        model: GrokModel.GROK_4_1_FAST, // Tool-calling optimized model for agentic search
+        input: messages.map(m => ({ role: m.role, content: m.content })),
+        tools: [
+          { type: "web_search" },
+          { type: "x_search" }
+        ],
+        temperature,
+        max_output_tokens: maxTokens
+      };
+
+      console.error('[Grok Search Debug] Using Responses API:', GROK_RESPONSES_URL);
+      console.error('[Grok Search Debug] Request:', JSON.stringify(searchRequestBody, null, 2));
+
+      const response = await fetch(GROK_RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROK_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(searchRequestBody)
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Grok API error: ${response.statusText} - ${error}`);
+      }
+
+      const data = await response.json() as any;
+
+      // Responses API format: output[] contains web_search_call entries and a message entry
+      // Structure: { output: [{ type: "web_search_call", ... }, { type: "message", content: [{ type: "output_text", text: "...", annotations: [...] }] }] }
+      let content = "No response from Grok";
+      let sources: any[] = [];
+
+      if (data.output && Array.isArray(data.output)) {
+        // Find the message output (skip web_search_call entries)
+        const messageOutput = data.output.find((o: any) => o.type === "message");
+
+        if (messageOutput?.content && Array.isArray(messageOutput.content)) {
+          // Extract text from output_text content
+          content = messageOutput.content
+            .filter((c: any) => c.type === "output_text")
+            .map((c: any) => c.text)
+            .join("\n");
+
+          // Extract citations from annotations (NOT from top-level data.citations!)
+          for (const contentItem of messageOutput.content) {
+            if (contentItem.annotations && Array.isArray(contentItem.annotations)) {
+              for (const annotation of contentItem.annotations) {
+                if (annotation.type === "url_citation") {
+                  sources.push({
+                    url: annotation.url,
+                    title: annotation.title || annotation.url
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return {
+        content,
+        sources,
+        usage: data.usage
+      };
+    }
+
+    // Standard chat completions for non-search requests
     const requestBody: any = {
       model,
       messages,
@@ -85,38 +160,9 @@ export async function callGrokEnhanced(
       stream: false
     };
 
-    // Add live search configuration if enabled (following official xAI docs exactly)
-    if (enableLiveSearch) {
-      // Only use search_parameters as documented - NO tools array
-      requestBody.search_parameters = {
-        mode: "on",  // Force search on
-        max_search_results: searchSources || 20,
-        return_citations: true
-      };
-
-      // Add sources if specific domains requested
-      if (searchDomains && searchDomains.length > 0) {
-        requestBody.search_parameters.sources = [{
-          type: "web",
-          allowed_websites: searchDomains.slice(0, 5) // Max 5 websites
-        }];
-      }
-      // If no specific domains, sources will default to web, news, and x
-    }
-
     // Enable structured output if requested
     if (structuredOutput) {
       requestBody.response_format = { type: "json_object" };
-    }
-
-    // Heavy mode would be handled by subscription/tier, not headers in body
-    // Removed incorrect header addition to request body
-
-    // Debug logging for search requests
-    if (enableLiveSearch) {
-      console.error('[Grok Search Debug] Model:', model);
-      console.error('[Grok Search Debug] Request body:', JSON.stringify(requestBody, null, 2));
-      console.error('[Grok Search Debug] API URL:', GROK_API_URL);
     }
 
     const response = await fetch(GROK_API_URL, {
@@ -124,7 +170,6 @@ export async function callGrokEnhanced(
       headers: {
         "Authorization": `Bearer ${GROK_API_KEY}`,
         "Content-Type": "application/json",
-        // Add heavy mode header here if needed
         ...(options.useHeavy ? { 'X-Grok-Mode': 'heavy' } : {})
       },
       body: JSON.stringify(requestBody)
@@ -137,18 +182,15 @@ export async function callGrokEnhanced(
 
     const data = await response.json() as any;
     const content = data.choices?.[0]?.message?.content || "No response from Grok";
-    
-    // Extract sources if live search was used
-    const sources = data.choices?.[0]?.message?.sources || [];
-    
-    return { 
-      content, 
-      sources,
-      usage: data.usage // Include token and cost information
+
+    return {
+      content,
+      sources: [],
+      usage: data.usage
     };
   } catch (error) {
-    return { 
-      content: `[Grok error: ${error instanceof Error ? error.message : String(error)}]` 
+    return {
+      content: `[Grok error: ${error instanceof Error ? error.message : String(error)}]`
     };
   }
 }
