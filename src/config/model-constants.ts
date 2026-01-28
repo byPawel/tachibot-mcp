@@ -78,15 +78,26 @@ export const GROK_MODELS = {
 } as const;
 
 // Kimi Models (Moonshot AI via OpenRouter)
+// K2.5 released Jan 27, 2026 - Multimodal + Agent Swarm (100 sub-agents)
 export const KIMI_MODELS = {
-  K2_THINKING: "moonshotai/kimi-k2-thinking", // 1T MoE, 32B active - Leading open-source agentic reasoning (256k context)
+  K2_THINKING: "moonshotai/kimi-k2-thinking",   // 1T MoE, 32B active - agentic reasoning (256k context)
+  K2_5: "moonshotai/kimi-k2.5",                 // Multimodal (vision/video), Agent Swarm, tops SWE-Bench
+} as const;
+
+// MiniMax Models (MiniMax via OpenRouter)
+// M2.1 released Dec 23, 2025 - Best agentic model, VERY CHEAP
+export const MINIMAX_MODELS = {
+  M2_1: "minimax/minimax-m2.1",                 // 230B/10B MoE - SWE-Bench 72.5%, τ²-Bench 77.2%, $0.27/$1.10
+  M2: "minimax/minimax-m2",                     // Fallback model
 } as const;
 
 // Qwen Models (Alibaba via OpenRouter)
+// Qwen3 235B Thinking (July 2025) - Largest reasoning model available
 export const QWEN_MODELS = {
-  CODER_PLUS: "qwen/qwen3-coder-plus", // Code specialist (32K context)
-  CODER: "qwen/qwen3-coder",           // Standard coder
-  QWQ_32B: "qwen/qwq-32b",             // Deep reasoning
+  CODER_PLUS: "qwen/qwen3-coder-plus",         // Code specialist (32K context)
+  CODER: "qwen/qwen3-coder",                   // Standard coder - 480B MoE, SWE-Bench 69.6%
+  QWQ_32B: "qwen/qwq-32b",                     // Deep reasoning - CodeElo 1261
+  MAX_THINKING: "qwen/qwen3-235b-a22b-thinking-2507", // 235B MoE thinking - heavy reasoning
 } as const;
 
 // =============================================================================
@@ -97,6 +108,8 @@ export const OPENROUTER_MODELS = {
   ...QWEN_MODELS,
   // Kimi models
   ...KIMI_MODELS,
+  // MiniMax models
+  ...MINIMAX_MODELS,
 } as const;
 
 // =============================================================================
@@ -118,6 +131,7 @@ export const ALL_MODELS = {
   ...GROK_MODELS,
   ...KIMI_MODELS,
   ...QWEN_MODELS,
+  ...MINIMAX_MODELS,
 } as const;
 
 // Type for any valid model name
@@ -166,8 +180,10 @@ export const CURRENT_MODELS = {
     reason: PERPLEXITY_MODELS.SONAR_REASONING,
   },
   openrouter: {
-    kimi: KIMI_MODELS.K2_THINKING,
+    kimi: KIMI_MODELS.K2_5,                // K2.5 multimodal + agent swarm (thinking via reasoning param)
     qwen: QWEN_MODELS.CODER_PLUS,
+    qwen_reason: QWEN_MODELS.MAX_THINKING, // NEW: Flagship reasoning (>1T params, HMMT 98%)
+    minimax: MINIMAX_MODELS.M2_1,          // NEW: Best agentic model, very cheap
   }
 } as const;
 
@@ -281,10 +297,26 @@ export const TOOL_DEFAULTS = {
     maxTokens: 8000,
     temperature: 0.2,
   },
+  qwen_reason: {
+    model: QWEN_MODELS.MAX_THINKING,      // NEW: >1T params, HMMT 98%
+    maxTokens: 8000,
+    temperature: 0.3,                      // Lower for precise reasoning
+  },
   kimi_thinking: {
-    model: CURRENT_MODELS.openrouter.kimi,
+    model: KIMI_MODELS.K2_5,              // K2.5 multimodal (thinking via reasoning param)
     maxTokens: 16000,
     temperature: 0.7,
+  },
+  // MiniMax tools - VERY CHEAP ($0.27/$1.10 per M tokens)
+  minimax_code: {
+    model: MINIMAX_MODELS.M2_1,           // SWE-Bench 72.5%
+    maxTokens: 4000,
+    temperature: 0.3,                      // Lower for precise code
+  },
+  minimax_agent: {
+    model: MINIMAX_MODELS.M2_1,           // τ²-Bench 77.2%, best agentic
+    maxTokens: 4000,
+    temperature: 0.5,                      // Balanced for agentic tasks
   },
 
   // Meta tools
@@ -333,11 +365,18 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
 
   // Kimi (Moonshot)
   "moonshotai/kimi-k2-thinking": "kimi-k2",
+  "moonshotai/kimi-k2.5": "kimi-k2.5",
+  "moonshotai/kimi-k2.5-thinking": "kimi-k2.5",
 
   // Qwen (Alibaba)
   "qwen/qwen3-coder-plus": "qwen-coder",
   "qwen/qwen3-coder": "qwen-coder",
   "qwen/qwq-32b": "qwq-32b",
+  "qwen/qwen3-max-thinking": "qwen-max",
+
+  // MiniMax
+  "minimax/minimax-m2.1": "minimax-m2.1",
+  "minimax/minimax-m2": "minimax-m2",
 } as const;
 
 // Helper to get display name (falls back to model ID if not mapped)
@@ -368,9 +407,18 @@ export const MODEL_PRICING: Record<string, number> = {
   "sonar-pro": 0.006,
   "sonar-reasoning-pro": 0.006,
 
-  // OpenRouter models
+  // OpenRouter models - Kimi
   "moonshotai/kimi-k2-thinking": 0.002,
+  "moonshotai/kimi-k2.5": 0.003,
+  "moonshotai/kimi-k2.5-thinking": 0.003,
+
+  // OpenRouter models - Qwen
   "qwen/qwen3-coder-plus": 0.0005,
   "qwen/qwen3-coder": 0.0003,
   "qwen/qwq-32b": 0.001,
+  "qwen/qwen3-max-thinking": 0.005,
+
+  // OpenRouter models - MiniMax (VERY CHEAP!)
+  "minimax/minimax-m2.1": 0.000685,       // ($0.27 + $1.10) / 2 / 1000 - best value!
+  "minimax/minimax-m2": 0.0005,
 } as const;

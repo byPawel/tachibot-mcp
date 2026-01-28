@@ -15,7 +15,8 @@ import {
   GROK_MODELS,
   PERPLEXITY_MODELS,
   KIMI_MODELS,
-  QWEN_MODELS
+  QWEN_MODELS,
+  MINIMAX_MODELS
 } from './model-constants.js';
 
 /**
@@ -40,7 +41,9 @@ const MODELS = {
 
   // OpenRouter
   QWEN: QWEN_MODELS.CODER_PLUS,                 // qwen/qwen3-coder-plus
-  KIMI: KIMI_MODELS.K2_THINKING,                // moonshotai/kimi-k2-thinking
+  QWEN_REASON: QWEN_MODELS.MAX_THINKING,        // qwen/qwen3-max-thinking (>1T params)
+  KIMI: KIMI_MODELS.K2_5,                       // moonshotai/kimi-k2.5 (thinking via reasoning param)
+  MINIMAX: MINIMAX_MODELS.M2_1,                 // NEW: minimax/minimax-m2.1 (cheap agentic)
 } as const;
 
 export interface ModelConfig {
