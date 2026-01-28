@@ -34,6 +34,7 @@
     "qwen": ["qwen_coder", "qwen_algo", "qwen_reason", "qwen_competitive"],
     "kimi": ["kimi_thinking"],
     "minimax": ["minimax_code", "minimax_agent"],
+    "planner": ["planner_maker", "planner_runner"],
     "advanced": ["verifier", "scout", "challenger", "hunter"],
     "workflow": [
       "workflow",
@@ -80,6 +81,8 @@
       "kimi_thinking": true,
       "minimax_code": true,
       "minimax_agent": true,
+      "planner_maker": true,
+      "planner_runner": true,
       "verifier": true,
       "scout": true,
       "challenger": true,

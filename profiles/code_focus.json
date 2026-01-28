@@ -1,5 +1,5 @@
 {
-  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 22 tools)",
+  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 24 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -42,6 +42,8 @@
     "validate_workflow_file": false,
     "list_prompt_techniques": true,
     "preview_prompt_technique": true,
-    "execute_prompt_technique": true
+    "execute_prompt_technique": true,
+    "planner_maker": true,
+    "planner_runner": true
   }
 }

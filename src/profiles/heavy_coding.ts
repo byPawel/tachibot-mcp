@@ -58,5 +58,9 @@ export const heavyCodingProfile: ProfileConfig = {
     list_prompt_techniques: true,
     preview_prompt_technique: true,
     execute_prompt_technique: true,
+
+    // Planner tools (multi-model council)
+    planner_maker: true,
+    planner_runner: true,
   }
 };

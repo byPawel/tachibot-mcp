@@ -1,5 +1,5 @@
 {
-  "description": "All tools enabled for maximum capability (~Xk tokens, 42 tools)",
+  "description": "All tools enabled for maximum capability (~Xk tokens, 44 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -42,6 +42,8 @@
     "validate_workflow_file": true,
     "list_prompt_techniques": true,
     "preview_prompt_technique": true,
-    "execute_prompt_technique": true
+    "execute_prompt_technique": true,
+    "planner_maker": true,
+    "planner_runner": true
   }
 }

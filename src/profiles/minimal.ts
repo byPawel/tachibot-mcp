@@ -45,5 +45,9 @@ export const minimalProfile: ProfileConfig = {
     list_prompt_techniques: true,
     preview_prompt_technique: false,
     execute_prompt_technique: false,
+
+    // Planner tools (multi-model council)
+    planner_maker: false,
+    planner_runner: false,
   }
 };

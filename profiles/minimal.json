@@ -42,6 +42,8 @@
     "validate_workflow_file": false,
     "list_prompt_techniques": true,
     "preview_prompt_technique": false,
-    "execute_prompt_technique": false
+    "execute_prompt_technique": false,
+    "planner_maker": false,
+    "planner_runner": false
   }
 }

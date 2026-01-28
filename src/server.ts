@@ -746,6 +746,12 @@ async function initializeServer() {
       safeAddTool(minimaxAgentTool);    // Cheap agentic workflows (MiniMax M2.1 - τ²-Bench 77.2%)
 
       console.error(`✅ Registered OpenRouter tools (Qwen, Kimi, MiniMax)`);
+
+      // Register planner tools (multi-model council for plan creation/execution)
+      const { plannerMakerTool, plannerRunnerTool } = await import("./tools/planner-tools.js");
+      safeAddTool(plannerMakerTool);   // Council-based plan creation
+      safeAddTool(plannerRunnerTool);  // Plan execution with checkpoints
+      console.error(`✅ Registered planner tools (planner_maker, planner_runner)`);
     }
 
 

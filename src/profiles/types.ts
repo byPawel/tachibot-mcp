@@ -66,4 +66,8 @@ export interface ToolsConfig {
   list_prompt_techniques: boolean;
   preview_prompt_technique: boolean;
   execute_prompt_technique: boolean;
+
+  // Planner tools (multi-model council)
+  planner_maker: boolean;
+  planner_runner: boolean;
 }
