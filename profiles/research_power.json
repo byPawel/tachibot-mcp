@@ -1,5 +1,5 @@
 {
-  "description": "Research-focused with Grok search + all Perplexity + brainstorming (~Xk tokens, 20 tools)",
+  "description": "Research-focused with Grok search + all Perplexity + brainstorming (~Xk tokens, 22 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -26,8 +26,11 @@
     "gemini_search": true,
     "qwen_coder": true,
     "qwen_algo": false,
+    "qwen_reason": true,
     "kimi_thinking": true,
     "qwen_competitive": false,
+    "minimax_code": false,
+    "minimax_agent": true,
     "workflow": true,
     "list_workflows": false,
     "create_workflow": false,

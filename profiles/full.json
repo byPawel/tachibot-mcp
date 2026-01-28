@@ -1,5 +1,5 @@
 {
-  "description": "All tools enabled for maximum capability (~Xk tokens, 39 tools)",
+  "description": "All tools enabled for maximum capability (~Xk tokens, 42 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -26,8 +26,11 @@
     "gemini_search": true,
     "qwen_coder": true,
     "qwen_algo": true,
+    "qwen_reason": true,
     "kimi_thinking": true,
     "qwen_competitive": true,
+    "minimax_code": true,
+    "minimax_agent": true,
     "workflow": true,
     "list_workflows": true,
     "create_workflow": true,

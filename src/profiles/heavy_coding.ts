@@ -39,8 +39,11 @@ export const heavyCodingProfile: ProfileConfig = {
     // OpenRouter - coders enabled
     qwen_coder: true,
     qwen_algo: true,
+    qwen_reason: true,
     kimi_thinking: true,
     qwen_competitive: false,
+    minimax_code: true,        // Cheap SWE - great for heavy coding
+    minimax_agent: true,       // Cheap agentic - great for workflows
 
     // Workflow - minimal set for execution
     workflow: true,

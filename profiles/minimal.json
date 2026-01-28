@@ -1,5 +1,5 @@
 {
-  "description": "Minimal essential tools for basic tasks (~Xk tokens, 11 tools)",
+  "description": "Minimal essential tools for basic tasks (~Xk tokens, 12 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -26,8 +26,11 @@
     "gemini_search": false,
     "qwen_coder": true,
     "qwen_algo": false,
+    "qwen_reason": false,
     "kimi_thinking": false,
     "qwen_competitive": false,
+    "minimax_code": true,
+    "minimax_agent": false,
     "workflow": true,
     "list_workflows": false,
     "create_workflow": false,

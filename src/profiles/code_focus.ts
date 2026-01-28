@@ -28,8 +28,11 @@ export const codeFocusProfile: ProfileConfig = {
     gemini_search: false,
     qwen_coder: true,
     qwen_algo: true,
+    qwen_reason: false,        // Not needed for code focus
     kimi_thinking: true,
     qwen_competitive: false,
+    minimax_code: true,        // Cheap SWE - perfect for code focus
+    minimax_agent: false,
     workflow: true,
     list_workflows: true,
     create_workflow: false,

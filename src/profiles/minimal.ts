@@ -28,8 +28,11 @@ export const minimalProfile: ProfileConfig = {
     gemini_search: false,
     qwen_coder: true,
     qwen_algo: false,
+    qwen_reason: false,
     kimi_thinking: false,
     qwen_competitive: false,
+    minimax_code: true,       // Cheap SWE - good for minimal
+    minimax_agent: false,
     workflow: true,
     list_workflows: false,
     create_workflow: false,

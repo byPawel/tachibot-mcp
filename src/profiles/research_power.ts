@@ -28,8 +28,11 @@ export const researchPowerProfile: ProfileConfig = {
     gemini_search: true,
     qwen_coder: true,
     qwen_algo: false,
+    qwen_reason: true,         // Heavy reasoning for research
     kimi_thinking: true,
     qwen_competitive: false,
+    minimax_code: false,
+    minimax_agent: true,       // Agentic for research workflows
     workflow: true,
     list_workflows: false,
     create_workflow: false,

@@ -45,8 +45,11 @@ export interface ToolsConfig {
   // OpenRouter tools
   qwen_coder: boolean;
   qwen_algo: boolean;
+  qwen_reason: boolean;        // NEW: Qwen3-Max-Thinking (heavy reasoning)
   kimi_thinking: boolean;
   qwen_competitive: boolean;
+  minimax_code: boolean;       // NEW: MiniMax M2.1 (SWE tasks, cheap)
+  minimax_agent: boolean;      // NEW: MiniMax M2.1 (agentic, cheap)
 
   // Workflow tools
   workflow: boolean;
