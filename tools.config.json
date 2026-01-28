@@ -31,8 +31,9 @@
       "gemini_analyze_code",
       "gemini_analyze_text"
     ],
-    "qwen": ["qwen_coder"],
+    "qwen": ["qwen_coder", "qwen_algo", "qwen_reason", "qwen_competitive"],
     "kimi": ["kimi_thinking"],
+    "minimax": ["minimax_code", "minimax_agent"],
     "advanced": ["verifier", "scout", "challenger", "hunter"],
     "workflow": [
       "workflow",
@@ -74,7 +75,11 @@
       "gemini_analyze_code": true,
       "gemini_analyze_text": true,
       "qwen_coder": true,
+      "qwen_algo": true,
+      "qwen_reason": true,
       "kimi_thinking": true,
+      "minimax_code": true,
+      "minimax_agent": true,
       "verifier": true,
       "scout": true,
       "challenger": true,
