@@ -22,10 +22,16 @@ export enum OpenRouterModel {
   QWEN3_CODER_FLASH = "qwen/qwen3-coder-flash",          // Fast/cheap alternative
   QWEN3_30B = "qwen/qwen3-30b-a3b-instruct-2507",        // 30B MoE model
   QWEN3_235B_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // 235B thinking model
-  QWQ_32B = "qwen/qwq-32b",                              // Deep reasoning
+  QWQ_32B = "qwen/qwq-32b",                              // Deep reasoning - CodeElo 1261
+  QWEN3_MAX_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // 235B MoE thinking - heavy reasoning
 
-  // Moonshot AI models
-  KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - agentic reasoning (256k context)
+  // Moonshot AI models (Kimi)
+  KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - agentic reasoning
+  KIMI_K2_5 = "moonshotai/kimi-k2.5",                   // Multimodal, Agent Swarm
+
+  // MiniMax models - VERY CHEAP, best agentic
+  MINIMAX_M2_1 = "minimax/minimax-m2.1",               // 230B/10B MoE - SWE 72.5%, τ²-Bench 77.2%
+  MINIMAX_M2 = "minimax/minimax-m2",                   // Fallback
 }
 
 // Fallback map for when providers hit quota limits
@@ -325,51 +331,155 @@ export const openRouterMultiModelTool = {
 
 /**
  * Algorithm Optimization Tool
+ * Principal Algorithm Engineer & Competitive Programming Coach
  * Deep algorithmic reasoning with QwQ-32B
  */
 export const qwenAlgoTool = {
   name: "qwen_algo",
-  description: "Algorithm optimization and complexity analysis. Put the PROBLEM or CODE in the 'problem' parameter, NOT in 'focus'.",
+  description: "Expert algorithm analysis: complexity profiling, optimization tiers, constraint-driven recommendations, competitive programming patterns. Put PROBLEM/CODE in 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The algorithm problem or code to analyze (REQUIRED - put your question/code here)"),
-    context: z.string().optional().describe("Additional context: current performance, constraints"),
+    constraints: z.string().optional().describe("Input constraints: N size, time limit, memory limit (e.g., 'N≤10^5, 1s, 256MB')"),
+    context: z.string().optional().describe("Additional context: current performance, environment, language"),
     focus: z.string()
       .optional()
       .default("general")
-      .describe("Analysis focus (e.g., optimize, complexity, data-structure, memory, correctness, general)")
+      .describe("Analysis focus: optimize, complexity, data-structure, memory, correctness, competitive, cache, general")
   }),
   execute: async (args: {
     problem: string;
+    constraints?: string;
     context?: string;
     focus?: string;
   }, { log, reportProgress }: any) => {
+    // Enhanced focus prompts with deep expertise
     const focusPrompts: Record<string, string> = {
-      optimize: "Focus on performance optimization, bottlenecks, and algorithmic improvements.",
-      complexity: "Focus on time/space complexity analysis (best, average, worst case).",
-      "data-structure": "Focus on data structure selection and tradeoffs.",
-      memory: "Focus on memory optimization and GC pressure reduction.",
-      general: "Provide comprehensive algorithmic analysis."
+      optimize: `FOCUS: Performance Optimization
+- Identify bottlenecks and hot loops
+- Tier A: Can we reduce complexity class? (O(N²)→O(N log N))
+- Tier B: Better data structure? (map→unordered_map, vector+binary search)
+- Tier C: Micro-optimizations (cache locality, branch prediction, SIMD)
+- Quantify expected speedup for each suggestion`,
+
+      complexity: `FOCUS: Complexity Profiling
+- Time: Best, Average, Worst case with Big-O
+- Space: Auxiliary stack vs heap allocation
+- Amortized analysis for dynamic structures (vector push_back, union-find, monotonic stack)
+- Recurrences: Apply Master Theorem or Akra-Bazzi
+- Empirical: What input sizes trigger worst case?`,
+
+      "data-structure": `FOCUS: Data Structure Selection
+Use this decision framework:
+- Point update + prefix sum? → Fenwick Tree
+- Range query + updates? → Segment Tree (lazy for range updates)
+- Connectivity/merges? → DSU (Union-Find) with path compression
+- Sliding window min/max? → Monotonic Deque
+- Sparse keys, O(1) access? → unordered_map (warn about worst-case, use reserve())
+- Dense boolean DP? → bitset (64x speedup)
+- Static set + many queries? → Sorted vector + binary search (cache-friendly)
+Explain WHY based on operation mix, N, and memory constraints`,
+
+      memory: `FOCUS: Memory Optimization
+- Peak heap usage and when it occurs
+- Allocation churn (bytes allocated per operation)
+- Top allocating call sites
+- Reduce pointer chasing (linked list → vector)
+- SoA vs AoS layout for field scanning
+- Small-object optimization (indices vs pointers)
+- Preallocate and reuse buffers
+- GC pressure in managed languages`,
+
+      correctness: `FOCUS: Correctness Verification
+- Loop invariants: What must be true at each iteration?
+- Off-by-one errors: Check boundary conditions
+- Edge cases: Empty input, single element, max input, sorted/reverse sorted
+- Integer overflow: Check multiplication, sum accumulation
+- Floating point precision issues
+- Recursion termination conditions
+- Concurrent access issues (if applicable)`,
+
+      competitive: `FOCUS: Competitive Programming Patterns
+Apply constraint-driven algorithm selection:
+- N ≤ 20: O(2^N) or O(N·2^N) → Bitmask DP, recursion with memoization
+- N ≤ 40: O(2^(N/2)) → Meet-in-the-middle
+- N ≤ 100: O(N³) or O(N⁴) → Floyd-Warshall, dense matrix ops
+- N ≤ 2000: O(N²) → 2D DP, pairwise iteration
+- N ≤ 2×10⁵: O(N log N) or O(N) → Sorting, segment trees, hash maps, two pointers
+- N ≤ 10⁹: O(√N) or O(log N) → Math formulas, binary search, matrix exponentiation
+Recommend: sliding window, two pointers, monotonic stack, binary search on answer`,
+
+      cache: `FOCUS: Cache & Hardware Optimization
+- Cache locality: Sequential access patterns
+- Reduce cache misses: Profile L1/L2/L3 hit rates
+- Data-oriented design: SoA layout for scanning
+- Batch operations: Fewer passes over memory
+- Prefetching hints where supported
+- Branch prediction: Reduce unpredictable branches
+- Memory alignment for SIMD operations
+- False sharing in concurrent code`,
+
+      general: `FOCUS: Comprehensive Algorithm Analysis
+Provide full analysis covering:
+1. CONSTRAINT ANALYSIS - Map input size to max acceptable complexity
+2. COMPLEXITY PROFILING - Time/Space (best/avg/worst), recurrences
+3. OPTIMIZATION TIERS - A: Algorithmic, B: Data Structure, C: Micro
+4. CORRECTNESS - Invariants, edge cases, overflow risks
+5. RECOMMENDATIONS - Ranked by impact with expected improvement`
     };
 
+    // Core system prompt with competitive programming wisdom
+    const systemPrompt = `You are a Principal Algorithm Engineer and Competitive Programming Coach (ICPC/IOI/Codeforces expert level).
+
+${focusPrompts[args.focus || 'general']}
+
+CONSTRAINT-TO-COMPLEXITY MAPPING (memorize this):
+┌─────────────┬────────────────────┬─────────────────────────────────┐
+│ Input Size  │ Max Complexity     │ Typical Algorithms              │
+├─────────────┼────────────────────┼─────────────────────────────────┤
+│ N ≤ 10      │ O(N!)              │ Brute force permutations        │
+│ N ≤ 20      │ O(2^N), O(N·2^N)   │ Bitmask DP, backtracking        │
+│ N ≤ 40      │ O(2^(N/2))         │ Meet-in-the-middle              │
+│ N ≤ 100     │ O(N³), O(N⁴)       │ Floyd-Warshall, 3D DP           │
+│ N ≤ 500     │ O(N³)              │ 3D DP, matrix operations        │
+│ N ≤ 2000    │ O(N²)              │ 2D DP, pairwise comparisons     │
+│ N ≤ 10⁵     │ O(N log N)         │ Sorting, segment tree, FFT      │
+│ N ≤ 10⁶     │ O(N)               │ Linear DP, two pointers, hashing│
+│ N ≤ 10⁹     │ O(√N), O(log N)    │ Math, binary search, matrix exp │
+└─────────────┴────────────────────┴─────────────────────────────────┘
+
+OPTIMIZATION HIERARCHY (always label which tier):
+• Tier A - ALGORITHMIC (10-1000x): Change complexity class
+• Tier B - DATA STRUCTURE (2-20x): Better container/access pattern
+• Tier C - MICRO (1.1-5x): Cache, branches, memory layout
+
+OUTPUT STRUCTURE:
+1. Current Analysis: What the code/algorithm does now
+2. Complexity: Time/Space with Best/Avg/Worst
+3. ${args.constraints ? 'Constraint Check: Is current complexity viable?' : 'Viable For: What input sizes work?'}
+4. Improvements: Tiered recommendations with expected gains
+5. Edge Cases: 3 critical test cases to verify
+${args.focus === 'competitive' || args.focus === 'general' ? '6. CP Patterns: Applicable competitive programming techniques' : ''}
+
+${FORMAT_INSTRUCTION}`;
+
+    // Build user prompt with all available context
+    let userPrompt = args.problem;
+    if (args.constraints || args.context) {
+      const parts = [];
+      if (args.constraints) parts.push(`CONSTRAINTS: ${args.constraints}`);
+      if (args.context) parts.push(`CONTEXT: ${args.context}`);
+      userPrompt = `${parts.join('\n')}\n\nPROBLEM/CODE:\n${args.problem}`;
+    }
+
     const messages = [
-      {
-        role: "system",
-        content: `You are an expert algorithm analyst. ${focusPrompts[args.focus || 'general']}
-Provide clear analysis with Big-O notation and concrete improvement suggestions.
-${FORMAT_INSTRUCTION}`
-      },
-      {
-        role: "user",
-        content: args.context
-          ? `Context: ${args.context}\n\nProblem:\n${args.problem}`
-          : args.problem
-      }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
     ];
 
     // Use heartbeat to prevent MCP timeout
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.QWQ_32B, 0.3, 5000),
+      () => callOpenRouter(messages, OpenRouterModel.QWQ_32B, 0.25, 6000),
       reportFn
     );
   }
@@ -422,13 +532,13 @@ ${FORMAT_INSTRUCTION}`
 };
 
 /**
- * Kimi K2 Thinking Tool
- * Advanced agentic reasoning with 1T MoE model (32B active)
- * Excels at long-horizon reasoning, multi-step analysis, and complex problem-solving
+ * Kimi K2.5 Thinking Tool
+ * Multimodal model with Agent Swarm (100 sub-agents) and built-in reasoning
+ * $0.60/$3.00 per M tokens, 262K context
  */
 export const kimiThinkingTool = {
   name: "kimi_thinking",
-  description: "Advanced agentic reasoning. Put your PROBLEM in the 'problem' parameter.",
+  description: "Kimi K2.5 multimodal reasoning with Agent Swarm. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
@@ -468,11 +578,167 @@ ${FORMAT_INSTRUCTION}`
     // Use heartbeat to prevent MCP timeout during reasoning
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_THINKING, 0.4, 3000, {
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.4, 3000, {
         top_p: 0.9,
         presence_penalty: 0.1,
         frequency_penalty: 0.2
       }),
+      reportFn
+    );
+  }
+};
+
+/**
+ * Qwen Reason Tool
+ * Heavy reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT math)
+ * Best for: math-heavy tasks, proofs, complex logic
+ */
+export const qwenReasonTool = {
+  name: "qwen_reason",
+  description: "Heavy mathematical reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT). Put your PROBLEM in the 'problem' parameter.",
+  parameters: z.object({
+    problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    approach: z.string()
+      .optional()
+      .default("mathematical")
+      .describe("Reasoning approach (e.g., mathematical, logical, proof, step-by-step)")
+  }),
+  execute: async (args: {
+    problem: string;
+    context?: string;
+    approach?: string;
+  }, { log, reportProgress }: any) => {
+    const approachPrompts: Record<string, string> = {
+      mathematical: "Apply rigorous mathematical reasoning with proofs",
+      logical: "Use formal logic and deductive reasoning",
+      proof: "Construct formal proofs with clear steps",
+      "step-by-step": "Break down systematically showing all work"
+    };
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are Qwen3-Max-Thinking, a flagship reasoning model with >1T parameters.
+${approachPrompts[args.approach || 'mathematical']}.
+Show your complete reasoning process.
+${args.context ? `Context: ${args.context}` : ''}
+${FORMAT_INSTRUCTION}`
+      },
+      {
+        role: "user",
+        content: args.problem
+      }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.QWEN3_MAX_THINKING, 0.3, 8000),
+      reportFn
+    );
+  }
+};
+
+/**
+ * MiniMax Code Tool
+ * Code fixing and SWE tasks with MiniMax M2.1 (SWE-Bench 72.5%)
+ * Best for: bug fixes, code generation, SWE tasks - VERY CHEAP
+ */
+export const minimaxCodeTool = {
+  name: "minimax_code",
+  description: "Code generation/fixing with MiniMax M2.1 (SWE-Bench 72.5%, very cheap). Put CODE in 'code' parameter.",
+  parameters: z.object({
+    task: z.enum(["generate", "fix", "review", "optimize", "debug", "refactor"])
+      .describe("Code task - must be one of: generate, fix, review, optimize, debug, refactor"),
+    code: z.string().optional().describe("The source code (for fix/review/optimize/debug/refactor tasks)"),
+    requirements: z.string().optional().default("").describe("Requirements or description (for generate task)"),
+    language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')")
+  }),
+  execute: async (args: {
+    task: string;
+    code?: string;
+    requirements?: string;
+    language?: string;
+  }, { log, reportProgress }: any) => {
+    const taskPrompts: Record<string, string> = {
+      generate: "Generate clean, production-ready code",
+      fix: "Fix bugs and issues in the code",
+      review: "Review code for quality and issues",
+      optimize: "Optimize for performance",
+      debug: "Debug and identify issues",
+      refactor: "Refactor for better structure"
+    };
+
+    const systemPrompt = `You are MiniMax M2.1, a highly efficient code model (SWE-Bench 72.5%).
+Task: ${taskPrompts[args.task]}
+${args.language ? `Language: ${args.language}` : ''}
+Focus: Clean code, best practices, minimal changes for fixes.
+${FORMAT_INSTRUCTION}`;
+
+    const userPrompt = args.code
+      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequirements: ${args.requirements || 'Fix/improve the code'}`
+      : args.requirements || "Generate code";
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_1, 0.3, 4000),
+      reportFn
+    );
+  }
+};
+
+/**
+ * MiniMax Agent Tool
+ * Agentic workflows and tool-calling with MiniMax M2.1 (τ²-Bench 77.2%)
+ * Best for: multi-step tasks, tool orchestration, agentic workflows - VERY CHEAP
+ */
+export const minimaxAgentTool = {
+  name: "minimax_agent",
+  description: "Agentic task execution with MiniMax M2.1 (τ²-Bench 77.2%, best agentic, very cheap). Put TASK in 'task' parameter.",
+  parameters: z.object({
+    task: z.string().describe("The task to execute (REQUIRED - describe what needs to be done)"),
+    context: z.string().optional().describe("Additional context about the environment or constraints"),
+    steps: z.number().optional().default(5).describe("Maximum steps to plan (default: 5)"),
+    outputFormat: z.enum(["plan", "execute", "both"]).optional().default("both")
+      .describe("Output: 'plan' (just steps), 'execute' (just results), 'both' (plan + results)")
+  }),
+  execute: async (args: {
+    task: string;
+    context?: string;
+    steps?: number;
+    outputFormat?: string;
+  }, { log, reportProgress }: any) => {
+    const formatInstructions: Record<string, string> = {
+      plan: "Output ONLY a numbered plan of steps to accomplish the task.",
+      execute: "Execute the task directly and output the results.",
+      both: "First output a brief plan, then execute each step and show results."
+    };
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are MiniMax M2.1, an expert agentic model (τ²-Bench 77.2%, BrowseComp 44%).
+You excel at multi-step task execution and tool orchestration.
+${formatInstructions[args.outputFormat || 'both']}
+Maximum steps: ${args.steps || 5}
+${args.context ? `Context: ${args.context}` : ''}
+Be efficient and focused. Complete tasks in minimal steps.
+${FORMAT_INSTRUCTION}`
+      },
+      {
+        role: "user",
+        content: args.task
+      }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_1, 0.5, 4000),
       reportFn
     );
   }
@@ -500,6 +766,10 @@ export function getAllOpenRouterTools() {
     openRouterMultiModelTool,
     qwenAlgoTool,
     qwenCompetitiveTool,
-    kimiThinkingTool
+    kimiThinkingTool,
+    // NEW tools (Jan 2026)
+    qwenReasonTool,      // Qwen3-Max-Thinking - heavy reasoning
+    minimaxCodeTool,     // MiniMax M2.1 - SWE tasks (cheap)
+    minimaxAgentTool,    // MiniMax M2.1 - agentic workflows (cheap)
   ];
 }
