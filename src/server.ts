@@ -732,17 +732,20 @@ async function initializeServer() {
       console.error(`✅ Registered ${geminiTools.length} Gemini tools (brainstorm, code analysis, text analysis, search)`);
     }
 
-    // Register OpenRouter tools (Qwen, Kimi - filtered by profile via safeAddTool)
+    // Register OpenRouter tools (Qwen, Kimi, MiniMax - filtered by profile via safeAddTool)
     if (isOpenRouterAvailable()) {
-      const { qwenCoderTool, qwenAlgoTool, qwenCompetitiveTool, kimiThinkingTool } = await import("./tools/openrouter-tools.js");
+      const { qwenCoderTool, qwenAlgoTool, qwenCompetitiveTool, kimiThinkingTool, qwenReasonTool, minimaxCodeTool, minimaxAgentTool } = await import("./tools/openrouter-tools.js");
 
       // safeAddTool checks isToolEnabled internally
       safeAddTool(qwenCoderTool);
       safeAddTool(qwenAlgoTool);
       safeAddTool(qwenCompetitiveTool);
       safeAddTool(kimiThinkingTool);
+      safeAddTool(qwenReasonTool);      // Heavy reasoning (Qwen3-Max-Thinking >1T params)
+      safeAddTool(minimaxCodeTool);     // Cheap SWE tasks (MiniMax M2.1 - 72.5% SWE-Bench)
+      safeAddTool(minimaxAgentTool);    // Cheap agentic workflows (MiniMax M2.1 - τ²-Bench 77.2%)
 
-      console.error(`✅ Registered OpenRouter tools (Qwen, Kimi)`);
+      console.error(`✅ Registered OpenRouter tools (Qwen, Kimi, MiniMax)`);
     }
 
 
