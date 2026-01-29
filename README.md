@@ -240,6 +240,17 @@ AGPL-3.0 - see [LICENSE](LICENSE) for details.
 
 ---
 
+## ⭐ Support the Project
+
+If TachiBot helps your workflow, a star helps us keep going.
+
+[![GitHub stars](https://img.shields.io/github/stars/byPawel/tachibot-mcp?style=social)](https://github.com/byPawel/tachibot-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/tachibot-mcp?label=npm%20downloads&color=cyan)](https://www.npmjs.com/package/tachibot-mcp)
+
+**[⭐ Star on GitHub](https://github.com/byPawel/tachibot-mcp)** · **[🐛 Report a Bug](https://github.com/byPawel/tachibot-mcp/issues)** · **[💡 Request a Feature](https://github.com/byPawel/tachibot-mcp/issues/new?template=feature_request.md)**
+
+---
+
 **Made with ❤️ by [@byPawel](https://github.com/byPawel)**
 
 *Transform your AI workflow with intelligent multi-model orchestration.*
