@@ -1,108 +1,99 @@
-# TachiBot MCP - Universal AI Orchestrator
+<div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/byPawel/tachibot-mcp)
-[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+# TachiBot MCP
+
+### Multi-Model AI Orchestration Platform
+
+[![Version](https://img.shields.io/badge/version-2.12.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Tools](https://img.shields.io/badge/tools-48_active-brightgreen.svg)](#-tool-ecosystem-48-tools)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-Multi-model AI orchestration platform with 31 tools, advanced workflows, and intelligent prompt engineering. Works with Claude Code, Claude Desktop, Cursor, and any MCP-compatible client.
+**48 AI tools. 7 providers. One protocol.**
+
+Orchestrate Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi K2.5, and MiniMax M2.1
+from Claude Code, Claude Desktop, Cursor, or any MCP client.
+
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-48-tools) &#183; [Documentation](https://tachibot.com/docs)
+
+<br>
+
+**If TachiBot helps your workflow, a** [**star**](https://github.com/byPawel/tachibot-mcp) **goes a long way.**
+
+[![GitHub stars](https://img.shields.io/github/stars/byPawel/tachibot-mcp?style=social)](https://github.com/byPawel/tachibot-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/tachibot-mcp?label=npm%20downloads&color=cyan)](https://www.npmjs.com/package/tachibot-mcp)
+
+</div>
 
 ---
 
-## 🔑 Bring Your Own Keys
+## What's New in v2.12.0
 
-**Two ways to connect — pick what works for you:**
+### Multi-Model Planning Council
+The new `planner_maker` coordinates a multi-model council (Grok, Qwen, Kimi, Gemini, GPT) to create implementation plans. `planner_runner` executes them with verification checkpoints at 50%, 80%, and 100%.
 
-| Mode | Keys Needed | Best For |
-|------|-------------|----------|
-| **Gateway Mode** | 2 keys (OpenRouter + Perplexity) | Simplicity, unified billing |
-| **Direct Mode** | 5+ keys (one per provider) | Maximum control, no middleman |
+### Kimi K2.5 Suite (4 tools)
+| Tool | Capability | Highlight |
+|------|-----------|-----------|
+| `kimi_thinking` | Step-by-step reasoning | Agent Swarm architecture |
+| `kimi_code` | Code generation & fixing | SWE-Bench 76.8% |
+| `kimi_decompose` | Task decomposition | Dependency graphs, parallel subtasks |
+| `kimi_long_context` | Document analysis | 256K context window |
 
-### Gateway Mode (Recommended)
-Route GPT-5, Gemini, and Grok through OpenRouter — same key you need for Qwen/Kimi anyway.
+### MiniMax M2.1 (2 tools)
+- `minimax_code` &mdash; SWE tasks at very low cost (72.5% SWE-Bench)
+- `minimax_agent` &mdash; Agentic workflows (77.2% &tau;&sup2;-Bench)
 
-```bash
-OPENROUTER_API_KEY=sk-or-xxx     # GPT-5, Gemini, Grok, Qwen, Kimi
-PERPLEXITY_API_KEY=pplx-xxx      # Required separately (not on OpenRouter)
-USE_OPENROUTER_GATEWAY=true
-```
-
-### Direct Mode
-Use each provider's native API directly.
-
-```bash
-OPENAI_API_KEY=sk-xxx            # GPT-5
-GOOGLE_API_KEY=xxx               # Gemini
-GROK_API_KEY=xxx                 # Grok
-OPENROUTER_API_KEY=sk-or-xxx     # Qwen, Kimi (always via OpenRouter)
-PERPLEXITY_API_KEY=pplx-xxx      # Perplexity
-```
-
-Both modes work. Gateway mode just means fewer accounts to manage.
-
-Get keys: [OpenRouter](https://openrouter.ai) | [Perplexity](https://perplexity.ai)
+### Qwen Reasoning
+- `qwen_reason` &mdash; Heavy reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT math)
 
 ---
 
-## 📚 Documentation
+## Key Features
 
-**🌐 Full Documentation:** [tachibot.com/docs](https://tachibot.com/docs)
+### Multi-Model Intelligence
+- **48 AI Tools** across 7 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax
+- **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models
+- **Smart Routing** &mdash; Automatic model selection for optimal results
+- **OpenRouter Gateway** &mdash; Optional single API key for all providers
 
-### Quick Links
+### Advanced Workflows
+- **YAML-Based Workflows** &mdash; Multi-step AI processes with dependency graphs
+- **Prompt Engineering** &mdash; 14 research-backed techniques built-in
+- **Verification Checkpoints** &mdash; 50% / 80% / 100% with automated quality scoring
+- **Parallel Execution** &mdash; Run multiple models simultaneously
 
-- **[Installation Guide](docs/INSTALLATION_BOTH.md)** - Get started in 5 minutes
-- **[Configuration](docs/CONFIGURATION.md)** - Profiles, API keys, settings
-- **[Tools Reference](docs/TOOLS_REFERENCE.md)** - All 31 tools explained
-- **[Workflows](docs/WORKFLOWS.md)** - Multi-step AI orchestration
-- **[API Keys Guide](docs/API_KEYS.md)** - Where to get API keys
+### Tool Profiles
+| Profile | Tools | Best For |
+|---------|-------|----------|
+| **Minimal** | 12 | Quick tasks, low token budget |
+| **Research Power** | 28 | Deep investigation, multi-source |
+| **Code Focus** | 28 | Software development, SWE tasks |
+| **Balanced** | 36 | General-purpose, mixed workflows |
+| **Heavy Coding** | 40 | Max code tools + agentic workflows |
+| **Full** | 48 | Everything enabled |
 
----
-
-## ✨ Key Features
-
-### 🤖 Multi-Model Intelligence
-- **31 AI Tools:** Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi (32 with competitive mode)
-- **Multi-Model Reasoning:** Challenger, Verifier, Scout modes
-- **Smart Routing:** Automatic model selection for optimal results
-- **OpenRouter Gateway:** Optional single API key for all providers (OpenAI, Gemini, Grok)
-
-### 🔄 Advanced Workflows
-- **YAML-Based Workflows:** Define complex multi-step AI processes
-- **Prompt Engineering:** 14 research-backed techniques built-in
-- **Auto-Synthesis:** Prevents token overflow on large workflows
-- **Parallel Execution:** Run multiple models simultaneously
-
-### 🎯 Tool Profiles
-- **Minimal** (8 tools) - Budget-friendly, token-constrained
-- **Research Power** (13 tools) - Default, best balance
-- **Code Focus** (15 tools) - Software development
-- **Balanced** (18 tools) - General-purpose
-- **Full** (31 tools, includes competitive mode) - Maximum capability
-
-### 🔧 Developer Experience
-- **Claude Code Native** - First-class support
-- **Claude Desktop** - Full integration
-- **Cursor** - Works seamlessly
-- **TypeScript** - Fully typed
-- **Extensible** - Add custom tools & workflows
+### Developer Experience
+- **Claude Code** &mdash; First-class support
+- **Claude Desktop** &mdash; Full integration
+- **Cursor** &mdash; Works seamlessly
+- **TypeScript** &mdash; Fully typed, extensible
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
 ```bash
-# Via NPM (recommended)
 npm install -g tachibot-mcp
-
-# Verify installation
-tachibot --version
 ```
 
 ### Setup
 
-**Option A: Single Key Mode (Recommended)**
+**Gateway Mode (Recommended)** &mdash; 2 keys, all providers:
+
 ```json
 {
   "mcpServers": {
@@ -118,7 +109,8 @@ tachibot --version
 }
 ```
 
-**Option B: Direct Provider Keys**
+**Direct Mode** &mdash; One key per provider:
+
 ```json
 {
   "mcpServers": {
@@ -136,77 +128,96 @@ tachibot --version
 }
 ```
 
-**Restart Claude** and you're ready!
+Get keys: [OpenRouter](https://openrouter.ai) | [Perplexity](https://perplexity.ai)
 
 See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## 📦 What's Included
+## Tool Ecosystem (48 Tools)
 
-### Core Tools
-- 🔍 **Research:** `perplexity_ask`, `perplexity_research`, `grok_search`, `scout`
-- 🧠 **Reasoning:** `grok_reason`, `openai_reason`, `perplexity_reason`, `kimi_thinking`, `focus`
-- 💡 **Analysis:** `gemini_brainstorm`, `gemini_analyze_text`, `openai_brainstorm`, `qwen_coder`
-- ✅ **Validation:** `verifier`*, `challenger`* (*multi-model workflows)
-- 💭 **Meta:** `think`, `nextThought`
+### Research & Search (6)
+`perplexity_ask` &#183; `perplexity_research` &#183; `perplexity_reason` &#183; `grok_search` &#183; `openai_search` &#183; `gemini_search`
 
-### Advanced Modes
-- **Focus** - Deep collaborative reasoning (4+ models)
-- **Scout** - Multi-source information gathering
-- **Challenger** - Critical analysis with fact-checking
-- **Verifier** - Multi-model consensus verification
+### Reasoning & Planning (8)
+`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans`
 
-### Workflows
-- **Ultra Creative Brainstorm** - 15 steps, 10 prompt techniques
-- **Code Architecture Review** - Systematic code analysis
-- **Code Review** - PR and code review workflow
-- **UX Research Flow** - User experience research
-- **Accessibility Audit** - WCAG compliance checking
-- **Creative Brainstorm** - Quick ideation workflow
-- **PingPong** - Multi-model debate/collaboration
-- **System Workflows** - `verifier`, `challenger`, `scout`
-- **Custom Workflows** - Build your own in YAML
+### Code Intelligence (8)
+`kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `minimax_code` &#183; `minimax_agent`
+
+### Analysis & Brainstorming (9)
+`gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `kimi_long_context`
+
+### Meta & Orchestration (5)
+`think` &#183; `nextThought` &#183; `focus` &#183; `tachi` &#183; `usage_stats`
+
+### Workflows (9)
+`workflow` &#183; `workflow_start` &#183; `continue_workflow` &#183; `list_workflows` &#183; `create_workflow` &#183; `visualize_workflow` &#183; `workflow_status` &#183; `validate_workflow` &#183; `validate_workflow_file`
+
+### Prompt Engineering (3)
+`list_prompt_techniques` &#183; `preview_prompt_technique` &#183; `execute_prompt_technique`
+
+### Advanced Modes (bonus)
+- **Challenger** &mdash; Critical analysis with multi-model fact-checking
+- **Verifier** &mdash; Multi-model consensus verification
+- **Scout** &mdash; Hybrid intelligence gathering
 
 ---
 
-## 🌟 Example Usage
+## Example Usage
 
-### Quick Research
+### Multi-Model Planning
 ```typescript
-// In Claude Code
-perplexity_ask({
-  query: "What are the latest developments in transformer architecture?"
-})
+// Create a plan with multi-model council
+planner_maker({ task: "Build a REST API with auth and tests", mode: "start" })
+// → Grok searches → Qwen analyzes → Kimi decomposes → GPT critiques → Gemini synthesizes
+
+// Execute with checkpoints
+planner_runner({ plan: planContent, mode: "step", stepNum: 1 })
+// → Automatic verification at 50%, 80% (kimi_decompose), and 100%
 ```
 
-### Multi-Model Reasoning
+### Task Decomposition
+```typescript
+kimi_decompose({
+  task: "Migrate monolith to microservices",
+  depth: 3,
+  outputFormat: "dependencies"
+})
+// → Structured subtasks with IDs, parallel flags, acceptance criteria
+```
+
+### Code Review
+```typescript
+kimi_code({
+  task: "review",
+  code: "function processPayment(amount, card) { ... }",
+  language: "typescript"
+})
+// → SWE-Bench 76.8% quality analysis
+```
+
+### Deep Reasoning
 ```typescript
 focus({
-  query: "Design a scalable microservice architecture",
+  query: "Design a scalable event-driven architecture",
   mode: "deep-reasoning",
-  models: ["grok-3", "gpt-5", "gemini-3-pro-preview"],
+  models: ["grok", "gemini", "kimi"],
   rounds: 5
 })
 ```
 
-### Run Workflow
-```bash
-workflow --name ultra-creative-brainstorm --query "AI-powered code review system"
-```
-
 ---
 
-## 🎓 Learn More
+## Documentation
 
-### Documentation
-- 📖 [Full Documentation](https://tachibot.com/docs)
-- 🔧 [Configuration Guide](docs/CONFIGURATION.md)
-- 🛠️ [Tool Parameters](docs/TOOL_PARAMETERS.md)
-- 🎯 [Tool Profiles](docs/TOOL_PROFILES.md)
-- 🔐 [API Keys Guide](docs/API_KEYS.md)
-- ⚡ [Focus Modes](docs/FOCUS_MODES.md)
-- 📝 [Workflows Guide](docs/WORKFLOWS.md)
+- [Full Documentation](https://tachibot.com/docs)
+- [Installation Guide](docs/INSTALLATION_BOTH.md)
+- [Configuration](docs/CONFIGURATION.md)
+- [Tools Reference](docs/TOOLS_REFERENCE.md)
+- [Workflows Guide](docs/WORKFLOWS.md)
+- [API Keys Guide](docs/API_KEYS.md)
+- [Focus Modes](docs/FOCUS_MODES.md)
 
 ### Setup Guides
 - [Claude Code Setup](docs/CLAUDE_CODE_SETUP.md)
@@ -215,42 +226,29 @@ workflow --name ultra-creative-brainstorm --query "AI-powered code review system
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-- 🐛 [Report Issues](https://github.com/byPawel/tachibot-mcp/issues)
-- 💡 [Request Features](https://github.com/byPawel/tachibot-mcp/issues/new?template=feature_request.md)
-- 📖 [Improve Docs](https://github.com/byPawel/tachibot-mcp/pulls)
-
----
-
-## 📄 License
-
-AGPL-3.0 - see [LICENSE](LICENSE) for details.
+- [Report Issues](https://github.com/byPawel/tachibot-mcp/issues)
+- [Request Features](https://github.com/byPawel/tachibot-mcp/issues/new?template=feature_request.md)
 
 ---
 
-## 🔗 Links
+<div align="center">
 
-- **Website:** [tachibot.com](https://tachibot.com)
-- **Documentation:** [tachibot.com/docs](https://tachibot.com/docs)
-- **GitHub:** [github.com/byPawel/tachibot-mcp](https://github.com/byPawel/tachibot-mcp)
-- **Issues:** [Report a Bug](https://github.com/byPawel/tachibot-mcp/issues)
+### Like what you see?
 
----
-
-## ⭐ Support the Project
-
-If TachiBot helps your workflow, a star helps us keep going.
+**[Star on GitHub](https://github.com/byPawel/tachibot-mcp)** &mdash; it helps more than you think.
 
 [![GitHub stars](https://img.shields.io/github/stars/byPawel/tachibot-mcp?style=social)](https://github.com/byPawel/tachibot-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/tachibot-mcp?label=npm%20downloads&color=cyan)](https://www.npmjs.com/package/tachibot-mcp)
 
-**[⭐ Star on GitHub](https://github.com/byPawel/tachibot-mcp)** · **[🐛 Report a Bug](https://github.com/byPawel/tachibot-mcp/issues)** · **[💡 Request a Feature](https://github.com/byPawel/tachibot-mcp/issues/new?template=feature_request.md)**
+**[Website](https://tachibot.com)** &#183; **[Docs](https://tachibot.com/docs)** &#183; **[npm](https://www.npmjs.com/package/tachibot-mcp)** &#183; **[Issues](https://github.com/byPawel/tachibot-mcp/issues)**
 
----
+AGPL-3.0 &mdash; see [LICENSE](LICENSE) for details.
 
-**Made with ❤️ by [@byPawel](https://github.com/byPawel)**
+**Made with care by [@byPawel](https://github.com/byPawel)**
 
-*Transform your AI workflow with intelligent multi-model orchestration.*
+*Multi-model AI orchestration, unified.*
+
+</div>

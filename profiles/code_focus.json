@@ -1,5 +1,5 @@
 {
-  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 25 tools)",
+  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 28 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -28,6 +28,9 @@
     "qwen_algo": true,
     "qwen_reason": false,
     "kimi_thinking": true,
+    "kimi_code": true,
+    "kimi_decompose": true,
+    "kimi_long_context": true,
     "qwen_competitive": false,
     "minimax_code": true,
     "minimax_agent": false,

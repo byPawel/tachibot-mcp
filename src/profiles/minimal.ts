@@ -30,6 +30,9 @@ export const minimalProfile: ProfileConfig = {
     qwen_algo: false,
     qwen_reason: false,
     kimi_thinking: false,
+    kimi_code: false,
+    kimi_decompose: false,
+    kimi_long_context: false,
     qwen_competitive: false,
     minimax_code: true,       // Cheap SWE - good for minimal
     minimax_agent: false,

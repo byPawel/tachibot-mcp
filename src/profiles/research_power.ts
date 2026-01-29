@@ -30,6 +30,9 @@ export const researchPowerProfile: ProfileConfig = {
     qwen_algo: false,
     qwen_reason: true,         // Heavy reasoning for research
     kimi_thinking: true,
+    kimi_code: true,
+    kimi_decompose: true,
+    kimi_long_context: true,
     qwen_competitive: false,
     minimax_code: false,
     minimax_agent: true,       // Agentic for research workflows

@@ -12,8 +12,8 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import os from 'node:os';
 import { createRequire } from 'node:module';
+import { getConfigDir } from './paths.js';
 
 const require = createRequire(import.meta.url);
 
@@ -37,12 +37,6 @@ interface UpdateCache {
 }
 
 // --- Utilities ---
-
-/** Get XDG-compliant config directory */
-const getConfigDir = (): string => {
-  const configDir = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
-  return path.join(configDir, PKG_NAME);
-};
 
 /** Get cache file path */
 const getCacheFilePath = (): string => path.join(getConfigDir(), 'update-cache.json');

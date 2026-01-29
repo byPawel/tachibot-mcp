@@ -47,6 +47,9 @@ export interface ToolsConfig {
   qwen_algo: boolean;
   qwen_reason: boolean;        // NEW: Qwen3-Max-Thinking (heavy reasoning)
   kimi_thinking: boolean;
+  kimi_code: boolean;            // NEW: Kimi K2.5 (SWE-focused code, 76.8%)
+  kimi_decompose: boolean;       // NEW: Kimi K2.5 (task decomposition)
+  kimi_long_context: boolean;    // NEW: Kimi K2.5 (256K context analysis)
   qwen_competitive: boolean;
   minimax_code: boolean;       // NEW: MiniMax M2.1 (SWE tasks, cheap)
   minimax_agent: boolean;      // NEW: MiniMax M2.1 (agentic, cheap)

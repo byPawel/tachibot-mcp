@@ -5,6 +5,26 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2026-01-29
+
+### Added
+- **Kimi K2.5 Suite** — 3 new tools expanding Kimi from 1 to 4 tools:
+  - `kimi_code` — SWE-focused code generation/fixing (SWE-Bench 76.8%), temp=0.3, 240s timeout
+  - `kimi_decompose` — Structured task decomposition with Agent Swarm reasoning, dependency graphs, parallel subtask identification, acceptance criteria. Output formats: tree, flat, dependencies
+  - `kimi_long_context` — Long-context document analysis (best-effort 256K context window), 5 task types (summarize/extract/analyze/compare/find), 300s timeout
+- **Planner: kimi_decompose integration** — `planner_maker` now includes a Decomposition phase using `kimi_decompose` to break tasks into subtasks with dependency ordering before synthesis
+- **Planner: 80% checkpoint** — `planner_runner` now supports 50%, 80%, and 100% verification checkpoints. The 80% checkpoint uses `kimi_decompose` to decompose remaining work into granular subtasks, ensuring nothing is missed before the final push
+
+### Fixed
+- **z.number() coercion bug** — MCP clients send numbers as strings (e.g., `maxSteps: "3"`), causing Zod validation failures. Replaced `z.number()` with `z.coerce.number()` at 3 parameter locations (temperature, maxSteps, steps). Added `.int().min().max()` constraints for maxSteps and steps
+
+### Changed
+- All 6 profiles updated with new Kimi tools (enabled in all except minimal)
+- Profile tool counts: Minimal 12, Research Power 28, Code Focus 28, Balanced 36, Heavy Coding 40, Full 48
+- `planner_maker` synthesis steps now include task decomposition output for better-structured plans
+- `planner_runner` description updated to document 80% checkpoint and kimi_decompose integration
+- Server registration updated: "Qwen, Kimi x4, MiniMax"
+
 ## [2.3.1] - 2025-12-28
 
 ### Fixed

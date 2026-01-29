@@ -30,6 +30,9 @@ export const codeFocusProfile: ProfileConfig = {
     qwen_algo: true,
     qwen_reason: false,        // Not needed for code focus
     kimi_thinking: true,
+    kimi_code: true,
+    kimi_decompose: true,
+    kimi_long_context: true,
     qwen_competitive: false,
     minimax_code: true,        // Cheap SWE - perfect for code focus
     minimax_agent: false,

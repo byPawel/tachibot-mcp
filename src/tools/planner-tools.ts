@@ -155,6 +155,7 @@ const TOOL_MAX_TOKENS: Record<string, number> = {
   qwen_coder: 2500,
   minimax_code: 2500,
   kimi_thinking: 2500,
+  kimi_decompose: 3000,
 
   // Reasoning/Judge tools - can be longer
   openai_reason: 3000,
@@ -349,7 +350,7 @@ function clearPlanFilePath(task: string): void {
 // We can't prevent that. So we accumulate on disk, keeping the
 // LONGEST version of each step output (first pass is usually full).
 
-const ACCUMULATOR_DIR = path.join(process.cwd(), ".plan-cache");
+const ACCUMULATOR_DIR = process.env.TACHIBOT_PLAN_CACHE_DIR || path.join(process.cwd(), ".plan-cache");
 
 function getAccumulatorPath(task: string): string {
   const slug = task.toLowerCase().replace(/[^a-z0-9]+/g, "-").substring(0, 40);
@@ -604,6 +605,27 @@ ${DISTILL_SUFFIX}`,
     description: "Step-by-step reasoning (Kimi)",
   },
 
+  // Phase 2c: Decomposition (structured subtask breakdown with dependencies)
+  {
+    id: "decompose_kimi",
+    phase: "Decomposition",
+    tool: "kimi_decompose",
+    thinking: "Structured decomposition. Kimi K2.5 uses Agent Swarm reasoning to break the task into parallel subtasks with IDs, dependencies, and acceptance criteria. This dependency graph feeds into the synthesis phase for a more actionable, ordered plan.",
+    buildParams: (task, context, _codeContext, answers, prior) => ({
+      task: `${task}${answers ? `\n\nUser clarifications:\n${answers}` : ""}`,
+      context: [
+        context || "",
+        prior.search ? `Research:\n${extractSummary(prior.search, PRIOR_CONTEXT_LIMIT_INTERMEDIATE)}` : "",
+        prior.analyze_qwen ? `Code Analysis:\n${extractSummary(prior.analyze_qwen, PRIOR_CONTEXT_LIMIT_INTERMEDIATE)}` : "",
+        prior.analyze_kimi ? `Step-by-step Analysis:\n${extractSummary(prior.analyze_kimi, PRIOR_CONTEXT_LIMIT_INTERMEDIATE)}` : "",
+      ].filter(Boolean).join("\n\n"),
+      depth: 3,
+      outputFormat: "dependencies",
+    }),
+    description: "Task decomposition with dependencies (Kimi K2.5)",
+    devlogType: "progress",
+  },
+
   // Phase 2b: Debate (CONDITIONAL - lightweight pro/con, main points only)
   {
     id: "debate_pro",
@@ -748,7 +770,7 @@ ${DISTILL_SUFFIX}`,
     tool: "gemini_analyze_text",
     condition: isUXTask,
     thinking: "Gemini synthesizes Kimi's UX flow analysis into scored criteria and actionable requirements. Produces the structured UX assessment that feeds into the final plan — scores, WCAG compliance, specific recommendations.",
-    buildParams: (task, context, codeContext, _answers, prior) => ({
+    buildParams: (task, context, _codeContext, _answers, prior) => ({
       text: `UX FINAL JUDGMENT — synthesize into scored assessment:
 
 TASK: ${task}
@@ -846,6 +868,7 @@ ${answers ? `USER REQUIREMENTS:\n${answers}` : ""}
 ANALYSES:
 - Qwen: ${distilledPrior("analyze_qwen", prior) || "N/A"}
 - Kimi: ${distilledPrior("analyze_kimi", prior) || "N/A"}
+${prior.decompose_kimi ? `\nTASK DECOMPOSITION (subtasks + dependencies):\n${truncateSmart(prior.decompose_kimi, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
 
 CRITIQUE (holes found):
 ${truncateSmart(prior.critique, PRIOR_CONTEXT_LIMIT_SYNTHESIS) || "N/A"}
@@ -855,6 +878,7 @@ ${prior.responsive_judge ? `\nRESPONSIVE ASSESSMENT:\n${truncateSmart(prior.resp
 ${codeContext ? "\nNote: Analysis was performed on actual code." : ""}
 
 Create a structured plan addressing all concerns.
+${prior.decompose_kimi ? "Use the task decomposition to structure steps with correct dependency ordering." : ""}
 ${prior.debate_con ? "Explicitly resolve each tension from the debate." : ""}
 ${prior.ux_judge ? "Include UX requirements and accessibility criteria in the plan." : ""}
 ${prior.responsive_judge ? "Include responsive design requirements and breakpoint specifications." : ""}
@@ -881,6 +905,7 @@ ${prior.judge_draft || "N/A"}
 
 GPT'S CRITIQUE:
 ${truncateSmart(prior.critique, PRIOR_CONTEXT_LIMIT_SYNTHESIS) || "N/A"}
+${prior.decompose_kimi ? `\nTASK DECOMPOSITION (subtasks + dependencies):\n${truncateSmart(prior.decompose_kimi, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
 ${prior.ux_judge ? `\nUX ASSESSMENT:\n${truncateSmart(prior.ux_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
 ${prior.responsive_judge ? `\nRESPONSIVE ASSESSMENT:\n${truncateSmart(prior.responsive_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
 ${codeContext ? "\nNote: All analysis was performed on actual code provided." : ""}
@@ -889,7 +914,7 @@ Create a final, actionable plan with:
 1. Clear numbered steps with success criteria
 2. Complexity estimates (O notation)
 3. Potential blockers and mitigations
-4. Checkpoints at 50% and 100%
+4. Checkpoints at 50%, 80%, and 100%
 5. **QUALITY ASSESSMENT:**
    - Code Quality: X/10
    - Security: X/10
@@ -1313,7 +1338,9 @@ export const plannerRunnerTool = {
 COORDINATOR PATTERN - tracks actual plan steps:
 1. Call with mode: "start" to parse plan and begin
 2. Call with mode: "step" and stepNum to work on specific step
-3. Call with mode: "verify" at 50% and 100% for checkpoints
+3. Call with mode: "verify" at 50%, 80%, and 100% for checkpoints
+
+The 80% checkpoint uses kimi_decompose to decompose remaining work into granular subtasks, ensuring nothing is missed before the final push.
 
 The tool parses your plan and tracks progress through each step.`,
 
@@ -1322,7 +1349,7 @@ The tool parses your plan and tracks progress through each step.`,
     mode: z.enum(["start", "step", "verify"]).default("start")
       .describe("start: parse plan, step: work on step N, verify: checkpoint"),
     stepNum: z.number().optional().describe("Step number (1-indexed) for mode=step"),
-    checkpoint: z.enum(["50%", "100%"]).optional().describe("Checkpoint for mode=verify"),
+    checkpoint: z.enum(["50%", "80%", "100%"]).optional().describe("Checkpoint for mode=verify"),
     code: z.string().optional().describe("Current code for verification"),
     completed: z.array(z.number()).optional().describe("List of completed step numbers"),
     devlog: z.boolean().optional().default(true),
@@ -1336,7 +1363,7 @@ The tool parses your plan and tracks progress through each step.`,
     plan: string;
     mode?: "start" | "step" | "verify";
     stepNum?: number;
-    checkpoint?: "50%" | "100%";
+    checkpoint?: "50%" | "80%" | "100%";
     code?: string;
     completed?: number[];
     devlog?: boolean;
@@ -1427,10 +1454,16 @@ The tool parses your plan and tracks progress through each step.`,
 
       // Checkpoint reminders
       const halfwayStep = Math.ceil(totalSteps / 2);
+      const eightyPctStep = Math.ceil(totalSteps * 0.8);
       if (stepNum === halfwayStep) {
         lines.push("---");
         lines.push("⚡ 50% CHECKPOINT - After this step, run verification:");
         lines.push(`\`planner_runner({ plan, mode: "verify", checkpoint: "50%", completed: [...] })\``);
+      }
+      if (stepNum === eightyPctStep && eightyPctStep !== halfwayStep) {
+        lines.push("---");
+        lines.push("⚡ 80% CHECKPOINT - After this step, decompose remaining work:");
+        lines.push(`\`planner_runner({ plan, mode: "verify", checkpoint: "80%", completed: [...] })\``);
       }
 
       // Next step
@@ -1464,8 +1497,8 @@ The tool parses your plan and tracks progress through each step.`,
         lines.push("");
       }
 
-      // What's left (for 50%)
-      if (checkpoint === "50%" && remainingSteps.length > 0) {
+      // What's left (for 50% and 80%)
+      if ((checkpoint === "50%" || checkpoint === "80%") && remainingSteps.length > 0) {
         lines.push("⏳ Remaining:");
         for (const step of remainingSteps) {
           lines.push(`- ${step.title}`);
@@ -1477,8 +1510,24 @@ The tool parses your plan and tracks progress through each step.`,
       lines.push("### 💭 Verification");
       lines.push("");
 
-      const verifyPrompt = checkpoint === "50%"
-        ? `50% Progress Check:
+      if (checkpoint === "80%") {
+        // 80% checkpoint: decompose remaining work with kimi_decompose
+        lines.push("Run **kimi_decompose** to break remaining work into granular subtasks:");
+        lines.push("");
+        lines.push("```");
+        lines.push(`kimi_decompose({`);
+        lines.push(`  task: "Complete remaining implementation steps for the current plan",`);
+        lines.push(`  context: "Remaining steps:\\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}${s.details ? ': ' + s.details.substring(0, 100) : ''}`).join('\\n')}\\n\\nCompleted: ${completedSteps.map(s => s.title).join(', ')}",`);
+        lines.push(`  depth: 3,`);
+        lines.push(`  outputFormat: "dependencies"`);
+        lines.push(`})`);
+        lines.push("```");
+        lines.push("");
+        lines.push("This decomposition ensures nothing is missed in the final 20% push.");
+        lines.push("Review the subtask breakdown, then continue with the next step.");
+      } else {
+        const verifyPrompt = checkpoint === "50%"
+          ? `50% Progress Check:
 
 COMPLETED STEPS:
 ${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
@@ -1492,7 +1541,7 @@ Questions:
 1. Are completed steps implemented correctly?
 2. Any issues to address before continuing?
 3. Should we adjust remaining steps?`
-        : `100% Final Review:
+          : `100% Final Review:
 
 ALL STEPS:
 ${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}
@@ -1504,14 +1553,15 @@ Provide:
 2. Any issues found
 3. Verdict: APPROVED or NEEDS_REVISION`;
 
-      lines.push("Run verification tool:");
-      lines.push(`> ${checkpoint === "50%" ? "qwen_reason" : "gemini_analyze_text"}`);
-      lines.push("");
-      lines.push("<details><summary>Full prompt</summary>");
-      lines.push("");
-      lines.push(verifyPrompt);
-      lines.push("");
-      lines.push("</details>");
+        lines.push("Run verification tool:");
+        lines.push(`> ${checkpoint === "50%" ? "qwen_reason" : "gemini_analyze_text"}`);
+        lines.push("");
+        lines.push("<details><summary>Full prompt</summary>");
+        lines.push("");
+        lines.push(verifyPrompt);
+        lines.push("");
+        lines.push("</details>");
+      }
 
       // UX verification (when enabled)
       if (ux) {
@@ -1562,7 +1612,7 @@ Score each /10 and list specific breakpoint issues.`);
       // Next action
       lines.push("");
       lines.push("---");
-      if (checkpoint === "50%") {
+      if (checkpoint === "50%" || checkpoint === "80%") {
         const nextStep = completed.length + 1;
         lines.push(`▶ After verification, continue: \`planner_runner({ plan, mode: "step", stepNum: ${nextStep}, completed: [${completed.join(", ")}] })\``);
       } else {

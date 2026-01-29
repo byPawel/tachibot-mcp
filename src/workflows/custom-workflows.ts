@@ -650,7 +650,7 @@ export class CustomWorkflowEngine {
     workflow: Workflow,
     format: "yaml" | "json" = "yaml",
   ): Promise<void> {
-    const dir = path.join(process.cwd(), ".tachi", "workflows");
+    const dir = path.join(process.cwd(), ".tachibot", "workflows");
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }

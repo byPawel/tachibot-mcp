@@ -7,8 +7,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { getModelDisplayName, MODEL_PRICING } from '../config/model-constants.js';
+import { getDataDir } from './paths.js';
 // import {
 //   renderTable,
 //   renderKeyValueTable,
@@ -115,7 +115,7 @@ interface UsageData {
   repos: Record<string, RepoStats>; // repoPath -> stats
 }
 
-const STATS_FILE = path.join(os.homedir(), '.tachibot-usage.json');
+const STATS_FILE = path.join(getDataDir(), 'usage.json');
 
 function loadStats(): UsageData {
   try {
@@ -131,6 +131,7 @@ function loadStats(): UsageData {
 
 function saveStats(data: UsageData): void {
   try {
+    fs.mkdirSync(path.dirname(STATS_FILE), { recursive: true });
     fs.writeFileSync(STATS_FILE, JSON.stringify(data, null, 2));
   } catch (e) {
     console.error('[UsageTracker] Failed to save stats:', e);

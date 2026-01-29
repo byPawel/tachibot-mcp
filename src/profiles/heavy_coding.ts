@@ -41,6 +41,9 @@ export const heavyCodingProfile: ProfileConfig = {
     qwen_algo: true,
     qwen_reason: true,
     kimi_thinking: true,
+    kimi_code: true,
+    kimi_decompose: true,
+    kimi_long_context: true,
     qwen_competitive: false,
     minimax_code: true,        // Cheap SWE - great for heavy coding
     minimax_agent: true,       // Cheap agentic - great for workflows

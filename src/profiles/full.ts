@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const fullProfile: ProfileConfig = {
-  description: "All tools enabled for maximum capability (~Xk tokens, 32 tools)",
+  description: "All tools enabled for maximum capability (48 tools)",
   tools: {
     think: true,
     focus: true,
@@ -30,6 +30,9 @@ export const fullProfile: ProfileConfig = {
     qwen_algo: true,
     qwen_reason: true,
     kimi_thinking: true,
+    kimi_code: true,
+    kimi_decompose: true,
+    kimi_long_context: true,
     qwen_competitive: true,
     minimax_code: true,
     minimax_agent: true,

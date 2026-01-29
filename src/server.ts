@@ -734,18 +734,21 @@ async function initializeServer() {
 
     // Register OpenRouter tools (Qwen, Kimi, MiniMax - filtered by profile via safeAddTool)
     if (isOpenRouterAvailable()) {
-      const { qwenCoderTool, qwenAlgoTool, qwenCompetitiveTool, kimiThinkingTool, qwenReasonTool, minimaxCodeTool, minimaxAgentTool } = await import("./tools/openrouter-tools.js");
+      const { qwenCoderTool, qwenAlgoTool, qwenCompetitiveTool, kimiThinkingTool, kimiCodeTool, kimiDecomposeTool, kimiLongContextTool, qwenReasonTool, minimaxCodeTool, minimaxAgentTool } = await import("./tools/openrouter-tools.js");
 
       // safeAddTool checks isToolEnabled internally
       safeAddTool(qwenCoderTool);
       safeAddTool(qwenAlgoTool);
       safeAddTool(qwenCompetitiveTool);
       safeAddTool(kimiThinkingTool);
+      safeAddTool(kimiCodeTool);        // SWE-focused code (Kimi K2.5 - 76.8% SWE-Bench)
+      safeAddTool(kimiDecomposeTool);   // Task decomposition (Kimi K2.5 Agent Swarm)
+      safeAddTool(kimiLongContextTool); // Long-context analysis (Kimi K2.5 - 256K)
       safeAddTool(qwenReasonTool);      // Heavy reasoning (Qwen3-Max-Thinking >1T params)
       safeAddTool(minimaxCodeTool);     // Cheap SWE tasks (MiniMax M2.1 - 72.5% SWE-Bench)
       safeAddTool(minimaxAgentTool);    // Cheap agentic workflows (MiniMax M2.1 - τ²-Bench 77.2%)
 
-      console.error(`✅ Registered OpenRouter tools (Qwen, Kimi, MiniMax)`);
+      console.error(`✅ Registered OpenRouter tools (Qwen, Kimi x4, MiniMax)`);
 
       // Register planner tools (multi-model council for plan creation/execution)
       const { plannerMakerTool, plannerRunnerTool, listPlansTool } = await import("./tools/planner-tools.js");

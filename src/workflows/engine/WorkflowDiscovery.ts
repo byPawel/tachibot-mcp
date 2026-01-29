@@ -5,8 +5,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import * as yaml from 'yaml';
+import { getConfigDir } from '../../utils/paths.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Workflow } from '../workflow-types.js';
@@ -44,9 +44,9 @@ export class WorkflowDiscovery {
         label: 'Built-in',
       },
 
-      // Priority 2: User personal (survives updates)
+      // Priority 2: User personal (survives updates) — XDG Base Directory compliant
       {
-        path: path.join(os.homedir(), '.config', 'tachibot', 'workflows'),
+        path: path.join(getConfigDir(), 'workflows'),
         label: 'User',
       },
 

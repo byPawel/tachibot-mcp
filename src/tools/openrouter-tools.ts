@@ -118,7 +118,17 @@ export async function callOpenRouter(
     }
 
     const data = await response.json() as any;
-    const content = data.choices?.[0]?.message?.content || "No response from OpenRouter";
+    const choice = data.choices?.[0];
+    // Reasoning models (Kimi K2.5, etc.) may return content in different fields:
+    // - message.content: standard final answer
+    // - message.reasoning_content: native thinking model format (provider-specific)
+    // - message.reasoning: OpenRouter's canonical reasoning tokens field
+    // - choice.reasoning: choice-level reasoning fallback
+    const content = choice?.message?.content
+      || choice?.message?.reasoning_content
+      || choice?.message?.reasoning
+      || choice?.reasoning
+      || "No response from OpenRouter";
     return stripFormatting(content);
   } catch (error) {
     // Handle abort/timeout
@@ -302,7 +312,7 @@ export const openRouterMultiModelTool = {
       "qwen-coder", "qwen-coder-plus",
       "qwq-32b", "kimi-k2-thinking"
     ]).describe("Model to use - must be one of: qwen-coder, qwen-coder-plus, qwq-32b, kimi-k2-thinking"),
-    temperature: z.number().optional().default(0.7).describe("Response temperature (0-1, default: 0.7)")
+    temperature: z.coerce.number().optional().default(0.7).describe("Response temperature (0-1, default: 0.7)")
   }),
   execute: async (args: { query: string; model: string; temperature?: number }, { log }: any) => {
     const modelMap = {
@@ -549,7 +559,7 @@ export const kimiThinkingTool = {
       .optional()
       .default("step-by-step")
       .describe("Reasoning approach (e.g., step-by-step, analytical, creative, systematic)"),
-    maxSteps: z.number().optional().default(3).describe("Maximum reasoning steps (default: 3)")
+    maxSteps: z.coerce.number().int().min(1).max(10).optional().default(3).describe("Maximum reasoning steps (1-10, default: 3)")
   }),
   execute: async (args: {
     problem: string;
@@ -588,6 +598,182 @@ ${FORMAT_INSTRUCTION}`
         frequency_penalty: 0.2
       }, 240000),
       reportFn
+    );
+  }
+};
+
+/**
+ * Kimi Code Tool
+ * SWE-focused code generation/fixing with Kimi K2.5 (SWE-Bench 76.8%)
+ * Best for: code generation, bug fixing, refactoring, repo-level understanding
+ */
+export const kimiCodeTool = {
+  name: "kimi_code",
+  description: "SWE-focused code generation/fixing with Kimi K2.5 (SWE-Bench 76.8%). Put CODE in 'code' parameter.",
+  parameters: z.object({
+    task: z.enum(["generate", "fix", "review", "optimize", "debug", "refactor"])
+      .describe("Code task - must be one of: generate, fix, review, optimize, debug, refactor"),
+    code: z.string().optional().describe("The source code (for fix/review/optimize/debug/refactor tasks)"),
+    requirements: z.string().optional().default("").describe("Requirements or description (for generate task)"),
+    language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')")
+  }),
+  execute: async (args: {
+    task: string;
+    code?: string;
+    requirements?: string;
+    language?: string;
+  }, { log, reportProgress }: any) => {
+    const taskPrompts: Record<string, string> = {
+      generate: "Generate clean, production-ready code",
+      fix: "Fix bugs and issues in the code",
+      review: "Review code for quality, bugs, and improvements",
+      optimize: "Optimize for performance and efficiency",
+      debug: "Debug and identify root causes",
+      refactor: "Refactor for better structure and maintainability"
+    };
+
+    const systemPrompt = `You are Kimi K2.5, an expert SWE model (SWE-Bench 76.8%). You excel at repo-level code understanding and changes.
+Task: ${taskPrompts[args.task]}
+${args.language ? `Language: ${args.language}` : ''}
+Focus: Clean code, correct solutions, minimal changes for fixes. Understand the full repo context when reviewing.
+${FORMAT_INSTRUCTION}`;
+
+    const userPrompt = args.code
+      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequirements: ${args.requirements || 'Fix/improve the code'}`
+      : args.requirements || "Generate code";
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.3, 4000),
+      reportFn,
+      240000
+    );
+  }
+};
+
+/**
+ * Kimi Decompose Tool
+ * Structured task decomposition using Kimi K2.5's Agent Swarm reasoning
+ * Best for: breaking complex tasks into subtasks with dependencies and acceptance criteria
+ */
+export const kimiDecomposeTool = {
+  name: "kimi_decompose",
+  description: "Structured task decomposition with Kimi K2.5 Agent Swarm reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.",
+  parameters: z.object({
+    task: z.string().describe("The task to decompose (REQUIRED - describe the complex task)"),
+    context: z.string().optional().describe("Additional context about the project, codebase, or constraints"),
+    depth: z.coerce.number().int().min(1).max(5).optional().default(3)
+      .describe("Maximum decomposition depth levels (1-5, default: 3)"),
+    outputFormat: z.enum(["tree", "flat", "dependencies"]).optional().default("tree")
+      .describe("Output format: tree (hierarchical), flat (numbered list), dependencies (with dependency graph)")
+  }),
+  execute: async (args: {
+    task: string;
+    context?: string;
+    depth?: number;
+    outputFormat?: string;
+  }, { log, reportProgress }: any) => {
+    const formatInstructions: Record<string, string> = {
+      tree: "Output as a hierarchical tree with indentation showing parent-child relationships",
+      flat: "Output as a flat numbered list with subtask IDs (e.g., 1, 1.1, 1.2, 2, 2.1)",
+      dependencies: "Output with dependency graph: each subtask has ID, dependencies (blockedBy), and can-parallel flags"
+    };
+
+    const systemPrompt = `You are Kimi K2.5, expert at structured task decomposition using Agent Swarm reasoning.
+
+Decompose the given task into subtasks following these rules:
+1. Each subtask gets a unique ID (e.g., T1, T1.1, T1.2, T2)
+2. Identify dependencies between subtasks (what blocks what)
+3. Mark which subtasks can run in parallel
+4. Each subtask must have clear acceptance criteria
+5. Decompose to ${args.depth || 3} levels of depth maximum
+6. ${formatInstructions[args.outputFormat || "tree"]}
+
+For each subtask provide:
+- **ID**: Unique identifier
+- **Title**: Brief description
+- **Dependencies**: List of subtask IDs that must complete first (or "none")
+- **Parallel**: Can this run in parallel with siblings? (yes/no)
+- **Acceptance Criteria**: How to know this subtask is done
+- **Complexity**: Low / Medium / High
+
+${FORMAT_INSTRUCTION}`;
+
+    const userPrompt = `Task to decompose: ${args.task}${args.context ? `\n\nContext: ${args.context}` : ''}`;
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.5, 6000),
+      reportFn,
+      240000
+    );
+  }
+};
+
+/**
+ * Kimi Long Context Tool
+ * Long-context analysis leveraging Kimi K2.5's 256K context window
+ * Best for: analyzing large documents, codebases, or text bodies
+ */
+export const kimiLongContextTool = {
+  name: "kimi_long_context",
+  description: "Long-context analysis with Kimi K2.5 (256K context window, best-effort). Analyzes large documents, codebases, or text. Put CONTENT in 'content' parameter.",
+  parameters: z.object({
+    content: z.string().describe("The long text/document to analyze (REQUIRED)"),
+    task: z.enum(["summarize", "extract", "analyze", "compare", "find"])
+      .describe("Analysis task: summarize, extract (key info), analyze (deep), compare (sections), find (specific info)"),
+    query: z.string().optional().describe("Specific question about the content (for extract/find tasks)"),
+    outputFormat: z.enum(["brief", "detailed", "structured"]).optional().default("detailed")
+      .describe("Output format: brief (TL;DR), detailed (thorough), structured (sections with headers)")
+  }),
+  execute: async (args: {
+    content: string;
+    task: string;
+    query?: string;
+    outputFormat?: string;
+  }, { log, reportProgress }: any) => {
+    const taskPrompts: Record<string, string> = {
+      summarize: "Create a comprehensive summary capturing all key points",
+      extract: "Extract specific information, facts, and data points",
+      analyze: "Perform deep analysis identifying patterns, themes, and insights",
+      compare: "Compare and contrast different sections, arguments, or perspectives",
+      find: "Find specific information matching the query"
+    };
+
+    const formatPrompts: Record<string, string> = {
+      brief: "Keep output concise - TL;DR style, bullet points, key takeaways only",
+      detailed: "Provide thorough analysis with supporting evidence and examples",
+      structured: "Use clear sections with headers, bullet points, and structured formatting"
+    };
+
+    const systemPrompt = `You are Kimi K2.5, expert at processing and analyzing large documents (best-effort 256K context window).
+Task: ${taskPrompts[args.task]}
+Format: ${formatPrompts[args.outputFormat || "detailed"]}
+${args.query ? `Specific query: ${args.query}` : ''}
+
+Be thorough and systematic. Reference specific parts of the content when making claims.
+${FORMAT_INSTRUCTION}`;
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: args.content }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.2, 8000),
+      reportFn,
+      300000
     );
   }
 };
@@ -707,7 +893,7 @@ export const minimaxAgentTool = {
   parameters: z.object({
     task: z.string().describe("The task to execute (REQUIRED - describe what needs to be done)"),
     context: z.string().optional().describe("Additional context about the environment or constraints"),
-    steps: z.number().optional().default(5).describe("Maximum steps to plan (default: 5)"),
+    steps: z.coerce.number().int().min(1).max(20).optional().default(5).describe("Maximum steps to plan (1-20, default: 5)"),
     outputFormat: z.enum(["plan", "execute", "both"]).optional().default("both")
       .describe("Output: 'plan' (just steps), 'execute' (just results), 'both' (plan + results)")
   }),
@@ -771,6 +957,9 @@ export function getAllOpenRouterTools() {
     qwenAlgoTool,
     qwenCompetitiveTool,
     kimiThinkingTool,
+    kimiCodeTool,        // Kimi K2.5 - SWE-focused code (76.8%)
+    kimiDecomposeTool,   // Kimi K2.5 - task decomposition
+    kimiLongContextTool, // Kimi K2.5 - long-context analysis (256K)
     // NEW tools (Jan 2026)
     qwenReasonTool,      // Qwen3-Max-Thinking - heavy reasoning
     minimaxCodeTool,     // MiniMax M2.1 - SWE tasks (cheap)
