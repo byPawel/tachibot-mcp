@@ -44,6 +44,7 @@
     "preview_prompt_technique": false,
     "execute_prompt_technique": false,
     "planner_maker": false,
-    "planner_runner": false
+    "planner_runner": false,
+    "list_plans": false
   }
 }

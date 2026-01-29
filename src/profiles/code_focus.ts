@@ -49,5 +49,6 @@ export const codeFocusProfile: ProfileConfig = {
     // Planner tools (multi-model council)
     planner_maker: true,
     planner_runner: true,
+    list_plans: true,
   }
 };

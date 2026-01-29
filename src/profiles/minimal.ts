@@ -49,5 +49,6 @@ export const minimalProfile: ProfileConfig = {
     // Planner tools (multi-model council)
     planner_maker: false,
     planner_runner: false,
+    list_plans: false,
   }
 };

@@ -16,6 +16,7 @@ export interface TimeoutConfig {
   workflow: number;
   pingpong: number;
   api: number;
+  openrouter: number;
   progressThreshold: number;
 }
 
@@ -37,6 +38,9 @@ export function getTimeoutConfig(): TimeoutConfig {
 
     // Individual API call timeout (60 seconds)
     api: parseInt(process.env.TACHI_API_TIMEOUT || '60000'),
+
+    // OpenRouter timeout (180 seconds for thinking models like Qwen)
+    openrouter: parseInt(process.env.TACHI_OPENROUTER_TIMEOUT || '180000'),
 
     // Progress threshold (30 seconds)
     progressThreshold: parseInt(process.env.TACHI_PROGRESS_THRESHOLD || '30000'),
@@ -126,6 +130,7 @@ export interface SmartTimeoutConfig {
     openai: { base: number; max: number; };
     anthropic: { base: number; max: number; };
     google: { base: number; max: number; };
+    openrouter: { base: number; max: number; };
   };
 }
 
@@ -160,6 +165,10 @@ export const SMART_TIMEOUT_DEFAULTS: SmartTimeoutConfig = {
     google: {
       base: 15000,    // 15 seconds
       max: 45000      // 45 seconds
+    },
+    openrouter: {
+      base: 90000,    // 90 seconds - thinking models need more time
+      max: 300000     // 5 minutes max for complex reasoning
     }
   }
 };

@@ -1,5 +1,5 @@
 {
-  "description": "Heavy coding with all reasoning & code tools (~14k tokens, 36 tools)",
+  "description": "Heavy coding with all reasoning & code tools (~14k tokens, 37 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -44,6 +44,7 @@
     "preview_prompt_technique": true,
     "execute_prompt_technique": true,
     "planner_maker": true,
-    "planner_runner": true
+    "planner_runner": true,
+    "list_plans": true
   }
 }

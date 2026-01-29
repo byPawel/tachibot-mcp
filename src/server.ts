@@ -748,10 +748,11 @@ async function initializeServer() {
       console.error(`✅ Registered OpenRouter tools (Qwen, Kimi, MiniMax)`);
 
       // Register planner tools (multi-model council for plan creation/execution)
-      const { plannerMakerTool, plannerRunnerTool } = await import("./tools/planner-tools.js");
+      const { plannerMakerTool, plannerRunnerTool, listPlansTool } = await import("./tools/planner-tools.js");
       safeAddTool(plannerMakerTool);   // Council-based plan creation
       safeAddTool(plannerRunnerTool);  // Plan execution with checkpoints
-      console.error(`✅ Registered planner tools (planner_maker, planner_runner)`);
+      safeAddTool(listPlansTool);      // List recent plans
+      console.error(`✅ Registered planner tools (planner_maker, planner_runner, list_plans)`);
     }
 
 

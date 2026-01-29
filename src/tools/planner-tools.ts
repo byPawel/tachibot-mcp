@@ -1,20 +1,23 @@
 /**
  * Planner Tools - Multi-model plan creation and execution
  *
- * planner_maker: Council-based plan synthesis with smart search
- *   - Phase 0: ASK RIGHT QUESTIONS (first principles, problem decomposition, UX)
- *   - Phase 1: Data gathering (grok + openai/gemini search)
- *   - Phase 2: Analysis (qwen, minimax, kimi)
- *   - Phase 3: Critique (gpt finds holes)
- *   - Phase 4: Judgment (qwen_reason → gemini final)
+ * COORDINATOR PATTERN: Each call returns ONE tool to execute
+ * - Visible tool calls in terminal
+ * - User can interrupt between steps
+ * - Stays under 25k MCP limit
  *
+ * planner_maker: Council-based plan synthesis
  * planner_runner: Execute plans with verification checkpoints
  */
 
 import { z } from "zod";
-import { withHeartbeat } from "../utils/streaming-helper.js";
+import * as fs from "fs";
+import * as path from "path";
 
-// Match MCPContext from server.ts
+// ═══════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════
+
 type MCPContext = {
   log: {
     info: (message: string, metadata?: Record<string, any>) => void;
@@ -26,753 +29,1612 @@ type MCPContext = {
   [key: string]: any;
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// DEVLOG INTEGRATION TYPES
-// Structured hints for devlog-mcp sync (hybrid approach)
-// ═══════════════════════════════════════════════════════════════════
-
 /**
  * Structured hint for devlog tool invocation
- * Claude can validate/modify before executing
  */
 export interface DevlogHint {
   tool: "devlog_session_log" | "devlog_plan_create" | "devlog_plan_check" | "devlog_plan_blocker" | "devlog_plan_validate";
   params: Record<string, any>;
-  description?: string;  // Human-readable explanation
+  description?: string;
 }
 
 /**
- * Plan step with devlog mapping
+ * Tool call instruction returned by coordinator
  */
-export interface PlanStep {
-  index: number;
+export interface ToolInstruction {
+  tool: string;
+  params: Record<string, any>;
+  maxTokens: number;
   description: string;
-  complexity?: string;  // O notation
-  checkpoint?: "50%" | "100%";
 }
 
 /**
- * Extract numbered steps from plan text
- * Parses formats like "1. Do X" or "Step 1: Do X"
+ * Coordinator response - what planner_maker returns each step
  */
-function extractPlanSteps(planText: string): PlanStep[] {
-  const steps: PlanStep[] = [];
-  // Match numbered items: "1. text" or "Step 1: text" or "- [ ] text"
-  const stepPatterns = [
-    /^\s*(\d+)\.\s+(.+)$/gm,           // "1. text"
-    /^\s*Step\s+(\d+)[:\s]+(.+)$/gim,  // "Step 1: text"
-    /^\s*-\s*\[\s*\]\s+(.+)$/gm,       // "- [ ] text" (checklist)
+export interface CoordinatorResponse {
+  phase: string;
+  step: number;
+  totalSteps: number;
+  progress: string;  // e.g., "2/7 (29%)"
+  nextTool?: ToolInstruction;
+  devlogHint?: DevlogHint;
+  isComplete: boolean;
+  result?: string;  // Final result when isComplete=true
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONTEXT LIMITS
+// ═══════════════════════════════════════════════════════════════════
+//
+// Research finding (5-model consensus, Jan 2026):
+// "Lost in the middle" still exists — 20-40% recall loss on mid-context info.
+// Passing 12k chars of cumulative context DEGRADES quality via attention dilution.
+// Solution: pass distilled summaries (~500 tokens) between steps. Full outputs
+// saved to disk accumulator for the plan file.
+//
+// Two tiers:
+// - INTERMEDIATE: 2500 chars (~625 tokens) for step-to-step context passing
+// - SYNTHESIS: 6000 chars (~1500 tokens) for final judgment steps that need more
+
+const PRIOR_CONTEXT_LIMIT_INTERMEDIATE = 2500;  // ~625 tokens — distilled findings only
+const PRIOR_CONTEXT_LIMIT_SYNTHESIS = 6000;      // ~1500 tokens — judgment/synthesis steps
+const CODE_CONTEXT_LIMIT = 8000;                 // ~2k tokens for code snippets
+
+/**
+ * Instruction appended to intermediate steps to produce a distilled summary block.
+ * The model outputs full analysis PLUS this summary at the end.
+ * The summary is what gets extracted and passed to the next step.
+ */
+const DISTILL_SUFFIX = `
+
+At the END of your response, add this summary block (the pipeline extracts it for the next step):
+
+---SUMMARY---
+FINDINGS: [3-5 bullet points of key findings]
+CONCERNS: [top concerns or risks, if any]
+RECOMMENDATION: [one-sentence recommendation]
+CONFIDENCE: [high/medium/low]
+---END SUMMARY---`;
+
+/**
+ * Extract the distilled summary from a step's output.
+ * Falls back to truncated full output if no summary block found.
+ */
+function extractSummary(output: string, limit: number): string {
+  if (!output) return "";
+
+  // Try to extract the ---SUMMARY--- block
+  const summaryMatch = output.match(/---SUMMARY---\s*([\s\S]*?)\s*---END SUMMARY---/);
+  if (summaryMatch) {
+    const summary = summaryMatch[1].trim();
+    if (summary.length > 50) {
+      return truncateSmart(summary, limit);
+    }
+  }
+
+  // Fallback: truncate the full output
+  return truncateSmart(output, limit);
+}
+
+/**
+ * Smart truncation: cuts at paragraph/sentence boundary, never mid-word.
+ * Preserves semantic integrity unlike raw .substring().
+ */
+function truncateSmart(text: string | undefined, limit: number): string {
+  if (!text) return "";
+  if (text.length <= limit) return text;
+
+  const truncated = text.substring(0, limit);
+
+  // Try to cut at paragraph boundary
+  const lastParagraph = truncated.lastIndexOf('\n\n');
+  if (lastParagraph > limit * 0.7) return truncated.substring(0, lastParagraph) + '\n\n[…truncated]';
+
+  // Try sentence boundary
+  const lastSentence = truncated.lastIndexOf('. ');
+  if (lastSentence > limit * 0.7) return truncated.substring(0, lastSentence + 1) + ' […truncated]';
+
+  // Fall back to newline
+  const lastNewline = truncated.lastIndexOf('\n');
+  if (lastNewline > limit * 0.7) return truncated.substring(0, lastNewline) + '\n[…truncated]';
+
+  return truncated + '…';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TOKEN LIMITS (MAX, not fixed - outputs can be shorter)
+// ═══════════════════════════════════════════════════════════════════
+
+const TOOL_MAX_TOKENS: Record<string, number> = {
+  // Search tools - need room for 10-20 sources
+  grok_search: 3000,
+  openai_search: 3000,
+  gemini_search: 3000,
+
+  // Analysis tools - medium verbosity
+  qwen_coder: 2500,
+  minimax_code: 2500,
+  kimi_thinking: 2500,
+
+  // Reasoning/Judge tools - can be longer
+  openai_reason: 3000,
+  qwen_reason: 3000,
+  gemini_analyze_text: 3000,
+
+  // Default fallback
+  default: 2000,
+};
+
+function getMaxTokens(tool: string): number {
+  return TOOL_MAX_TOKENS[tool] ?? TOOL_MAX_TOKENS.default;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PLAN FILE MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Resolve devlog daily directory.
+ * Uses DEVLOG_PATH env (same as devlog-mcp) or falls back to {cwd}/devlog.
+ */
+function getDevlogDailyDir(): string {
+  const devlogPath = process.env.DEVLOG_PATH || path.join(process.cwd(), "devlog");
+  return path.join(devlogPath, "daily");
+}
+
+/**
+ * Generate plan filename: YYYY-MM-DD-HHhMMm-dayname-plan-slug.md
+ * Example: 2026-01-28-16h30m-tuesday-plan-sidebar-refactor.md
+ * Matches devlog_workspace_dump naming convention.
+ */
+function generatePlanFilename(task: string): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+
+  // Create slug from task (first 40 chars, lowercase, alphanumeric + dashes)
+  const slug = task
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .substring(0, 40);
+
+  return `${year}-${month}-${day}-${hours}h${minutes}m-${dayName}-plan-${slug}.md`;
+}
+
+interface PlanMetadata {
+  phases: string[];
+  tools_used: string[];
+  scores?: Record<string, number>;
+}
+
+/**
+ * Save plan to devlog daily directory with proper frontmatter.
+ * The file will be picked up by devlog-mcp migration and appear in devlog-ui.
+ *
+ * Called both incrementally (during creation) and at completion.
+ * - During creation: planStatus = "in-progress", content = accumulated so far
+ * - At completion: planStatus = "pending" (ready for review), content = full plan
+ */
+function savePlanToFile(
+  task: string,
+  plan: string,
+  metadata: PlanMetadata,
+  options?: { planStatus?: string; existingFilepath?: string }
+): string {
+  const dailyDir = getDevlogDailyDir();
+
+  // Ensure daily directory exists
+  if (!fs.existsSync(dailyDir)) {
+    fs.mkdirSync(dailyDir, { recursive: true });
+  }
+
+  // Reuse existing filepath for incremental updates (same file, overwritten)
+  const filepath = options?.existingFilepath || path.join(dailyDir, generatePlanFilename(task));
+  const now = new Date();
+  const status = options?.planStatus || "pending";
+
+  // Build YAML frontmatter with plan-specific fields
+  const lines: string[] = [];
+  lines.push('---');
+  lines.push(`title: "Plan: ${task.replace(/"/g, '\\"')}"`);
+  lines.push(`date: "${now.toISOString()}"`);
+  lines.push(`status: "${status === "in-progress" ? "in-progress" : "pending"}"`);
+  lines.push(`type: "plan"`);
+  lines.push(`docType: "plan"`);
+  lines.push(`planStatus: "${status}"`);
+
+  // Plan phases
+  if (metadata.phases.length > 0) {
+    const uniquePhases = [...new Set(metadata.phases)];
+    lines.push(`planPhases: ${JSON.stringify(uniquePhases)}`);
+  }
+
+  // Tools used
+  if (metadata.tools_used.length > 0) {
+    const uniqueTools = [...new Set(metadata.tools_used)];
+    lines.push(`planToolsUsed: ${JSON.stringify(uniqueTools)}`);
+  }
+
+  // Quality scores (parsed from plan text if available)
+  if (metadata.scores && Object.keys(metadata.scores).length > 0) {
+    lines.push(`planScores:`);
+    for (const [key, value] of Object.entries(metadata.scores)) {
+      lines.push(`  ${key}: ${value}`);
+    }
+  }
+
+  lines.push('tags:');
+  lines.push('  type: plan');
+  lines.push(`  focus: "${task.replace(/"/g, '\\"').substring(0, 60)}"`);
+  lines.push('---');
+  lines.push('');
+  lines.push(`# Plan: ${task}`);
+  lines.push('');
+  lines.push(plan);
+
+  fs.writeFileSync(filepath, lines.join('\n'), "utf-8");
+  return filepath;
+}
+
+/**
+ * Build an incremental plan body from accumulated outputs so far.
+ * Shows which steps are done and their full output.
+ */
+function buildIncrementalPlan(
+  workflow: WorkflowStep[],
+  accumulated: Record<string, string>,
+  currentStep: number,
+  totalSteps: number
+): string {
+  const sections: string[] = [];
+
+  // Progress header
+  const pct = Math.round((currentStep / totalSteps) * 100);
+  sections.push(`Status: IN PROGRESS - ${currentStep}/${totalSteps} steps (${pct}%)\n`);
+
+  // Completed steps with full output
+  for (let i = 0; i < currentStep && i < workflow.length; i++) {
+    const step = workflow[i];
+    const content = accumulated[step.id];
+    if (content && content.length > 20) {
+      sections.push(`## ${step.phase}: ${step.description}\n\n${content}`);
+    } else {
+      sections.push(`## ${step.phase}: ${step.description}\n\n(awaiting output)`);
+    }
+  }
+
+  // Remaining steps (just titles)
+  if (currentStep < totalSteps) {
+    sections.push(`\n---\n\n## Remaining Steps\n`);
+    for (let i = currentStep; i < workflow.length; i++) {
+      const step = workflow[i];
+      sections.push(`- [ ] ${step.phase}: ${step.description}`);
+    }
+  }
+
+  return sections.join('\n');
+}
+
+/**
+ * Track the filepath for incremental plan saves across coordinator calls.
+ * Keyed by task slug so concurrent plans don't collide.
+ */
+const _planFilePaths: Record<string, string> = {};
+
+function getPlanFilePath(task: string): string | undefined {
+  const slug = task.toLowerCase().replace(/[^a-z0-9]+/g, "-").substring(0, 40);
+  return _planFilePaths[slug];
+}
+
+function setPlanFilePath(task: string, filepath: string): void {
+  const slug = task.toLowerCase().replace(/[^a-z0-9]+/g, "-").substring(0, 40);
+  _planFilePaths[slug] = filepath;
+}
+
+function clearPlanFilePath(task: string): void {
+  const slug = task.toLowerCase().replace(/[^a-z0-9]+/g, "-").substring(0, 40);
+  delete _planFilePaths[slug];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SERVER-SIDE OUTPUT ACCUMULATOR
+// ═══════════════════════════════════════════════════════════════════
+//
+// Claude summarizes tool outputs before passing them to prior.
+// We can't prevent that. So we accumulate on disk, keeping the
+// LONGEST version of each step output (first pass is usually full).
+
+const ACCUMULATOR_DIR = path.join(process.cwd(), ".plan-cache");
+
+function getAccumulatorPath(task: string): string {
+  const slug = task.toLowerCase().replace(/[^a-z0-9]+/g, "-").substring(0, 40);
+  return path.join(ACCUMULATOR_DIR, `${slug}.json`);
+}
+
+/**
+ * Read accumulated outputs from disk.
+ */
+function readAccumulator(task: string): Record<string, string> {
+  const filePath = getAccumulatorPath(task);
+  if (!fs.existsSync(filePath)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Save ONLY the just-completed step output to the accumulator.
+ * We know which step just ran from the step number + workflow.
+ * Only that key is fresh — everything else in prior is stale/summarized.
+ */
+function accumulateStepOutput(
+  task: string,
+  justCompletedStepId: string,
+  prior: Record<string, string>,
+): Record<string, string> {
+  if (!fs.existsSync(ACCUMULATOR_DIR)) {
+    fs.mkdirSync(ACCUMULATOR_DIR, { recursive: true });
+  }
+
+  const accumulated = readAccumulator(task);
+
+  // Only save the just-completed step — that's the only fresh full output
+  const freshValue = prior[justCompletedStepId];
+  if (freshValue && freshValue.length > (accumulated[justCompletedStepId]?.length || 0)) {
+    accumulated[justCompletedStepId] = freshValue;
+  }
+
+  fs.writeFileSync(getAccumulatorPath(task), JSON.stringify(accumulated), "utf-8");
+  return accumulated;
+}
+
+/**
+ * Clean up accumulator file after plan is complete.
+ */
+function cleanAccumulator(task: string): void {
+  const filePath = getAccumulatorPath(task);
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch { /* ignore */ }
+}
+
+/**
+ * Parse quality scores from plan text.
+ * Looks for patterns like "Code Quality: 8/10" or "Security: 7/10"
+ */
+function parseScoresFromPlan(planText: string): Record<string, number> {
+  const scores: Record<string, number> = {};
+  const scorePatterns: Array<[string, RegExp]> = [
+    ['codeQuality', /code\s*quality[:\s]*(\d+)\s*\/\s*10/i],
+    ['security', /security[:\s]*(\d+)\s*\/\s*10/i],
+    ['performance', /performance[:\s]*(\d+)\s*\/\s*10/i],
+    ['confidence', /confidence[:\s]*(\d+)\s*\/\s*10/i],
+    ['overall', /overall[:\s]*(\d+)\s*\/\s*10/i],
   ];
 
-  let match;
-  let index = 1;
-
-  // Try numbered patterns first
-  for (const pattern of stepPatterns.slice(0, 2)) {
-    pattern.lastIndex = 0;
-    while ((match = pattern.exec(planText)) !== null) {
-      const stepNum = parseInt(match[1], 10);
-      const desc = match[2].trim();
-      // Extract O() notation if present
-      const complexityMatch = desc.match(/O\([^)]+\)/i);
-      steps.push({
-        index: stepNum,
-        description: desc.substring(0, 200),  // Truncate long descriptions
-        complexity: complexityMatch?.[0],
-      });
-    }
-    if (steps.length > 0) break;
-  }
-
-  // Fallback to checklist format
-  if (steps.length === 0) {
-    const checklistPattern = stepPatterns[2];
-    checklistPattern.lastIndex = 0;
-    while ((match = checklistPattern.exec(planText)) !== null) {
-      steps.push({
-        index: index++,
-        description: match[1].trim().substring(0, 200),
-      });
+  for (const [key, pattern] of scorePatterns) {
+    const match = planText.match(pattern);
+    if (match) {
+      scores[key] = parseInt(match[1], 10);
     }
   }
 
-  // Assign checkpoints (50% and 100%)
-  if (steps.length > 0) {
-    const midpoint = Math.floor(steps.length / 2);
-    if (midpoint > 0 && steps[midpoint - 1]) {
-      steps[midpoint - 1].checkpoint = "50%";
-    }
-    steps[steps.length - 1].checkpoint = "100%";
-  }
-
-  return steps;
+  return scores;
 }
 
 /**
- * Generate devlog_plan_create hint from plan steps
+ * List recent plans from devlog daily directory (last N days)
  */
-function generatePlanCreateHint(task: string, steps: PlanStep[]): DevlogHint {
-  return {
-    tool: "devlog_plan_create",
-    params: {
-      title: `Plan: ${task.substring(0, 100)}`,
-      items: steps.map(s => s.description),
-      description: `Generated by planner_maker at ${new Date().toISOString()}`,
+function listRecentPlans(days: number = 7): { filename: string; path: string; created: Date }[] {
+  const dailyDir = getDevlogDailyDir();
+  if (!fs.existsSync(dailyDir)) {
+    return [];
+  }
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+
+  const files = fs.readdirSync(dailyDir)
+    .filter(f => f.endsWith(".md") && f.includes("-plan-"))
+    .map(f => {
+      const filepath = path.join(dailyDir, f);
+      const stats = fs.statSync(filepath);
+      return { filename: f, path: filepath, created: stats.mtime };
+    })
+    .filter(f => f.created >= cutoff)
+    .sort((a, b) => b.created.getTime() - a.created.getTime());
+
+  return files;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// WORKFLOW STEPS DEFINITION
+// ═══════════════════════════════════════════════════════════════════
+
+type WorkflowStep = {
+  id: string;
+  phase: string;
+  tool: string;
+  buildParams: (task: string, context: string, codeContext: string, answers: string, prior: Record<string, string>) => Record<string, any>;
+  description: string;
+  thinking: string;  // WHY this step, WHAT we expect, HOW it helps
+  devlogType?: "progress" | "note";
+  condition?: (task: string, context: string) => boolean;  // If set, step only runs when true
+  isSynthesis?: boolean;  // If true, gets more context (PRIOR_CONTEXT_LIMIT_SYNTHESIS)
+};
+
+/**
+ * Get context limit for a step. Synthesis steps get more context.
+ */
+function priorLimit(step?: WorkflowStep): number {
+  return step?.isSynthesis ? PRIOR_CONTEXT_LIMIT_SYNTHESIS : PRIOR_CONTEXT_LIMIT_INTERMEDIATE;
+}
+
+/**
+ * Get distilled prior context for a step.
+ * Extracts summary blocks when available, falls back to truncation.
+ */
+function distilledPrior(key: string, prior: Record<string, string>, step?: WorkflowStep): string {
+  const raw = prior[key];
+  if (!raw) return "N/A";
+  const limit = priorLimit(step);
+  return extractSummary(raw, limit);
+}
+
+/**
+ * Check if task involves UX/frontend work.
+ * Detects keywords OR explicit ux:true parameter (set via _uxOverride flag).
+ */
+let _uxOverride = false;  // Set by planner_maker when ux param is true
+function isUXTask(task: string, context: string): boolean {
+  if (_uxOverride) return true;
+  const text = `${task} ${context}`.toLowerCase();
+  return /\bux\b|\bui\b|user experience|frontend|front-end|usability|accessibility|design system/.test(text);
+}
+
+/**
+ * Check if task involves responsive/mobile work.
+ * Detects keywords OR explicit responsive:true parameter.
+ */
+let _responsiveOverride = false;
+function isResponsiveTask(task: string, context: string): boolean {
+  if (_responsiveOverride) return true;
+  const text = `${task} ${context}`.toLowerCase();
+  return /\bresponsive\b|mobile|tablet|breakpoint|media quer|touch target|viewport|screen size/.test(text);
+}
+
+/**
+ * Check if debate mode is enabled.
+ * Only triggered by explicit debate:true parameter.
+ */
+let _debateOverride = false;
+function isDebateEnabled(_task: string, _context: string): boolean {
+  return _debateOverride;
+}
+
+/**
+ * Build active workflow by filtering conditional steps
+ */
+function getActiveWorkflow(task: string, context: string): WorkflowStep[] {
+  return ALL_WORKFLOW_STEPS.filter(
+    step => !step.condition || step.condition(task, context)
+  );
+}
+
+// All workflow steps (conditional ones filtered at runtime)
+const ALL_WORKFLOW_STEPS: WorkflowStep[] = [
+  // Phase 1: Search (with current date for fresh results)
+  {
+    id: "search",
+    phase: "Search",
+    tool: "grok_search",
+    thinking: "Ground truth first. Before any AI analysis, we need real-world data - current best practices, existing solutions, recent changes. Grok searches to avoid hallucination and ensure our plan reflects reality, not outdated patterns.",
+    buildParams: (task, _context, _codeContext, answers) => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }); // e.g., "January 28, 2026"
+      const baseQuery = answers ? `${task}\n\nUser clarifications:\n${answers}` : task;
+      return {
+        query: `${baseQuery} best practices as of ${dateStr}`,
+        maxResults: 10,
+      };
     },
-    description: `Create devlog plan with ${steps.length} items`,
-  };
-}
+    description: "Search for relevant information + best practices",
+    devlogType: "progress",
+  },
 
-// Available prompt techniques for question generation
-// Maps to techniques in prompt-technique-tools.ts
-const QUESTION_TECHNIQUES = {
-  first_principles: "first_prin",    // WHY - fundamental truths, challenge assumptions
-  problem_decomposition: "decompose", // WHAT - break into sub-problems
-  comprehensive_investigation: "investigate", // WHO/WHAT/WHEN/WHERE/WHY/HOW
-  feasibility_analysis: "feasible",   // HOW - technical, economic, time
-  alternative_perspectives: "alt_view", // Multiple viewpoints
-} as const;
+  // Phase 2: Analysis (2 tools - WITH actual code review when provided)
+  {
+    id: "analyze_qwen",
+    phase: "Analysis",
+    tool: "qwen_coder",
+    thinking: "Code-focused analysis. Qwen excels at technical feasibility - understanding APIs, dependencies, data structures. When codeContext is provided, it reviews ACTUAL code to score quality and identify specific changes needed.",
+    buildParams: (task, context, codeContext, answers, prior) => ({
+      task: codeContext ? "review" : "analyze",
+      ...(codeContext ? { code: codeContext } : {}),
+      requirements: `Task: ${task}
+${context ? `Context: ${context}` : ""}
+${answers ? `User Clarifications:\n${answers}` : ""}
+${prior.search ? `Research:\n${extractSummary(prior.search, PRIOR_CONTEXT_LIMIT_INTERMEDIATE)}` : ""}
+${codeContext ? `
+ACTUAL CODE TO REVIEW:
+${truncateSmart(codeContext, CODE_CONTEXT_LIMIT)}
 
-/**
- * PLANNER_MAKER
- *
- * Phase 0: ASK RIGHT QUESTIONS (Gemini selects techniques)
- *   - first_principles: WHY questions
- *   - problem_decomposition: WHAT questions
- *   - feasibility_analysis: HOW questions
- *   - Returns questions to user if no answers provided
- *
- * Phase 1: Data Gathering (Smart Search)
- * Phase 2: Analysis (parallel)
- * Phase 3: Critique (GPT finds holes)
- * Phase 4: Judgment (qwen_reason → gemini final)
- */
-export const plannerMakerTool = {
-  name: "planner_maker",
-  description: `Multi-model council for creating implementation plans.
-FIRST asks clarifying questions using first-principles and UX thinking.
-Then uses smart search, parallel analysis, GPT critique, and dual-judge synthesis.
+Analyze this code and provide:
+1. Quality score /10 (readability, structure, patterns)
+2. Security score /10 (vulnerabilities, input validation)
+3. Performance score /10 (complexity, bottlenecks)
+4. Specific issues found with line references
+5. Implementation approach for the task` : "Analyze feasibility and provide implementation approach."}
+${DISTILL_SUFFIX}`,
+    }),
+    description: "Analyze code feasibility + quality (Qwen)",
+  },
+  {
+    id: "analyze_kimi",
+    phase: "Analysis",
+    tool: "kimi_thinking",
+    thinking: "Step-by-step reasoning. Kimi's strength is methodical thinking - breaking complex tasks into ordered steps. When code is provided, it traces execution paths and identifies the exact sequence of changes needed.",
+    buildParams: (task, context, codeContext, _answers, prior) => ({
+      problem: `Task: ${task}
+${context ? `Context: ${context}` : ""}
+${prior.search ? `Research:\n${extractSummary(prior.search, PRIOR_CONTEXT_LIMIT_INTERMEDIATE)}` : ""}
+${codeContext ? `
+ACTUAL CODE:
+${truncateSmart(codeContext, CODE_CONTEXT_LIMIT)}
 
-Put your TASK in 'task'. If you have answers to previous questions, put them in 'answers'.`,
-  parameters: z.object({
-    task: z.string().describe("The task/goal to create a plan for (REQUIRED)"),
-    context: z.string().optional().describe("Additional context, constraints, or requirements"),
-    answers: z.string().optional().describe("Answers to previously asked questions (skip question phase if provided)"),
-    searchDepth: z.enum(["quick", "standard", "deep"]).optional().default("standard")
-      .describe("Search depth: quick (grok only), standard (grok + 1), deep (all search tools)"),
-    skipQuestions: z.boolean().optional().default(false)
-      .describe("Skip the question-asking phase"),
-  }),
-  execute: async (args: {
-    task: string;
-    context?: string;
-    answers?: string;
-    searchDepth?: "quick" | "standard" | "deep";
-    skipQuestions?: boolean;
-  }, ctx: MCPContext) => {
-    const results: Record<string, string> = {};
-    const log = (msg: string) => ctx.log.info(msg);
-    const reportFn = ctx.reportProgress
-      ? async () => { await ctx.reportProgress!({ progress: 0, total: 100 }); }
-      : async () => {};
+Trace the execution flow and provide:
+1. Current code flow (what happens now)
+2. Required changes (step-by-step)
+3. Files to modify with specific line ranges
+4. Order of changes (dependencies)` : "Provide step-by-step reasoning for implementation."}
+${DISTILL_SUFFIX}`,
+      approach: "systematic",
+    }),
+    description: "Step-by-step reasoning (Kimi)",
+  },
 
-    // Dynamic imports
-    const { grokSearchTool } = await import("./grok-enhanced.js");
-    const { geminiAnalyzeTextTool, geminiSearchTool } = await import("./gemini-tools.js");
-    const { openaiSearchTool, openaiGpt5ReasonTool } = await import("./openai-tools.js");
-    const { qwenCoderTool, kimiThinkingTool, qwenReasonTool, minimaxCodeTool } = await import("./openrouter-tools.js");
-    const { executePromptTechniqueTool } = await import("./prompt-technique-tools.js");
+  // Phase 2b: Debate (CONDITIONAL - lightweight pro/con, main points only)
+  {
+    id: "debate_pro",
+    phase: "Debate",
+    tool: "grok_reason",
+    condition: isDebateEnabled,
+    thinking: "Advocate perspective. Grok argues FOR the proposed approach — strongest arguments, best-case outcomes, why this is the right direction. Provides the 'pro' side of a structured debate.",
+    buildParams: (task, context, _codeContext, _answers, prior) => ({
+      query: `You are the ADVOCATE. Argue FOR this implementation approach.
 
-    const mockCtx: MCPContext = {
-      log: { info: () => {}, error: () => {}, warn: () => {}, debug: () => {} },
-      reportProgress: async () => {}
-    };
+TASK: ${task}
+${context ? `CONTEXT: ${context}` : ""}
 
-    // ═══════════════════════════════════════════════════════════════════
-    // PHASE 0: ASK RIGHT QUESTIONS (First Principles + UX Thinking)
-    // Uses execute_prompt_technique for consistent prompt engineering
-    // ═══════════════════════════════════════════════════════════════════
-    if (!args.skipQuestions && !args.answers) {
-      log("🤔 Phase 0: Generating RIGHT questions using prompt techniques...");
+QWEN'S ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
+KIMI'S ANALYSIS: ${distilledPrior("analyze_kimi", prior) || "N/A"}
 
-      // Step 1: Gemini decides which techniques to use
-      const techniqueSelectionPrompt = `You are selecting prompt engineering techniques to ask the RIGHT questions before planning.
+Argue the TOP 5 reasons this approach is correct:
+1. Why this is the RIGHT architecture/design
+2. Why the complexity is justified
+3. Best-case outcomes and benefits
+4. How it handles scale and edge cases well
+5. Why alternatives would be worse
 
-TASK: ${args.task}
-${args.context ? `CONTEXT: ${args.context}` : ""}
+Be concise — main points only, 3-4 sentences each.
+${DISTILL_SUFFIX}`,
+      mode: "analytical",
+    }),
+    description: "Argue FOR the approach (Grok)",
+  },
+  {
+    id: "debate_con",
+    phase: "Debate",
+    tool: "gemini_analyze_text",
+    condition: isDebateEnabled,
+    thinking: "Devil's advocate perspective. Gemini argues AGAINST the proposed approach — weaknesses, risks, overlooked alternatives. Then synthesizes both sides into key tensions the final plan must address.",
+    buildParams: (task, context, _codeContext, _answers, prior) => ({
+      text: `You are the CRITIC. First argue AGAINST, then synthesize both sides.
 
-Available techniques (use the short alias):
-1. first_prin - Ask WHY questions, challenge assumptions, find fundamental truths
-2. decompose - Ask WHAT questions, break into sub-problems, identify dependencies
-3. investigate - Ask WHO/WHAT/WHEN/WHERE/WHY/HOW questions (5W1H)
-4. feasible - Ask HOW questions about technical/economic/time feasibility
-5. alt_view - Ask questions from 5 different viewpoints
+TASK: ${task}
+${context ? `CONTEXT: ${context}` : ""}
 
-Select 2-3 MOST RELEVANT technique aliases for this task. Return ONLY the aliases, comma-separated.
-Example: "first_prin, decompose"`;
+PRO ARGUMENTS (Grok):
+${distilledPrior("debate_pro", prior) || "N/A"}
 
-      const techniqueSelection = await withHeartbeat(
-        () => geminiAnalyzeTextTool.execute({
-          text: techniqueSelectionPrompt,
-          type: "general"
-        }, mockCtx),
-        reportFn
-      );
-      results.selected_techniques = String(techniqueSelection);
+QWEN'S ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
 
-      // Step 2: Apply selected techniques using execute_prompt_technique
-      const questionPrompts: string[] = [];
+PART 1 - AGAINST (TOP 5 risks):
+1. Architecture/design weaknesses
+2. Hidden complexity or tech debt
+3. Scalability/performance risks
+4. Security or reliability concerns
+5. Better alternatives not considered
 
-      // Parse selected techniques
-      const validAliases = Object.values(QUESTION_TECHNIQUES);
-      const selectedAliases = String(techniqueSelection)
-        .toLowerCase()
-        .replace(/[^a-z_,\s]/g, '')
-        .split(/[,\s]+/)
-        .filter(t => validAliases.includes(t as any));
+PART 2 - SYNTHESIS (3-5 key tensions):
+For each tension, state: what PRO says, what CON says, and what the PLAN must address.
 
-      // Fallback if parsing fails
-      const techniquesToUse = selectedAliases.length > 0
-        ? selectedAliases
-        : ["first_prin", "decompose"];
+Be concise — main points only, no fluff.
+${DISTILL_SUFFIX}`,
+      type: "general",
+    }),
+    description: "Argue AGAINST + synthesize tensions (Gemini)",
+    devlogType: "progress",
+  },
 
-      for (const technique of techniquesToUse) {
-        // Use the prompt technique tool to get enhanced prompts
-        const enhancedResult = await withHeartbeat(
-          () => executePromptTechniqueTool.execute({
-            technique: technique,
-            tool: "gemini_analyze_text",  // Use Gemini for technique execution
-            query: args.task
-          }, mockCtx),
-          reportFn
-        );
-        questionPrompts.push(`### ${technique.toUpperCase()}\n${String(enhancedResult).substring(0, 1500)}`);
-      }
+  // Phase 3: Critique
+  {
+    id: "critique",
+    phase: "Critique",
+    tool: "openai_reason",
+    thinking: "Adversarial review. GPT plays devil's advocate - actively looking for holes, gaps, and failure modes. When code is provided, it hunts for security vulnerabilities and performance issues in the actual implementation.",
+    buildParams: (task, _context, codeContext, answers, prior) => ({
+      query: `Review this plan for holes, gaps, and weaknesses:
 
-      // Step 3: Qwen synthesizes into clear, user-facing questions
-      const questionSynthesisPrompt = `Based on these technique-enhanced analyses, generate 5-7 SPECIFIC questions to ask the user BEFORE creating an implementation plan.
+TASK: ${task}
+${answers ? `USER CLARIFICATIONS:\n${answers}` : ""}
 
-TASK: ${args.task}
-
-TECHNIQUE OUTPUTS:
-${questionPrompts.join('\n\n')}
-
-Generate questions that:
-1. Challenge assumptions (WHY is this needed? WHY this approach?)
-2. Clarify scope (WHAT exactly? WHAT's out of scope?)
-3. Identify constraints (WHAT limits? WHAT resources?)
-4. Understand users (WHO will use this? WHO maintains it?)
-5. Define success (HOW will we know it works?)
-
-Format as numbered list. Be SPECIFIC to this task, not generic.
-Each question should reveal something that would change the implementation.`;
-
-      const synthesizedQuestions = await withHeartbeat(
-        () => qwenReasonTool.execute({
-          problem: questionSynthesisPrompt,
-          approach: "logical",
-        }, mockCtx),
-        reportFn
-      );
-
-      // Return questions to user
-      return `# 🤔 Before I Create Your Plan...
-
-## Task Understanding
-${args.task}
-
-## Techniques Applied
-${techniquesToUse.join(', ')}
-
-## Questions to Consider
-
-${synthesizedQuestions}
-
----
-
-**To continue:** Call \`planner_maker\` again with your \`answers\` to these questions.
-
-Example:
-\`\`\`
-planner_maker({
-  task: "${args.task}",
-  answers: "1. [your answer]\\n2. [your answer]\\n..."
-})
-\`\`\`
-`;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // PHASE 1: Data Gathering (Smart Search)
-    // ═══════════════════════════════════════════════════════════════════
-    log("📡 Phase 1: Data Gathering...");
-
-    // Include answers in search context
-    const searchContext = args.answers
-      ? `${args.task}\n\nUser clarifications:\n${args.answers}`
-      : args.task;
-
-    // Grok always searches
-    const grokResult = await withHeartbeat(
-      () => grokSearchTool.execute({ query: searchContext, maxResults: 5 }, mockCtx),
-      reportFn
-    );
-    results.grok_search = String(grokResult);
-
-    if (args.searchDepth !== "quick") {
-      // Standard: add one more search
-      const secondarySearch = Math.random() > 0.5 ? "openai" : "gemini";
-
-      if (secondarySearch === "openai") {
-        const openaiResult = await withHeartbeat(
-          () => openaiSearchTool.execute({ query: searchContext }, mockCtx),
-          reportFn
-        );
-        results.openai_search = String(openaiResult);
-      } else {
-        const geminiResult = await withHeartbeat(
-          () => geminiSearchTool.execute({ query: searchContext }, mockCtx),
-          reportFn
-        );
-        results.gemini_search = String(geminiResult);
-      }
-
-      // Deep: use all + check for discrepancies
-      if (args.searchDepth === "deep") {
-        if (!results.openai_search) {
-          const r = await withHeartbeat(
-            () => openaiSearchTool.execute({ query: searchContext }, mockCtx),
-            reportFn
-          );
-          results.openai_search = String(r);
-        }
-        if (!results.gemini_search) {
-          const r = await withHeartbeat(
-            () => geminiSearchTool.execute({ query: searchContext }, mockCtx),
-            reportFn
-          );
-          results.gemini_search = String(r);
-        }
-
-        // Check for discrepancies
-        const discrepancyCheck = await withHeartbeat(
-          () => geminiAnalyzeTextTool.execute({
-            text: `Compare these search results for discrepancies:
-
-GROK: ${results.grok_search?.substring(0, 1500)}
-OPENAI: ${results.openai_search?.substring(0, 1500)}
-GEMINI: ${results.gemini_search?.substring(0, 1500)}
-
-Are there significant discrepancies? Which source is most reliable?`,
-            type: "general"
-          }, mockCtx),
-          reportFn
-        );
-        results.search_reconciliation = String(discrepancyCheck);
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // PHASE 2: Analysis (parallel conceptually)
-    // ═══════════════════════════════════════════════════════════════════
-    log("🔬 Phase 2: Analysis...");
-
-    const analysisPrompt = `Task: ${args.task}
-${args.context ? `Context: ${args.context}` : ""}
-${args.answers ? `User Clarifications:\n${args.answers}` : ""}
-${results.grok_search ? `Research: ${results.grok_search.substring(0, 2000)}` : ""}
-
-Analyze feasibility and provide implementation approach.`;
-
-    // Qwen Coder - code feasibility
-    const qwenResult = await withHeartbeat(
-      () => qwenCoderTool.execute({
-        task: "analyze",
-        requirements: analysisPrompt,
-      }, mockCtx),
-      reportFn
-    );
-    results.qwen_analysis = String(qwenResult);
-
-    // MiniMax - implementation check
-    const minimaxResult = await withHeartbeat(
-      () => minimaxCodeTool.execute({
-        task: "review",
-        requirements: analysisPrompt,
-      }, mockCtx),
-      reportFn
-    );
-    results.minimax_analysis = String(minimaxResult);
-
-    // Kimi - step-by-step reasoning
-    const kimiResult = await withHeartbeat(
-      () => kimiThinkingTool.execute({
-        problem: analysisPrompt,
-        approach: "systematic",
-      }, mockCtx),
-      reportFn
-    );
-    results.kimi_analysis = String(kimiResult);
-
-    // ═══════════════════════════════════════════════════════════════════
-    // PHASE 3: Critique (GPT finds holes)
-    // ═══════════════════════════════════════════════════════════════════
-    log("🔍 Phase 3: Critique...");
-
-    const critiquePrompt = `Review this plan for holes, gaps, and weaknesses:
-
-TASK: ${args.task}
-${args.answers ? `USER CLARIFICATIONS:\n${args.answers}` : ""}
-
-QWEN ANALYSIS: ${results.qwen_analysis?.substring(0, 1500)}
-MINIMAX ANALYSIS: ${results.minimax_analysis?.substring(0, 1500)}
-KIMI ANALYSIS: ${results.kimi_analysis?.substring(0, 1500)}
+QWEN ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
+KIMI ANALYSIS: ${distilledPrior("analyze_kimi", prior) || "N/A"}
+${prior.debate_con ? `
+DEBATE SYNTHESIS (key tensions to address):
+${distilledPrior("debate_con", prior)}` : ""}
+${codeContext ? `
+ACTUAL CODE BEING MODIFIED:
+${truncateSmart(codeContext, CODE_CONTEXT_LIMIT)}` : ""}
 
 Find:
 1. Missing considerations
 2. Potential failure points
-3. Security concerns
-4. Performance issues (especially anything > O(1))
-5. Edge cases not covered`;
+3. Security vulnerabilities${codeContext ? " (check actual code)" : ""}
+4. Performance issues${codeContext ? " (check O-complexity)" : ""}
+5. Edge cases not covered
+${prior.debate_con ? "6. Unresolved tensions from the debate" : ""}
+7. Score the proposed approach /10
+${DISTILL_SUFFIX}`,
+      mode: "analytical",
+    }),
+    description: "Find holes and gaps (GPT)",
+    devlogType: "progress",
+  },
 
-    const gptResult = await withHeartbeat(
-      () => openaiGpt5ReasonTool.execute({
-        query: critiquePrompt,
-        mode: "analytical",
-      }, mockCtx),
-      reportFn
-    );
-    results.gpt_critique = String(gptResult);
+  // Phase 3b: UX Analysis (CONDITIONAL - Kimi systematic breakdown)
+  {
+    id: "ux_analyze",
+    phase: "UX Review",
+    tool: "kimi_thinking",
+    condition: isUXTask,
+    thinking: "Kimi traces UX flows systematically: what the user sees, clicks, waits for. Methodical step-by-step analysis catches interaction gaps that code reviewers miss — loading states, error recovery, empty states, edge cases.",
+    buildParams: (task, context, codeContext, _answers, prior) => ({
+      problem: `UX/FRONTEND ANALYSIS for this implementation:
 
-    // ═══════════════════════════════════════════════════════════════════
-    // PHASE 4: Judgment (qwen_reason → gemini final)
-    // ═══════════════════════════════════════════════════════════════════
-    log("⚖️ Phase 4: Judgment...");
+TASK: ${task}
+${context ? `CONTEXT: ${context}` : ""}
 
-    const qwenJudgePrompt = `Synthesize a coherent implementation plan:
+TECHNICAL ANALYSES:
+- Code Review: ${distilledPrior("analyze_qwen", prior) || "N/A"}
+- Critique: ${distilledPrior("critique", prior) || "N/A"}
+${codeContext ? `
+ACTUAL CODE:
+${truncateSmart(codeContext, CODE_CONTEXT_LIMIT)}` : ""}
 
-TASK: ${args.task}
-${args.answers ? `USER REQUIREMENTS:\n${args.answers}` : ""}
+Trace the USER JOURNEY step by step:
+1. What does the user see first? (initial state)
+2. What can they interact with? (affordances)
+3. What happens on each interaction? (state transitions)
+4. What if something goes wrong? (error states)
+5. What if there's no data? (empty states)
+6. What if there's too much data? (overflow/pagination)
+7. What about keyboard-only and screen reader users? (accessibility)
+
+For each step, identify: friction points, missing states, accessibility gaps.
+${DISTILL_SUFFIX}`,
+      approach: "systematic",
+      maxSteps: 4,
+    }),
+    description: "UX flow analysis (Kimi)",
+  },
+
+  // Phase 3c: UX Judgment (CONDITIONAL - Gemini final UX verdict)
+  {
+    id: "ux_judge",
+    phase: "UX Review",
+    tool: "gemini_analyze_text",
+    condition: isUXTask,
+    thinking: "Gemini synthesizes Kimi's UX flow analysis into scored criteria and actionable requirements. Produces the structured UX assessment that feeds into the final plan — scores, WCAG compliance, specific recommendations.",
+    buildParams: (task, context, codeContext, _answers, prior) => ({
+      text: `UX FINAL JUDGMENT — synthesize into scored assessment:
+
+TASK: ${task}
+${context ? `CONTEXT: ${context}` : ""}
+
+KIMI'S UX FLOW ANALYSIS:
+${distilledPrior("ux_analyze", prior) || "N/A"}
+
+GPT'S TECHNICAL CRITIQUE:
+${distilledPrior("critique", prior) || "N/A"}
+
+Score each UX dimension /10 with specific findings:
+1. USABILITY: Intuitiveness, learnability, friction points
+2. ACCESSIBILITY: WCAG 2.1 AA compliance, keyboard nav, screen readers, contrast
+3. INTERACTION DESIGN: States (loading, error, empty, success), transitions, feedback
+4. CONSISTENCY: Design system alignment, pattern reuse
+5. RESPONSIVENESS: Mobile/tablet/desktop breakpoints
+6. PERFORMANCE UX: Perceived speed, skeleton screens, optimistic updates
+7. EDGE CASES: 0 items, 1000+ items, long text, RTL, offline
+
+Provide:
+- UX SCORE: X/10 (weighted average)
+- TOP 3 UX REQUIREMENTS that MUST be in the implementation plan
+- BLOCKERS: Any UX issues that would prevent shipping
+${DISTILL_SUFFIX}`,
+      type: "general",
+    }),
+    description: "UX scoring + requirements (Gemini)",
+    devlogType: "progress",
+  },
+
+  // Phase 3d: Responsiveness Assessment (CONDITIONAL - only for responsive/mobile tasks)
+  {
+    id: "responsive_judge",
+    phase: "Responsive Review",
+    tool: "kimi_thinking",
+    condition: isResponsiveTask,
+    thinking: "Responsive design review. When the task involves mobile/responsive work, we need dedicated breakpoint analysis, touch target validation, and layout reflow verification. Kimi traces each breakpoint systematically.",
+    buildParams: (task, context, codeContext, _answers, prior) => ({
+      problem: `RESPONSIVE DESIGN ASSESSMENT:
+
+TASK: ${task}
+${context ? `CONTEXT: ${context}` : ""}
+${codeContext ? `
+CODE:
+${truncateSmart(codeContext, CODE_CONTEXT_LIMIT)}` : ""}
+${prior.ux_judge ? `UX FINDINGS:\n${truncateSmart(prior.ux_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
+
+Systematically evaluate for each breakpoint:
+
+MOBILE (≤640px):
+1. Layout: Single column? Content stacking order?
+2. Touch targets: All interactive elements ≥44x44px?
+3. Typography: Base font ≥16px? Line length ≤45 chars?
+4. Navigation: Collapsed? Hamburger/bottom nav?
+5. Forms: Appropriate input types? Autofill support?
+
+TABLET (641-1024px):
+1. Layout: Two-column? Sidebar behavior?
+2. Orientation: Portrait vs landscape handling?
+3. Touch + cursor: Hover states for trackpad users?
+
+DESKTOP (>1024px):
+1. Max width: Content doesn't stretch beyond readable width?
+2. Whitespace: Appropriate spacing at large viewports?
+3. Multi-panel: Side panels, split views?
+
+CROSS-CUTTING:
+1. Images: srcset/responsive images? Aspect ratio preservation?
+2. Overflow: Horizontal scroll prevention? Text truncation?
+3. Animation: Reduced motion preference (prefers-reduced-motion)?
+4. Performance: Layout shift (CLS)? Largest contentful paint (LCP)?
+
+Score each breakpoint /10 and list specific issues.
+${DISTILL_SUFFIX}`,
+      approach: "systematic",
+      maxSteps: 4,
+    }),
+    description: "Responsive design assessment (Kimi)",
+    devlogType: "progress",
+  },
+
+  // Phase 4: Judgment (2 tools)
+  {
+    id: "judge_draft",
+    phase: "Judgment",
+    tool: "qwen_reason",
+    thinking: "First synthesis pass. Now we merge: Qwen's feasibility + Kimi's steps + GPT's critiques. Creates a coherent draft that addresses all findings and includes quality scores.",
+    buildParams: (task, _context, codeContext, answers, prior) => ({
+      problem: `Synthesize a coherent implementation plan:
+
+TASK: ${task}
+${answers ? `USER REQUIREMENTS:\n${answers}` : ""}
 
 ANALYSES:
-- Qwen: ${results.qwen_analysis?.substring(0, 1000)}
-- MiniMax: ${results.minimax_analysis?.substring(0, 1000)}
-- Kimi: ${results.kimi_analysis?.substring(0, 1000)}
+- Qwen: ${distilledPrior("analyze_qwen", prior) || "N/A"}
+- Kimi: ${distilledPrior("analyze_kimi", prior) || "N/A"}
 
 CRITIQUE (holes found):
-${results.gpt_critique?.substring(0, 1000)}
+${truncateSmart(prior.critique, PRIOR_CONTEXT_LIMIT_SYNTHESIS) || "N/A"}
+${prior.debate_con ? `\nDEBATE SYNTHESIS (key tensions):\n${distilledPrior("debate_con", prior)}` : ""}
+${prior.ux_judge ? `\nUX ASSESSMENT:\n${truncateSmart(prior.ux_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
+${prior.responsive_judge ? `\nRESPONSIVE ASSESSMENT:\n${truncateSmart(prior.responsive_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
+${codeContext ? "\nNote: Analysis was performed on actual code." : ""}
 
-Create a structured plan addressing all concerns.`;
+Create a structured plan addressing all concerns.
+${prior.debate_con ? "Explicitly resolve each tension from the debate." : ""}
+${prior.ux_judge ? "Include UX requirements and accessibility criteria in the plan." : ""}
+${prior.responsive_judge ? "Include responsive design requirements and breakpoint specifications." : ""}
+Include overall confidence score /10.`,
+      approach: "logical",
+    }),
+    description: "Draft plan synthesis (Qwen)",
+    isSynthesis: true,
+  },
+  {
+    id: "judge_final",
+    phase: "Judgment",
+    tool: "gemini_analyze_text",
+    thinking: "Final arbiter. Gemini sees everything - all analyses, the critique, the draft plan - and makes the final call. Creates the actionable plan with quality scores and specific file/line references.",
+    buildParams: (task, context, codeContext, answers, prior) => ({
+      text: `Create the FINAL implementation plan.
 
-    const qwenJudgeResult = await withHeartbeat(
-      () => qwenReasonTool.execute({
-        problem: qwenJudgePrompt,
-        approach: "logical",
-      }, mockCtx),
-      reportFn
-    );
-    results.qwen_judgment = String(qwenJudgeResult);
-
-    // Gemini - final judge
-    const finalPrompt = `Create the FINAL implementation plan.
-
-TASK: ${args.task}
-${args.context ? `CONTEXT: ${args.context}` : ""}
-${args.answers ? `USER REQUIREMENTS:\n${args.answers}` : ""}
+TASK: ${task}
+${context ? `CONTEXT: ${context}` : ""}
+${answers ? `USER REQUIREMENTS:\n${answers}` : ""}
 
 QWEN'S DRAFT PLAN:
-${results.qwen_judgment}
+${prior.judge_draft || "N/A"}
 
 GPT'S CRITIQUE:
-${results.gpt_critique?.substring(0, 800)}
+${truncateSmart(prior.critique, PRIOR_CONTEXT_LIMIT_SYNTHESIS) || "N/A"}
+${prior.ux_judge ? `\nUX ASSESSMENT:\n${truncateSmart(prior.ux_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
+${prior.responsive_judge ? `\nRESPONSIVE ASSESSMENT:\n${truncateSmart(prior.responsive_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
+${codeContext ? "\nNote: All analysis was performed on actual code provided." : ""}
 
 Create a final, actionable plan with:
 1. Clear numbered steps with success criteria
 2. Complexity estimates (O notation)
 3. Potential blockers and mitigations
-4. Checkpoints at 50% and 100%`;
+4. Checkpoints at 50% and 100%
+5. **QUALITY ASSESSMENT:**
+   - Code Quality: X/10
+   - Security: X/10
+   - Performance: X/10
+${prior.ux_judge ? `   - UX/Accessibility: X/10\n` : ""}${prior.responsive_judge ? `   - Responsiveness: X/10\n` : ""}   - Confidence: X/10
+   - Overall: X/10`,
+      type: "general",
+    }),
+    description: "Final plan synthesis (Gemini)",
+    devlogType: "progress",
+    isSynthesis: true,
+  },
+];
 
-    const finalPlan = await withHeartbeat(
-      () => geminiAnalyzeTextTool.execute({
-        text: finalPrompt,
-        type: "general"
-      }, mockCtx),
-      reportFn
-    );
+// ═══════════════════════════════════════════════════════════════════
+// PLANNER_MAKER - Coordinator Pattern
+// ═══════════════════════════════════════════════════════════════════
 
-    return `# Implementation Plan
+export const plannerMakerTool = {
+  name: "planner_maker",
+  description: `Multi-model council for creating implementation plans.
 
-## Task
-${args.task}
+COORDINATOR PATTERN - Returns ONE tool to execute at a time:
+1. Call with mode: "start" to begin
+2. Execute the returned tool
+3. Call with mode: "continue" and prior results
+4. Repeat until isComplete: true
 
-${args.answers ? `## User Requirements\n${args.answers}\n` : ""}
+Example:
+  planner_maker({ task: "Add auth", mode: "start" })
+  → { nextTool: { tool: "grok_search", params: {...} }, step: 1 }
 
-## Final Plan (Gemini Synthesis)
-${finalPlan}
+  [Execute grok_search]
 
----
+  planner_maker({ task: "Add auth", mode: "continue", step: 2, prior: { search: "..." } })
+  → { nextTool: { tool: "qwen_coder", params: {...} }, step: 2 }
 
-## Supporting Analysis
+  ... continue until isComplete: true`,
 
-### Qwen Judgment
-${results.qwen_judgment?.substring(0, 1500)}
-
-### GPT Critique
-${results.gpt_critique?.substring(0, 1000)}
-
-### Search Summary
-${results.search_reconciliation || results.grok_search?.substring(0, 500) || "No search performed"}
-
----
-
-## Next Steps
-Use \`planner_runner\` with this plan to track implementation:
-- checkpoint: "start" - Begin implementation
-- checkpoint: "50%" - Mid-point verification
-- checkpoint: "100%" - Final review
-`;
-  }
-};
-
-
-/**
- * PLANNER_RUNNER
- *
- * Execution: minimax_agent + kimi (subagents)
- *
- * Continuous checks (qwen_algo + qwen_coder):
- *   - Following plan?
- *   - Security vulnerabilities?
- *   - Memory leaks?
- *   - Complexity > O(1)? Ask optimization question
- *
- * 50% Checkpoint: qwen_reason → devlog
- * 100% Checkpoint: qwen_reason + qwen_coder (/10) + gemini → devlog
- */
-export const plannerRunnerTool = {
-  name: "planner_runner",
-  description: `Execute implementation plans with verification checkpoints.
-Checks for security, memory leaks, and O(1) optimization opportunities.
-Logs progress to devlog at 50% and 100%.`,
   parameters: z.object({
-    plan: z.string().describe("The implementation plan to execute (from planner_maker)"),
-    code: z.string().optional().describe("Current code state to verify against plan"),
-    checkpoint: z.enum(["start", "50%", "100%"]).optional().default("start")
-      .describe("Which checkpoint to run"),
-    autoOptimize: z.boolean().optional().default(true)
-      .describe("Ask about O(1) optimization opportunities"),
+    task: z.string().describe("The task/goal to create a plan for"),
+    context: z.string().optional().describe("Additional context"),
+    codeContext: z.string().optional().describe("Actual code from relevant files for analysis (read files and paste here)"),
+    answers: z.string().optional().describe("Answers to clarifying questions"),
+    mode: z.enum(["start", "continue"]).default("start")
+      .describe("start: begin new plan, continue: next step"),
+    step: z.number().optional().describe("Current step number (for continue mode)"),
+    prior: z.record(z.string()).optional()
+      .describe("Results from previous steps: { search: '...', analyze_qwen: '...' }"),
+    devlog: z.boolean().optional().default(true)
+      .describe("Include devlog hints for sync"),
+    ux: z.boolean().optional().default(false)
+      .describe("Enable UX/accessibility review steps (auto-detected from task keywords, or set true to force)"),
+    responsive: z.boolean().optional().default(false)
+      .describe("Enable responsive design review (auto-detected from keywords, or set true to force)"),
+    debate: z.boolean().optional().default(false)
+      .describe("Enable lightweight pro/con debate between Analysis and Critique (adds ~2 steps, main points only)"),
+    issueFile: z.string().optional()
+      .describe("Path to an issue/spec markdown file. Server reads it and merges into context. Supports .md, .txt, .markdown files."),
   }),
+
   execute: async (args: {
-    plan: string;
-    code?: string;
-    checkpoint?: "start" | "50%" | "100%";
-    autoOptimize?: boolean;
-  }, ctx: MCPContext) => {
-    const results: Record<string, string> = {};
-    const log = (msg: string) => ctx.log.info(msg);
-    const reportFn = ctx.reportProgress
-      ? async () => { await ctx.reportProgress!({ progress: 0, total: 100 }); }
-      : async () => {};
+    task: string;
+    context?: string;
+    codeContext?: string;
+    answers?: string;
+    mode?: "start" | "continue";
+    step?: number;
+    prior?: Record<string, string>;
+    devlog?: boolean;
+    ux?: boolean;
+    responsive?: boolean;
+    debate?: boolean;
+    issueFile?: string;
+  }, ctx: MCPContext): Promise<string> => {
+    const { task, codeContext = "", answers = "", mode = "start", devlog = true } = args;
+    const prior = args.prior || {};
 
-    // Dynamic imports
-    const { geminiAnalyzeTextTool } = await import("./gemini-tools.js");
-    const { qwenCoderTool, qwenAlgoTool, qwenReasonTool, minimaxAgentTool } = await import("./openrouter-tools.js");
-
-    const mockCtx: MCPContext = {
-      log: { info: () => {}, error: () => {}, warn: () => {}, debug: () => {} },
-      reportProgress: async () => {}
-    };
-
-    // ═══════════════════════════════════════════════════════════════════
-    // CONTINUOUS CHECKS (run at every checkpoint)
-    // ═══════════════════════════════════════════════════════════════════
-    log("🔄 Running continuous checks...");
-
-    if (args.code) {
-      // Check 1: Following plan?
-      const alignmentResult = await withHeartbeat(
-        () => minimaxAgentTool.execute({
-          task: `Compare this code against the plan. Is it following the plan correctly?
-
-PLAN:
-${args.plan.substring(0, 2000)}
-
-CODE:
-${args.code!.substring(0, 3000)}
-
-Answer: Following plan? Any deviations?`,
-          outputFormat: "execute",
-          steps: 3,
-        }, mockCtx),
-        reportFn
-      );
-      results.plan_alignment = String(alignmentResult);
-
-      // Check 2: Security + Memory + Complexity
-      const securityResult = await withHeartbeat(
-        () => qwenCoderTool.execute({
-          task: "analyze",
-          code: args.code,
-          requirements: `Analyze for:
-1. SECURITY VULNERABILITIES (injection, XSS, auth issues)
-2. MEMORY LEAKS (unclosed resources, circular refs, unbounded growth)
-3. COMPLEXITY ANALYSIS (identify any O(n), O(n²), etc. patterns)
-
-For each O(n) or worse pattern found, ask: "Can this be optimized to O(1)?"`,
-        }, mockCtx),
-        reportFn
-      );
-      results.security_memory_check = String(securityResult);
-
-      // Check 3: Algorithm optimization (qwen_algo)
-      if (args.autoOptimize && args.code) {
-        const codeToOptimize = args.code; // Capture for closure
-        const algoResult = await withHeartbeat(
-          () => qwenAlgoTool.execute({
-            problem: codeToOptimize,
-            focus: "optimize",
-            context: "Find opportunities to optimize to O(1) where possible",
-          }, mockCtx),
-          reportFn
-        );
-        results.algo_optimization = String(algoResult);
+    // Read issue file and merge into context
+    let context = args.context || "";
+    if (args.issueFile) {
+      try {
+        const filePath = path.isAbsolute(args.issueFile)
+          ? args.issueFile
+          : path.join(process.cwd(), args.issueFile);
+        if (fs.existsSync(filePath)) {
+          const issueContent = fs.readFileSync(filePath, "utf-8");
+          context = context
+            ? `${context}\n\n--- ISSUE FILE: ${args.issueFile} ---\n${issueContent}`
+            : `--- ISSUE FILE: ${args.issueFile} ---\n${issueContent}`;
+          ctx.log.info(`Loaded issue file: ${filePath} (${issueContent.length} chars)`);
+        } else {
+          ctx.log.warn(`Issue file not found: ${filePath}`);
+          context = context
+            ? `${context}\n\n[Warning: Issue file not found: ${args.issueFile}]`
+            : `[Warning: Issue file not found: ${args.issueFile}]`;
+        }
+      } catch (err) {
+        ctx.log.warn(`Failed to read issue file: ${args.issueFile}`, { error: String(err) });
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // CHECKPOINT-SPECIFIC LOGIC
-    // ═══════════════════════════════════════════════════════════════════
+    // Set overrides if explicitly requested
+    _uxOverride = args.ux === true;
+    _responsiveOverride = args.responsive === true;
+    _debateOverride = args.debate === true;
 
-    if (args.checkpoint === "50%") {
-      log("📍 50% Checkpoint: qwen_reason verification...");
+    // Build active workflow (filters conditional steps like UX/responsive/debate)
+    const workflow = getActiveWorkflow(task, context);
 
-      const midResult = await withHeartbeat(
-        () => qwenReasonTool.execute({
-          problem: `50% Progress Check:
+    // Reset overrides after building workflow
+    _uxOverride = false;
+    _responsiveOverride = false;
+    _debateOverride = false;
 
-PLAN: ${args.plan.substring(0, 1500)}
+    // Determine current step
+    const currentStep = mode === "start" ? 0 : (args.step ?? 1) - 1;
+    const totalSteps = workflow.length;
 
-CURRENT STATE:
-- Plan Alignment: ${results.plan_alignment?.substring(0, 500)}
-- Security/Memory: ${results.security_memory_check?.substring(0, 500)}
-
-Is the implementation on track? Any course corrections needed?`,
-          approach: "logical",
-        }, mockCtx),
-        reportFn
-      );
-      results.midpoint_verification = String(midResult);
-
-      // Devlog entry
-      results.devlog_entry = `## 50% Checkpoint - ${new Date().toISOString()}
-### Status: In Progress
-### Plan Alignment: ${results.plan_alignment?.substring(0, 200)}
-### Verification: ${results.midpoint_verification?.substring(0, 300)}`;
+    // On START: create the plan file immediately (empty, in-progress)
+    if (mode === "start" && devlog) {
+      try {
+        const initialBody = buildIncrementalPlan(workflow, {}, 0, totalSteps);
+        const filepath = savePlanToFile(task, initialBody, {
+          phases: workflow.map(s => s.phase),
+          tools_used: [],
+        }, { planStatus: "in-progress" });
+        setPlanFilePath(task, filepath);
+        ctx.log.info(`Plan file created: ${filepath}`);
+      } catch (err) {
+        ctx.log.warn("Failed to create initial plan file", { error: String(err) });
+      }
     }
 
-    if (args.checkpoint === "100%") {
-      log("🏁 100% Checkpoint: Final verification...");
+    // On continue: save the JUST-COMPLETED step output to disk
+    // The previous step (currentStep - 1) is the one that just finished
+    let accumulated: Record<string, string> = {};
+    if (mode === "continue" && currentStep > 0) {
+      const justCompletedStep = workflow[currentStep - 1];
+      if (justCompletedStep) {
+        accumulated = accumulateStepOutput(task, justCompletedStep.id, prior);
+        ctx.log.info(`Accumulated ${justCompletedStep.id}: ${(prior[justCompletedStep.id] || "").length} chars (disk: ${(accumulated[justCompletedStep.id] || "").length} chars)`);
 
-      // qwen_reason check
-      const finalQwenResult = await withHeartbeat(
-        () => qwenReasonTool.execute({
-          problem: `Final Verification:
-
-PLAN: ${args.plan.substring(0, 1500)}
-
-IMPLEMENTATION:
-${args.code?.substring(0, 2000) || "No code provided"}
-
-Is the plan fully implemented? Any gaps?`,
-          approach: "logical",
-        }, mockCtx),
-        reportFn
-      );
-      results.final_qwen_check = String(finalQwenResult);
-
-      // qwen_coder score (/10)
-      const scoreResult = await withHeartbeat(
-        () => qwenCoderTool.execute({
-          task: "review",
-          code: args.code || "// No code provided",
-          requirements: `Score this implementation out of 10:
-- Code quality
-- Plan adherence
-- Security
-- Performance
-- Maintainability
-
-Give a score like "8/10" with brief justification.`,
-        }, mockCtx),
-        reportFn
-      );
-      results.qwen_score = String(scoreResult);
-
-      // Gemini final judge
-      const geminiResult = await withHeartbeat(
-        () => geminiAnalyzeTextTool.execute({
-          text: `Final Implementation Review:
-
-PLAN: ${args.plan.substring(0, 1000)}
-
-CODE: ${args.code?.substring(0, 1500) || "No code provided"}
-
-QWEN SCORE: ${results.qwen_score?.substring(0, 500)}
-
-SECURITY CHECK: ${results.security_memory_check?.substring(0, 500)}
-
-Provide final verdict: APPROVED or NEEDS_REVISION with specific feedback.`,
-          type: "general"
-        }, mockCtx),
-        reportFn
-      );
-      results.gemini_final = String(geminiResult);
-
-      // Devlog entry
-      results.devlog_entry = `## 100% Checkpoint - ${new Date().toISOString()}
-### Status: Complete
-### Qwen Score: ${results.qwen_score?.substring(0, 100)}
-### Gemini Verdict: ${results.gemini_final?.substring(0, 200)}
-### Security: ${results.security_memory_check?.substring(0, 200)}`;
+        // INCREMENTAL SAVE: Update the plan file with current accumulated state
+        if (devlog) {
+          try {
+            const completedTools = workflow.slice(0, currentStep).map(s => s.tool);
+            const incrementalBody = buildIncrementalPlan(workflow, accumulated, currentStep, totalSteps);
+            const existingPath = getPlanFilePath(task);
+            const filepath = savePlanToFile(task, incrementalBody, {
+              phases: workflow.map(s => s.phase),
+              tools_used: completedTools,
+            }, { planStatus: "in-progress", existingFilepath: existingPath });
+            setPlanFilePath(task, filepath);
+            ctx.log.info(`Plan file updated: ${filepath} (step ${currentStep}/${totalSteps})`);
+          } catch (err) {
+            ctx.log.warn("Failed to update incremental plan file", { error: String(err) });
+          }
+        }
+      }
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // COMPILE RESULTS
-    // ═══════════════════════════════════════════════════════════════════
+    // Check if complete
+    if (currentStep >= totalSteps) {
+      // Also accumulate the final step
+      const lastStep = workflow[totalSteps - 1];
+      if (lastStep && prior[lastStep.id]) {
+        accumulated = accumulateStepOutput(task, lastStep.id, prior);
+      }
 
-    const output = [`# Plan Runner - ${args.checkpoint} Checkpoint`];
+      // Use SERVER-SIDE accumulated outputs (full text, not Claude's summaries)
+      const fullOutputs = Object.keys(accumulated).length > 0 ? accumulated : prior;
 
-    if (results.plan_alignment) {
-      output.push(`\n## Plan Alignment\n${results.plan_alignment}`);
+      // Build comprehensive plan from ALL step outputs
+      const fullPlanSections: string[] = [];
+
+      const stepOrder = workflow.map(s => s.id);
+      for (const stepId of stepOrder) {
+        const content = fullOutputs[stepId];
+        if (!content || content.length < 20) continue;
+
+        const stepDef = workflow.find(s => s.id === stepId);
+        const sectionTitle = stepDef
+          ? `${stepDef.phase}: ${stepDef.description}`
+          : stepId;
+
+        fullPlanSections.push(`## ${sectionTitle}\n\n${content}`);
+      }
+
+      // Also include any keys not in the workflow
+      for (const [key, content] of Object.entries(fullOutputs)) {
+        if (stepOrder.includes(key)) continue;
+        if (!content || content.length < 20) continue;
+        fullPlanSections.push(`## ${key}\n\n${content}`);
+      }
+
+      // The final judge output is the executive summary
+      const judgeFinal = fullOutputs.judge_final || prior.judge_final || "";
+      const judgeDraft = fullOutputs.judge_draft || prior.judge_draft || "";
+
+      // Build the saved plan: executive summary + full analysis
+      const planBody = [
+        judgeFinal || judgeDraft || "No final plan generated",
+        "",
+        "---",
+        "",
+        "# Full Analysis",
+        "",
+        ...fullPlanSections,
+      ].join("\n");
+
+      // Parse quality scores from ALL accumulated text
+      const allText = Object.values(fullOutputs).join("\n");
+      const scores = parseScoresFromPlan(allText);
+
+      // Clean up accumulator cache
+      cleanAccumulator(task);
+
+      // Save FINAL plan to devlog daily directory (reuse incremental filepath)
+      let savedPath = "";
+      try {
+        const existingPath = getPlanFilePath(task);
+        savedPath = savePlanToFile(task, planBody, {
+          phases: workflow.map(s => s.phase),
+          tools_used: workflow.map(s => s.tool),
+          scores: Object.keys(scores).length > 0 ? scores : undefined,
+        }, { planStatus: "pending", existingFilepath: existingPath });
+        clearPlanFilePath(task);
+        ctx.log.info(`Plan saved to devlog: ${savedPath} (${planBody.length} chars)`);
+      } catch (err) {
+        ctx.log.warn("Failed to save plan to devlog", { error: String(err) });
+      }
+
+      // Response shows the judge_final summary (or full if short)
+      const displayResult = judgeFinal || judgeDraft || "No final plan generated";
+
+      const response: CoordinatorResponse = {
+        phase: "Complete",
+        step: totalSteps,
+        totalSteps,
+        progress: `${totalSteps}/${totalSteps} (100%)`,
+        isComplete: true,
+        result: displayResult,
+      };
+
+      // Add devlog hint for completion
+      if (devlog) {
+        response.devlogHint = {
+          tool: "devlog_session_log",
+          params: {
+            entry: `Plan complete: ${task.substring(0, 80)}${savedPath ? ` (saved to devlog)` : ''}`,
+            type: "progress",
+          },
+          description: "Log plan completion to devlog session",
+        };
+      }
+
+      // Add saved path info
+      if (savedPath) {
+        response.result = `${displayResult}\n\n---\n📁 Full plan saved to devlog: \`${savedPath}\` (${planBody.length} chars)\nIncludes all analysis from ${fullPlanSections.length} steps.\nThe plan will appear in devlog-ui under the "Plans" filter.\n\nTo execute: \`planner_runner({ plan: <read file>, mode: "start" })\``;
+      }
+
+      return formatCoordinatorResponse(response, prior, workflow, getPlanFilePath(task));
     }
 
-    if (results.security_memory_check) {
-      output.push(`\n## Security & Memory Analysis\n${results.security_memory_check}`);
+    // Get current workflow step
+    const workflowStep = workflow[currentStep];
+    const progressPct = Math.round(((currentStep + 1) / totalSteps) * 100);
+
+    // Build tool instruction
+    const toolInstruction: ToolInstruction = {
+      tool: workflowStep.tool,
+      params: workflowStep.buildParams(task, context, codeContext, answers, prior),
+      maxTokens: getMaxTokens(workflowStep.tool),
+      description: workflowStep.description,
+    };
+
+    const response: CoordinatorResponse = {
+      phase: workflowStep.phase,
+      step: currentStep + 1,
+      totalSteps,
+      progress: `${currentStep + 1}/${totalSteps} (${progressPct}%)`,
+      nextTool: toolInstruction,
+      isComplete: false,
+    };
+
+    // Add devlog hint if enabled
+    if (devlog && workflowStep.devlogType) {
+      response.devlogHint = {
+        tool: "devlog_session_log",
+        params: {
+          entry: `${workflowStep.phase}: ${workflowStep.description}`,
+          type: workflowStep.devlogType,
+        },
+        description: `Log ${workflowStep.phase.toLowerCase()} phase`,
+      };
     }
 
-    if (results.algo_optimization) {
-      output.push(`\n## O(1) Optimization Opportunities\n${results.algo_optimization}`);
-    }
-
-    if (args.checkpoint === "50%" && results.midpoint_verification) {
-      output.push(`\n## 50% Verification\n${results.midpoint_verification}`);
-    }
-
-    if (args.checkpoint === "100%") {
-      output.push(`\n## Final Scores`);
-      output.push(`\n### Qwen Score\n${results.qwen_score}`);
-      output.push(`\n### Gemini Verdict\n${results.gemini_final}`);
-    }
-
-    if (results.devlog_entry) {
-      output.push(`\n---\n## Devlog Entry\n\`\`\`\n${results.devlog_entry}\n\`\`\``);
-    }
-
-    return output.join("\n");
-  }
+    return formatCoordinatorResponse(response, prior, workflow, getPlanFilePath(task));
+  },
 };
 
-// Export all planner tools
+/**
+ * Format coordinator response for terminal display
+ * Shows THINKING prominently, keeps tool details compact
+ */
+function formatCoordinatorResponse(response: CoordinatorResponse, _prior: Record<string, string>, workflow: WorkflowStep[] = ALL_WORKFLOW_STEPS, planFilePath?: string): string {
+  const lines: string[] = [];
+
+  // Progress bar
+  const progressBar = generateProgressBar(response.step, response.totalSteps);
+  lines.push(`## ${progressBar} Step ${response.step}/${response.totalSteps} · ${response.phase}`);
+  lines.push("");
+
+  if (response.isComplete) {
+    lines.push("# ✅ Plan Complete");
+    lines.push("");
+    lines.push(response.result || "");
+
+    if (response.devlogHint) {
+      lines.push("");
+      lines.push(`📝 Devlog: ${response.devlogHint.tool} → "${response.devlogHint.params.entry}"`);
+    }
+  } else {
+    const tool = response.nextTool!;
+    const workflowStep = workflow[response.step - 1];
+
+    // THINKING - the why, front and center
+    if (workflowStep?.thinking) {
+      lines.push(`### 💭 Why This Step`);
+      lines.push("");
+      lines.push(workflowStep.thinking);
+      lines.push("");
+    }
+
+    // Tool call - compact summary
+    lines.push(`---`);
+    lines.push(`Next → ${tool.tool} · ${tool.description}`);
+
+    // Devlog hint (tiny)
+    if (response.devlogHint) {
+      lines.push(`📝 ${response.devlogHint.params.entry}`);
+    }
+
+    // Plan file path (so user can check progress)
+    if (planFilePath) {
+      lines.push(`📄 Live plan: ${planFilePath}`);
+    }
+
+    // Next step instruction
+    lines.push("");
+    const stepId = workflowStep?.id || "result";
+    lines.push(`▶ Execute ${tool.tool}, then: planner_maker({ mode: "continue", step: ${response.step + 1}, prior: { ...prior, ${stepId}: FULL_RESULT } })`);
+    lines.push(`IMPORTANT: Pass the COMPLETE tool output as ${stepId} — do NOT summarize.`);
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Generate visual progress bar
+ */
+function generateProgressBar(current: number, total: number): string {
+  const filled = Math.round((current / total) * 10);
+  const empty = 10 - filled;
+  return '█'.repeat(filled) + '░'.repeat(empty);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PLANNER_RUNNER - Step-by-step execution with verification
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Parse plan into structured steps
+ */
+function parsePlanSteps(plan: string): { title: string; details: string }[] {
+  const steps: { title: string; details: string }[] = [];
+
+  // Try numbered steps first (### Step 1: or 1. or Step 1:)
+  const stepPatterns = [
+    /###\s*Step\s*\d+[:\s]+([^\n]+)([\s\S]*?)(?=###\s*Step|\n##[^#]|$)/gi,
+    /^\s*(\d+)\.\s*([^\n]+)([\s\S]*?)(?=^\s*\d+\.|$)/gm,
+    /^Step\s*\d+[:\s]+([^\n]+)([\s\S]*?)(?=^Step\s*\d+|$)/gim,
+  ];
+
+  for (const pattern of stepPatterns) {
+    const matches = [...plan.matchAll(pattern)];
+    if (matches.length >= 2) {
+      for (const match of matches) {
+        const title = (match[1] || match[2] || "").trim();
+        const details = (match[2] || match[3] || "").trim();
+        if (title) {
+          steps.push({ title: title.substring(0, 100), details: details.substring(0, 500) });
+        }
+      }
+      break;
+    }
+  }
+
+  // Fallback: split by "###" headers
+  if (steps.length === 0) {
+    const sections = plan.split(/^###\s+/m).filter(Boolean);
+    for (const section of sections) {
+      const [firstLine, ...rest] = section.split('\n');
+      if (firstLine && !firstLine.toLowerCase().includes('plan')) {
+        steps.push({
+          title: firstLine.replace(/^#+\s*/, '').substring(0, 100),
+          details: rest.join('\n').substring(0, 500),
+        });
+      }
+    }
+  }
+
+  return steps;
+}
+
+export const plannerRunnerTool = {
+  name: "planner_runner",
+  description: `Execute implementation plans step-by-step with verification.
+
+COORDINATOR PATTERN - tracks actual plan steps:
+1. Call with mode: "start" to parse plan and begin
+2. Call with mode: "step" and stepNum to work on specific step
+3. Call with mode: "verify" at 50% and 100% for checkpoints
+
+The tool parses your plan and tracks progress through each step.`,
+
+  parameters: z.object({
+    plan: z.string().describe("The implementation plan from planner_maker"),
+    mode: z.enum(["start", "step", "verify"]).default("start")
+      .describe("start: parse plan, step: work on step N, verify: checkpoint"),
+    stepNum: z.number().optional().describe("Step number (1-indexed) for mode=step"),
+    checkpoint: z.enum(["50%", "100%"]).optional().describe("Checkpoint for mode=verify"),
+    code: z.string().optional().describe("Current code for verification"),
+    completed: z.array(z.number()).optional().describe("List of completed step numbers"),
+    devlog: z.boolean().optional().default(true),
+    ux: z.boolean().optional().default(false)
+      .describe("Add UX verification at checkpoints (usability, accessibility, interaction states)"),
+    responsive: z.boolean().optional().default(false)
+      .describe("Add responsiveness verification at checkpoints (mobile/tablet/desktop, breakpoints, touch targets)"),
+  }),
+
+  execute: async (args: {
+    plan: string;
+    mode?: "start" | "step" | "verify";
+    stepNum?: number;
+    checkpoint?: "50%" | "100%";
+    code?: string;
+    completed?: number[];
+    devlog?: boolean;
+    ux?: boolean;
+    responsive?: boolean;
+  }, _ctx: MCPContext): Promise<string> => {
+    const { plan, mode = "start", stepNum, checkpoint, code, completed = [], devlog = true, ux = false, responsive = false } = args;
+    const lines: string[] = [];
+
+    // Parse plan into steps
+    const steps = parsePlanSteps(plan);
+    const totalSteps = steps.length;
+
+    if (mode === "start") {
+      // ═══════════════════════════════════════════════════════════════
+      // START: Show parsed plan and devlog hint
+      // ═══════════════════════════════════════════════════════════════
+      lines.push(`## 📋 Plan Parsed - ${totalSteps} Steps`);
+      lines.push("");
+
+      if (totalSteps === 0) {
+        lines.push("⚠️ Could not parse steps from plan. Expected numbered steps or ### headers.");
+        lines.push("");
+        lines.push("Raw plan preview:");
+        lines.push(`> ${plan.substring(0, 200)}...`);
+        return lines.join("\n");
+      }
+
+      // Show steps
+      lines.push("| # | Step | Status |");
+      lines.push("|---|------|--------|");
+      for (let i = 0; i < steps.length; i++) {
+        const status = completed.includes(i + 1) ? "✅" : "⏳";
+        lines.push(`| ${i + 1} | ${steps[i].title} | ${status} |`);
+      }
+      lines.push("");
+
+      // Devlog hint
+      if (devlog) {
+        lines.push("### 📝 Devlog Hint");
+        lines.push("");
+        lines.push("```");
+        lines.push(`devlog_plan_create({`);
+        lines.push(`  title: "${steps[0]?.title.substring(0, 40) || 'Implementation'}...",`);
+        lines.push(`  items: [`);
+        for (const step of steps.slice(0, 10)) {
+          lines.push(`    "${step.title}",`);
+        }
+        lines.push(`  ]`);
+        lines.push(`})`);
+        lines.push("```");
+        lines.push("");
+      }
+
+      // First step
+      lines.push("---");
+      lines.push(`▶ Start with: \`planner_runner({ plan, mode: "step", stepNum: 1 })\``);
+
+    } else if (mode === "step" && stepNum) {
+      // ═══════════════════════════════════════════════════════════════
+      // STEP: Show specific step details + guidance
+      // ═══════════════════════════════════════════════════════════════
+      const stepIndex = stepNum - 1;
+      const step = steps[stepIndex];
+      const progressPct = Math.round((stepNum / totalSteps) * 100);
+      const progressBar = generateProgressBar(stepNum, totalSteps);
+
+      if (!step) {
+        lines.push(`⚠️ Step ${stepNum} not found. Plan has ${totalSteps} steps.`);
+        return lines.join("\n");
+      }
+
+      lines.push(`## ${progressBar} Step ${stepNum}/${totalSteps} (${progressPct}%)`);
+      lines.push("");
+      lines.push(`### 🎯 ${step.title}`);
+      lines.push("");
+
+      if (step.details) {
+        lines.push(step.details);
+        lines.push("");
+      }
+
+      // Show what's done
+      if (completed.length > 0) {
+        lines.push(`✅ Completed: ${completed.join(", ")}`);
+        lines.push("");
+      }
+
+      // Checkpoint reminders
+      const halfwayStep = Math.ceil(totalSteps / 2);
+      if (stepNum === halfwayStep) {
+        lines.push("---");
+        lines.push("⚡ 50% CHECKPOINT - After this step, run verification:");
+        lines.push(`\`planner_runner({ plan, mode: "verify", checkpoint: "50%", completed: [...] })\``);
+      }
+
+      // Next step
+      lines.push("---");
+      if (stepNum < totalSteps) {
+        lines.push(`▶ After completing, mark done and continue:`);
+        lines.push(`\`planner_runner({ plan, mode: "step", stepNum: ${stepNum + 1}, completed: [${[...completed, stepNum].join(", ")}] })\``);
+      } else {
+        lines.push(`▶ Final step! After completing, run 100% verification:`);
+        lines.push(`\`planner_runner({ plan, mode: "verify", checkpoint: "100%", completed: [${[...completed, stepNum].join(", ")}], code: "..." })\``);
+      }
+
+    } else if (mode === "verify" && checkpoint) {
+      // ═══════════════════════════════════════════════════════════════
+      // VERIFY: Checkpoint with actual step context
+      // ═══════════════════════════════════════════════════════════════
+      const completedSteps = steps.filter((_, i) => completed.includes(i + 1));
+      const remainingSteps = steps.filter((_, i) => !completed.includes(i + 1));
+
+      lines.push(`## 🔍 ${checkpoint} Checkpoint Verification`);
+      lines.push("");
+      lines.push(`Progress: ${completed.length}/${totalSteps} steps complete`);
+      lines.push("");
+
+      // What's done
+      if (completedSteps.length > 0) {
+        lines.push("✅ Completed:");
+        for (const step of completedSteps) {
+          lines.push(`- ${step.title}`);
+        }
+        lines.push("");
+      }
+
+      // What's left (for 50%)
+      if (checkpoint === "50%" && remainingSteps.length > 0) {
+        lines.push("⏳ Remaining:");
+        for (const step of remainingSteps) {
+          lines.push(`- ${step.title}`);
+        }
+        lines.push("");
+      }
+
+      // Verification tool call
+      lines.push("### 💭 Verification");
+      lines.push("");
+
+      const verifyPrompt = checkpoint === "50%"
+        ? `50% Progress Check:
+
+COMPLETED STEPS:
+${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+
+REMAINING STEPS:
+${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+
+${code ? `CODE SNAPSHOT:\n${code.substring(0, 1500)}` : ""}
+
+Questions:
+1. Are completed steps implemented correctly?
+2. Any issues to address before continuing?
+3. Should we adjust remaining steps?`
+        : `100% Final Review:
+
+ALL STEPS:
+${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}
+
+${code ? `FINAL CODE:\n${code.substring(0, 2000)}` : ""}
+
+Provide:
+1. Score out of 10 for each: quality, completeness, security, performance
+2. Any issues found
+3. Verdict: APPROVED or NEEDS_REVISION`;
+
+      lines.push("Run verification tool:");
+      lines.push(`> ${checkpoint === "50%" ? "qwen_reason" : "gemini_analyze_text"}`);
+      lines.push("");
+      lines.push("<details><summary>Full prompt</summary>");
+      lines.push("");
+      lines.push(verifyPrompt);
+      lines.push("");
+      lines.push("</details>");
+
+      // UX verification (when enabled)
+      if (ux) {
+        lines.push("");
+        lines.push("### 🎨 UX Verification");
+        lines.push("");
+        lines.push("Run UX check → kimi_thinking then gemini_analyze_text:");
+        lines.push("");
+        lines.push("<details><summary>UX verification prompts</summary>");
+        lines.push("");
+        lines.push("Kimi (UX flow analysis):");
+        lines.push(`> Trace the user journey for the ${checkpoint} implementation. Check: initial state, interactions, error states, empty states, loading states, keyboard/screen reader access.`);
+        lines.push("");
+        lines.push("Gemini (UX scoring):");
+        lines.push(`> Score /10: Usability, Accessibility (WCAG 2.1 AA), Interaction Design, Consistency, Performance UX. List top 3 UX blockers.`);
+        lines.push("");
+        lines.push("</details>");
+      }
+
+      // Responsiveness verification (when enabled)
+      if (responsive) {
+        lines.push("");
+        lines.push("### 📱 Responsiveness Verification");
+        lines.push("");
+        lines.push("Run responsive check → gemini_analyze_text:");
+        lines.push("");
+        lines.push("<details><summary>Responsiveness verification prompt</summary>");
+        lines.push("");
+        lines.push(`> Review the implementation for responsive design:
+1. BREAKPOINTS: Are mobile (≤640px), tablet (641-1024px), desktop (>1024px) handled?
+2. TOUCH TARGETS: Minimum 44x44px for interactive elements?
+3. LAYOUT: Does content reflow correctly? Any horizontal scroll?
+4. TYPOGRAPHY: Font sizes readable on mobile? Line lengths appropriate?
+5. NAVIGATION: Does nav collapse/adapt? Hamburger menu on mobile?
+6. IMAGES/MEDIA: Responsive images? Aspect ratios maintained?
+7. FORMS: Input fields usable on mobile? Appropriate input types (tel, email)?
+Score each /10 and list specific breakpoint issues.`);
+        lines.push("");
+        lines.push("</details>");
+      }
+
+      // Devlog hint
+      if (devlog) {
+        lines.push("");
+        lines.push(`📝 Devlog: \`devlog_session_log({ entry: "${checkpoint} checkpoint - ${completed.length}/${totalSteps} steps", type: "progress" })\``);
+      }
+
+      // Next action
+      lines.push("");
+      lines.push("---");
+      if (checkpoint === "50%") {
+        const nextStep = completed.length + 1;
+        lines.push(`▶ After verification, continue: \`planner_runner({ plan, mode: "step", stepNum: ${nextStep}, completed: [${completed.join(", ")}] })\``);
+      } else {
+        lines.push("▶ If APPROVED: Done! If NEEDS_REVISION: Address feedback and re-verify.");
+      }
+    }
+
+    return lines.join("\n");
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// LIST_PLANS - Find recent plans
+// ═══════════════════════════════════════════════════════════════════
+
+export const listPlansTool = {
+  name: "list_plans",
+  description: `List recently created plans from planner_maker.
+Shows plans from the last N days (default 7) with filename, task, and status.`,
+
+  parameters: z.object({
+    days: z.number().optional().default(7).describe("Show plans from last N days"),
+  }),
+
+  execute: async (args: { days?: number }, _ctx: MCPContext): Promise<string> => {
+    const { days = 7 } = args;
+    const lines: string[] = [];
+
+    const recentPlans = listRecentPlans(days);
+
+    lines.push(`## 📋 Recent Plans (last ${days} days)`);
+    lines.push("");
+
+    if (recentPlans.length === 0) {
+      const dailyDir = getDevlogDailyDir();
+      lines.push(`No plans found in \`${dailyDir}\``);
+      lines.push("");
+      lines.push("Create a plan with: `planner_maker({ task: \"...\", mode: \"start\" })`");
+      return lines.join("\n");
+    }
+
+    lines.push("| Created | Plan | Path |");
+    lines.push("|---------|------|------|");
+
+    for (const plan of recentPlans) {
+      const dateStr = plan.created.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      // Extract task name from filename (remove date prefix, dayname, and plan- prefix)
+      const taskName = plan.filename
+        .replace(/^\d{4}-\d{2}-\d{2}-\d{2}h\d{2}m-\w+-plan-/, "")
+        .replace(/\.md$/, "")
+        .replace(/-/g, " ");
+      lines.push(`| ${dateStr} | ${taskName} | \`${plan.filename}\` |`);
+    }
+
+    lines.push("");
+    lines.push(`📁 Plans directory: \`${getDevlogDailyDir()}\``);
+    lines.push("");
+    lines.push("To execute a plan: read the file and call `planner_runner({ plan: <content>, mode: \"start\" })`");
+
+    return lines.join("\n");
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════════════════════════
+
 export function getAllPlannerTools() {
-  return [plannerMakerTool, plannerRunnerTool];
+  return [plannerMakerTool, plannerRunnerTool, listPlansTool];
 }

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
+import { getTimeoutConfig } from "../config/timeout-config.js";
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env
@@ -39,8 +40,8 @@ const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
 };
 
-// Timeout constants for API calls
-const OPENROUTER_TIMEOUT_MS = 90000; // 90 seconds - enough for thinking models
+// Get timeout from centralized config (default: 180s for thinking models)
+const getOpenRouterTimeout = () => getTimeoutConfig().openrouter;
 
 /**
  * Optional parameters for OpenRouter API calls
@@ -60,8 +61,9 @@ export async function callOpenRouter(
   messages: Array<{ role: string; content: string }>,
   model: OpenRouterModel = OpenRouterModel.QWEN3_CODER,
   temperature: number = 0.7,
-  maxTokens: number = 20480,
-  optionsOrRetry: OpenRouterOptions | boolean = false
+  maxTokens: number = 8192,
+  optionsOrRetry: OpenRouterOptions | boolean = false,
+  timeoutMs?: number
 ): Promise<string> {
   // Handle backward compatibility: boolean = _isRetry, object = options
   const _isRetry = typeof optionsOrRetry === 'boolean' ? optionsOrRetry : false;
@@ -71,9 +73,10 @@ export async function callOpenRouter(
     return `[OpenRouter API key not configured. Add OPENROUTER_API_KEY to .env file]`;
   }
 
-  // Create AbortController for timeout
+  // Create AbortController for timeout (use provided timeout or config default)
+  const effectiveTimeout = timeoutMs ?? getOpenRouterTimeout();
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), OPENROUTER_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
   try {
     const requestBody: any = {
@@ -120,7 +123,7 @@ export async function callOpenRouter(
   } catch (error) {
     // Handle abort/timeout
     if (error instanceof Error && error.name === 'AbortError') {
-      return `[OpenRouter timeout: Request exceeded ${OPENROUTER_TIMEOUT_MS / 1000}s limit for model ${model}]`;
+      return `[OpenRouter timeout: Request exceeded ${effectiveTimeout / 1000}s limit for model ${model}]`;
     }
 
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -576,13 +579,14 @@ ${FORMAT_INSTRUCTION}`
     ];
 
     // Use heartbeat to prevent MCP timeout during reasoning
+    // Kimi K2.5 thinking needs extra time — 240s (was 180s default, caused timeouts)
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
       () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.4, 3000, {
         top_p: 0.9,
         presence_penalty: 0.1,
         frequency_penalty: 0.2
-      }),
+      }, 240000),
       reportFn
     );
   }

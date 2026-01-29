@@ -70,4 +70,5 @@ export interface ToolsConfig {
   // Planner tools (multi-model council)
   planner_maker: boolean;
   planner_runner: boolean;
+  list_plans: boolean;
 }
