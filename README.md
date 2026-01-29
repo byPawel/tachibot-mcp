@@ -4,7 +4,7 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.12.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.12.1-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-48_active-brightgreen.svg)](#-tool-ecosystem-48-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
@@ -71,7 +71,7 @@ The new `planner_maker` coordinates a multi-model council (Grok, Qwen, Kimi, Gem
 | **Research Power** | 28 | Deep investigation, multi-source |
 | **Code Focus** | 28 | Software development, SWE tasks |
 | **Balanced** | 36 | General-purpose, mixed workflows |
-| **Heavy Coding** | 40 | Max code tools + agentic workflows |
+| **Heavy Coding** (default) | 40 | Max code tools + agentic workflows |
 | **Full** | 48 | Everything enabled |
 
 ### Developer Experience

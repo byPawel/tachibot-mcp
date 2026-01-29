@@ -32,9 +32,9 @@
       "gemini_analyze_text"
     ],
     "qwen": ["qwen_coder", "qwen_algo", "qwen_reason", "qwen_competitive"],
-    "kimi": ["kimi_thinking"],
+    "kimi": ["kimi_thinking", "kimi_code", "kimi_decompose", "kimi_long_context"],
     "minimax": ["minimax_code", "minimax_agent"],
-    "planner": ["planner_maker", "planner_runner"],
+    "planner": ["planner_maker", "planner_runner", "list_plans"],
     "advanced": ["verifier", "scout", "challenger", "hunter"],
     "workflow": [
       "workflow",

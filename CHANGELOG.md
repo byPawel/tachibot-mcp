@@ -5,6 +5,13 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.1] - 2026-01-29
+
+### Changed
+- **Heavy Coding** is now the default profile (40 tools) — ships as `activeProfile` in `tools.config.json`
+- Updated profile description and README to reflect default status
+- Updated `tools.config.json` available tools list with new Kimi tools and `list_plans`
+
 ## [2.12.0] - 2026-01-29
 
 ### Added

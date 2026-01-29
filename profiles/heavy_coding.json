@@ -1,5 +1,5 @@
 {
-  "description": "Heavy coding with all reasoning & code tools (~14k tokens, 40 tools)",
+  "description": "Default profile — heavy coding with all reasoning & code tools (40 tools)",
   "tools": {
     "think": true,
     "focus": true,
