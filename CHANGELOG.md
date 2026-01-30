@@ -5,6 +5,26 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] - 2026-01-30
+
+### Removed
+- **@types/yaml** — stub package; `yaml` ships its own TypeScript definitions
+- **ink-box** — deprecated; use Ink's built-in `<Box>` component
+- **js-yaml** + **@types/js-yaml** — redundant YAML parser; consolidated on `yaml` v2
+- **cli-highlight** — unmaintained (5 years); replaced with `highlight.js` wrapper
+- **ts-node** — stalling ESM support; replaced with `tsx`
+
+### Added
+- **highlight.js** — direct dependency replacing cli-highlight for syntax highlighting
+- **tsx** — modern TypeScript execution for ESM projects (devDependency)
+- `src/utils/syntax-highlight.ts` — lightweight highlight.js-to-ANSI wrapper with default theme and function-based theme support
+
+### Changed
+- **Node engine requirement** bumped from `>=20.19.0` to `>=22.0.0` (Node 22 active LTS)
+- `src/validators/syntax-validator.ts` — migrated from `js-yaml.load()` to `yaml.parse()`
+- `src/utils/ansi-renderer.ts` — switched to local syntax-highlight utility
+- `src/utils/ink-markdown-renderer.tsx` — switched to local syntax-highlight utility
+
 ## [2.12.1] - 2026-01-29
 
 ### Changed
