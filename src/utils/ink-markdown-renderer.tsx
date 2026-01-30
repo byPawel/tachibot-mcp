@@ -28,7 +28,7 @@ import { marked, Token, Tokens } from 'marked';
 import { PassThrough } from 'stream';
 import { loadJsonTheme, type JsonTheme } from './theme-loader.js';
 import { icons, nerdIcons, hasNerdFontSupport, getIcon } from './ink-renderer.js';
-import { highlight as cliHighlight } from 'cli-highlight';
+import { highlight as cliHighlight } from './syntax-highlight.js';
 import { InkTable, TableThemeProvider, type TableTheme } from './ink-table.js';
 
 // ============================================================================

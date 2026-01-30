@@ -2,7 +2,7 @@
  * Syntax validator - validates YAML/JSON structure
  */
 
-import { load as yamlLoad } from 'js-yaml';
+import { parse as yamlParse } from 'yaml';
 import { ValidationError, Workflow } from './types.js';
 
 export class SyntaxValidator {
@@ -18,7 +18,7 @@ export class SyntaxValidator {
       // Parse YAML or JSON
       workflow = isJson
         ? JSON.parse(workflowContent)
-        : yamlLoad(workflowContent) as Workflow;
+        : yamlParse(workflowContent) as Workflow;
 
       // Ensure workflow is not undefined
       if (!workflow) {

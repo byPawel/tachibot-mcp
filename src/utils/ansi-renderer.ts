@@ -15,7 +15,7 @@
 
 import { marked } from 'marked';
 import { markedTerminal } from 'marked-terminal';
-import { highlight as cliHighlight } from 'cli-highlight';
+import { highlight as cliHighlight } from './syntax-highlight.js';
 import chalk from 'chalk';
 
 // Force chalk to output colors (MCP stdio is not a TTY, so chalk auto-disables)
