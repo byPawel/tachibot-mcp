@@ -6,6 +6,7 @@
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { getModelDisplayName, MODEL_PRICING } from '../config/model-constants.js';
 import { getDataDir } from './paths.js';
@@ -116,8 +117,105 @@ interface UsageData {
 }
 
 const STATS_FILE = path.join(getDataDir(), 'usage.json');
+const LEGACY_STATS_FILE = path.join(os.homedir(), '.tachibot-usage.json');
+const MIGRATED_MARKER = `${LEGACY_STATS_FILE}.migrated`;
+
+/**
+ * Deep merge legacy usage data into current data.
+ * Sums calls/tokens/costs, takes latest timestamps, merges model counts.
+ */
+function mergeUsageData(current: UsageData, legacy: UsageData): UsageData {
+  const merged: UsageData = JSON.parse(JSON.stringify(current));
+
+  for (const [repoPath, legacyRepo] of Object.entries(legacy.repos)) {
+    if (!merged.repos[repoPath]) {
+      merged.repos[repoPath] = JSON.parse(JSON.stringify(legacyRepo));
+      // Backfill missing fields from older schema
+      const r = merged.repos[repoPath];
+      if (!r.firstSeen) r.firstSeen = legacyRepo.tools ? Object.values(legacyRepo.tools).reduce((earliest, t) => t.lastUsed < earliest ? t.lastUsed : earliest, new Date().toISOString()) : new Date().toISOString();
+      if (!r.lastSeen) r.lastSeen = legacyRepo.tools ? Object.values(legacyRepo.tools).reduce((latest, t) => t.lastUsed > latest ? t.lastUsed : latest, '') : new Date().toISOString();
+      if (!r.totalCalls) r.totalCalls = Object.values(legacyRepo.tools || {}).reduce((sum, t) => sum + t.calls, 0);
+      continue;
+    }
+
+    const currentRepo = merged.repos[repoPath];
+    for (const [toolName, legacyTool] of Object.entries(legacyRepo.tools || {})) {
+      if (!currentRepo.tools[toolName]) {
+        currentRepo.tools[toolName] = JSON.parse(JSON.stringify(legacyTool));
+        continue;
+      }
+
+      const ct = currentRepo.tools[toolName];
+      ct.calls += legacyTool.calls;
+      ct.totalTokens += legacyTool.totalTokens;
+      ct.totalCost += legacyTool.totalCost;
+
+      if (new Date(legacyTool.lastUsed).getTime() > new Date(ct.lastUsed).getTime()) {
+        ct.lastUsed = legacyTool.lastUsed;
+      }
+
+      for (const [modelName, count] of Object.entries(legacyTool.models || {})) {
+        ct.models[modelName] = (ct.models[modelName] || 0) + count;
+      }
+    }
+
+    // Update repo-level aggregates after tool merge
+    const allTools = Object.values(currentRepo.tools);
+    currentRepo.totalCalls = allTools.reduce((sum, t) => sum + t.calls, 0);
+    const legacyEarliest = Object.values(legacyRepo.tools || {}).reduce((earliest, t) => t.lastUsed < earliest ? t.lastUsed : earliest, new Date().toISOString());
+    if (!currentRepo.firstSeen || legacyEarliest < currentRepo.firstSeen) {
+      currentRepo.firstSeen = legacyEarliest;
+    }
+    const legacyLatest = Object.values(legacyRepo.tools || {}).reduce((latest, t) => t.lastUsed > latest ? t.lastUsed : latest, '');
+    if (legacyLatest > (currentRepo.lastSeen || '')) {
+      currentRepo.lastSeen = legacyLatest;
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Migrate legacy ~/.tachibot-usage.json to new XDG path.
+ * One-time: merges old data into new file, renames old to .migrated.
+ */
+function migrateIfNecessary(): void {
+  if (!fs.existsSync(LEGACY_STATS_FILE) || fs.existsSync(MIGRATED_MARKER)) {
+    return;
+  }
+
+  try {
+    const legacyData = JSON.parse(fs.readFileSync(LEGACY_STATS_FILE, 'utf-8')) as UsageData;
+
+    fs.mkdirSync(path.dirname(STATS_FILE), { recursive: true });
+
+    if (fs.existsSync(STATS_FILE)) {
+      let currentData: UsageData | null = null;
+      try {
+        currentData = JSON.parse(fs.readFileSync(STATS_FILE, 'utf-8')) as UsageData;
+      } catch {
+        // New file corrupt — overwrite with legacy
+      }
+
+      if (currentData) {
+        const merged = mergeUsageData(currentData, legacyData);
+        fs.writeFileSync(STATS_FILE, JSON.stringify(merged, null, 2));
+      } else {
+        fs.writeFileSync(STATS_FILE, JSON.stringify(legacyData, null, 2));
+      }
+    } else {
+      fs.writeFileSync(STATS_FILE, JSON.stringify(legacyData, null, 2));
+    }
+
+    fs.renameSync(LEGACY_STATS_FILE, MIGRATED_MARKER);
+    console.error(`[UsageTracker] Migrated legacy stats from ${LEGACY_STATS_FILE}`);
+  } catch (e) {
+    console.error('[UsageTracker] Legacy migration failed (will retry next time):', e);
+  }
+}
 
 function loadStats(): UsageData {
+  migrateIfNecessary();
   try {
     if (fs.existsSync(STATS_FILE)) {
       const data = fs.readFileSync(STATS_FILE, 'utf-8');
@@ -458,6 +556,29 @@ function getAllReposSummaryPlain(): string {
 
   for (const repo of repoData) {
     lines.push(`| ${repo.name} | ${repo.calls} | ~${(repo.tokens / 1000).toFixed(1)}k | $${repo.cost.toFixed(3)} |`);
+  }
+
+  // Aggregate per-tool across all repos
+  const toolAgg: Record<string, { calls: number; tokens: number; cost: number }> = {};
+  for (const repo of repos) {
+    for (const [toolName, usage] of Object.entries(repo.tools)) {
+      if (!toolAgg[toolName]) {
+        toolAgg[toolName] = { calls: 0, tokens: 0, cost: 0 };
+      }
+      toolAgg[toolName].calls += usage.calls;
+      toolAgg[toolName].tokens += usage.totalTokens;
+      toolAgg[toolName].cost += usage.totalCost;
+    }
+  }
+  const sortedTools = Object.entries(toolAgg).sort(([, a], [, b]) => b.calls - a.calls);
+
+  lines.push(``);
+  lines.push(`### By Tool`);
+  lines.push(``);
+  lines.push(`| Tool | Calls | Cost |`);
+  lines.push(`|------|------:|-----:|`);
+  for (const [toolName, agg] of sortedTools) {
+    lines.push(`| ${toolName} | ${agg.calls} | $${agg.cost.toFixed(3)} |`);
   }
 
   lines.push(``);
