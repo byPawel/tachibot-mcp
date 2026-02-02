@@ -5,6 +5,25 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.5] - 2026-02-02
+
+### Added
+- **Tool annotations** — all 35+ tools now have MCP-standard annotations (`title`, `readOnlyHint`, `openWorldHint`, `streamingHint`). Improves `/mcp` display and tool discovery via ToolSearch
+- **`src/utils/tool-annotations.ts`** — centralized annotation registry
+- **`src/utils/stream-distill.ts`** — `truncateSmart()` for paragraph-boundary-aware truncation; distillation logic ready for future use when Claude Code supports display/context separation
+- **25K character safety net** — responses capped with smart truncation to prevent Claude Code's 30K background task truncation
+
+### Changed
+- **ANSI rendering removed from tool results** — replaced `renderOutput()` with `stripMarkdown()` in `safeAddTool()`. Claude Code CLI does not render markdown in tool result blocks, so decorative formatting (`**bold**`, `*italic*`, `` `code` ``) is now stripped while structural elements (`#` headers, `-` bullets, numbered lists, `>` blockquotes, `|` tables, code block content) are preserved
+- **`stripMarkdown()` rewritten** — code blocks protected via placeholder extraction (prevents corrupting code samples); `*` bullets normalized to `-` before italic stripping; `_italic_` skip added to avoid mangling `snake_case` identifiers
+- **`kimi_decompose` prompt improved** — dependency graph now uses box-drawing characters (`├─ └─ ──►`) for visual clarity; task cards use indented tree format with acceptance criteria
+- **Heavy Coding profile** — enabled `openai_code_review` and `openai_explain` (40 → 42 tools)
+- **Wildcard permission** — replaced 30 individual `mcp__tachibot-mcp__*` entries in `~/.claude/settings.json` with single `mcp__tachibot-mcp__*` wildcard
+
+### Fixed
+- **Token overhead reduced to ~x1** — removed ANSI escape code overhead (~x1.5-2x) and Ink rendering overhead (~x12x). Tool results now return clean plain text at baseline token cost
+- **`truncateSmart()` marker overflow** — marker length now subtracted from cap before truncating, ensuring output never exceeds the specified limit
+
 ## [2.13.0] - 2026-01-30
 
 ### Removed

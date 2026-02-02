@@ -23,11 +23,11 @@ export const heavyCodingProfile: ProfileConfig = {
     grok_brainstorm: true,
     grok_search: true,
 
-    // OpenAI - reason, brainstorm, search
+    // OpenAI - all enabled for heavy coding
     openai_reason: true,
     openai_brainstorm: true,
-    openai_code_review: false,
-    openai_explain: false,
+    openai_code_review: true,
+    openai_explain: true,
     openai_search: true,
 
     // Gemini - all enabled

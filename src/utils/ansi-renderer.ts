@@ -524,45 +524,49 @@ function renderAnsi(md: string): string {
 // ============================================================================
 
 /**
- * Strip all markdown formatting to plain text
+ * Strip decorative markdown formatting but KEEP structural elements.
+ * Keeps: # headers, - bullets, 1. numbered lists, > blockquotes, | tables, indentation
+ * Strips: **bold**, *italic*, ~~strike~~, `inline code` backticks, [link](url), ![img](url), ``` fences
+ *
+ * Code blocks are protected via placeholder extraction to avoid corrupting code content.
+ * Underscore italic is skipped to avoid mangling snake_case identifiers.
  */
-function stripMarkdown(md: string): string {
-  return (
-    md
-      // Headers
-      .replace(/^#{1,6}\s+/gm, '')
-      // Bold
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/__([^_]+)__/g, '$1')
-      // Italic
-      .replace(/\*([^*]+)\*/g, '$1')
-      .replace(/_([^_]+)_/g, '$1')
-      // Strikethrough
-      .replace(/~~([^~]+)~~/g, '$1')
-      // Inline code
-      .replace(/`([^`]+)`/g, '$1')
-      // Code blocks
-      .replace(/```[\s\S]*?```/g, (match) => {
-        return match.replace(/```\w*\n?/g, '').replace(/```/g, '');
-      })
-      // Links
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      // Images
-      .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
-      // Blockquotes
-      .replace(/^>\s+/gm, '')
-      // Horizontal rules
-      .replace(/^[-*_]{3,}$/gm, '---')
-      // List markers
-      .replace(/^[\s]*[-*+]\s+/gm, '  - ')
-      .replace(/^[\s]*\d+\.\s+/gm, '  ')
-      // Tables (simplified)
-      .replace(/\|/g, ' ')
-      .replace(/^[-:]+$/gm, '')
-      // Clean up extra whitespace
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-  );
+export function stripMarkdown(md: string): string {
+  // 1. Extract code blocks to placeholders (protect from stripping)
+  const codeBlocks: string[] = [];
+  let text = md.replace(/```[\s\S]*?```/g, (match) => {
+    const body = match.replace(/```\w*\n?/g, '').replace(/```/g, '');
+    const id = codeBlocks.push(body) - 1;
+    return `@@CODE${id}@@`;
+  });
+
+  // 2. Strip decorative formatting on non-code text
+  text = text
+    // Normalize * bullets to - before italic strip (prevents stray * on "* Security:")
+    .replace(/^(\s{0,3})\*(\s+)/gm, '$1-$2')
+    // Images before links (avoid ![...] conflict)
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+    // Links — keep text, drop URL
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Bold — remove ** and __ wrappers (before italic)
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    // Italic * only — skip _ to avoid mangling snake_case, file_name, etc.
+    .replace(/\*(.+?)\*/g, '$1')
+    // Strikethrough
+    .replace(/~~(.+?)~~/g, '$1')
+    // Inline code — remove backticks, keep text
+    .replace(/`([^`]+)`/g, '$1')
+    // Clean up stray * or ~ on otherwise empty lines
+    .replace(/^(\s*)[*~]+\s*$/gm, '')
+    // Clean up extra whitespace
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  // 3. Restore code blocks
+  text = text.replace(/@@CODE(\d+)@@/g, (_, n) => codeBlocks[+n]);
+
+  return text;
 }
 
 // ============================================================================

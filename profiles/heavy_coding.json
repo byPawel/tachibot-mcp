@@ -1,5 +1,5 @@
 {
-  "description": "Default profile — heavy coding with all reasoning & code tools (40 tools)",
+  "description": "Default profile — heavy coding with all reasoning & code tools (42 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -17,8 +17,8 @@
     "grok_search": true,
     "openai_reason": true,
     "openai_brainstorm": true,
-    "openai_code_review": false,
-    "openai_explain": false,
+    "openai_code_review": true,
+    "openai_explain": true,
     "openai_search": true,
     "gemini_brainstorm": true,
     "gemini_analyze_code": true,

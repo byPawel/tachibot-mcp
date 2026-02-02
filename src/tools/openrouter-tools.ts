@@ -679,28 +679,56 @@ export const kimiDecomposeTool = {
     outputFormat?: string;
   }, { log, reportProgress }: any) => {
     const formatInstructions: Record<string, string> = {
-      tree: "Output as a hierarchical tree with indentation showing parent-child relationships",
-      flat: "Output as a flat numbered list with subtask IDs (e.g., 1, 1.1, 1.2, 2, 2.1)",
-      dependencies: "Output with dependency graph: each subtask has ID, dependencies (blockedBy), and can-parallel flags"
+      tree: `Output as indented tree. Use 2-space indent per level:
+
+T1: Task title
+  T1.1: Subtask title
+    T1.1.1: Sub-subtask
+  T1.2: Subtask title`,
+      flat: `Output as flat numbered list:
+
+T1: Title  [deps: none]  [complexity: Medium]
+T1.1: Title  [deps: T1]  [complexity: Low]
+T2: Title  [deps: T1]  [complexity: High]`,
+      dependencies: `Output in two sections:
+
+Section 1 - DEPENDENCY GRAPH: Show blocking flow
+  T1 ──► T2 ──► T4
+  T1 ──► T3 ──┘
+
+Section 2 - TASKS: One block per task, indentation for subtasks:
+
+  T1: Title
+  ├─ Deps: none
+  ├─ Parallel: yes
+  ├─ Complexity: Medium
+  └─ Done when: acceptance criteria here
+    T1.1: Subtask title
+    ├─ Deps: none
+    └─ Done when: criteria`
     };
 
     const systemPrompt = `You are Kimi K2.5, expert at structured task decomposition using Agent Swarm reasoning.
 
 Decompose the given task into subtasks following these rules:
-1. Each subtask gets a unique ID (e.g., T1, T1.1, T1.2, T2)
-2. Identify dependencies between subtasks (what blocks what)
+1. Each subtask gets a unique ID (T1, T1.1, T1.2, T2)
+2. Identify dependencies between subtasks
 3. Mark which subtasks can run in parallel
 4. Each subtask must have clear acceptance criteria
 5. Decompose to ${args.depth || 3} levels of depth maximum
-6. ${formatInstructions[args.outputFormat || "tree"]}
+
+${formatInstructions[args.outputFormat || "tree"]}
 
 For each subtask provide:
-- **ID**: Unique identifier
-- **Title**: Brief description
-- **Dependencies**: List of subtask IDs that must complete first (or "none")
-- **Parallel**: Can this run in parallel with siblings? (yes/no)
-- **Acceptance Criteria**: How to know this subtask is done
-- **Complexity**: Low / Medium / High
+- ID: Unique identifier
+- Title: Brief description
+- Dependencies: IDs that must complete first (or "none")
+- Parallel: yes/no
+- Acceptance Criteria: How to know it is done
+- Complexity: Low / Medium / High
+
+Use box-drawing characters (├─ └─ ──►) for visual structure.
+No bold (**) or italic (*). Use indentation and tree chars for hierarchy.
 
 ${FORMAT_INSTRUCTION}`;
 

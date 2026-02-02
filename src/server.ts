@@ -60,7 +60,9 @@ import { z } from "zod";
 import { InstructionOrchestrator } from "./orchestrator-instructions.js";
 import { validateToolInput, sanitizeForLogging } from "./utils/input-validator.js";
 import { isToolEnabled, logToolConfiguration } from "./utils/tool-config.js";
-import { renderOutput } from "./utils/ansi-renderer.js";
+import { stripMarkdown } from "./utils/ansi-renderer.js";
+import { getToolAnnotations } from "./utils/tool-annotations.js";
+import { truncateSmart } from "./utils/stream-distill.js";
 import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled, getUsageSummary, getAllReposSummary, getStatsJson, resetStats } from "./utils/usage-tracker.js";
 import { checkForUpdates, getUpdateStatus } from "./utils/update-checker.js";
 // import { renderBigText, renderToolBadge } from "./utils/ink-renderer.js";  // Disabled - plain text only
@@ -217,8 +219,23 @@ function safeAddTool(tool: MCPTool): void {
   if (!registeredTools.has(tool.name)) {
     // Wrap execute with usage tracking
     const originalExecute = tool.execute;
+
+    // Merge MCP tool annotations (title, readOnlyHint, etc.)
+    const toolAnnotations = getToolAnnotations(tool.name);
+    const annotations = toolAnnotations
+      ? {
+          title: toolAnnotations.title,
+          readOnlyHint: toolAnnotations.readOnlyHint,
+          openWorldHint: toolAnnotations.openWorldHint,
+          streamingHint: toolAnnotations.streamingHint,
+          ...(toolAnnotations.destructiveHint !== undefined && { destructiveHint: toolAnnotations.destructiveHint }),
+          ...(toolAnnotations.idempotentHint !== undefined && { idempotentHint: toolAnnotations.idempotentHint }),
+        }
+      : undefined;
+
     const wrappedTool = {
       ...tool,
+      ...(annotations && { annotations }),
       execute: async (...args: Parameters<typeof originalExecute>) => {
         const result = await originalExecute(...args);
 
@@ -242,27 +259,16 @@ function safeAddTool(tool: MCPTool): void {
           }
         }
 
-        // Apply ANSI rendering to string results (centralized - no need to edit each tool!)
-        // Return as TextContent for Claude Code Desktop compatibility
-        // Plain strings work in CLI but Desktop needs { type: "text", text: "..." }
+        // Return clean plain text — strip markdown formatting since Claude Code
+        // doesn't render markdown in tool results (shows raw ** and ### as text)
         if (typeof result === 'string') {
-          try {
-            const model = inferModelFromTool(tool.name);
-            // Tools returning null handle their own rendering - skip extra badge
-            // (e.g., nextThought renders its own BigText header)
-            let renderedText: string;
-            if (model === null) {
-              renderedText = renderOutput(result);  // No model badge
-            } else {
-              renderedText = renderOutput(result, model);
-            }
-            // Return as TextContent object for Claude Code Desktop compatibility
-            // Adds ~12 tokens fixed overhead, negligible for typical responses
-            return { type: "text" as const, text: renderedText };
-          } catch {
-            // Fallback to TextContent with raw result on parse errors
-            return { type: "text" as const, text: result };
+          let cleanText = stripMarkdown(result);
+          // Safety net: cap at 25K chars to prevent Claude Code's 30K truncation
+          const MAX_RESPONSE_CHARS = 25000;
+          if (cleanText.length > MAX_RESPONSE_CHARS) {
+            cleanText = truncateSmart(cleanText, MAX_RESPONSE_CHARS);
           }
+          return { type: "text" as const, text: cleanText };
         }
         return result;
       }
