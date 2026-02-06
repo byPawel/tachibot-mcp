@@ -40,7 +40,7 @@ const MODELS = {
   PERPLEXITY_REASON: PERPLEXITY_MODELS.SONAR_REASONING, // sonar-reasoning-pro
 
   // OpenRouter
-  QWEN: QWEN_MODELS.CODER_PLUS,                 // qwen/qwen3-coder-plus
+  QWEN: QWEN_MODELS.CODER_NEXT,                 // qwen/qwen3-coder-next (80B/3B MoE, 262K ctx)
   QWEN_REASON: QWEN_MODELS.MAX_THINKING,        // qwen/qwen3-max-thinking (>1T params)
   KIMI: KIMI_MODELS.K2_5,                       // moonshotai/kimi-k2.5 (thinking via reasoning param)
   MINIMAX: MINIMAX_MODELS.M2_1,                 // NEW: minimax/minimax-m2.1 (cheap agentic)

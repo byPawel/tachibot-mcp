@@ -5,6 +5,14 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.6] - 2026-02-05
+
+### Changed
+- **qwen_coder upgraded to Qwen3-Coder-Next** — replaced `qwen/qwen3-coder` (480B MoE) with `qwen/qwen3-coder-next` (80B/3B MoE, 262K context, SWE-Bench >70%). 3x cheaper ($0.07/$0.30 per M tokens), 2x context window, better benchmarks. Hybrid attention architecture (Gated DeltaNet + Attention) optimized for agentic coding
+- **Auto-fallback** — Coder-Next falls back to legacy 480B coder on provider failure
+- **Updated model defaults** — Scout, Challenger, Verifier now route Qwen queries through Coder-Next
+- `qwen_algo` (QwQ-32B) and `qwen_reason` (235B-Thinking) unchanged
+
 ## [2.14.5] - 2026-02-02
 
 ### Added
