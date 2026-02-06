@@ -4,7 +4,7 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.14.6-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.14.7-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-48_active-brightgreen.svg)](#-tool-ecosystem-48-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
@@ -28,7 +28,15 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ---
 
-## What's New in v2.14.6
+## What's New in v2.14.7
+
+### Gemini Judge &amp; Jury System
+- **`gemini_judge`** &mdash; Science-backed LLM-as-a-Judge (arXiv:2411.15594). 4 modes: synthesize, evaluate, rank, resolve
+- **`jury`** &mdash; Multi-model jury panel. Configurable jurors (grok, openai, qwen, kimi, perplexity, minimax) run in parallel, Gemini synthesizes the verdict. Based on "Replacing Judges with Juries" (Cohere, arXiv:2404.18796)
+
+### Perplexity Model Fixes
+- Fixed `sonar-pro` model ID (was accidentally using lightweight `sonar`)
+- `perplexity_research` now uses **`sonar-deep-research`** &mdash; exhaustive multi-source reports in a single call
 
 ### Qwen3-Coder-Next
 `qwen_coder` now runs on **Qwen3-Coder-Next** (Feb 2026) &mdash; purpose-built for agentic coding:
@@ -77,11 +85,11 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 | Profile | Tools | Best For |
 |---------|-------|----------|
 | **Minimal** | 12 | Quick tasks, low token budget |
-| **Research Power** | 28 | Deep investigation, multi-source |
+| **Research Power** | 30 | Deep investigation, multi-source |
 | **Code Focus** | 28 | Software development, SWE tasks |
-| **Balanced** | 36 | General-purpose, mixed workflows |
-| **Heavy Coding** (default) | 40 | Max code tools + agentic workflows |
-| **Full** | 48 | Everything enabled |
+| **Balanced** | 38 | General-purpose, mixed workflows |
+| **Heavy Coding** (default) | 44 | Max code tools + agentic workflows |
+| **Full** | 50 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support

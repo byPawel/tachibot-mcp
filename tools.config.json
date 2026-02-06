@@ -29,11 +29,14 @@
     "gemini": [
       "gemini_brainstorm",
       "gemini_analyze_code",
-      "gemini_analyze_text"
+      "gemini_analyze_text",
+      "gemini_judge",
+      "gemini_search"
     ],
     "qwen": ["qwen_coder", "qwen_algo", "qwen_reason", "qwen_competitive"],
     "kimi": ["kimi_thinking", "kimi_code", "kimi_decompose", "kimi_long_context"],
     "minimax": ["minimax_code", "minimax_agent"],
+    "jury": ["jury"],
     "planner": ["planner_maker", "planner_runner", "list_plans"],
     "advanced": ["verifier", "scout", "challenger", "hunter"],
     "workflow": [
@@ -75,6 +78,8 @@
       "gemini_brainstorm": true,
       "gemini_analyze_code": true,
       "gemini_analyze_text": true,
+      "gemini_judge": true,
+      "gemini_search": true,
       "qwen_coder": true,
       "qwen_algo": true,
       "qwen_reason": true,

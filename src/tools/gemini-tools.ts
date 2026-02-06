@@ -427,6 +427,101 @@ ${args.details ? `Additional details: ${args.details}` : ''}`;
 };
 
 /**
+ * Gemini Judge Tool
+ * Multi-perspective evaluation and synthesis (LLM-as-a-Judge)
+ * Based on: Gu et al. "A Survey on LLM-as-a-Judge" (arXiv:2411.15594)
+ * - CoT reasoning for evaluation quality
+ * - Multi-trait decomposition across dimensions
+ * - Position bias mitigation (don't favor first/last)
+ * - Extract-then-synthesize (not pick-a-winner)
+ */
+export const geminiJudgeTool = {
+  name: "gemini_judge",
+  description: "Evaluate and synthesize multiple AI perspectives into a unified verdict. Put PERSPECTIVES in 'perspectives' parameter.",
+  parameters: z.object({
+    perspectives: z.string().describe("The multiple AI perspectives/analyses to evaluate and synthesize (REQUIRED)"),
+    question: z.string().optional().describe("The original question being judged"),
+    mode: z.enum(["synthesize", "evaluate", "rank", "resolve"])
+      .optional()
+      .default("synthesize")
+      .describe("Judge mode: synthesize (merge best), evaluate (score each), rank (order by quality), resolve (settle conflicts)")
+  }),
+  execute: async (args: {
+    perspectives: string;
+    question?: string;
+    mode?: string;
+  }, { log, reportProgress }: any) => {
+    const modeInstructions: Record<string, string> = {
+      synthesize: `SYNTHESIS MODE: Extract the best elements from each perspective and merge into one cohesive answer.
+Do NOT pick a winner. Find what is uniquely valuable in EACH perspective.
+The final answer must be BETTER than any single input.`,
+
+      evaluate: `EVALUATION MODE: Score each perspective on these dimensions (1-10):
+- Accuracy: Factual correctness
+- Completeness: Coverage of the problem
+- Reasoning: Quality of logic and argumentation
+- Actionability: How useful/implementable the advice is
+- Novelty: Unique insights others missed
+Provide per-perspective scores and brief justification.`,
+
+      rank: `RANKING MODE: Order perspectives from strongest to weakest.
+For each, state: rank, key strength, key weakness.
+Use pairwise comparison (compare each pair) to avoid position bias.`,
+
+      resolve: `CONFLICT RESOLUTION MODE: Identify where perspectives disagree.
+For each conflict:
+1. State the disagreement clearly
+2. Evaluate evidence on both sides
+3. Render a verdict with reasoning
+4. Note confidence level (high/medium/low)`
+    };
+
+    const systemPrompt = `You are Gemini 3 Pro, acting as an expert judge and synthesizer.
+
+ROLE: Evaluate multiple AI perspectives with intellectual rigor and fairness.
+
+${modeInstructions[args.mode || 'synthesize']}
+
+METHODOLOGY (based on LLM-as-a-Judge research — Gu et al. arXiv:2411.15594):
+1. READ all perspectives completely before forming any opinion
+2. DECOMPOSE evaluation across traits: accuracy, reasoning, completeness, novelty, actionability
+3. MITIGATE BIAS: Don't favor the first, longest, or most verbose response — evaluate on substance
+4. CHAIN-OF-THOUGHT: Show your reasoning step-by-step before concluding (chain_of_thought technique)
+5. FIRST PRINCIPLES: Strip away assumptions, identify ground truths, rebuild from fundamentals
+6. TREE OF THOUGHTS: Consider multiple synthesis paths, evaluate each, prune weak branches
+7. ADVERSARIAL CHECK: For each conclusion, argue the counterpoint — does it survive scrutiny?
+8. SELF-CONSISTENCY: If you arrived at this verdict 3 different ways, would you get the same answer?
+9. EXTRACT before synthesizing: identify what each perspective contributes uniquely
+
+OUTPUT STRUCTURE:
+## Per-Perspective Analysis
+For each input, note: key contribution, strength, weakness, unique insight
+
+## Consensus Points
+What all perspectives agree on (high confidence)
+
+## Conflicts & Resolution
+Where they disagree — evidence on each side, verdict, confidence level
+
+## Final Synthesis
+The unified answer combining the best elements — must be better than any single input
+
+${FORMAT_INSTRUCTION}`;
+
+    const userPrompt = args.question
+      ? `QUESTION: ${args.question}\n\nPERSPECTIVES TO JUDGE:\n${args.perspectives}`
+      : args.perspectives;
+
+    const reportFn = reportProgress ?? (async () => {});
+    const result = await withHeartbeat(
+      () => callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.3, 'llm-orchestration'),
+      reportFn
+    );
+    return stripFormatting(result);
+  }
+};
+
+/**
  * Gemini Search Tool
  * Web search using Google Search grounding
  * Uses google_search_retrieval with dynamic retrieval config
@@ -596,6 +691,7 @@ export function getAllGeminiTools() {
     geminiAnalyzeTextTool,
     geminiSummarizeTool,
     geminiImagePromptTool,
+    geminiJudgeTool,
     geminiSearchTool
   ];
 }

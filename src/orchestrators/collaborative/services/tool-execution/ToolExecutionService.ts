@@ -149,13 +149,19 @@ export class ToolExecutionService implements IToolExecutionEngine {
         return "gemini_analyze_code";
       }
 
-      // 2. Judgment/analysis keywords
-      const judgeKeywords = ["judge", "evaluate", "assess", "critique", "analyze", "review", "verdict", "opinion"];
+      // 2. Judgment/synthesis keywords → gemini_judge
+      const judgeKeywords = ["judge", "evaluate", "assess", "critique", "verdict", "synthesize", "synthesis", "perspectives", "council"];
       if (judgeKeywords.some(k => promptLower.includes(k))) {
+        return "gemini_judge";
+      }
+
+      // 3. Analysis keywords → gemini_analyze_text
+      const analyzeKeywords = ["analyze", "review", "opinion", "sentiment", "summary"];
+      if (analyzeKeywords.some(k => promptLower.includes(k))) {
         return "gemini_analyze_text";
       }
 
-      // 3. Default to brainstorm (creative/general)
+      // 4. Default to brainstorm (creative/general)
       return "gemini_brainstorm";
     }
 
@@ -261,6 +267,12 @@ export class ToolExecutionService implements IToolExecutionEngine {
       case "gemini_brainstorm":
         return {
           prompt: prompt
+        };
+
+      case "gemini_judge":
+        return {
+          perspectives: prompt,
+          mode: "synthesize"
         };
 
       case "gemini_analyze_text":
@@ -577,6 +589,16 @@ Step-by-step reasoning:
             }
           });
           return typeof geminiAnalyzeTextResult === 'string' ? geminiAnalyzeTextResult : JSON.stringify(geminiAnalyzeTextResult);
+
+        case "gemini_judge":
+          const { geminiJudgeTool } = await import("../../../../tools/gemini-tools.js");
+          const geminiJudgeResult = await geminiJudgeTool.execute(params, {
+            log: {
+              info: (msg: string, data?: any) => console.error(`[${toolName}] ${msg}`, data),
+              error: (msg: string, data?: any) => console.error(`[${toolName}] ERROR: ${msg}`, data)
+            }
+          });
+          return typeof geminiJudgeResult === 'string' ? geminiJudgeResult : JSON.stringify(geminiJudgeResult);
 
         case "grok_code":
           const { grokCodeTool } = await import("../../../../tools/grok-tools.js");

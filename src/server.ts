@@ -725,17 +725,23 @@ async function initializeServer() {
   try {
     // Register select Gemini tools (brainstorm, analyze, search)
     if (isGeminiAvailable()) {
-      const { geminiAnalyzeTextTool, geminiSearchTool } = await import("./tools/gemini-tools.js");
+      const { geminiAnalyzeTextTool, geminiJudgeTool, geminiSearchTool } = await import("./tools/gemini-tools.js");
       const geminiTools = [
         geminiBrainstormTool,     // Creative brainstorming
         geminiAnalyzeCodeTool,    // Code analysis
         geminiAnalyzeTextTool,    // Text analysis (sentiment, summary, etc.)
+        geminiJudgeTool,          // Multi-perspective evaluation & synthesis
         geminiSearchTool          // Web search with Google Search grounding
       ];
       geminiTools.forEach(tool => {
         safeAddTool(tool);
       });
-      console.error(`✅ Registered ${geminiTools.length} Gemini tools (brainstorm, code analysis, text analysis, search)`);
+      console.error(`✅ Registered ${geminiTools.length} Gemini tools (brainstorm, code, text, judge, search)`);
+
+      // Register Jury tool (multi-model panel with Gemini judge)
+      const { juryTool } = await import("./tools/jury-tool.js");
+      safeAddTool(juryTool);
+      console.error(`✅ Registered jury tool (multi-model panel)`);
     }
 
     // Register OpenRouter tools (Qwen, Kimi, MiniMax - filtered by profile via safeAddTool)

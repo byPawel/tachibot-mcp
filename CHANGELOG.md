@@ -5,6 +5,21 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.7] - 2026-02-05
+
+### Added
+- **`gemini_judge` tool** — dedicated LLM-as-a-Judge evaluation tool backed by science (Gu et al., arXiv:2411.15594). 4 modes: synthesize, evaluate, rank, resolve. Integrates chain-of-thought, first-principles, tree-of-thoughts, and adversarial reasoning techniques
+- **`jury` tool** — multi-model jury panel. Runs configurable jurors (grok, openai, qwen, kimi, perplexity, minimax, qwen_reason) in parallel, then Gemini judge synthesizes a unified verdict. Based on "Replacing Judges with Juries" (Cohere, arXiv:2404.18796)
+- **`gemini_search`** added to tools.config.json (was missing)
+
+### Changed
+- **Perplexity models fixed** — `SONAR_PRO` now correctly uses `"sonar-pro"` (200K ctx) instead of `"sonar"` (was using the lightweight model by mistake). Removed deprecated `SONAR_SMALL`. Added `SONAR_REASONING` enum
+- **`perplexity_research` upgraded to `sonar-deep-research`** — single call to Perplexity's exhaustive research model (synthesizes hundreds of sources) instead of 5-7 parallel `sonar-pro` calls. 10-min timeout for deep reports
+- **Smart routing updated** — judge keywords now route to `gemini_judge` instead of `gemini_analyze_text`
+- **`general-judge.yaml` workflow** — uses `gemini_judge` tool with proper `perspectives`/`question`/`mode` params
+- **ModelProviderRegistry** — added `gemini-judge` mapping with aliases `gemini-synthesize`, `gemini-verdict`
+- **Profile tool counts** — full: 50, heavy_coding: 44, balanced: 38, research_power: 30
+
 ## [2.14.6] - 2026-02-05
 
 ### Changed

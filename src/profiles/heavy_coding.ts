@@ -34,7 +34,9 @@ export const heavyCodingProfile: ProfileConfig = {
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: true,
+    gemini_judge: true,
     gemini_search: true,
+    jury: true,
 
     // OpenRouter - coders enabled
     qwen_coder: true,

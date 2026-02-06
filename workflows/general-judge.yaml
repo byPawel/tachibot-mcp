@@ -119,9 +119,11 @@ steps:
   # ═══════════════════════════════════════════════════════════════════════════
 
   - name: gemini-extract
-    tool: gemini_brainstorm
+    tool: gemini_judge
     input:
-      prompt: |
+      question: "${query}"
+      mode: "synthesize"
+      perspectives: |
         **Extract the BEST elements from each AI (don't pick winner - find what's valuable in ALL):**
 
         Each analysis below includes a DISTILLED CONTEXT (key findings, decisions, issues) followed by REFERENCE MATERIAL (full output).

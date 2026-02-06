@@ -40,7 +40,9 @@ export interface ToolsConfig {
   gemini_brainstorm: boolean;
   gemini_analyze_code: boolean;
   gemini_analyze_text: boolean;
+  gemini_judge: boolean;         // Multi-perspective evaluation & synthesis
   gemini_search: boolean;
+  jury: boolean;                 // Multi-model jury panel with Gemini judge
 
   // OpenRouter tools
   qwen_coder: boolean;

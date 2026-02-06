@@ -137,7 +137,8 @@ modelProviderRegistry.registerMany([
   { modelName: "grok-reason", toolName: "grok_reason", provider: "x.ai" },
   { modelName: "grok-debug", toolName: "grok_debug", provider: "x.ai" },
   { modelName: "gemini-brainstorm", toolName: "gemini_brainstorm", provider: "google" },
-  { modelName: "gemini-analyze", toolName: "gemini_analyze_text", provider: "google", aliases: ["gemini-judge"] },
+  { modelName: "gemini-judge", toolName: "gemini_judge", provider: "google", aliases: ["gemini-synthesize", "gemini-verdict"] },
+  { modelName: "gemini-analyze", toolName: "gemini_analyze_text", provider: "google" },
   { modelName: "perplexity-research", toolName: "perplexity_research", provider: "perplexity" },
   { modelName: "openai-reason", toolName: "openai_reason", provider: "openai", aliases: ["gpt-reason"] },
 ]);

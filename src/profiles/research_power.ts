@@ -25,7 +25,9 @@ export const researchPowerProfile: ProfileConfig = {
     gemini_brainstorm: true,
     gemini_analyze_code: false,
     gemini_analyze_text: false,
+    gemini_judge: true,          // Judge is useful for research synthesis
     gemini_search: true,
+    jury: true,                  // Full jury for research decisions
     qwen_coder: true,
     qwen_algo: false,
     qwen_reason: true,         // Heavy reasoning for research

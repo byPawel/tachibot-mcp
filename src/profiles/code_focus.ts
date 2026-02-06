@@ -25,7 +25,9 @@ export const codeFocusProfile: ProfileConfig = {
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: false,
+    gemini_judge: false,
     gemini_search: false,
+    jury: false,
     qwen_coder: true,
     qwen_algo: true,
     qwen_reason: false,        // Not needed for code focus

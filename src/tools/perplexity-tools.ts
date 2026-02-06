@@ -13,14 +13,13 @@ import { withHeartbeat } from "../utils/streaming-helper.js";
 // Perplexity API configuration
 const PERPLEXITY_API_URL = "https://api.perplexity.ai";
 
-// Available Perplexity models (2025 latest)
+// Available Perplexity models (2026)
 export enum PerplexityModel {
-  // Models from Perplexity API docs
-  SONAR_PRO = "sonar",  // Changed from "sonar-pro" to "sonar"
-  SONAR_REASONING_PRO = "sonar-reasoning-pro",  // Full name required
-  SONAR_DEEP_RESEARCH = "sonar-deep-research",
-  SONAR = "sonar",
-  SONAR_SMALL = "sonar-small"
+  SONAR = "sonar",                                // Lightweight search (128k ctx)
+  SONAR_PRO = "sonar-pro",                        // Advanced search (200k ctx)
+  SONAR_REASONING = "sonar-reasoning",             // Fast reasoning w/ CoT (128k ctx)
+  SONAR_REASONING_PRO = "sonar-reasoning-pro",     // Advanced reasoning / DeepSeek R1 (128k ctx)
+  SONAR_DEEP_RESEARCH = "sonar-deep-research",     // Exhaustive research reports (128k ctx)
 }
 
 /**
@@ -144,19 +143,15 @@ export const perplexityAskTool = {
  */
 export const perplexityResearchTool = {
   name: "perplexity_research",
-  description: "Deep research. Put your TOPIC in the 'topic' parameter.",
+  description: "Deep research using sonar-deep-research. Synthesizes hundreds of sources into a comprehensive report. Put your TOPIC in the 'topic' parameter.",
   parameters: z.object({
     topic: z.string().describe("The research topic (REQUIRED - put your topic here)"),
-    questions: z.array(z.string()).optional().describe("Specific questions to research"),
-    depth: z.string()
-      .optional()
-      .describe("Research depth (e.g., quick, standard, deep)")
+    questions: z.array(z.string()).optional().describe("Specific angles or questions to cover in the research"),
   }),
-  execute: async (args: { topic: string; questions?: string[]; depth?: string }, { log, reportProgress }: any) => {
-    const { topic, questions, depth = "standard" } = args;
+  execute: async (args: { topic: string; questions?: string[] }, { log, reportProgress }: any) => {
+    const { topic, questions } = args;
     const reportFn = reportProgress ?? (async () => {});
 
-    // Get current date for accurate research context
     const now = new Date();
     const currentDate = now.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -165,63 +160,27 @@ export const perplexityResearchTool = {
       day: 'numeric'
     });
 
-    // Generate research questions if not provided
-    const researchQuestions = questions || [
-      `What is the current state of ${topic}?`,
-      `What are the latest developments in ${topic}?`,
-      `What are the key challenges and opportunities in ${topic}?`,
-      `What do experts say about ${topic}?`
+    const questionContext = questions?.length
+      ? `\n\nSpecific angles to cover:\n${questions.map(q => `- ${q}`).join('\n')}`
+      : '';
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are a research expert. Today: ${currentDate}. Produce a comprehensive research report with sources, key findings, challenges, expert opinions, and actionable insights.${FORMAT_INSTRUCTION}`
+      },
+      {
+        role: "user",
+        content: `Research this topic thoroughly: ${topic}${questionContext}`
+      }
     ];
 
-    // Adjust based on depth
-    const questionsToAsk = depth === "quick" ?
-      researchQuestions.slice(0, 2) :
-      depth === "deep" ?
-        [...researchQuestions,
-         `What are the future predictions for ${topic}?`,
-         `What are the best practices and recommendations for ${topic}?`] :
-        researchQuestions;
-
-    // Wrap entire research process in heartbeat since it makes multiple calls
-    const result = await withHeartbeat(async () => {
-      // PARALLEL: Fire all questions at once (50-70% faster than sequential)
-      const questionPromises = questionsToAsk.map(async (question) => {
-        const messages = [
-          {
-            role: "system",
-            content: `Research expert. Today: ${currentDate}. Factual info with sources.${FORMAT_INSTRUCTION}`
-          },
-          {
-            role: "user",
-            content: question
-          }
-        ];
-
-        const answer = await callPerplexity(messages, PerplexityModel.SONAR_PRO);
-        return `## ${question}\n\n${answer}\n\n`;
-      });
-
-      // Wait for all questions to complete in parallel
-      const questionResults = await Promise.all(questionPromises);
-
-      // Join results (O(n) vs O(n²) with += in loop)
-      const research = `# Research Report: ${topic}\n\n` + questionResults.join('');
-
-      // Synthesis must wait for all research to complete
-      const synthesisMessages = [
-        {
-          role: "system",
-          content: `Research synthesizer. Concise summary of key findings.${FORMAT_INSTRUCTION}`
-        },
-        {
-          role: "user",
-          content: `Synthesize these research findings into key insights:\n\n${research}`
-        }
-      ];
-
-      const synthesis = await callPerplexity(synthesisMessages, PerplexityModel.SONAR_PRO);
-      return research + `## Synthesis\n\n${synthesis}`;
-    }, reportFn);
+    // sonar-deep-research can take minutes — use long heartbeat timeout
+    const result = await withHeartbeat(
+      () => callPerplexity(messages, PerplexityModel.SONAR_DEEP_RESEARCH),
+      reportFn,
+      600000  // 10 min timeout for deep research
+    );
 
     return stripFormatting(result);
   }
