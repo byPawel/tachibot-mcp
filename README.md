@@ -4,7 +4,7 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.12.1-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.14.6-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-48_active-brightgreen.svg)](#-tool-ecosystem-48-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
@@ -28,25 +28,19 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ---
 
-## What's New in v2.12.0
+## What's New in v2.14.6
 
-### Multi-Model Planning Council
-The new `planner_maker` coordinates a multi-model council (Grok, Qwen, Kimi, Gemini, GPT) to create implementation plans. `planner_runner` executes them with verification checkpoints at 50%, 80%, and 100%.
+### Qwen3-Coder-Next
+`qwen_coder` now runs on **Qwen3-Coder-Next** (Feb 2026) &mdash; purpose-built for agentic coding:
 
-### Kimi K2.5 Suite (4 tools)
-| Tool | Capability | Highlight |
-|------|-----------|-----------|
-| `kimi_thinking` | Step-by-step reasoning | Agent Swarm architecture |
-| `kimi_code` | Code generation & fixing | SWE-Bench 76.8% |
-| `kimi_decompose` | Task decomposition | Dependency graphs, parallel subtasks |
-| `kimi_long_context` | Document analysis | 256K context window |
+| | Before (qwen3-coder) | After (qwen3-coder-next) |
+|---|---|---|
+| **Params** | 480B / ~35B active | 80B / 3B active |
+| **Context** | 131K | 262K |
+| **SWE-Bench** | 69.6% | >70% |
+| **Pricing** | $0.22/$0.88 per M | $0.07/$0.30 per M |
 
-### MiniMax M2.1 (2 tools)
-- `minimax_code` &mdash; SWE tasks at very low cost (72.5% SWE-Bench)
-- `minimax_agent` &mdash; Agentic workflows (77.2% &tau;&sup2;-Bench)
-
-### Qwen Reasoning
-- `qwen_reason` &mdash; Heavy reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT math)
+3x cheaper, 2x context, better benchmarks. Falls back to legacy 480B on provider failure.
 
 ---
 

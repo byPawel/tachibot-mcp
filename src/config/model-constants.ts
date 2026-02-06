@@ -93,9 +93,11 @@ export const MINIMAX_MODELS = {
 
 // Qwen Models (Alibaba via OpenRouter)
 // Qwen3 235B Thinking (July 2025) - Largest reasoning model available
+// Qwen3-Coder-Next (Feb 2026) - Agentic coding specialist, 80B/3B MoE, 262K context
 export const QWEN_MODELS = {
+  CODER_NEXT: "qwen/qwen3-coder-next",         // NEW: 80B/3B MoE, 262K ctx, SWE-Bench >70%, $0.07/$0.30
   CODER_PLUS: "qwen/qwen3-coder-plus",         // Code specialist (32K context)
-  CODER: "qwen/qwen3-coder",                   // Standard coder - 480B MoE, SWE-Bench 69.6%
+  CODER: "qwen/qwen3-coder",                   // Legacy coder - 480B MoE, SWE-Bench 69.6%
   QWQ_32B: "qwen/qwq-32b",                     // Deep reasoning - CodeElo 1261
   MAX_THINKING: "qwen/qwen3-235b-a22b-thinking-2507", // 235B MoE thinking - heavy reasoning
 } as const;
@@ -181,7 +183,7 @@ export const CURRENT_MODELS = {
   },
   openrouter: {
     kimi: KIMI_MODELS.K2_5,                // K2.5 multimodal + agent swarm (thinking via reasoning param)
-    qwen: QWEN_MODELS.CODER_PLUS,
+    qwen: QWEN_MODELS.CODER_NEXT,             // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70%
     qwen_reason: QWEN_MODELS.MAX_THINKING, // NEW: Flagship reasoning (>1T params, HMMT 98%)
     minimax: MINIMAX_MODELS.M2_1,          // NEW: Best agentic model, very cheap
   }
@@ -369,6 +371,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "moonshotai/kimi-k2.5-thinking": "kimi-k2.5",
 
   // Qwen (Alibaba)
+  "qwen/qwen3-coder-next": "qwen-coder-next",
   "qwen/qwen3-coder-plus": "qwen-coder",
   "qwen/qwen3-coder": "qwen-coder",
   "qwen/qwq-32b": "qwq-32b",
@@ -413,6 +416,7 @@ export const MODEL_PRICING: Record<string, number> = {
   "moonshotai/kimi-k2.5-thinking": 0.003,
 
   // OpenRouter models - Qwen
+  "qwen/qwen3-coder-next": 0.000185,   // ($0.07 + $0.30) / 2 / 1000 - cheapest coder!
   "qwen/qwen3-coder-plus": 0.0005,
   "qwen/qwen3-coder": 0.0003,
   "qwen/qwq-32b": 0.001,

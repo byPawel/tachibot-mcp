@@ -17,8 +17,9 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Available OpenRouter models (verified names)
 export enum OpenRouterModel {
-  // Qwen models - Use QWEN3_CODER (routes via Google, not broken Alibaba)
-  QWEN3_CODER = "qwen/qwen3-coder",                      // 480B MoE - PRIMARY (routes via Google)
+  // Qwen models
+  QWEN3_CODER_NEXT = "qwen/qwen3-coder-next",            // NEW: 80B/3B MoE, 262K ctx, SWE >70% - PRIMARY
+  QWEN3_CODER = "qwen/qwen3-coder",                      // Legacy: 480B MoE (fallback)
   QWEN3_CODER_PLUS = "qwen/qwen3-coder-plus",           // Alibaba-only, BROKEN free tier issues
   QWEN3_CODER_FLASH = "qwen/qwen3-coder-flash",          // Fast/cheap alternative
   QWEN3_30B = "qwen/qwen3-30b-a3b-instruct-2507",        // 30B MoE model
@@ -37,6 +38,7 @@ export enum OpenRouterModel {
 
 // Fallback map for when providers hit quota limits
 const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
+  [OpenRouterModel.QWEN3_CODER_NEXT]: OpenRouterModel.QWEN3_CODER, // Fall back to 480B if Coder-Next fails
   [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
 };
 
@@ -59,7 +61,7 @@ interface OpenRouterOptions {
  */
 export async function callOpenRouter(
   messages: Array<{ role: string; content: string }>,
-  model: OpenRouterModel = OpenRouterModel.QWEN3_CODER,
+  model: OpenRouterModel = OpenRouterModel.QWEN3_CODER_NEXT,
   temperature: number = 0.7,
   maxTokens: number = 8192,
   optionsOrRetry: OpenRouterOptions | boolean = false,
@@ -153,7 +155,7 @@ export async function callOpenRouter(
 
 /**
  * Qwen Coder Tool
- * Advanced code generation with 480B MoE model
+ * Agentic code generation with Qwen3-Coder-Next (80B/3B MoE, 262K context, SWE-Bench >70%)
  */
 export const qwenCoderTool = {
   name: "qwen_coder",
@@ -169,7 +171,7 @@ export const qwenCoderTool = {
   execute: async (args: {
     task: string;
     code?: string;
-    requirements?: string; // Changed: Optional
+    requirements?: string;
     language?: string;
     useFree?: boolean
   }, { log, reportProgress }: any) => {
@@ -183,7 +185,7 @@ export const qwenCoderTool = {
       analyze: "Analyze code for patterns, complexity, architecture, and provide insights"
     };
 
-    const systemPrompt = `You are Qwen3-Coder, an advanced code generation model.
+    const systemPrompt = `You are Qwen3-Coder-Next, an agentic coding model (80B/3B MoE, 262K context, SWE-Bench >70%).
 Task: ${taskPrompts[args.task as keyof typeof taskPrompts]}
 ${args.language ? `Language: ${args.language}` : ''}
 Focus on: clean code, best practices, performance, and maintainability.
@@ -199,7 +201,7 @@ ${FORMAT_INSTRUCTION}`;
       { role: "user", content: userPrompt }
     ];
 
-    const model = args.useFree === true ? OpenRouterModel.QWEN3_30B : OpenRouterModel.QWEN3_CODER;
+    const model = args.useFree === true ? OpenRouterModel.QWEN3_30B : OpenRouterModel.QWEN3_CODER_NEXT;
     // Use heartbeat to prevent MCP timeout
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
@@ -316,8 +318,8 @@ export const openRouterMultiModelTool = {
   }),
   execute: async (args: { query: string; model: string; temperature?: number }, { log }: any) => {
     const modelMap = {
-      "qwen-coder": OpenRouterModel.QWEN3_CODER,
-      "qwen-coder-plus": OpenRouterModel.QWEN3_CODER,
+      "qwen-coder": OpenRouterModel.QWEN3_CODER_NEXT,
+      "qwen-coder-plus": OpenRouterModel.QWEN3_CODER_NEXT,
       "qwq-32b": OpenRouterModel.QWQ_32B,
       "kimi-k2-thinking": OpenRouterModel.KIMI_K2_THINKING
     };
@@ -540,7 +542,7 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    return await callOpenRouter(messages, OpenRouterModel.QWEN3_CODER, 0.1, 6000);
+    return await callOpenRouter(messages, OpenRouterModel.QWEN3_CODER_NEXT, 0.1, 6000);
   }
 };
 
