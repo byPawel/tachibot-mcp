@@ -69,7 +69,7 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ## Skills (Claude Code)
 
-TachiBot ships with 7 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
+TachiBot ships with 8 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
 
 | Skill | What it does | Example |
 |-------|-------------|---------|
@@ -78,7 +78,8 @@ TachiBot ships with 7 slash commands for Claude Code. These orchestrate the tool
 | `/focus` | Mode-based reasoning (debate, research, analyze) | `/focus architecture-debate Redis vs Pg` |
 | `/breakdown` | Strategic decomposition with feasibility check | `/breakdown add OAuth with refresh tokens` |
 | `/decompose` | Split into sub-problems, deep-dive each one | `/decompose implement collaborative editor` |
-| `/prompt` | Apply 22 prompt engineering techniques | `/prompt first_principles why users churn` |
+| `/prompt` | Pick the right thinking technique for your problem | `/prompt why do users churn` |
+| `/algo` | Algorithm analysis with 3 specialized models | `/algo optimize LRU cache O(1)` |
 | `/tachi` | Help - see available skills, tools, key status | `/tachi` |
 
 Skills automatically adapt to your configured API keys. Even with just 1-2 providers, all skills work.
