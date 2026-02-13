@@ -60,6 +60,30 @@ echo ""
 echo "✅ TachiBot installed successfully!"
 echo ""
 
+# Install Claude Code skills
+SKILLS_DIR="$HOME/.claude/skills"
+echo "📝 Installing Claude Code skills..."
+
+if [ -d "$INSTALL_DIR/skills" ]; then
+    mkdir -p "$SKILLS_DIR"
+    for skill_dir in "$INSTALL_DIR/skills"/*/; do
+        skill_name=$(basename "$skill_dir")
+        target_dir="$SKILLS_DIR/$skill_name"
+
+        if [ -d "$target_dir" ]; then
+            echo "   Updating: /$skill_name"
+        else
+            echo "   Installing: /$skill_name"
+        fi
+
+        mkdir -p "$target_dir"
+        cp "$skill_dir"SKILL.md "$target_dir/SKILL.md"
+    done
+    echo "✅ Skills installed! Available: /judge, /think, /focus, /breakdown, /decompose, /prompt, /tachi"
+else
+    echo "⚠️  No skills directory found, skipping skill installation"
+fi
+
 # Get Node.js path
 NODE_PATH=$(which node)
 
@@ -139,4 +163,10 @@ echo "   \"GROK_API_KEY\": \"your-key-here\""
 echo "   \"OPENAI_API_KEY\": \"your-key-here\""
 echo ""
 echo "📖 Documentation: https://github.com/byPawel/tachibot-mcp"
+echo ""
+echo "💡 Try these skills in Claude Code:"
+echo "   /judge how to implement auth?"
+echo "   /think gemini optimize this query"
+echo "   /decompose implement real-time collaboration"
+echo "   /tachi (show all available skills)"
 echo ""

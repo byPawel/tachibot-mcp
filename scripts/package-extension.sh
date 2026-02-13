@@ -35,6 +35,7 @@ zip -r "$PACKAGE_NAME" \
     tools.config.json \
     profiles/ \
     workflows/ \
+    skills/ \
     README.md \
     LICENSE \
     .env.example \
@@ -54,6 +55,9 @@ if [ -f "$OUTPUT_PATH" ]; then
     echo "1. Download the .mcpb file"
     echo "2. Double-click to open in Claude Desktop"
     echo "3. Click 'Install' and configure your API keys"
+    echo ""
+    echo "📝 Skills included: /judge, /think, /focus, /breakdown, /decompose, /prompt, /tachi"
+    echo "   Copy skills/ to ~/.claude/skills/ for Claude Code slash commands"
     echo ""
     echo "💡 Or drag and drop the file into Claude Desktop Extensions settings"
 else
