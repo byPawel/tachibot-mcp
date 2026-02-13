@@ -58,6 +58,8 @@ This is the key flow. Analyze the user's intent and recommend a technique:
 | "What went well/wrong?" | `reflect` | Patterns, surprises, gaps, next steps |
 | "Debate X" / multiple experts | `persona_simulation` | Simulated expert debate |
 | "Apply X idea to Y domain" | `creative_use` | Cross-domain applications |
+| "Solve simplest parts first" / build up | `least_to_most` | Atomic parts first, build up to hardest |
+| "What if this fails?" / risk analysis | `pre_mortem` | Assume failure, find causes, mitigate |
 
 **Present 2-3 choices, then judge which is best:**
 

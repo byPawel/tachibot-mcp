@@ -34,7 +34,8 @@ Present this overview:
 | `/focus` | Mode-based reasoning (debate, research, analyze) | `/focus architecture-debate SQL vs NoSQL` |
 | `/breakdown` | Strategic overview: first principles + feasibility | `/breakdown add real-time collaboration` |
 | `/decompose` | Split into pieces, deep-dive each one | `/decompose implement auth system` |
-| `/prompt` | Apply prompt engineering techniques | `/prompt first_principles why users churn` |
+| `/prompt` | Pick the right thinking technique for your problem | `/prompt why do users churn` |
+| `/algo` | Algorithm analysis with 3 specialized models | `/algo optimize LRU cache O(1)` |
 | `/tachi` | This help screen | `/tachi` |
 
 ### Quick Start
@@ -45,7 +46,8 @@ Present this overview:
    - **Need to debate approaches?** -> `/focus architecture-debate`
    - **Need a strategic overview?** -> `/breakdown`
    - **Need to understand each piece deeply?** -> `/decompose`
-   - **Need a specific thinking technique?** -> `/prompt list`
+   - **Need a thinking technique?** -> `/prompt` (recommends one for you)
+   - **Algorithm or optimization?** -> `/algo`
 
 2. Or use tools directly: `grok_search`, `gemini_brainstorm`, `qwen_coder`, etc.
 ```
