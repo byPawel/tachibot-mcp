@@ -39,17 +39,17 @@ If `execute_prompt_technique` is unavailable, call the reasoning tool directly w
 
 **Extract**: Core truths, assumptions to challenge, atomic units.
 
-### Step 2: Decompose (Sub-problems & Dependencies)
+### Step 2: Decompose (Sub-problems & Dependencies) — Least-to-Most
 
 Use the FIRST available:
-1. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "decompose", tool: "kimi_thinking", query: "..." })`
-2. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "decompose", tool: "kimi_decompose", query: "..." })`
+1. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "least_to_most", tool: "kimi_thinking", query: "..." })`
+2. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "least_to_most", tool: "kimi_decompose", query: "..." })`
 3. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "decompose", tool: "gemini_analyze_text", query: "..." })`
 4. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "decompose", tool: "openai_reason", query: "..." })`
 
-Feed step 1 output into the query.
+Feed step 1 output into the query. Use `least_to_most` to order sub-tasks from simplest → hardest (atomic parts first, complex parts last — each builds on previous solutions).
 
-**Extract**: Sub-tasks, dependency graph, execution order.
+**Extract**: Sub-tasks ordered simplest→hardest, dependency graph, execution order.
 
 ### Step 3: Patterns (Causality & Cycles)
 
@@ -62,14 +62,16 @@ Feed step 2 output into the query.
 
 **Extract**: Hidden connections, recurring themes, potential cycles/loops.
 
-### Step 4: Feasibility (Reality Check)
+### Step 4: Pre-Mortem + Feasibility (Reality Check)
 
 Use the FIRST available:
-1. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "feasibility", tool: "grok_reason", query: "..." })`
-2. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "feasibility", tool: "openai_reason", query: "..." })`
+1. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "pre_mortem", tool: "grok_reason", query: "..." })`
+2. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "pre_mortem", tool: "openai_reason", query: "..." })`
 3. `mcp__tachibot-mcp__execute_prompt_technique({ technique: "feasibility", tool: "gemini_analyze_text", query: "..." })`
 
-**Extract**: Blockers, risks, mitigations, go/no-go.
+Use `pre_mortem` when available: "Assume this failed 6 months from now — why?" This catches failure modes that forward analysis misses (Klein 2007). Fall back to `feasibility` if `pre_mortem` isn't available.
+
+**Extract**: Failure causes ranked by likelihood, early warning signs, mitigations, go/no-go.
 
 ### Step 5: Synthesize Output
 
@@ -98,9 +100,9 @@ Present structured breakdown:
 - Cycle: [A -> B -> C -> A]
 - Anomaly: [unexpected finding]
 
-## Execution Order
-1. [First] - no deps, low risk
-2. [Second] - deps on 1
+## Execution Order (simplest → hardest)
+1. [Simplest] - no deps, builds foundation
+2. [Next] - builds on 1
 ...
 
 ## Feasibility

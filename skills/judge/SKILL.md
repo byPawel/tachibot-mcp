@@ -53,14 +53,14 @@ Call ALL available analysis tools in parallel:
 - `mcp__tachibot-mcp__qwen_coder` - code review and bugs
 - `mcp__tachibot-mcp__qwen_algo` - algorithm optimization
 
-### Step 3: First Judge
+### Step 3: First Judge (with Pre-Mortem)
 
 Use the FIRST available from this priority list:
 1. `mcp__tachibot-mcp__openai_reason` (GPQA 87.7%)
 2. `mcp__tachibot-mcp__gemini_analyze_text` (1M context)
 3. `mcp__tachibot-mcp__grok_reason` (strong reasoning)
 
-Prompt: Extract key insights from each expert, identify consensus and conflicts, provide preliminary verdict.
+Prompt: "Extract key insights from each expert, identify consensus and conflicts. Then apply PRE-MORTEM: assume the recommended approach FAILED — what were the top 3 causes? Are those causes addressed in the analysis? Provide preliminary verdict with failure risks."
 
 ### Step 4: Final Synthesis
 
