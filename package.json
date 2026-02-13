@@ -13,6 +13,7 @@
     "dist/",
     "profiles/",
     "workflows/",
+    "skills/",
     "docs/",
     "tools.config.json",
     "smithery.yaml",
@@ -45,7 +46,8 @@
     "prepublishOnly": "npm run build",
     "package:extension": "npm run build && ./scripts/package-extension.sh",
     "build:mcpb": "npm run package:extension",
-    "verify": "node scripts/verify-installation.js"
+    "verify": "node scripts/verify-installation.js",
+    "postinstall": "bash scripts/install-skills.sh 2>/dev/null || true"
   },
   "keywords": [
     "mcp",
