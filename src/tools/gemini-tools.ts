@@ -217,27 +217,43 @@ export const geminiQueryTool = {
  */
 export const geminiBrainstormTool = {
   name: "gemini_brainstorm",
-  description: "Brainstorming. Put your PROMPT in the 'prompt' parameter.",
+  description: "Convergent synthesis: cluster, refine, and prioritize raw ideas into structured hierarchies. Use AFTER divergent ideation to organize and rank ideas by impact/feasibility. Put your PROMPT in the 'prompt' parameter.",
   parameters: z.object({
-    prompt: z.string().describe("The topic or problem to brainstorm about (REQUIRED - put your topic here)"),
-    claudeThoughts: z.string().optional().describe("Claude's initial thoughts to build upon"),
-    maxRounds: z.number().optional().default(1).describe("Number of brainstorming rounds (default: 1)")
+    prompt: z.string().describe("The ideas or topic to organize and refine (REQUIRED - put raw ideas or topic here)"),
+    claudeThoughts: z.string().optional().describe("Claude's initial thoughts or raw ideas to cluster and refine"),
+    maxClusters: z.number().optional().default(5).describe("Number of idea clusters to create (default: 5)")
   }),
-  execute: async (args: { prompt: string; claudeThoughts?: string; maxRounds?: number }, { log, reportProgress }: any) => {
-    const systemPrompt = `Creative brainstorming partner.
-${args.claudeThoughts ? `Building on: ${args.claudeThoughts}` : ''}
-Generate: multiple approaches, unconventional ideas, challenges, feasibility.
+  execute: async (args: { prompt: string; claudeThoughts?: string; maxClusters?: number }, { log, reportProgress }: any) => {
+    const systemPrompt = `Convergent synthesis engine. Output consumed by automated toolchain.
+
+TASK: Cluster and refine ideas into ${args.maxClusters || 5} prioritized groups.
+
+TECHNIQUE [integration_reflection]: Synthesize convergent themes across all inputs. Find meta-patterns. Identify where different approaches complement each other.
+TECHNIQUE [pattern_recognition]: Identify recurring themes, cause-and-effect relationships, structural similarities across domains, and anomalies.
+TECHNIQUE [feasibility_analysis]: Rank by technical feasibility, economic viability, time requirements, and risk assessment.
+
+PROCESS:
+1. Extract all distinct ideas from the input.
+2. Apply pattern_recognition: find recurring themes, causal links, cross-domain parallels.
+3. Cluster ideas into ${args.maxClusters || 5} groups by theme.
+4. Apply feasibility_analysis: within each cluster, rank by impact * feasibility.
+5. Apply integration_reflection: synthesize the meta-pattern across clusters.
+6. For each cluster: name, top ideas, combined score (1-10).
+
+${args.claudeThoughts ? `PRIOR ANALYSIS TO BUILD ON:\n${args.claudeThoughts}` : ''}
+
+OUTPUT:
+Per cluster: Name | Score (1-10) | Top ideas (ranked) | Key insight
+Final: Which cluster has highest expected value and why. State the meta-pattern.
+No preamble. Structured output only.
 ${FORMAT_INSTRUCTION}`;
 
-    // Skip validation for internal calls - input validated at MCP layer
     const reportFn = reportProgress ?? (async () => {});
     const response = await withHeartbeat(
-      () => callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.9, 'llm-orchestration'),
+      () => callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7, 'llm-orchestration'),
       reportFn
     );
 
-    // If multiple rounds requested, we could iterate here
-    // For now, return the single response
     return stripFormatting(response);
   }
 };
@@ -290,28 +306,47 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const geminiAnalyzeTextTool = {
   name: "gemini_analyze_text",
-  description: "Text analysis. Put the TEXT in the 'text' parameter, NOT in 'type'.",
+  description: "Rhetorical analysis: dissect arguments for bias, logical fallacies, and persuasion tactics. Use for evaluating claims, detecting manipulation, or understanding argument structure. Put the TEXT in the 'text' parameter.",
   parameters: z.object({
     text: z.string().describe("The text to analyze (REQUIRED - put your text here)"),
     type: z.string()
       .optional()
-      .default("general")
-      .describe("Analysis type (e.g., sentiment, summary, entities, key-points, general)")
+      .default("rhetoric")
+      .describe("Analysis type: rhetoric (bias/fallacies/persuasion), sentiment, summary, entities, key-points")
   }),
   execute: async (args: { text: string; type?: string }, { log, reportProgress }: any) => {
     const analysisPrompts: Record<string, string> = {
+      rhetoric: `TECHNIQUE [systematic_analysis]: Break down into components, examine relationships and dependencies, identify patterns, evaluate strengths/weaknesses.
+TECHNIQUE [alternative_perspectives]: Analyze from 5 angles: naive reader, skeptical scientist, persuasion expert, logician, affected stakeholder.
+
+PROCESS:
+1. Identify the core claim(s) and thesis.
+2. Map argument structure: premises → reasoning → conclusions.
+3. Apply systematic_analysis: decompose into logical components, find dependencies.
+4. Detect fallacies: ad hominem, straw man, false dichotomy, appeal to authority, etc.
+5. Identify bias signals: loaded language, omitted context, false balance, cherry-picked data.
+6. Map persuasion tactics: ethos (credibility), pathos (emotion), logos (logic).
+7. Apply alternative_perspectives: how would each angle evaluate this text?
+
+OUTPUT:
+- CLAIMS: Core claims extracted
+- STRUCTURE: Argument map (premises → conclusion)
+- FALLACIES: Each with name, location in text, severity (critical/moderate/minor)
+- BIAS: Direction, evidence, confidence (high/medium/low)
+- PERSUASION: Tactics used with examples
+- VERDICT: Overall reliability score (1-10) with justification`,
       sentiment: "Analyze the sentiment (positive, negative, neutral) with confidence scores",
       summary: "Provide a concise summary of the main points",
       entities: "Extract all named entities (people, places, organizations, etc.)",
-      "key-points": "Identify and list the key points and main arguments",
-      general: "Provide comprehensive text analysis including sentiment, key points, and entities"
+      "key-points": "Identify and list the key points and main arguments"
     };
 
-    const analysisText = analysisPrompts[args.type || 'general'] || `Perform ${args.type} analysis`;
-    const systemPrompt = `Text analysis expert. ${analysisText}.
+    const analysisText = analysisPrompts[args.type || 'rhetoric'] || `Perform ${args.type} analysis`;
+    const systemPrompt = `Rhetorical analysis engine. Output consumed by automated toolchain.
+${analysisText}
+No preamble. Structured output only.
 ${FORMAT_INSTRUCTION}`;
 
-    // Skip validation - text analysis may contain patterns from LLM discussions
     const reportFn = reportProgress ?? (async () => {});
     const result = await withHeartbeat(
       () => callGemini(

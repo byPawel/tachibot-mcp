@@ -695,9 +695,9 @@ ${DISTILL_SUFFIX}`,
     id: "critique",
     phase: "Critique",
     tool: "openai_reason",
-    thinking: "Adversarial review. GPT plays devil's advocate - actively looking for holes, gaps, and failure modes. When code is provided, it hunts for security vulnerabilities and performance issues in the actual implementation.",
+    thinking: "Pre-mortem + adversarial review. GPT assumes this implementation has FAILED in production, then works backward to find why. Combines pre-mortem analysis (Klein 2007) with devil's advocate critique. When code is provided, it hunts for security vulnerabilities and performance issues in the actual implementation.",
     buildParams: (task, _context, codeContext, answers, prior) => ({
-      query: `Review this plan for holes, gaps, and weaknesses:
+      query: `PRE-MORTEM + CRITIQUE: Assume this implementation FAILED in production 3 months from now. Work backward to find why.
 
 TASK: ${task}
 ${answers ? `USER CLARIFICATIONS:\n${answers}` : ""}
@@ -711,14 +711,17 @@ ${codeContext ? `
 ACTUAL CODE BEING MODIFIED:
 ${truncateSmart(codeContext, CODE_CONTEXT_LIMIT)}` : ""}
 
+TECHNIQUE [pre_mortem]: This project failed. Why? Brainstorm 5-7 specific failure causes. Rank by likelihood.
+
 Find:
-1. Missing considerations
-2. Potential failure points
+1. TOP 3 most likely failure causes (pre-mortem) with early warning signs
+2. Missing considerations the analyses overlooked
 3. Security vulnerabilities${codeContext ? " (check actual code)" : ""}
 4. Performance issues${codeContext ? " (check O-complexity)" : ""}
 5. Edge cases not covered
 ${prior.debate_con ? "6. Unresolved tensions from the debate" : ""}
-7. Score the proposed approach /10
+7. For each failure cause: what mitigation should be in the plan?
+8. Score the proposed approach /10
 ${DISTILL_SUFFIX}`,
       mode: "analytical",
     }),
@@ -892,9 +895,9 @@ Include overall confidence score /10.`,
     id: "judge_final",
     phase: "Judgment",
     tool: "gemini_analyze_text",
-    thinking: "Final arbiter. Gemini sees everything - all analyses, the critique, the draft plan - and makes the final call. Creates the actionable plan with quality scores and specific file/line references.",
+    thinking: "Final arbiter with bite-sized TDD output. Gemini sees everything - all analyses, the critique, the draft plan - and produces an actionable plan in writing-plans format: exact files, bite-sized steps (2-5 min each), test-first approach, commit points. This bridges planner_maker's multi-model intelligence with writing-plans' execution format.",
     buildParams: (task, context, codeContext, answers, prior) => ({
-      text: `Create the FINAL implementation plan.
+      text: `Create the FINAL implementation plan in BITE-SIZED STEPS format.
 
 TASK: ${task}
 ${context ? `CONTEXT: ${context}` : ""}
@@ -903,19 +906,33 @@ ${answers ? `USER REQUIREMENTS:\n${answers}` : ""}
 QWEN'S DRAFT PLAN:
 ${prior.judge_draft || "N/A"}
 
-GPT'S CRITIQUE:
+GPT'S PRE-MORTEM + CRITIQUE:
 ${truncateSmart(prior.critique, PRIOR_CONTEXT_LIMIT_SYNTHESIS) || "N/A"}
 ${prior.decompose_kimi ? `\nTASK DECOMPOSITION (subtasks + dependencies):\n${truncateSmart(prior.decompose_kimi, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
 ${prior.ux_judge ? `\nUX ASSESSMENT:\n${truncateSmart(prior.ux_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
 ${prior.responsive_judge ? `\nRESPONSIVE ASSESSMENT:\n${truncateSmart(prior.responsive_judge, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
 ${codeContext ? "\nNote: All analysis was performed on actual code provided." : ""}
 
-Create a final, actionable plan with:
-1. Clear numbered steps with success criteria
-2. Complexity estimates (O notation)
-3. Potential blockers and mitigations
-4. Checkpoints at 50%, 80%, and 100%
-5. **QUALITY ASSESSMENT:**
+OUTPUT FORMAT — Each task must be bite-sized (2-5 min):
+
+### Task N: [Component Name]
+**Files:** Create: path/to/file | Modify: path/to/file:lines | Test: path/to/test
+**Step 1:** Write the failing test (show test code)
+**Step 2:** Run test to verify it fails (exact command + expected output)
+**Step 3:** Write minimal implementation (show code)
+**Step 4:** Run test to verify it passes (exact command)
+**Step 5:** Commit (exact git command with message)
+
+REQUIREMENTS:
+1. Exact file paths for every change
+2. Test-first (TDD): write test → fail → implement → pass → commit
+3. Complete code in each step (not "add validation" — show the actual code)
+4. Exact commands with expected output
+5. Checkpoints at 50%, 80%, and 100%
+6. Address ALL pre-mortem failure causes from critique as mitigations
+7. Order tasks simplest → hardest (least-to-most)
+
+**QUALITY ASSESSMENT (at the end):**
    - Code Quality: X/10
    - Security: X/10
    - Performance: X/10
@@ -923,7 +940,7 @@ ${prior.ux_judge ? `   - UX/Accessibility: X/10\n` : ""}${prior.responsive_judge
    - Overall: X/10`,
       type: "general",
     }),
-    description: "Final plan synthesis (Gemini)",
+    description: "Final plan in bite-sized TDD steps (Gemini)",
     devlogType: "progress",
     isSynthesis: true,
   },

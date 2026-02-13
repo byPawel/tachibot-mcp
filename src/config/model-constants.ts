@@ -85,9 +85,10 @@ export const KIMI_MODELS = {
 } as const;
 
 // MiniMax Models (MiniMax via OpenRouter)
-// M2.1 released Dec 23, 2025 - Best agentic model, VERY CHEAP
+// M2.5 released Feb 2026 - Best agentic model, SWE-Bench 80.2%, VERY CHEAP
 export const MINIMAX_MODELS = {
-  M2_1: "minimax/minimax-m2.1",                 // 230B/10B MoE - SWE-Bench 72.5%, τ²-Bench 77.2%, $0.27/$1.10
+  M2_5: "minimax/minimax-m2.5",                 // SWE-Bench 80.2%, 37% faster than M2.1, open source
+  M2_1: "minimax/minimax-m2.1",                 // 230B/10B MoE - SWE-Bench 72.5%, τ²-Bench 77.2% (legacy)
   M2: "minimax/minimax-m2",                     // Fallback model
 } as const;
 
@@ -185,7 +186,7 @@ export const CURRENT_MODELS = {
     kimi: KIMI_MODELS.K2_5,                // K2.5 multimodal + agent swarm (thinking via reasoning param)
     qwen: QWEN_MODELS.CODER_NEXT,             // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70%
     qwen_reason: QWEN_MODELS.MAX_THINKING, // NEW: Flagship reasoning (>1T params, HMMT 98%)
-    minimax: MINIMAX_MODELS.M2_1,          // NEW: Best agentic model, very cheap
+    minimax: MINIMAX_MODELS.M2_5,          // M2.5: SWE-Bench 80.2%, 37% faster, open source
   }
 } as const;
 
@@ -309,14 +310,14 @@ export const TOOL_DEFAULTS = {
     maxTokens: 16000,
     temperature: 0.7,
   },
-  // MiniMax tools - VERY CHEAP ($0.27/$1.10 per M tokens)
+  // MiniMax tools - VERY CHEAP, open source
   minimax_code: {
-    model: MINIMAX_MODELS.M2_1,           // SWE-Bench 72.5%
+    model: MINIMAX_MODELS.M2_5,           // SWE-Bench 80.2%, 37% faster
     maxTokens: 4000,
     temperature: 0.3,                      // Lower for precise code
   },
   minimax_agent: {
-    model: MINIMAX_MODELS.M2_1,           // τ²-Bench 77.2%, best agentic
+    model: MINIMAX_MODELS.M2_5,           // SWE-Bench 80.2%, best agentic, open source
     maxTokens: 4000,
     temperature: 0.5,                      // Balanced for agentic tasks
   },
@@ -378,6 +379,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen/qwen3-max-thinking": "qwen-max",
 
   // MiniMax
+  "minimax/minimax-m2.5": "minimax-m2.5",
   "minimax/minimax-m2.1": "minimax-m2.1",
   "minimax/minimax-m2": "minimax-m2",
 } as const;
@@ -423,6 +425,7 @@ export const MODEL_PRICING: Record<string, number> = {
   "qwen/qwen3-max-thinking": 0.005,
 
   // OpenRouter models - MiniMax (VERY CHEAP!)
-  "minimax/minimax-m2.1": 0.000685,       // ($0.27 + $1.10) / 2 / 1000 - best value!
+  "minimax/minimax-m2.5": 0.000685,       // ~same pricing tier as M2.1, 37% faster
+  "minimax/minimax-m2.1": 0.000685,       // ($0.27 + $1.10) / 2 / 1000 - legacy
   "minimax/minimax-m2": 0.0005,
 } as const;

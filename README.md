@@ -4,18 +4,18 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.14.7-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
-[![Tools](https://img.shields.io/badge/tools-48_active-brightgreen.svg)](#-tool-ecosystem-48-tools)
+[![Version](https://img.shields.io/badge/version-2.15.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Tools](https://img.shields.io/badge/tools-51_active-brightgreen.svg)](#-tool-ecosystem-51-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**48 AI tools. 7 providers. One protocol.**
+**51 AI tools. 7 providers. One protocol.**
 
-Orchestrate Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi K2.5, and MiniMax M2.1
+Orchestrate Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi K2.5, and MiniMax M2.5
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
-[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-48-tools) &#183; [Documentation](https://tachibot.com/docs)
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-51-tools) &#183; [Documentation](https://tachibot.com/docs)
 
 <br>
 
@@ -28,57 +28,59 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ---
 
-## What's New in v2.14.7
+## What's New in v2.15.0
 
-### Gemini Judge &amp; Jury System
-- **`gemini_judge`** &mdash; Science-backed LLM-as-a-Judge (arXiv:2411.15594). 4 modes: synthesize, evaluate, rank, resolve
-- **`jury`** &mdash; Multi-model jury panel. Configurable jurors (grok, openai, qwen, kimi, perplexity, minimax) run in parallel, Gemini synthesizes the verdict. Based on "Replacing Judges with Juries" (Cohere, arXiv:2404.18796)
+### `/blueprint` Skill &mdash; Multi-Model Implementation Planning
+New skill that creates bite-sized TDD implementation plans using a 7-step multi-model council:
+```
+/blueprint add OAuth with refresh tokens
+```
+Pipeline: Grok search → Qwen+Kimi analysis → Kimi decompose → GPT pre-mortem critique → Gemini final judgment → **bite-sized TDD output** (exact files, test-first steps, commit points).
 
-### Perplexity Model Fixes
-- Fixed `sonar-pro` model ID (was accidentally using lightweight `sonar`)
-- `perplexity_research` now uses **`sonar-deep-research`** &mdash; exhaustive multi-source reports in a single call
+Bridges `planner_maker`'s multi-model intelligence with the `writing-plans` execution format.
 
-### Qwen3-Coder-Next
-`qwen_coder` now runs on **Qwen3-Coder-Next** (Feb 2026) &mdash; purpose-built for agentic coding:
+### 31 Prompt Engineering Techniques (was 22)
+Added 9 research-backed techniques for coding and decision-making:
 
-| | Before (qwen3-coder) | After (qwen3-coder-next) |
-|---|---|---|
-| **Params** | 480B / ~35B active | 80B / 3B active |
-| **Context** | 131K | 262K |
-| **SWE-Bench** | 69.6% | >70% |
-| **Pricing** | $0.22/$0.88 per M | $0.07/$0.30 per M |
+| Technique | Source | Category |
+|-----------|--------|----------|
+| `reflexion` | Shinn et al. 2023 | Engineering |
+| `react` (ReAct) | Yao et al. 2022 | Engineering |
+| `rubber_duck` | Hunt & Thomas 2008 | Engineering |
+| `test_driven` | Beck 2003 | Engineering |
+| `scot` (Structured CoT) | Li et al. 2025 (+13.79% HumanEval) | Structured Coding |
+| `pre_post` (Contracts) | Empirical SE 2025 | Structured Coding |
+| `bdd_spec` (Given/When/Then) | BDD 2025 | Structured Coding |
+| `least_to_most` | Zhou et al. 2022 | Research |
+| `pre_mortem` | Klein 2007 | Decision |
 
-3x cheaper, 2x context, better benchmarks. Falls back to legacy 480B on provider failure.
+Techniques are embedded directly in tool system prompts for automatic application.
 
-### Kimi K2.5 Suite (4 tools)
-| Tool | Capability | Highlight |
-|------|-----------|-----------|
-| `kimi_thinking` | Step-by-step reasoning | Agent Swarm architecture |
-| `kimi_code` | Code generation & fixing | SWE-Bench 76.8% |
-| `kimi_decompose` | Task decomposition | Dependency graphs, parallel subtasks |
-| `kimi_long_context` | Document analysis | 256K context window |
+### MiniMax M2.5 Upgrade
+- `minimax_code` &mdash; SWE-Bench **80.2%**, per-task TECHNIQUE tags (SCoT, reflexion, rubber_duck), per-task temperatures
+- `minimax_agent` &mdash; ReAct + least-to-most decomposition protocol, HALT criteria
 
-### MiniMax M2.1 (2 tools)
-- `minimax_code` &mdash; SWE tasks at very low cost (72.5% SWE-Bench)
-- `minimax_agent` &mdash; Agentic workflows (77.2% &tau;&sup2;-Bench)
-
-### Qwen Reasoning
-- `qwen_reason` &mdash; Heavy reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT math)
+### Enhanced Skills
+- `/breakdown` &mdash; now uses `least_to_most` ordering + `pre_mortem` failure analysis
+- `/judge` &mdash; first judge now runs pre-mortem ("assume this FAILED")
+- `/decompose` &mdash; deep-dives include pre/post contracts per sub-problem
+- `/prompt` &mdash; auto-recommend flow with 30-intent matching guide, 13 categories
 
 ---
 
 ## Skills (Claude Code)
 
-TachiBot ships with 8 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
+TachiBot ships with 9 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
 
 | Skill | What it does | Example |
 |-------|-------------|---------|
+| `/blueprint` | Multi-model planning → bite-sized TDD steps | `/blueprint add OAuth with refresh tokens` |
 | `/judge` | Multi-model council - parallel analysis with synthesis | `/judge how to implement rate limiting` |
 | `/think` | Sequential reasoning chain with any model | `/think grok,gemini design a cache layer` |
 | `/focus` | Mode-based reasoning (debate, research, analyze) | `/focus architecture-debate Redis vs Pg` |
-| `/breakdown` | Strategic decomposition with feasibility check | `/breakdown add OAuth with refresh tokens` |
+| `/breakdown` | Strategic decomposition with pre-mortem | `/breakdown refactor payment module` |
 | `/decompose` | Split into sub-problems, deep-dive each one | `/decompose implement collaborative editor` |
-| `/prompt` | Pick the right thinking technique for your problem | `/prompt why do users churn` |
+| `/prompt` | Recommend the right thinking technique (31 available) | `/prompt why do users churn` |
 | `/algo` | Algorithm analysis with 3 specialized models | `/algo optimize LRU cache O(1)` |
 | `/tachi` | Help - see available skills, tools, key status | `/tachi` |
 
@@ -91,14 +93,14 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ## Key Features
 
 ### Multi-Model Intelligence
-- **48 AI Tools** across 7 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax
-- **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models
+- **51 AI Tools** across 7 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax
+- **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
 - **Smart Routing** &mdash; Automatic model selection for optimal results
 - **OpenRouter Gateway** &mdash; Optional single API key for all providers
 
 ### Advanced Workflows
 - **YAML-Based Workflows** &mdash; Multi-step AI processes with dependency graphs
-- **Prompt Engineering** &mdash; 14 research-backed techniques built-in
+- **Prompt Engineering** &mdash; 31 research-backed techniques (including SCoT, ReAct, Reflexion)
 - **Verification Checkpoints** &mdash; 50% / 80% / 100% with automated quality scoring
 - **Parallel Execution** &mdash; Run multiple models simultaneously
 
@@ -106,11 +108,11 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 | Profile | Tools | Best For |
 |---------|-------|----------|
 | **Minimal** | 12 | Quick tasks, low token budget |
-| **Research Power** | 30 | Deep investigation, multi-source |
-| **Code Focus** | 28 | Software development, SWE tasks |
-| **Balanced** | 38 | General-purpose, mixed workflows |
-| **Heavy Coding** (default) | 44 | Max code tools + agentic workflows |
-| **Full** | 50 | Everything enabled |
+| **Research Power** | 31 | Deep investigation, multi-source |
+| **Code Focus** | 29 | Software development, SWE tasks |
+| **Balanced** | 39 | General-purpose, mixed workflows |
+| **Heavy Coding** (default) | 45 | Max code tools + agentic workflows |
+| **Full** | 51 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support
@@ -172,19 +174,19 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## Tool Ecosystem (48 Tools)
+## Tool Ecosystem (51 Tools)
 
 ### Research & Search (6)
 `perplexity_ask` &#183; `perplexity_research` &#183; `perplexity_reason` &#183; `grok_search` &#183; `openai_search` &#183; `gemini_search`
 
-### Reasoning & Planning (8)
-`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans`
+### Reasoning & Planning (9)
+`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans`
 
 ### Code Intelligence (8)
 `kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `minimax_code` &#183; `minimax_agent`
 
-### Analysis & Brainstorming (9)
-`gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `kimi_long_context`
+### Analysis & Judgment (11)
+`gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_judge` &#183; `jury` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `kimi_long_context`
 
 ### Meta & Orchestration (5)
 `think` &#183; `nextThought` &#183; `focus` &#183; `tachi` &#183; `usage_stats`

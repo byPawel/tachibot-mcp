@@ -12,7 +12,7 @@ Helps you pick the best prompt engineering technique for your problem, then appl
 ```
 /prompt [query]                    — recommends technique based on your intent
 /prompt [technique] [query]        — applies a specific technique
-/prompt list                       — show all 22 techniques
+/prompt list                       — show all 31 techniques
 /prompt [category]                 — list techniques in a category
 ```
 
@@ -27,7 +27,7 @@ mcp__tachibot-mcp__list_prompt_techniques({ filter: "all" })
 ```
 mcp__tachibot-mcp__list_prompt_techniques({ filter: "[category]" })
 ```
-Categories: `creative`, `research`, `analytical`, `reflective`, `reasoning`, `verification`, `meta`, `debate`, `judgment`
+Categories: `creative`, `research`, `research_advanced`, `analytical`, `reflective`, `reasoning`, `verification`, `meta`, `debate`, `judgment`, `engineering`, `structured_coding`, `decision`
 
 ### For `/prompt [query]` (NO technique specified — RECOMMEND one):
 
@@ -58,8 +58,16 @@ This is the key flow. Analyze the user's intent and recommend a technique:
 | "What went well/wrong?" | `reflect` | Patterns, surprises, gaps, next steps |
 | "Debate X" / multiple experts | `persona_simulation` | Simulated expert debate |
 | "Apply X idea to Y domain" | `creative_use` | Cross-domain applications |
+| "Analyze X systematically" / structured analysis | `analyze` | Components → relationships → patterns → conclusions |
 | "Solve simplest parts first" / build up | `least_to_most` | Atomic parts first, build up to hardest |
 | "What if this fails?" / risk analysis | `pre_mortem` | Assume failure, find causes, mitigate |
+| "Iteratively fix this code" / self-correct solution | `reflexion` | Generate→Critique→Revise loop, score 1-10 |
+| "Execute multi-step task" / reason-then-act | `react` | Thought→Action→Observation loops |
+| "Explain this code to find the bug" / walkthrough | `rubber_duck` | Explain line-by-line to novice, flag assumptions |
+| "Write tests for X" / test-first approach | `test_driven` | Edge cases→Tests→Minimal code→Refactor |
+| "Plan and implement X from scratch" / new code | `scot` | Reason in code structures before writing (sequence/branch/loop) |
+| "Define the contract for X" / API boundaries | `pre_post` | State preconditions + postconditions before implementing |
+| "Specify behavior for X" / acceptance criteria | `bdd_spec` | Given/When/Then scenarios before code |
 
 **Present 2-3 choices, then judge which is best:**
 
@@ -129,10 +137,19 @@ Match the tool to the technique category:
 | Verification | `openai_reason` | `grok_reason` |
 | Debate | `grok_reason` | `openai_reason` |
 | Judgment | `gemini_analyze_text` | `openai_reason` |
+| Meta | `openai_reason` | `grok_reason` |
+| Engineering | `qwen_coder` | `grok_reason` |
+| Structured Coding | `qwen_coder` | `minimax_code` |
+| Research Advanced | `perplexity_research` | `kimi_thinking` |
+| Decision | `grok_reason` | `openai_reason` |
 
 ## Examples
 - `/prompt why do users abandon checkout` — recommends `first_principles`
 - `/prompt first_principles why do users abandon checkout` — applies directly
 - `/prompt how should I implement caching` — recommends `tree_of_thoughts`
-- `/prompt list` — shows all 22 techniques
+- `/prompt list` — shows all 33 techniques
 - `/prompt creative` — shows creative techniques only
+- `/prompt reflexion fix my authentication middleware` — iterate→critique→revise loop
+- `/prompt scot implement a rate limiter` — reason in code structures first
+- `/prompt bdd_spec user registration flow` — Given/When/Then before code
+- `/prompt pre_mortem deploy to production` — assume failure, find causes

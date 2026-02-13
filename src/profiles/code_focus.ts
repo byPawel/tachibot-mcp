@@ -30,6 +30,7 @@ export const codeFocusProfile: ProfileConfig = {
     jury: false,
     qwen_coder: true,
     qwen_algo: true,
+    qwq_reason: true,          // Multi-perspective deliberation (free tier)
     qwen_reason: false,        // Not needed for code focus
     kimi_thinking: true,
     kimi_code: true,

@@ -1,6 +1,6 @@
 # TachiBot MCP - Complete Tools Reference
 
-**Complete parameter schemas, advanced usage, and examples for all 31 tools (32 with competitive mode)**
+**Complete parameter schemas, advanced usage, and examples for all 51 tools**
 
 ---
 

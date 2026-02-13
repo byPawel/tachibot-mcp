@@ -597,18 +597,15 @@ ${FORMAT_INSTRUCTION}`
 
 /**
  * OpenAI Brainstorm Tool
- * Creative ideation and brainstorming
+ * Creative engineering problem-solving - find the "3rd option"
  */
 export const openAIBrainstormTool = {
   name: "openai_brainstorm",
-  description: "Creative brainstorming. Put your PROBLEM in the 'problem' parameter.",
+  description: "Find alternative approaches: when stuck on a programming problem, reveals 3rd/4th/5th options you haven't considered, with cost of each. Use when you think there's only 1-2 ways to do something. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
-    problem: z.string().describe("The problem or topic to brainstorm about (REQUIRED - put your question here)"),
-    constraints: z.string().optional().describe("Any constraints to consider in brainstorming"),
-    quantity: z.number().optional().describe("Number of ideas to generate (default: 5)"),
-    style: z.string()
-      .optional()
-      .describe("Brainstorming style (e.g., innovative, practical, wild, systematic)"),
+    problem: z.string().describe("The engineering problem or design tradeoff to brainstorm about (REQUIRED)"),
+    constraints: z.string().optional().describe("Technical constraints: language, framework, performance requirements, team size"),
+    quantity: z.number().optional().describe("Number of approaches to generate (default: 5)"),
     model: z.enum(["gpt-5.2", "gpt-5.2-pro"])
       .optional()
       .describe("Model to use - gpt-5.2 (default) or gpt-5.2-pro (more expensive)"),
@@ -617,41 +614,56 @@ export const openAIBrainstormTool = {
       .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh"),
     max_tokens: z.number().optional().describe("Maximum tokens for response")
   }),
-  execute: async (args: { problem: string; constraints?: string; quantity?: number; style?: string; model?: string; reasoning_effort?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
+  execute: async (args: { problem: string; constraints?: string; quantity?: number; model?: string; reasoning_effort?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
     const {
       problem,
       constraints,
       quantity = 5,
-      style = "innovative",
-      model = OPENAI_MODELS.DEFAULT,  // Default to gpt-5.2 (use reasoning.effort for "thinking")
+      model = OPENAI_MODELS.DEFAULT,
       reasoning_effort = "medium",
       max_tokens = 4000
     } = args;
-    const stylePrompts = {
-      innovative: "Focus on novel, cutting-edge solutions",
-      practical: "Emphasize feasible, implementable ideas",
-      wild: "Think outside the box with unconventional approaches",
-      systematic: "Generate methodical, well-structured solutions"
-    };
 
     const messages = [
       {
         role: "system",
-        content: `You are a creative problem-solver and ideation expert.
-Generate ${quantity} distinct ideas.
-Style: ${stylePrompts[style as keyof typeof stylePrompts]}
-${constraints ? `Constraints: ${constraints}` : ''}
-Format: Number each idea and provide a brief explanation.
+        content: `Alternative approach finder for engineering problems. Output consumed by automated toolchain.
+
+TASK: The user thinks there are only 1-2 ways to solve this. Find ${quantity} high-quality alternatives. Each must be production-ready (no vaporware) and include its real cost. Prioritize simplicity.
+
+TECHNIQUE [what_if_speculation]: "What if we don't have to choose A vs B? What if the constraint itself is wrong? What if we solve a different problem that makes this one disappear?"
+TECHNIQUE [innovative_solutions]: Borrow patterns from other engineering domains. Combine existing approaches into hybrids. Reframe to unlock solutions the original framing blocks.
+
+PROCESS:
+1. Identify what the user likely already considered (the obvious 1-2 approaches).
+2. State why those feel like the only options (the hidden assumption).
+3. Generate ${quantity} alternative approaches they haven't considered:
+   - Hybrids (combine elements of obvious approaches)
+   - Reframes (solve a different problem that dissolves this one)
+   - Borrowed patterns (technique proven in a different domain)
+   - Inversion (do the opposite of conventional wisdom)
+4. For EACH approach, state the cost honestly.
+
+${constraints ? `CONSTRAINTS: ${constraints}` : ''}
+
+OUTPUT per approach:
+- Name (2-4 words)
+- How it works (2-3 sentences)
+- Cost: effort (hours/days/weeks), complexity (low/med/high), risk (what could go wrong)
+- Why you wouldn't have thought of it
+
+Start with: "You're probably considering [X] and [Y]. Here are ${quantity} other ways:"
+All approaches must be production-ready. No theoretical/vaporware. If you can't find ${quantity} good ones, return fewer rather than filler.
 ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: `Brainstorm solutions for: ${problem}`
+        content: problem
       }
     ];
 
     const modelEnum = model as OpenAIModel;
-    return await callOpenAIWithCustomParams(messages, modelEnum, 0.9, max_tokens, reasoning_effort, options.skipValidation || false);
+    return await callOpenAIWithCustomParams(messages, modelEnum, 0.95, max_tokens, reasoning_effort, options.skipValidation || false);
   }
 };
 

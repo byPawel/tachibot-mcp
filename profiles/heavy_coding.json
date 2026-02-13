@@ -1,5 +1,5 @@
 {
-  "description": "Default profile — heavy coding with all reasoning & code tools (44 tools)",
+  "description": "Default profile — heavy coding with all reasoning & code tools (45 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -28,6 +28,7 @@
     "jury": true,
     "qwen_coder": true,
     "qwen_algo": true,
+    "qwq_reason": true,
     "qwen_reason": true,
     "kimi_thinking": true,
     "kimi_code": true,

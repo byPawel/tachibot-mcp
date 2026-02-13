@@ -30,6 +30,7 @@ export const minimalProfile: ProfileConfig = {
     jury: false,
     qwen_coder: true,
     qwen_algo: false,
+    qwq_reason: false,
     qwen_reason: false,
     kimi_thinking: false,
     kimi_code: false,

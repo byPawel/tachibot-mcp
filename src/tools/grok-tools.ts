@@ -345,33 +345,47 @@ ${FORMAT_INSTRUCTION}`
  */
 export const grokBrainstormTool = {
   name: "grok_brainstorm",
-  description: "Creative brainstorming. Put your TOPIC in the 'topic' parameter.",
+  description: "Contrarian first-principles brainstorming: deconstruct a topic to atomic truths, challenge every assumption, then rebuild radical alternatives. Use when conventional thinking has stalled. Put your TOPIC in the 'topic' parameter.",
   parameters: z.object({
     topic: z.string().describe("The topic to brainstorm about (REQUIRED - put your idea/topic here)"),
     constraints: z.string().optional().describe("Any constraints or requirements to consider"),
-    numIdeas: z.number().optional().describe("Number of ideas to generate (default: 5)"),
+    numIdeas: z.number().optional().describe("Number of radical rebuilds to generate (default: 5)"),
     forceHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for deeper creativity")
   }),
   execute: async (args: { topic: string; constraints?: string; numIdeas?: number; forceHeavy?: boolean }, { log, reportProgress }: any) => {
-    const { topic, constraints, numIdeas = 5, forceHeavy = false } = args; // Changed: Default to cheap model
+    const { topic, constraints, numIdeas = 5, forceHeavy = false } = args;
     const messages = [
       {
         role: "system",
-        content: `You are Grok. Generate ${numIdeas} innovative ideas.
-${constraints ? `Constraints: ${constraints}` : ''}
+        content: `Contrarian first-principles brainstormer. Output consumed by automated toolchain.
+
+TECHNIQUE [first_principles]: Identify fundamental truths. Strip away every assumption. What are the atomic, irreducible units? Rebuild solutions from scratch using ONLY these atoms.
+TECHNIQUE [what_if_speculation]: For each assumption challenged, ask: "What if the opposite were true? What becomes possible?"
+
+PROCESS:
+1. DECOMPOSE: Break the topic into 3-5 atomic truths (things that are undeniably true).
+2. CHALLENGE: List 3-5 assumptions everyone makes about this topic. For each, apply what_if_speculation: what if it's wrong?
+3. REBUILD: Generate ${numIdeas} radical alternatives built ONLY from atomic truths + challenged assumptions.
+4. Each rebuild must be fundamentally different from conventional thinking.
+
+${constraints ? `CONSTRAINTS: ${constraints}` : ''}
+
+OUTPUT:
+ATOMS: 3-5 fundamental truths (one sentence each)
+CHALLENGED: 3-5 assumptions + what happens if each is wrong
+REBUILDS: ${numIdeas} radical ideas, each with: title, one-sentence description, which assumption it breaks
+No preamble. No hedging. Be opinionated.
 ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: `Brainstorm creative solutions for: ${topic}`
+        content: topic
       }
     ];
 
-    // Use GROK_4_1_FAST_REASONING for creative brainstorming (needs reasoning for creativity), GROK_4_HEAVY only if explicitly requested
     const model = forceHeavy ? GrokModel.GROK_4_HEAVY : GrokModel.GROK_4_1_FAST_REASONING;
     log?.info(`Brainstorming with Grok model: ${model} (Heavy: ${forceHeavy}, cost: ${forceHeavy ? 'expensive $3/$15' : 'cheap $0.20/$0.50 - latest 4.1'})`);
 
-    // Use heartbeat to prevent MCP timeout
     const reportFn = reportProgress ?? (async () => {});
     const result = await withHeartbeat(
       () => callGrok(messages, model, 0.95, 4000, true, 'llm-orchestration'),

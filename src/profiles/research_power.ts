@@ -30,6 +30,7 @@ export const researchPowerProfile: ProfileConfig = {
     jury: true,                  // Full jury for research decisions
     qwen_coder: true,
     qwen_algo: false,
+    qwq_reason: true,          // Multi-perspective deliberation for research
     qwen_reason: true,         // Heavy reasoning for research
     kimi_thinking: true,
     kimi_code: true,

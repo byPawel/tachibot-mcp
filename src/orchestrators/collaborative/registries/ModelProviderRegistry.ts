@@ -126,7 +126,7 @@ modelProviderRegistry.registerMany([
   { modelName: "qwen-reason", toolName: "qwen_reason", provider: "openrouter", aliases: ["qwen_reason", "qwen-max", "qwen-thinking"] },
 
   // MiniMax models (cheap agentic)
-  { modelName: "minimax", toolName: "minimax_agent", provider: "openrouter", aliases: ["minimax-agent", "minimax-m2.1"] },
+  { modelName: "minimax", toolName: "minimax_agent", provider: "openrouter", aliases: ["minimax-agent", "minimax-m2.5", "minimax-m2.1"] },
   { modelName: "minimax-code", toolName: "minimax_code", provider: "openrouter", aliases: ["minimax_code"] },
 
   // Think tool

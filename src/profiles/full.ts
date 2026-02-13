@@ -30,6 +30,7 @@ export const fullProfile: ProfileConfig = {
     jury: true,
     qwen_coder: true,
     qwen_algo: true,
+    qwq_reason: true,
     qwen_reason: true,
     kimi_thinking: true,
     kimi_code: true,

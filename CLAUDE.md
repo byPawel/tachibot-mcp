@@ -165,13 +165,14 @@ Implementation: `src/prompt-engineer-lite.ts`
 
 ## Claude Code Skills (Bundled)
 
-TachiBot ships 8 skills in the `skills/` directory. These are deployed to `~/.claude/skills/` on install.
+TachiBot ships 9 skills in the `skills/` directory. These are deployed to `~/.claude/skills/` on install.
 
 | Skill | Description | Key Tools Used |
 |-------|------------|----------------|
 | `/judge` | Multi-model council with fallback awareness | grok_search, perplexity_ask, grok_reason, kimi_thinking, openai_reason, gemini_analyze_text |
 | `/think` | Sequential reasoning chains | nextThought |
 | `/focus` | Mode-based multi-model reasoning | focus |
+| `/blueprint` | Multi-model planning → bite-sized TDD output | planner_maker (grok_search, qwen_coder, kimi_thinking, openai_reason, gemini_analyze_text) |
 | `/breakdown` | Strategic decomposition pipeline (breadth-first) | execute_prompt_technique (first_principles, least_to_most, patterns, pre_mortem) |
 | `/decompose` | Split into sub-problems, deep-dive each (depth-first) | kimi_decompose, nextThought chains |
 | `/prompt` | Recommends the right thinking technique for your problem | preview_prompt_technique, execute_prompt_technique |

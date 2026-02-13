@@ -80,7 +80,7 @@ For EACH sub-problem (in dependency order), run a 2-step nextThought chain:
 **Analysis step** (fresh context per sub-problem):
 ```
 mcp__tachibot-mcp__nextThought({
-  thought: "Deep-dive analysis of sub-problem: [sub-problem name]\n\nDescription: [sub-problem description]\n\nFull problem context: [original problem]\n\nAnalyze:\n1. What exactly needs to happen here?\n2. What are the edge cases?\n3. What could go wrong?\n4. What are the key decisions to make?\n5. What patterns or prior art exist?",
+  thought: "Deep-dive analysis of sub-problem: [sub-problem name]\n\nDescription: [sub-problem description]\n\nFull problem context: [original problem]\n\nAnalyze:\n1. CONTRACT: What are the preconditions (what must be true before)? What are the postconditions (what's guaranteed after)?\n2. What exactly needs to happen here?\n3. What are the edge cases?\n4. What could go wrong?\n5. What are the key decisions to make?\n6. What patterns or prior art exist?",
   model: "grok",
   executeModel: true,
   contextWindow: "none",
@@ -134,6 +134,7 @@ Format:
 ### Sub-Problems ([N] found)
 
 #### 1. [Sub-problem A] - [complexity]
+**Contract:** Pre: [what must be true] → Post: [what's guaranteed]
 **Insight:** [1 sentence core finding]
 **Key decisions:** [what needs deciding]
 **Risks:** [what could go wrong]

@@ -46,7 +46,57 @@ export class PromptEngineerLite {
 3. IDENTIFY CONSENSUS: Where do all perspectives agree?
 4. RESOLVE CONFLICTS: Where perspectives differ, weigh the tradeoffs
 5. SYNTHESIZE VERDICT: Combine the best elements into a unified, actionable answer
-Output format: Perspectives → Best Elements → Consensus → Conflicts → Final Synthesis`]
+Output format: Perspectives → Best Elements → Consensus → Conflicts → Final Synthesis`],
+
+    // Engineering (coding-specific, 2026)
+    ['reflexion', (q) => `For "${q}": 1) Generate initial solution, 2) Critique it against: correctness, edge cases, performance, readability, 3) Score each criterion 1-10, 4) Revise based on weakest scores, 5) Re-critique the revision. Repeat until score ≥8 or 3 rounds.`],
+    ['react', (q) => `Solve "${q}" using Thought→Action→Observation loops:
+Thought 1: What's the immediate sub-goal?
+Action 1: Write the code/command to achieve it.
+Observation 1: What happened? Did it work?
+Thought 2: Based on observation, what's next?
+Continue until goal is met or blocked. If blocked, state why and what's needed.`],
+    ['rubber_duck', (q) => `Explain "${q}" line by line to a junior developer who knows nothing about this codebase. For each line/block: what does it do, why is it there, what assumption does it make? Flag any line where your explanation reveals a bug, unnecessary complexity, or hidden assumption.`],
+    ['test_driven', (q) => `For "${q}": 1) List 5+ edge cases and failure modes FIRST, 2) Write minimal test cases that cover them, 3) Write the simplest code that passes ALL tests, 4) Refactor for clarity without breaking tests. Tests before code, always.`],
+
+    // Research (complex analysis, 2026)
+    ['least_to_most', (q) => `For "${q}": 1) Identify the hardest part of this problem, 2) Decompose into atomic sub-problems (simplest first), 3) Solve each sub-problem in order (each solution builds on the last), 4) Combine sub-solutions into full answer. Start with what you CAN solve, build up to what seems impossible.`],
+
+    // Decision Making (risk/bias reduction, 2026)
+    ['pre_mortem', (q) => `Pre-mortem analysis for "${q}": Assume this project has FAILED spectacularly 6 months from now. 1) Brainstorm 7-10 specific reasons it failed, 2) Rank by likelihood (high/medium/low), 3) For the top 5: what early warning sign would you see? what mitigation would prevent it? 4) Which mitigations should be implemented NOW vs. monitored?`],
+
+    // Structured Coding (2025 research-backed)
+    ['scot', (q) => `For "${q}": Before writing ANY code, reason through the solution using explicit programming structures:
+1. SEQUENCE: What operations happen in order? List them.
+2. BRANCHES: What conditions determine different paths? State each if/else.
+3. LOOPS: What repeats? State the loop variable, condition, and body.
+4. DATA FLOW: What goes in, what transforms, what comes out?
+Now write the code that implements exactly this structure. The code should mirror your reasoning 1:1.`],
+    ['pre_post', (q) => `For "${q}": Before implementing, state the CONTRACT:
+PRECONDITIONS (what must be true BEFORE this runs):
+- Input types and valid ranges
+- Required state (initialized, connected, authenticated, etc.)
+- Assumptions about data (non-null, sorted, unique, etc.)
+POSTCONDITIONS (what is GUARANTEED AFTER this runs):
+- Return value type and constraints
+- Side effects (files written, state changed, events emitted)
+- Invariants preserved (no resource leaks, no data corruption)
+Now implement code that satisfies this contract. Validate preconditions at entry, guarantee postconditions at exit.`],
+    ['bdd_spec', (q) => `For "${q}": Write behavioral specifications in Given/When/Then format FIRST:
+FEATURE: [one-line description]
+  Scenario 1: [happy path]
+    Given [initial state]
+    When [action]
+    Then [expected outcome]
+  Scenario 2: [edge case]
+    Given [boundary condition]
+    When [action]
+    Then [expected behavior]
+  Scenario 3: [error case]
+    Given [invalid input or failure condition]
+    When [action]
+    Then [error handling behavior]
+Now implement code that passes ALL scenarios. Each scenario becomes a test.`]
   ]);
 
   // Compact technique mapping (aliases to canonical names)
@@ -89,7 +139,36 @@ Output format: Perspectives → Best Elements → Consensus → Conflicts → Fi
     // Judgment aliases
     'judge': 'council_of_experts',
     'council': 'council_of_experts',
-    'expert_council': 'council_of_experts'
+    'expert_council': 'council_of_experts',
+
+    // Engineering aliases (2026)
+    'reflexion_loop': 'reflexion',
+    'iterate': 'reflexion',
+    'react_prompting': 'react',
+    'thought_action': 'react',
+    'rubber_duck_debugging': 'rubber_duck',
+    'explain_code': 'rubber_duck',
+    'test_driven_prompting': 'test_driven',
+    'tdd': 'test_driven',
+
+    // Research aliases (2026)
+    'least_to_most_prompting': 'least_to_most',
+    'build_up': 'least_to_most',
+
+    // Decision aliases (2026)
+    'pre_mortem_analysis': 'pre_mortem',
+    'failure_analysis': 'pre_mortem',
+
+    // Structured Coding aliases (2025)
+    'structured_cot': 'scot',
+    'structured_chain_of_thought': 'scot',
+    'code_structure': 'scot',
+    'pre_post_conditions': 'pre_post',
+    'contracts': 'pre_post',
+    'design_by_contract': 'pre_post',
+    'bdd': 'bdd_spec',
+    'given_when_then': 'bdd_spec',
+    'behavioral': 'bdd_spec'
   };
 
   applyTechnique(tool: string, technique: string, query: string, prev?: ToolResult[]): string {
@@ -147,7 +226,20 @@ Output format: Perspectives → Best Elements → Consensus → Conflicts → Fi
       'adversarial': 'Pro/Con',
       'persona_simulation': 'Expert debate',
       // Judgment
-      'council_of_experts': 'Council judge'
+      'council_of_experts': 'Council judge',
+      // Engineering (2026)
+      'reflexion': 'Generate→Critique→Revise',
+      'react': 'Thought→Action→Observe',
+      'rubber_duck': 'Explain line-by-line',
+      'test_driven': 'Tests first→Code→Refactor',
+      // Research (2026)
+      'least_to_most': 'Atomic→Build up',
+      // Decision (2026)
+      'pre_mortem': 'Assume failure→Prevent',
+      // Structured Coding (2025)
+      'scot': 'Reason in code structures',
+      'pre_post': 'Contract: pre/postconditions',
+      'bdd_spec': 'Given/When/Then specs'
     };
     const key = this.techniqueMap[technique] || technique;
     return desc[key] || technique;

@@ -31,8 +31,9 @@ export enum OpenRouterModel {
   KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - agentic reasoning
   KIMI_K2_5 = "moonshotai/kimi-k2.5",                   // Multimodal, Agent Swarm
 
-  // MiniMax models - VERY CHEAP, best agentic
-  MINIMAX_M2_1 = "minimax/minimax-m2.1",               // 230B/10B MoE - SWE 72.5%, τ²-Bench 77.2%
+  // MiniMax models - VERY CHEAP, best agentic, open source
+  MINIMAX_M2_5 = "minimax/minimax-m2.5",               // SWE-Bench 80.2%, 37% faster than M2.1
+  MINIMAX_M2_1 = "minimax/minimax-m2.1",               // 230B/10B MoE - SWE 72.5% (legacy)
   MINIMAX_M2 = "minimax/minimax-m2",                   // Fallback
 }
 
@@ -217,36 +218,57 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const qwqReasoningTool = {
   name: "qwq_reason",
-  description: "Deep reasoning. Put your PROBLEM in the 'problem' parameter.",
+  description: "Multi-perspective deliberation: simulate 4 opposing viewpoints (optimist/pessimist/domain-expert/contrarian) then synthesize a balanced verdict. Use when a problem needs debate, not just analysis. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
     approach: z.string()
       .optional()
-      .default("step-by-step")
-      .describe("Reasoning approach (e.g., step-by-step, mathematical, logical, creative)"),
+      .default("multi-perspective")
+      .describe("Reasoning approach: multi-perspective (default), mathematical, logical, creative"),
     useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)")
   }),
-  execute: async (args: { 
-    problem: string; 
-    context?: string; 
+  execute: async (args: {
+    problem: string;
+    context?: string;
     approach?: string;
-    useFree?: boolean 
+    useFree?: boolean
   }, { log }: any) => {
-    const approachPrompts = {
-      "step-by-step": "Break down the problem and solve it step by step",
-      mathematical: "Apply mathematical reasoning and proofs",
-      logical: "Use formal logic and deductive reasoning",
-      creative: "Think creatively and explore unconventional solutions"
+    const approachPrompts: Record<string, string> = {
+      "multi-perspective": `TECHNIQUE [alternative_perspectives]: Analyze from 4 opposing viewpoints:
+1. OPTIMIST: Best-case scenario, opportunities, upside potential
+2. PESSIMIST: Worst-case risks, failure modes, hidden costs
+3. DOMAIN EXPERT: Technical/practical feasibility, implementation reality
+4. CONTRARIAN: Challenge every assumption, argue the opposite position
+
+TECHNIQUE [first_principles]: For each viewpoint, strip to fundamental truths before reasoning.
+
+PROCESS:
+1. State the problem in one sentence.
+2. Apply first_principles: identify the 3-5 ground truths.
+3. Run each viewpoint independently (no cross-contamination).
+4. Identify where viewpoints AGREE (high-confidence conclusions).
+5. Identify where they DISAGREE (requires judgment call).
+6. Synthesize: resolution that acknowledges all perspectives.
+
+OUTPUT:
+- GROUND TRUTHS: 3-5 undeniable facts
+- PER VIEWPOINT: Key argument + strongest evidence (2-3 sentences each)
+- CONSENSUS: What all viewpoints agree on
+- CONFLICTS: Where they disagree + which side has stronger evidence
+- SYNTHESIS: Balanced verdict with confidence level (high/medium/low)`,
+      mathematical: "Apply rigorous mathematical reasoning with proofs. Show all work. State axioms first.",
+      logical: "Use formal logic and deductive reasoning. State premises, apply rules of inference, derive conclusions.",
+      creative: "Think creatively and explore unconventional solutions. Challenge conventional wisdom."
     };
-    
+
     const messages = [
       {
         role: "system",
-        content: `You are QwQ, specialized in deep reasoning and problem-solving.
-${approachPrompts[args.approach as keyof typeof approachPrompts || 'step-by-step']}.
-Show your thinking process clearly.
-${args.context ? `Context: ${args.context}` : ''}
+        content: `Multi-perspective deliberation engine. Output consumed by automated toolchain.
+${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['multi-perspective']}
+${args.context ? `CONTEXT: ${args.context}` : ''}
+No preamble. Structured output only.
 ${FORMAT_INSTRUCTION}`
       },
       {
@@ -254,7 +276,7 @@ ${FORMAT_INSTRUCTION}`
         content: args.problem
       }
     ];
-    
+
     const model = args.useFree !== false ? OpenRouterModel.QWQ_32B : OpenRouterModel.QWQ_32B;
     return await callOpenRouter(messages, model, 0.3, 6000);
   }
@@ -861,12 +883,12 @@ ${FORMAT_INSTRUCTION}`
 
 /**
  * MiniMax Code Tool
- * Code fixing and SWE tasks with MiniMax M2.1 (SWE-Bench 72.5%)
- * Best for: bug fixes, code generation, SWE tasks - VERY CHEAP
+ * Single-pass code operations with MiniMax M2.5 (SWE-Bench 80.2%)
+ * Best for: atomic code tasks — one input, one output, no planning needed
  */
 export const minimaxCodeTool = {
   name: "minimax_code",
-  description: "Code generation/fixing with MiniMax M2.1 (SWE-Bench 72.5%, very cheap). Put CODE in 'code' parameter.",
+  description: "Single-pass code operations with MiniMax M2.5 (SWE-Bench 80.2%): generate, fix, review, optimize, debug, or refactor. Use for atomic code tasks that need one input → one output. For multi-step tasks, use minimax_agent instead. Put CODE in 'code' parameter.",
   parameters: z.object({
     task: z.enum(["generate", "fix", "review", "optimize", "debug", "refactor"])
       .describe("Code task - must be one of: generate, fix, review, optimize, debug, refactor"),
@@ -880,19 +902,53 @@ export const minimaxCodeTool = {
     requirements?: string;
     language?: string;
   }, { log, reportProgress }: any) => {
+    // Task-specific prompts with TECHNIQUE tags and differentiated PROCESS+OUTPUT
     const taskPrompts: Record<string, string> = {
-      generate: "Generate clean, production-ready code",
-      fix: "Fix bugs and issues in the code",
-      review: "Review code for quality and issues",
-      optimize: "Optimize for performance",
-      debug: "Debug and identify issues",
-      refactor: "Refactor for better structure"
+      generate: `TASK: Generate production-ready code from requirements.
+TECHNIQUE [scot]: Before writing ANY code, reason through the solution in code structures: 1) SEQUENCE — what operations happen in order? 2) BRANCHES — what conditions determine different paths? 3) LOOPS — what repeats, with what termination? 4) DATA FLOW — inputs → transforms → outputs.
+TECHNIQUE [pre_post]: State the contract: preconditions (valid inputs, required state) and postconditions (return guarantees, side effects) before implementing.
+PROCESS: 1. State the contract (pre/post) 2. Reason through structure (sequence/branch/loop) 3. Implement code that mirrors your reasoning 1:1 4. Add inline comments only for non-obvious logic
+OUTPUT: Single fenced code block. If multiple valid approaches exist, state which you chose and why in a one-line comment at the top.`,
+      fix: `TASK: Fix the bug with minimal changes.
+TECHNIQUE [reflexion]: 1) Trace to find root cause, 2) Apply fix, 3) Mentally re-execute the fixed code — does it actually solve the problem? Are there other inputs that would still fail? If yes, revise.
+PROCESS: 1. Identify root cause (state in one sentence) 2. Apply minimal patch — change only what's broken 3. Self-check: re-trace with the original failing input AND one other edge case 4. Revise if self-check finds issues
+OUTPUT: Fixed code in a fenced block. Mark changes with // FIX: comments. Do NOT refactor unrelated code. Confidence: HIGH/MEDIUM/LOW.`,
+      review: `TASK: Review code for bugs, security, and quality.
+TECHNIQUE [systematic_analysis]: Scan layer by layer — correctness first, then security, then performance.
+PROCESS: 1. Correctness: logic errors, off-by-ones, null/undefined paths 2. Security: injection, auth bypass, data exposure 3. Edge cases: empty inputs, concurrency, overflow 4. Performance: unnecessary allocations, O(n) that should be O(1)
+OUTPUT: Numbered findings. Each: [CRITICAL|WARNING|INFO] location → what's wrong → how to fix. If clean, say "No issues found" — don't invent problems.`,
+      optimize: `TASK: Optimize for performance.
+TECHNIQUE [chain_of_thought]: Profile before optimizing. State the bottleneck, then fix it.
+PROCESS: 1. State current time/space complexity 2. Identify the bottleneck (the ONE line/loop that dominates) 3. Apply optimization 4. State new complexity
+OUTPUT: Optimized code in a fenced block. First line: "O(X) → O(Y)" complexity change. If already optimal, say so.`,
+      debug: `TASK: Debug and identify the root cause.
+TECHNIQUE [rubber_duck]: Explain the code line by line to a novice. For each block: what does it do, why is it there, what assumption does it make? Flag any line where your explanation reveals a bug or hidden assumption.
+TECHNIQUE [chain_of_thought]: Then trace execution with a concrete failing input. Track variable state at each step until divergence.
+PROCESS: 1. Walk through code block-by-block (rubber duck) 2. Flag suspicious lines 3. Trace execution with a failing input 4. Identify exact divergence point 5. Provide fix
+OUTPUT: "ROOT CAUSE: [one sentence]" then fixed code with // FIX: comments. Confidence: HIGH/MEDIUM/LOW.`,
+      refactor: `TASK: Refactor for better structure without changing behavior.
+TECHNIQUE [chain_of_thought]: Identify the code smell first, then choose the minimal refactoring that fixes it.
+PROCESS: 1. Name the code smell (duplication, god function, deep nesting, etc.) 2. Plan refactoring (extract/rename/simplify/compose) 3. Apply changes 4. Verify: same inputs → same outputs, same API surface
+OUTPUT: Refactored code in a fenced block. No API/signature changes unless explicitly requested. State what smell was fixed.`
     };
 
-    const systemPrompt = `You are MiniMax M2.1, a highly efficient code model (SWE-Bench 72.5%).
-Task: ${taskPrompts[args.task]}
-${args.language ? `Language: ${args.language}` : ''}
-Focus: Clean code, best practices, minimal changes for fixes.
+    // Temperature per task: precision tasks lower, creative tasks slightly higher
+    const taskTemperatures: Record<string, number> = {
+      generate: 0.3,
+      fix: 0.1,
+      review: 0.2,
+      optimize: 0.2,
+      debug: 0.1,
+      refactor: 0.2
+    };
+
+    const langInstruction = args.language ? `Language: ${args.language}. Follow ${args.language} community conventions.` : '';
+
+    const systemPrompt = `Expert code model. Single-pass: one input → one output. Output consumed by automated toolchain.
+
+${taskPrompts[args.task]}
+${langInstruction}
+Code in fenced blocks. No conversational filler. Be precise. If ambiguous, state your assumption and proceed.
 ${FORMAT_INSTRUCTION}`;
 
     const userPrompt = args.code
@@ -904,9 +960,10 @@ ${FORMAT_INSTRUCTION}`;
       { role: "user", content: userPrompt }
     ];
 
+    const temp = taskTemperatures[args.task] ?? 0.3;
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_1, 0.3, 4000),
+      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_5, temp, 4000),
       reportFn
     );
   }
@@ -914,12 +971,12 @@ ${FORMAT_INSTRUCTION}`;
 
 /**
  * MiniMax Agent Tool
- * Agentic workflows and tool-calling with MiniMax M2.1 (τ²-Bench 77.2%)
- * Best for: multi-step tasks, tool orchestration, agentic workflows - VERY CHEAP
+ * Multi-step task decomposition and execution with MiniMax M2.5
+ * Best for: tasks requiring planning, analysis, research synthesis, decision-making
  */
 export const minimaxAgentTool = {
   name: "minimax_agent",
-  description: "Agentic task execution with MiniMax M2.1 (τ²-Bench 77.2%, best agentic, very cheap). Put TASK in 'task' parameter.",
+  description: "Multi-step task decomposition and execution with MiniMax M2.5: plan, analyze, research, decide. Use when a task needs breakdown into steps before execution. For single-pass code tasks, use minimax_code instead. Put TASK in 'task' parameter.",
   parameters: z.object({
     task: z.string().describe("The task to execute (REQUIRED - describe what needs to be done)"),
     context: z.string().optional().describe("Additional context about the environment or constraints"),
@@ -934,20 +991,42 @@ export const minimaxAgentTool = {
     outputFormat?: string;
   }, { log, reportProgress }: any) => {
     const formatInstructions: Record<string, string> = {
-      plan: "Output ONLY a numbered plan of steps to accomplish the task.",
-      execute: "Execute the task directly and output the results.",
-      both: "First output a brief plan, then execute each step and show results."
+      plan: "OUTPUT: Numbered plan ONLY. For each step: what to do, expected result, and stop condition (how you know it's done).",
+      execute: "OUTPUT: Execute directly. Show results per step. Mark each step DONE/PARTIAL/FAILED with one-line result.",
+      both: "OUTPUT: Brief numbered plan first, then execute each step showing results. Mark DONE/PARTIAL/FAILED per step."
     };
 
     const messages = [
       {
         role: "system",
-        content: `You are MiniMax M2.1, an expert agentic model (τ²-Bench 77.2%, BrowseComp 44%).
-You excel at multi-step task execution and tool orchestration.
+        content: `Expert task decomposer and executor. Output consumed by automated toolchain.
+
+TECHNIQUE [least_to_most]: Order steps from simplest/least-coupled to hardest/most-dependent. Solve what you CAN first, build up to what seems hard. Each solution may reference previous solutions.
+TECHNIQUE [react]: For each step, use Thought→Action→Observation: state what you expect (Thought), do it (Action), state what happened (Observation). If observation diverges from thought, adjust before continuing.
+TECHNIQUE [problem_decomposition]: Break the task into the smallest independently verifiable steps. Each step must have a clear input, action, and expected output.
+
+PROTOCOL:
+1. ASSESS: State goal + constraints in one sentence. List what you know vs. what you're assuming.
+2. PLAN: Decompose into ${args.steps || 5} steps max, ordered simplest → hardest. Each step needs:
+   - Action: what to do
+   - Expected result: what success looks like
+   - Stop condition: how you know this step is complete
+3. EXECUTE: Work through steps using ReAct loop. For each step:
+   - Thought: what should happen next and why
+   - Action: do it
+   - Observation: what actually happened
+   - Status: DONE (fully complete) | PARTIAL (incomplete but useful) | FAILED (cannot proceed)
+   - If observation ≠ thought: adjust plan before next step
+4. VERIFY: After all steps, check: does the combined result actually achieve the original goal?
+5. HALT conditions (stop immediately):
+   - A step's output contradicts the goal
+   - Two consecutive FAILED steps
+   - A critical assumption proved wrong
+   Report: what failed, why, and what would need to change.
+
 ${formatInstructions[args.outputFormat || 'both']}
-Maximum steps: ${args.steps || 5}
-${args.context ? `Context: ${args.context}` : ''}
-Be efficient and focused. Complete tasks in minimal steps.
+${args.context ? `CONTEXT: ${args.context}` : ''}
+Be terse. No filler. Prioritize correctness over completeness — a partial correct answer beats a complete wrong one.
 ${FORMAT_INSTRUCTION}`
       },
       {
@@ -958,7 +1037,7 @@ ${FORMAT_INSTRUCTION}`
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_1, 0.5, 4000),
+      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_5, 0.3, 4000),
       reportFn
     );
   }
@@ -992,7 +1071,7 @@ export function getAllOpenRouterTools() {
     kimiLongContextTool, // Kimi K2.5 - long-context analysis (256K)
     // NEW tools (Jan 2026)
     qwenReasonTool,      // Qwen3-Max-Thinking - heavy reasoning
-    minimaxCodeTool,     // MiniMax M2.1 - SWE tasks (cheap)
-    minimaxAgentTool,    // MiniMax M2.1 - agentic workflows (cheap)
+    minimaxCodeTool,     // MiniMax M2.5 - SWE tasks (80.2%, cheap, open source)
+    minimaxAgentTool,    // MiniMax M2.5 - agentic workflows (cheap, open source)
   ];
 }

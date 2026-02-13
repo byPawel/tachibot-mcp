@@ -77,9 +77,9 @@ const JUROR_REGISTRY: Record<string, {
     label: "MiniMax (Agentic)",
     role: "Focus on practical execution steps and agentic task planning.",
     call: async (q) => callOpenRouter([
-      { role: "system", content: `You are MiniMax M2.1, an agentic model. Focus on practical execution and step-by-step plans. ${FORMAT_INSTRUCTION}` },
+      { role: "system", content: `You are MiniMax M2.5, an agentic model (SWE-Bench 80.2%). Focus on practical execution and step-by-step plans. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.MINIMAX_M2_1, 0.5, 3000),
+    ], OpenRouterModel.MINIMAX_M2_5, 0.5, 3000),
   },
 };
 

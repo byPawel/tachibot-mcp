@@ -47,14 +47,15 @@ export interface ToolsConfig {
   // OpenRouter tools
   qwen_coder: boolean;
   qwen_algo: boolean;
-  qwen_reason: boolean;        // NEW: Qwen3-Max-Thinking (heavy reasoning)
+  qwq_reason: boolean;         // QwQ-32B (multi-perspective deliberation, free tier)
+  qwen_reason: boolean;        // Qwen3-Max-Thinking (heavy mathematical reasoning)
   kimi_thinking: boolean;
   kimi_code: boolean;            // NEW: Kimi K2.5 (SWE-focused code, 76.8%)
   kimi_decompose: boolean;       // NEW: Kimi K2.5 (task decomposition)
   kimi_long_context: boolean;    // NEW: Kimi K2.5 (256K context analysis)
   qwen_competitive: boolean;
-  minimax_code: boolean;       // NEW: MiniMax M2.1 (SWE tasks, cheap)
-  minimax_agent: boolean;      // NEW: MiniMax M2.1 (agentic, cheap)
+  minimax_code: boolean;       // MiniMax M2.5 (SWE-Bench 80.2%, open source)
+  minimax_agent: boolean;      // MiniMax M2.5 (agentic, open source)
 
   // Workflow tools
   workflow: boolean;

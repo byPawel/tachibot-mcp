@@ -295,6 +295,171 @@ export class PromptEngineer {
       ].join('\n')
     });
 
+    // Engineering techniques (2026 - coding-specific)
+    this.techniques.set('reflexion', {
+      apply: (query: string) => [
+        `For "${query}":`,
+        `ROUND 1 — Generate:`,
+        `  Produce an initial solution.`,
+        `ROUND 1 — Critique:`,
+        `  Score 1-10 on: correctness, edge cases, performance, readability.`,
+        `  Identify the weakest score.`,
+        `ROUND 2 — Revise:`,
+        `  Fix ONLY the weakest-scoring aspects. Don't touch what scores ≥8.`,
+        `ROUND 2 — Re-critique:`,
+        `  Re-score. If all ≥8, stop. Otherwise, one more round.`,
+        `Max 3 rounds. Show score progression.`
+      ].join('\n')
+    });
+
+    this.techniques.set('react_prompting', {
+      apply: (query: string) => [
+        `Solve "${query}" using Thought→Action→Observation loops:`,
+        ``,
+        `Thought 1: What is the immediate sub-goal?`,
+        `Action 1: Write the code/command/query to achieve it.`,
+        `Observation 1: What happened? Did it succeed or fail?`,
+        ``,
+        `Thought 2: Based on the observation, what should happen next?`,
+        `Action 2: ...`,
+        `Observation 2: ...`,
+        ``,
+        `Continue until the goal is met or you are blocked.`,
+        `If blocked, state: what failed, why, and what information is needed to unblock.`
+      ].join('\n')
+    });
+
+    this.techniques.set('rubber_duck_debugging', {
+      apply: (query: string) => [
+        `Explain "${query}" line by line to a junior developer who knows nothing about this codebase.`,
+        `For each line or logical block:`,
+        `1. What does it do? (behavior)`,
+        `2. Why is it there? (intent)`,
+        `3. What assumption does it make? (preconditions)`,
+        `4. What would break if this assumption were wrong? (failure mode)`,
+        ``,
+        `Flag any line where your explanation reveals:`,
+        `- A bug (behavior ≠ intent)`,
+        `- Unnecessary complexity (simpler way exists)`,
+        `- A hidden assumption that isn't validated`,
+        `- Dead code or unreachable paths`
+      ].join('\n')
+    });
+
+    this.techniques.set('test_driven_prompting', {
+      apply: (query: string) => [
+        `For "${query}":`,
+        `PHASE 1 — Test Design (before ANY code):`,
+        `  List 5+ edge cases and failure modes.`,
+        `  Write minimal test cases that cover each.`,
+        ``,
+        `PHASE 2 — Minimal Implementation:`,
+        `  Write the SIMPLEST code that passes ALL tests.`,
+        `  No premature optimization. No extra features.`,
+        ``,
+        `PHASE 3 — Refactor:`,
+        `  Improve clarity and structure WITHOUT breaking any tests.`,
+        `  Run tests after each change.`,
+        ``,
+        `Tests before code, always. If a test is hard to write, the design is wrong.`
+      ].join('\n')
+    });
+
+    // Research technique (2026 - complex analysis)
+    this.techniques.set('least_to_most_prompting', {
+      apply: (query: string) => [
+        `For "${query}":`,
+        `1. Identify the HARDEST part of this problem.`,
+        `2. Decompose into atomic sub-problems, ordered simplest → hardest.`,
+        `3. Solve each sub-problem in order:`,
+        `   - Each solution may reference and build on previous sub-solutions.`,
+        `   - Show your work for each.`,
+        `4. Combine all sub-solutions into the full answer.`,
+        ``,
+        `Start with what you CAN solve. Build up to what seems impossible.`
+      ].join('\n')
+    });
+
+    // Decision making technique (2026 - risk/bias reduction)
+    this.techniques.set('pre_mortem_analysis', {
+      apply: (query: string) => [
+        `Pre-mortem analysis for "${query}":`,
+        ``,
+        `Imagine it is 6 months from now and this project has FAILED spectacularly.`,
+        ``,
+        `1. Brainstorm 7-10 specific, concrete reasons it failed.`,
+        `2. Rank each by likelihood: HIGH / MEDIUM / LOW.`,
+        `3. For the top 5 most likely failures:`,
+        `   - What early warning sign would you see in week 1-2?`,
+        `   - What specific mitigation would prevent it?`,
+        `   - Estimated effort to implement the mitigation.`,
+        `4. Which mitigations should be implemented NOW (before starting)?`,
+        `   Which should be monitored and triggered if warning signs appear?`
+      ].join('\n')
+    });
+
+    // Structured Coding techniques (2025 research-backed)
+    this.techniques.set('structured_chain_of_thought', {
+      apply: (query: string) => [
+        `For "${query}": Before writing ANY code, reason through the solution using explicit programming structures:`,
+        ``,
+        `1. SEQUENCE: What operations happen in order? List them as pseudo-steps.`,
+        `2. BRANCHES: What conditions determine different paths? State each if/else with its condition and body.`,
+        `3. LOOPS: What repeats? State the loop variable, iteration range, termination condition, and loop body.`,
+        `4. DATA FLOW: What data goes in? What transformations occur? What comes out?`,
+        ``,
+        `Now write the code that implements EXACTLY this structure.`,
+        `The code should mirror your reasoning 1:1 — every sequence/branch/loop in your reasoning must appear in the code.`,
+        `(Li et al. 2025: SCoT outperforms standard CoT by up to 13.79% on code benchmarks)`
+      ].join('\n')
+    });
+
+    this.techniques.set('pre_post_conditions', {
+      apply: (query: string) => [
+        `For "${query}": Before implementing, state the CONTRACT:`,
+        ``,
+        `PRECONDITIONS (what must be true BEFORE this runs):`,
+        `- Input types, valid ranges, and constraints`,
+        `- Required state (initialized, connected, authenticated, etc.)`,
+        `- Assumptions about data (non-null, sorted, unique, etc.)`,
+        ``,
+        `POSTCONDITIONS (what is GUARANTEED AFTER this runs):`,
+        `- Return value: type and constraints`,
+        `- Side effects: files written, state changed, events emitted`,
+        `- Invariants preserved: no resource leaks, no data corruption`,
+        ``,
+        `Now implement code that satisfies this contract.`,
+        `Validate preconditions at entry. Guarantee postconditions at exit.`,
+        `Any violation should throw a clear, descriptive error.`
+      ].join('\n')
+    });
+
+    this.techniques.set('bdd_specification', {
+      apply: (query: string) => [
+        `For "${query}": Write behavioral specifications in Given/When/Then format FIRST:`,
+        ``,
+        `FEATURE: [one-line description of what this does]`,
+        ``,
+        `  Scenario 1: Happy path`,
+        `    Given [initial state / valid input]`,
+        `    When [the action is performed]`,
+        `    Then [expected successful outcome]`,
+        ``,
+        `  Scenario 2: Edge case`,
+        `    Given [boundary condition]`,
+        `    When [the action is performed]`,
+        `    Then [expected behavior at boundary]`,
+        ``,
+        `  Scenario 3: Error handling`,
+        `    Given [invalid input or failure condition]`,
+        `    When [the action is performed]`,
+        `    Then [error is handled gracefully]`,
+        ``,
+        `Now implement code that passes ALL scenarios.`,
+        `Each scenario maps directly to a test case.`
+      ].join('\n')
+    });
+
     // Default technique
     this.techniques.set('default', {
       apply: (query: string) => query
@@ -508,9 +673,22 @@ export class PromptEngineer {
       quick_reflection: 'Pattern recognition',
       pattern_recognition: 'Identifying connections',
       problem_decomposition: 'Breaking down complexity',
-      integration_reflection: 'Synthesizing insights'
+      integration_reflection: 'Synthesizing insights',
+      // Engineering (2026)
+      reflexion: 'Generate→Critique→Revise loop',
+      react_prompting: 'Thought→Action→Observation loop',
+      rubber_duck_debugging: 'Explain line-by-line to find bugs',
+      test_driven_prompting: 'Tests first, then minimal code',
+      // Research (2026)
+      least_to_most_prompting: 'Solve atomic parts, build up',
+      // Decision (2026)
+      pre_mortem_analysis: 'Assume failure, prevent causes',
+      // Structured Coding (2025)
+      structured_chain_of_thought: 'Reason in code structures (SCoT)',
+      pre_post_conditions: 'Design by contract: pre/postconditions',
+      bdd_specification: 'Given/When/Then behavioral specs'
     };
-    
+
     return descriptions[technique] || technique;
   }
 }

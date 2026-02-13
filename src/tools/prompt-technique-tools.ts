@@ -131,6 +131,23 @@ const TECHNIQUES: Record<string, Technique[]> = {
   judgment: [
     { name: "council_of_experts", alias: "judge", description: "Multi-model council: gather diverse perspectives, extract best elements, synthesize final verdict" },
   ],
+  engineering: [
+    { name: "reflexion", alias: "iterate", description: "Generate→Critique→Revise loop (2-3 rounds, score each criterion 1-10)" },
+    { name: "react", alias: "thought_action", description: "Thought→Action→Observation loops for multi-step coding tasks" },
+    { name: "rubber_duck", alias: "explain_code", description: "Explain code line-by-line to a novice, flag bugs/assumptions" },
+    { name: "test_driven", alias: "tdd", description: "List edge cases→Write tests→Minimal code→Refactor. Tests before code." },
+  ],
+  research_advanced: [
+    { name: "least_to_most", alias: "build_up", description: "Decompose to atomic sub-problems, solve simplest first, build up to hardest" },
+  ],
+  decision: [
+    { name: "pre_mortem", alias: "failure_analysis", description: "Assume project failed → brainstorm 7-10 causes → rank → mitigate top 5" },
+  ],
+  structured_coding: [
+    { name: "scot", alias: "structured_cot", description: "Structured CoT: reason in code structures (sequence/branch/loop) before writing code (Li et al. 2025, +13.79%)" },
+    { name: "pre_post", alias: "contracts", description: "Design by contract: state preconditions + postconditions before implementing" },
+    { name: "bdd_spec", alias: "given_when_then", description: "Behavioral specs: Given/When/Then scenarios before code. Each scenario = a test." },
+  ],
 };
 
 // All technique names for validation
@@ -154,9 +171,9 @@ function generateToken(): string {
  */
 export const listPromptTechniquesTool = {
   name: "list_prompt_techniques",
-  description: "Discover available prompt engineering techniques. Shows all 22 techniques organized by category.",
+  description: "Discover available prompt engineering techniques. Shows all 31 techniques organized by category.",
   parameters: z.object({
-    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment"])
+    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding"])
       .optional()
       .default("all")
       .describe("Filter by category (default: all)")
