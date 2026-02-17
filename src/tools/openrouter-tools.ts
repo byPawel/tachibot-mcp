@@ -369,7 +369,7 @@ export const openRouterMultiModelTool = {
 /**
  * Algorithm Optimization Tool
  * Principal Algorithm Engineer & Competitive Programming Coach
- * Deep algorithmic reasoning with QwQ-32B
+ * Deep algorithmic reasoning with Qwen3-Max-Thinking (235B MoE)
  */
 export const qwenAlgoTool = {
   name: "qwen_algo",
@@ -464,10 +464,22 @@ Provide full analysis covering:
 5. RECOMMENDATIONS - Ranked by impact with expected improvement`
     };
 
-    // Core system prompt with competitive programming wisdom
+    // Core system prompt with O(1)-first thinking and competitive programming wisdom
     const systemPrompt = `You are a Principal Algorithm Engineer and Competitive Programming Coach (ICPC/IOI/Codeforces expert level).
+You are NOT for abstract math proofs (that's qwen_reason). Focus on concrete algorithm analysis, optimization, and implementation.
 
 ${focusPrompts[args.focus || 'general']}
+
+COMPLEXITY PRIORITY — ALWAYS explore top-down, chase O(1) first:
+  O(1) → O(log n) → O(n) → O(n log n) → O(n²) → worse
+
+  ALWAYS start by asking: "Can this be O(1)?"
+  Common O(1) paths: hash lookups, math formulas, precomputation,
+  bit manipulation, amortized tricks, lookup tables.
+
+  Only move to a worse class when you can explain WHY the better
+  class doesn't apply to this specific problem/constraints.
+  Tag each approach with its pattern: [PATTERN: hashmap/two-ptr/monotonic-stack/etc.]
 
 CONSTRAINT-TO-COMPLEXITY MAPPING (memorize this):
 ┌─────────────┬────────────────────┬─────────────────────────────────┐
@@ -485,7 +497,7 @@ CONSTRAINT-TO-COMPLEXITY MAPPING (memorize this):
 └─────────────┴────────────────────┴─────────────────────────────────┘
 
 OPTIMIZATION HIERARCHY (always label which tier):
-• Tier A - ALGORITHMIC (10-1000x): Change complexity class
+• Tier A - ALGORITHMIC (10-1000x): Change complexity class — pursue O(1) aggressively
 • Tier B - DATA STRUCTURE (2-20x): Better container/access pattern
 • Tier C - MICRO (1.1-5x): Cache, branches, memory layout
 
@@ -493,9 +505,15 @@ OUTPUT STRUCTURE:
 1. Current Analysis: What the code/algorithm does now
 2. Complexity: Time/Space with Best/Avg/Worst
 3. ${args.constraints ? 'Constraint Check: Is current complexity viable?' : 'Viable For: What input sizes work?'}
-4. Improvements: Tiered recommendations with expected gains
+4. Improvements (best → viable):
+   - Tier A: [O(?)] — approach + [PATTERN: name] + code sketch — WHY this is/isn't achievable
+   - Tier B: [O(?)] — fallback + why Tier A doesn't apply
+   - Tier C: [O(?)] — if constraints force it
 5. Edge Cases: 3 critical test cases to verify
 ${args.focus === 'competitive' || args.focus === 'general' ? '6. CP Patterns: Applicable competitive programming techniques' : ''}
+6. Recommendation: Best tier for given constraints with expected improvement
+
+Be aggressive about optimization but honest about tradeoffs. Constant factors and practical constraints matter.
 
 ${FORMAT_INSTRUCTION}`;
 
@@ -516,7 +534,7 @@ ${FORMAT_INSTRUCTION}`;
     // Use heartbeat to prevent MCP timeout
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.QWQ_32B, 0.25, 6000),
+      () => callOpenRouter(messages, OpenRouterModel.QWEN3_MAX_THINKING, 0.25, 8000),
       reportFn
     );
   }

@@ -296,7 +296,7 @@ export const TOOL_DEFAULTS = {
     temperature: 0.5,
   },
   qwen_algo: {
-    model: QWEN_MODELS.QWQ_32B,
+    model: QWEN_MODELS.MAX_THINKING,      // Upgraded: QwQ-32B (CodeElo 1261) → Max-Thinking (LiveCodeBench 91.4, HMMT 98%)
     maxTokens: 8000,
     temperature: 0.2,
   },
