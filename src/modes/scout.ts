@@ -142,7 +142,7 @@ export class Scout {
       flow: 'conditional-hybrid',
       perplexityTimeout: 8000, // Base timeout
       perplexityFor: 'latest API docs only',
-      primary: 'gemini-3-pro-preview',
+      primary: 'gemini-3.1-pro-preview',
       upgradeCondition: 'complexity > 0.8',
       tokens: 2000,
       defaultProvider: PROVIDER_PERPLEXITY,

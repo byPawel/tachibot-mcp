@@ -48,7 +48,7 @@ export interface InlineComment {
 }
 
 export class DocumentationWriter {
-  private defaultModel = 'gemini-3-pro-preview';
+  private defaultModel = 'gemini-3.1-pro-preview';
   private defaultMaxTokens = 3000;
   private defaultStyle: DocumentationOptions['style'] = 'narrative';
 

@@ -222,7 +222,7 @@ Google's Gemini models for analysis, brainstorming, and text processing.
 
 #### Models Available
 
-- **gemini-3-pro-preview** - Latest Gemini 3 Pro (Dec 2025), 1M context
+- **gemini-3.1-pro-preview** - Latest Gemini 3 Pro (Dec 2025), 1M context
 - **gemini-3-flash-preview** - Fast frontier model (Dec 2025)
 
 #### Pricing

@@ -129,7 +129,7 @@ export class Architect {
   
   private stages = {
     gemini_analysis: {
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       maxTokens: 1000000,
       tasks: [
         'fullCodebaseAnalysis',
@@ -225,7 +225,7 @@ export class Architect {
 
   private selectGeminiModel(options: ArchitectOptions): string {
     // Always use Gemini 3 Pro Preview for RAW POWER
-    return 'gemini-3-pro-preview';
+    return 'gemini-3.1-pro-preview';
   }
 
   private calculateGeminiTokens(options: ArchitectOptions): number {
@@ -583,7 +583,7 @@ export class Architect {
     let cost = 0;
     
     for (const result of stageResults) {
-      if (result.model === 'gemini-3-pro-preview') {
+      if (result.model === 'gemini-3.1-pro-preview') {
         cost += (result.tokens / 1000000) * 1.25; // Gemini 3 Pro Preview pricing
       } else if (result.model === 'think') {
         cost += 0; // Free!

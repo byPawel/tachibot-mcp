@@ -29,7 +29,7 @@ export interface CreateFileReferenceOptions {
   saveToFile: boolean;
   outputDir?: string;
   stepNumber?: string;  // e.g., "1", "4a", "4b"
-  modelName?: string;   // e.g., "gemini-3-pro-preview"
+  modelName?: string;   // e.g., "gemini-3.1-pro-preview"
 }
 
 export interface IWorkflowFileManager {

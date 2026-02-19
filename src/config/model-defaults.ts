@@ -26,7 +26,7 @@ import {
  */
 const MODELS = {
   // Google Gemini
-  GEMINI: GEMINI_MODELS.GEMINI_3_PRO,           // gemini-3-pro-preview
+  GEMINI: GEMINI_MODELS.GEMINI_3_PRO,           // gemini-3.1-pro-preview
 
   // OpenAI (GPT-5.2)
   OPENAI: OPENAI_MODELS.THINKING,               // gpt-5.2-thinking (default - SOTA reasoning)
@@ -41,7 +41,7 @@ const MODELS = {
 
   // OpenRouter
   QWEN: QWEN_MODELS.CODER_NEXT,                 // qwen/qwen3-coder-next (80B/3B MoE, 262K ctx)
-  QWEN_REASON: QWEN_MODELS.MAX_THINKING,        // qwen/qwen3-max-thinking (>1T params)
+  QWEN_REASON: QWEN_MODELS.MAX_THINKING,        // qwen/qwen3-235b-a22b-thinking (235B MoE)
   KIMI: KIMI_MODELS.K2_5,                       // moonshotai/kimi-k2.5 (thinking via reasoning param)
   MINIMAX: MINIMAX_MODELS.M2_5,                 // minimax/minimax-m2.5 (SWE 80.2%, open source)
 } as const;

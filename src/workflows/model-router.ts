@@ -33,8 +33,8 @@ export class ModelRouter {
       reasoning: 10,
       useFor: ['primary reasoning', 'code', 'analysis']
     }],
-    ['gemini-3-pro-preview', {
-      id: 'gemini-3-pro-preview',
+    ['gemini-3.1-pro-preview', {
+      id: 'gemini-3.1-pro-preview',
       cost: 10,
       quality: 10,
       speed: 8,
@@ -158,7 +158,7 @@ export class ModelRouter {
     }
     
     if (task.complexity < 0.2 && task.type === 'format') {
-      return 'gemini-3-pro-preview';
+      return 'gemini-3.1-pro-preview';
     }
     
     if (task.type === 'synthesis') {
@@ -178,7 +178,7 @@ export class ModelRouter {
       'challenger': 'gpt5_mini',
       'auditor': 'perplexity-sonar-pro',
       'architect': 'grok-4-1-fast-reasoning',
-      'commit_guardian': 'gemini-3-pro-preview'
+      'commit_guardian': 'gemini-3.1-pro-preview'
     };
     
     return taskTypeMap[task.type] || this.selectByConstraints(task, constraints);
@@ -220,10 +220,10 @@ export class ModelRouter {
 
   selectModelsForVerification(variant: string): string[] {
     const variants: Record<string, string[]> = {
-      'quick_verify': ['gpt5_mini', 'gemini-3-pro-preview', 'qwen3-30b'],
-      'deep_verify': ['gpt5', 'qwq-32b', 'gpt5_reason', 'gemini-3-pro-preview', 'qwen3-coder-480b'],
-      'fact_check': ['perplexity-sonar-pro', 'gpt5', 'gemini-3-pro-preview'],
-      'code_verify': ['qwen3-coder-480b', 'gpt5', 'gemini-3-pro-preview'],
+      'quick_verify': ['gpt5_mini', 'gemini-3.1-pro-preview', 'qwen3-30b'],
+      'deep_verify': ['gpt5', 'qwq-32b', 'gpt5_reason', 'gemini-3.1-pro-preview', 'qwen3-coder-480b'],
+      'fact_check': ['perplexity-sonar-pro', 'gpt5', 'gemini-3.1-pro-preview'],
+      'code_verify': ['qwen3-coder-480b', 'gpt5', 'gemini-3.1-pro-preview'],
       'security_verify': ['gpt5', 'qwen3-coder-480b', 'grok-4']
     };
 

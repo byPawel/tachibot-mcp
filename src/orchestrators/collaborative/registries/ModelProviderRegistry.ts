@@ -105,10 +105,10 @@ modelProviderRegistry.registerMany([
   // Claude models
   { modelName: "claude", toolName: "think", provider: "anthropic", aliases: ["claude-code", "reasoning", "analysis"] },
 
-  // Gemini models (all use gemini-3-pro-preview for RAW POWER)
+  // Gemini models (all use gemini-3.1-pro-preview for RAW POWER)
   // NOTE: gemini_query was never registered - using gemini_brainstorm as default (most versatile)
-  { modelName: "gemini", toolName: "gemini_brainstorm", provider: "google", aliases: ["gemini-pro", "gemini-3-pro-preview", "gemini-3-pro"] },
-  { modelName: "gemini-3-pro-preview", toolName: "gemini_analyze_text", provider: "google", aliases: ["gemini-3", "gemini-analyze"] },
+  { modelName: "gemini", toolName: "gemini_brainstorm", provider: "google", aliases: ["gemini-pro", "gemini-3.1-pro-preview", "gemini-3-pro"] },
+  { modelName: "gemini-3.1-pro-preview", toolName: "gemini_analyze_text", provider: "google", aliases: ["gemini-3", "gemini-analyze"] },
 
   // Perplexity models
   { modelName: "perplexity", toolName: "perplexity_ask", provider: "perplexity" },

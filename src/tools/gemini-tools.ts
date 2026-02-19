@@ -118,13 +118,18 @@ export async function callGemini(
       ]
     };
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Gemini API error: ${response.statusText}`);
@@ -173,6 +178,9 @@ export async function callGemini(
 
     return text;
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return `[Gemini timeout: Request exceeded 30s. Model: ${model}]`;
+    }
     return `[Gemini error: ${error instanceof Error ? error.message : String(error)}]`;
   }
 }
@@ -472,9 +480,11 @@ ${args.details ? `Additional details: ${args.details}` : ''}`;
  */
 export const geminiJudgeTool = {
   name: "gemini_judge",
-  description: "Evaluate and synthesize multiple AI perspectives into a unified verdict. Put PERSPECTIVES in 'perspectives' parameter.",
+  description: "Evaluate and synthesize multiple AI perspectives into a unified verdict. Put PERSPECTIVES in 'perspectives' parameter. Also accepts 'query' or 'text' as fallback.",
   parameters: z.object({
-    perspectives: z.string().describe("The multiple AI perspectives/analyses to evaluate and synthesize (REQUIRED)"),
+    perspectives: z.string().optional().describe("The multiple AI perspectives/analyses to evaluate and synthesize (preferred parameter)"),
+    query: z.string().optional().describe("Fallback: content to judge (use 'perspectives' instead)"),
+    text: z.string().optional().describe("Fallback: content to judge (use 'perspectives' instead)"),
     question: z.string().optional().describe("The original question being judged"),
     mode: z.enum(["synthesize", "evaluate", "rank", "resolve"])
       .optional()
@@ -482,10 +492,18 @@ export const geminiJudgeTool = {
       .describe("Judge mode: synthesize (merge best), evaluate (score each), rank (order by quality), resolve (settle conflicts)")
   }),
   execute: async (args: {
-    perspectives: string;
+    perspectives?: string;
+    query?: string;
+    text?: string;
     question?: string;
     mode?: string;
   }, { log, reportProgress }: any) => {
+    // Resolve perspectives from fallback params (AI clients sometimes use wrong param name)
+    const perspectives = args.perspectives || args.query || args.text;
+    if (!perspectives) {
+      return "Error: No content provided. Pass perspectives to judge in the 'perspectives' parameter.";
+    }
+    args.perspectives = perspectives;
     const modeInstructions: Record<string, string> = {
       synthesize: `SYNTHESIS MODE: Extract the best elements from each perspective and merge into one cohesive answer.
 Do NOT pick a winner. Find what is uniquely valuable in EACH perspective.
@@ -651,13 +669,18 @@ IMPORTANT:
         ];
       }
 
+      const searchController = new AbortController();
+      const searchTimeoutId = setTimeout(() => searchController.abort(), 30000); // 30s timeout
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: searchController.signal
       });
+      clearTimeout(searchTimeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -699,6 +722,9 @@ IMPORTANT:
 
       return text + sources;
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return `[Gemini Search timeout: Request exceeded 30s]`;
+      }
       return `[Gemini Search error: ${error instanceof Error ? error.message : String(error)}]`;
     }
   }

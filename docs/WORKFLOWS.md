@@ -603,7 +603,7 @@ steps:
       query: "Improve the design considering these challenges: ${challenges}"
       mode: "architecture-debate"
       domain: "backend"
-      models: ["gpt-5.1-codex-mini", "gemini-3-pro-preview", "grok-4"]
+      models: ["gpt-5.1-codex-mini", "gemini-3.1-pro-preview", "grok-4"]
       rounds: 5
       pingPongStyle: "debate"
       temperature: 0.7
@@ -614,7 +614,7 @@ steps:
     params:
       query: "Verify this refined design addresses the challenges: ${refined_design}"
       variant: "code_verify"
-      models: ["gpt-5.1-codex-mini", "gemini-3-pro-preview"]
+      models: ["gpt-5.1-codex-mini", "gemini-3.1-pro-preview"]
     output: final_verdict
 ```
 
@@ -723,7 +723,7 @@ steps:
     params:
       query: "Based on synchronized analysis (${sync_analysis}) and latest data (${latest_data}), provide comprehensive answer to: ${query}"
       mode: "deep-reasoning"
-      models: ["gpt-5.1-codex-mini", "gemini-3-pro-preview", "perplexity"]
+      models: ["gpt-5.1-codex-mini", "gemini-3.1-pro-preview", "perplexity"]
       rounds: 5
       pingPongStyle: "collaborative"
     output: deep_analysis
@@ -733,7 +733,7 @@ steps:
     params:
       query: "Challenge and improve this analysis: ${deep_analysis}"
       mode: "architecture-debate"
-      models: ["gpt-5.1-codex-mini", "gemini-3-pro-preview", "grok-4"]
+      models: ["gpt-5.1-codex-mini", "gemini-3.1-pro-preview", "grok-4"]
       rounds: 3
       pingPongStyle: "debate"
     output: challenged_analysis

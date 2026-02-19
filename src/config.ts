@@ -184,8 +184,8 @@ export function getAvailableModels(config: FocusConfig): string[] {
     }
   }
   if (config.apiKeys.gemini) {
-    // Use Gemini 3 Pro Preview (RAW POWER)
-    models.push('gemini-3-pro-preview');
+    // Use Gemini 3.1 Pro Preview (RAW POWER)
+    models.push('gemini-3.1-pro-preview');
   }
   if (config.apiKeys.deepseek) {
     models.push('deepseek-r1');

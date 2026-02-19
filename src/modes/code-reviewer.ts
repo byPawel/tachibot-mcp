@@ -47,7 +47,7 @@ export interface CodeMetrics {
 }
 
 export class CodeReviewer {
-  private defaultModel = 'gemini-3-pro-preview';
+  private defaultModel = 'gemini-3.1-pro-preview';
   private defaultMaxTokens = 4000;
   private defaultFocusAreas: CodeReviewOptions['focusAreas'] = [
     'security', 'performance', 'readability', 'bugs', 'best-practices'

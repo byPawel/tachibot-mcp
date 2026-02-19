@@ -87,7 +87,7 @@ steps:
     input:
       query: "Synthesize the best solution for: ${input}"
       rounds: 3
-      models: ["grok-4-1-fast-reasoning", "gpt-5.2-thinking", "gemini-3-pro-preview"]
+      models: ["grok-4-1-fast-reasoning", "gpt-5.2-thinking", "gemini-3.1-pro-preview"]
       context: |
         Research: ${research_context}
         Problem breakdown: ${problem_breakdown}

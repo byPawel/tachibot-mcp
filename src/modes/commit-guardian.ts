@@ -37,7 +37,7 @@ export interface Issue {
 }
 
 export class CommitGuardian {
-  private defaultModel = 'gemini-3-pro-preview';
+  private defaultModel = 'gemini-3.1-pro-preview';
   private defaultMaxTokens = 5000;
   
   private securityPatterns = [

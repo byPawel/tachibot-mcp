@@ -46,12 +46,12 @@ export const OPENAI_REASONING = {
 // GEMINI MODELS (Google)
 // =============================================================================
 export const GEMINI_MODELS = {
-  // Gemini 3 (Dec 2025)
-  GEMINI_3_PRO: "gemini-3-pro-preview",   // Quality model, 1M context
+  // Gemini 3.1 Pro (Feb 19, 2026) - Enhanced reasoning, replaces 3 Pro
+  GEMINI_3_PRO: "gemini-3.1-pro-preview",   // Quality model, 1M context
   GEMINI_3_FLASH: "gemini-3-flash-preview", // Fast frontier model
 
   // Aliases - default to Pro for quality
-  PRO: "gemini-3-pro-preview",
+  PRO: "gemini-3.1-pro-preview",
   FLASH: "gemini-3-flash-preview",
 } as const;
 
@@ -100,7 +100,7 @@ export const QWEN_MODELS = {
   CODER_PLUS: "qwen/qwen3-coder-plus",         // Code specialist (32K context)
   CODER: "qwen/qwen3-coder",                   // Legacy coder - 480B MoE, SWE-Bench 69.6%
   QWQ_32B: "qwen/qwq-32b",                     // Deep reasoning - CodeElo 1261
-  MAX_THINKING: "qwen/qwen3-235b-a22b-thinking-2507", // 235B MoE thinking - heavy reasoning
+  MAX_THINKING: "qwen/qwen3-235b-a22b-thinking-2507", // 235B MoE (22B active) thinking mode - heavy reasoning
 } as const;
 
 // =============================================================================
@@ -185,7 +185,7 @@ export const CURRENT_MODELS = {
   openrouter: {
     kimi: KIMI_MODELS.K2_5,                // K2.5 multimodal + agent swarm (thinking via reasoning param)
     qwen: QWEN_MODELS.CODER_NEXT,             // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70%
-    qwen_reason: QWEN_MODELS.MAX_THINKING, // NEW: Flagship reasoning (>1T params, HMMT 98%)
+    qwen_reason: QWEN_MODELS.MAX_THINKING, // 235B MoE thinking mode (HMMT 98%)
     minimax: MINIMAX_MODELS.M2_5,          // M2.5: SWE-Bench 80.2%, 37% faster, open source
   }
 } as const;
@@ -296,12 +296,12 @@ export const TOOL_DEFAULTS = {
     temperature: 0.5,
   },
   qwen_algo: {
-    model: QWEN_MODELS.MAX_THINKING,      // Upgraded: QwQ-32B (CodeElo 1261) → Max-Thinking (LiveCodeBench 91.4, HMMT 98%)
+    model: QWEN_MODELS.MAX_THINKING,      // 235B-Thinking (LiveCodeBench 91.4, HMMT 98%)
     maxTokens: 8000,
     temperature: 0.2,
   },
   qwen_reason: {
-    model: QWEN_MODELS.MAX_THINKING,      // NEW: >1T params, HMMT 98%
+    model: QWEN_MODELS.MAX_THINKING,      // 235B-Thinking, HMMT 98%
     maxTokens: 8000,
     temperature: 0.3,                      // Lower for precise reasoning
   },
@@ -350,7 +350,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gpt-5.2-pro": "gpt-5.2-pro",
 
   // Gemini
-  "gemini-3-pro-preview": "gemini-3-pro",
+  "gemini-3.1-pro-preview": "gemini-3.1-pro",
   "gemini-3-flash-preview": "gemini-3-flash",
 
   // Grok (xAI)
@@ -396,7 +396,7 @@ export const MODEL_PRICING: Record<string, number> = {
   "gpt-5.2-pro": 0.0945,        // ($21 + $168) / 2 / 1000
 
   // Gemini
-  "gemini-3-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
+  "gemini-3.1-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
   "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000
 
   // Grok - all cheap!

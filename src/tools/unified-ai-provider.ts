@@ -78,7 +78,7 @@ const PROVIDER_CONFIGS = {
   gemini: {
     base: 'https://generativelanguage.googleapis.com/v1beta/',
     key: process.env.GOOGLE_API_KEY,
-    models: ['gemini-3-pro-preview']
+    models: ['gemini-3.1-pro-preview']
   },
   openrouter: {
     base: 'https://openrouter.ai/api/v1',

@@ -59,7 +59,7 @@ const MODEL_COSTS: ModelCosts = {
 
   // Gemini 3 models - Dec 2025
   "gemini-3-flash-preview": { input: 0.0005, output: 0.003, latency: 500 }, // Fast frontier
-  "gemini-3-pro-preview": { input: 0.002, output: 0.012, latency: 1200 },   // Quality
+  "gemini-3.1-pro-preview": { input: 0.002, output: 0.012, latency: 1200 },   // Quality
 
   // Other models
   qwencoder: { input: 0.00015, output: 0.0006, latency: 1000 },
@@ -156,7 +156,7 @@ export class SmartModelRouter {
       if (gpt5Enabled) {
         return {
           primary: ModelTier.ULTRA_CHEAP, // gpt-5.2-instant
-          fallback: ModelTier.ULTRA_EFFICIENT, // gemini-3-pro-preview
+          fallback: ModelTier.ULTRA_EFFICIENT, // gemini-3.1-pro-preview
           estimatedCost: 0.002,
           estimatedLatency: 800,
           requiresConfirmation: false,
@@ -164,7 +164,7 @@ export class SmartModelRouter {
         };
       } else {
         return {
-          primary: ModelTier.ULTRA_EFFICIENT, // gemini-3-pro-preview
+          primary: ModelTier.ULTRA_EFFICIENT, // gemini-3.1-pro-preview
           fallback: ModelTier.EFFICIENT,
           estimatedCost: 0.0002,
           estimatedLatency: 800,

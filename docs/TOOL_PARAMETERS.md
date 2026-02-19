@@ -40,7 +40,7 @@ const result1 = await challenger.challenge(
 const result2 = await challenger.challenge(
   'Social media has only positive effects.',
   {
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3.1-pro-preview',
     temperature: 0.7,
     maxTokens: 1500
   }
@@ -91,7 +91,7 @@ interface Challenge {
 
 | Provider | Models | Notes |
 |----------|--------|-------|
-| **Google Gemini** | `gemini-3-pro-preview`, `gemini-3-pro-preview`, `gemini-3-pro-preview`, `gemini-3-pro-preview-lite` | Gemini 3 Pro is latest (Nov 2025) |
+| **Google Gemini** | `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview-lite` | Gemini 3 Pro is latest (Nov 2025) |
 | **OpenAI** | `gpt-5.1`, `gpt-5.1-codex-mini`, `gpt-5.1-codex`, `gpt-5-pro` | Codex models use /v1/responses endpoint |
 | **xAI (Grok)** | `grok-4-1-fast-reasoning`, `grok-4-1-fast-non-reasoning`, `grok-code-fast-1`, `grok-4-0709` | Grok 4.1 is latest (Nov 2025) |
 | **Perplexity** | `sonar-pro`, `sonar-reasoning-pro` | Web search enabled |
@@ -126,32 +126,32 @@ The Verifier tool provides multi-model parallel verification with consensus anal
 Each variant uses different models and settings optimized for specific use cases:
 
 #### `quick_verify` (Default)
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 2000
 - **Timeout**: 10000ms
 - **Use case**: Fast verification of simple statements
 
 #### `deep_verify`
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1`
 - **Tokens**: 6000
 - **Timeout**: 30000ms
 - **Use case**: Complex reasoning and analysis
 
 #### `fact_check`
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 3000
 - **Timeout**: 15000ms
 - **Include Sources**: Yes (default)
 - **Use case**: Factual verification with citations
 
 #### `code_verify`
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 4000
 - **Timeout**: 20000ms
 - **Use case**: Code correctness verification
 
 #### `security_verify`
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
+- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 4000
 - **Timeout**: 20000ms
 - **Use case**: Security vulnerability detection
@@ -178,7 +178,7 @@ const result2 = await verifier.verify(
 const result3 = await verifier.verify(
   'Is this code safe?',
   {
-    model: ['gpt-5.1', 'gemini-3-pro-preview'],
+    model: ['gpt-5.1', 'gemini-3.1-pro-preview'],
     maxTokens: 3000
   }
 );
@@ -251,7 +251,7 @@ The Scout tool provides conditional hybrid intelligence gathering, using Perplex
 #### `research_scout` (Default)
 - **Flow**: `perplexity-first-always`
 - **Perplexity Timeout**: 500ms
-- **Parallel Models**: `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
+- **Parallel Models**: `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 2500
 - **Max Sources**: 100
 - **Use case**: Comprehensive research with current facts
@@ -259,7 +259,7 @@ The Scout tool provides conditional hybrid intelligence gathering, using Perplex
 #### `code_scout`
 - **Flow**: `conditional-hybrid`
 - **Perplexity For**: Latest API docs only
-- **Primary**: `gemini-3-pro-preview`
+- **Primary**: `gemini-3.1-pro-preview`
 - **Tokens**: 2000
 - **Max Sources**: 100
 - **Use case**: Technical documentation and code information
@@ -274,7 +274,7 @@ The Scout tool provides conditional hybrid intelligence gathering, using Perplex
 #### `quick_scout`
 - **Flow**: `conditional-hybrid`
 - **Perplexity Timeout**: 250ms
-- **Parallel Models**: `gemini-3-pro-preview`, `gpt-5.1-codex-mini`
+- **Parallel Models**: `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
 - **Tokens**: 1000
 - **Max Sources**: 50
 - **Use case**: Fast information gathering
@@ -454,7 +454,7 @@ See test files for more usage examples:
 1. **Use appropriate variants**: Don't use `deep_verify` when `quick_verify` suffices
 2. **Set token limits**: Lower `maxTokens` for simple queries
 3. **Control timeouts**: Shorter timeouts for time-sensitive operations
-4. **Choose models wisely**: `gpt-5.1-codex-mini` and `gemini-3-pro-preview` are fast and cheap
+4. **Choose models wisely**: `gpt-5.1-codex-mini` and `gemini-3.1-pro-preview` are fast and cheap
 5. **Limit Grok sources**: Keep `maxSearchSources` low unless needed
 6. **Use `quick_scout`**: For simple lookups instead of full research
 

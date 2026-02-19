@@ -19,7 +19,7 @@ describe('Verifier', () => {
       const query = 'Test consensus calculation';
 
       const result = await verifier.verify(query, {
-        model: ['gpt-5-mini', 'gemini-3-pro-preview']
+        model: ['gpt-5-mini', 'gemini-3.1-pro-preview']
       });
 
       expect(result.consensus).toBeGreaterThanOrEqual(0);
@@ -38,7 +38,7 @@ describe('Verifier', () => {
       const query = 'Test majority and outliers';
 
       const result = await verifier.verify(query, {
-        model: ['gpt-5-mini', 'gemini-3-pro-preview', 'qwen/qwen3-coder-plus']
+        model: ['gpt-5-mini', 'gemini-3.1-pro-preview', 'qwen/qwen3-coder-plus']
       });
 
       expect(result.majority).toBeDefined();

@@ -5,6 +5,15 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.2] - 2026-02-19
+
+### Changed
+- **Gemini 3 → 3.1 Pro** — upgraded from `gemini-3-pro-preview` to `gemini-3.1-pro-preview` across all tools, model router, cost tables, and display names
+- **Gemini 30s timeout** — added AbortController timeout to `callGemini()` and `gemini_search` to prevent hanging requests
+
+### Fixed
+- **`gemini_judge` parameter validation crash** — `perspectives` param now accepts `query` or `text` as fallbacks. AI clients that pass content in the wrong parameter no longer get MCP -32602 errors
+
 ## [2.14.7] - 2026-02-05
 
 ### Added

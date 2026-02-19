@@ -95,7 +95,7 @@ const nebulaTheme: Theme = {
 
     // Gemini - Google blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
-    'gemini-3-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3-pro ' },
+    'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3-pro ' },
     'gemini-3-flash-preview': { bg: 'bgCyanBright', fg: 'black', label: ' gemini-flash ' },
 
     // Grok - Magenta/purple
@@ -186,7 +186,7 @@ const cyberpunkTheme: Theme = {
 
     // Gemini - Electric blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI ' },
-    'gemini-3-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI-3 ' },
+    'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI-3 ' },
     'gemini-3-flash-preview': { bg: 'bgCyanBright', fg: 'black', label: ' ◈ GEMINI-FLASH ' },
 
     // Grok - Hot magenta
@@ -276,7 +276,7 @@ const minimalTheme: Theme = {
     'gpt-5.2-pro': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-5.2-pro ' },
 
     gemini: { bg: 'bgBlack', fg: 'blue', label: ' gemini ' },
-    'gemini-3-pro-preview': { bg: 'bgBlack', fg: 'blue', label: ' gemini-3 ' },
+    'gemini-3.1-pro-preview': { bg: 'bgBlack', fg: 'blue', label: ' gemini-3 ' },
     'gemini-3-flash-preview': { bg: 'bgBlack', fg: 'blueBright', label: ' gemini-flash ' },
 
     grok: { bg: 'bgBlack', fg: 'magenta', label: ' grok ' },
@@ -360,7 +360,7 @@ const oceanTheme: Theme = {
     'gpt-5.2-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.2-pro ' },
 
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
-    'gemini-3-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3 ' },
+    'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3 ' },
     'gemini-3-flash-preview': { bg: 'bgBlue', fg: 'white', label: ' gemini-flash ' },
 
     grok: { bg: 'bgMagenta', fg: 'white', label: ' grok ' },

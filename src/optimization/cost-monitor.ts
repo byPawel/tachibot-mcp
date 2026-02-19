@@ -94,8 +94,8 @@ export class CostMonitor extends EventEmitter {
 
     // Existing models
     [
-      "gemini-3-pro-preview",
-      { model: "gemini-3-pro-preview", inputCost: 0.0002, outputCost: 0.0008 },
+      "gemini-3.1-pro-preview",
+      { model: "gemini-3.1-pro-preview", inputCost: 0.0002, outputCost: 0.0008 },
     ],
     ["gpt-5-nano", { model: "gpt-5-nano", inputCost: 0.00005, outputCost: 0.0004 }],
     [

@@ -25,7 +25,7 @@ export enum OpenRouterModel {
   QWEN3_30B = "qwen/qwen3-30b-a3b-instruct-2507",        // 30B MoE model
   QWEN3_235B_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // 235B thinking model
   QWQ_32B = "qwen/qwq-32b",                              // Deep reasoning - CodeElo 1261
-  QWEN3_MAX_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // 235B MoE thinking - heavy reasoning
+  QWEN3_MAX_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // NOTE: Same as QWEN3_235B_THINKING — alias kept for compat
 
   // Moonshot AI models (Kimi)
   KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - agentic reasoning
@@ -369,7 +369,7 @@ export const openRouterMultiModelTool = {
 /**
  * Algorithm Optimization Tool
  * Principal Algorithm Engineer & Competitive Programming Coach
- * Deep algorithmic reasoning with Qwen3-Max-Thinking (235B MoE)
+ * Deep algorithmic reasoning with Qwen3-235B-Thinking (235B MoE)
  */
 export const qwenAlgoTool = {
   name: "qwen_algo",
