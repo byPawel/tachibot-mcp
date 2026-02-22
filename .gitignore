@@ -72,3 +72,6 @@ workflow-output/
 
 # Dev logs
 devlog/
+
+# Internal plans (may contain personal/sensitive content)
+docs/plans/
