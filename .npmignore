@@ -17,6 +17,10 @@ jest.setup.*
 # Development directories
 .claude/
 .focus-sessions/
+docs/plans/
+tools.config.json
+CLAUDE.md
+*.backup
 dist/.focus-sessions/
 .workflow-sessions/
 dist/.workflow-sessions/
