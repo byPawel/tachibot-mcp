@@ -1,0 +1,108 @@
+{
+  "description": "TachiBot MCP Tool Configuration - Profile system for managing tool availability",
+  "lastModified": "2025-10-23",
+
+  "activeProfile": "full",
+
+  "skills": {
+    "bundled": true,
+    "path": "skills"
+  },
+
+  "availableTools": {
+    "description": "Reference: All available tools - Copy any of these to customProfile.tools to create your own selection",
+    "core": ["think", "focus", "nextThought", "tachi"],
+    "perplexity": [
+      "perplexity_ask",
+      "perplexity_reason",
+      "perplexity_research"
+    ],
+    "grok": [
+      "grok_reason",
+      "grok_code",
+      "grok_debug",
+      "grok_architect",
+      "grok_brainstorm",
+      "grok_search"
+    ],
+    "openai": ["openai_brainstorm", "openai_reason", "openai_code_review", "openai_explain", "openai_search"],
+    "gemini": [
+      "gemini_brainstorm",
+      "gemini_analyze_code",
+      "gemini_analyze_text",
+      "gemini_judge",
+      "gemini_search"
+    ],
+    "qwen": ["qwen_coder", "qwen_algo", "qwen_reason", "qwen_competitive"],
+    "kimi": ["kimi_thinking", "kimi_code", "kimi_decompose", "kimi_long_context"],
+    "minimax": ["minimax_code", "minimax_agent"],
+    "jury": ["jury"],
+    "planner": ["planner_maker", "planner_runner", "list_plans"],
+    "advanced": ["verifier", "scout", "challenger", "hunter"],
+    "workflow": [
+      "workflow",
+      "list_workflows",
+      "create_workflow",
+      "visualize_workflow",
+      "workflow_start",
+      "continue_workflow",
+      "workflow_status",
+      "validate_workflow",
+      "validate_workflow_file"
+    ],
+    "collaborative": ["pingpong", "qwen_competitive"]
+  },
+
+  "customProfile": {
+    "description": "Your custom profile - Toggle tools on/off below. Set enabled: true to activate.",
+    "enabled": false,
+    "tools": {
+      "think": true,
+      "focus": true,
+      "tachi": true,
+      "nextThought": true,
+      "perplexity_ask": true,
+      "perplexity_reason": true,
+      "perplexity_research": true,
+      "grok_reason": true,
+      "grok_code": true,
+      "grok_debug": true,
+      "grok_architect": true,
+      "grok_brainstorm": true,
+      "grok_search": true,
+      "openai_brainstorm": true,
+      "openai_reason": true,
+      "openai_code_review": true,
+      "openai_explain": true,
+      "openai_search": true,
+      "gemini_brainstorm": true,
+      "gemini_analyze_code": true,
+      "gemini_analyze_text": true,
+      "gemini_judge": true,
+      "gemini_search": true,
+      "qwen_coder": true,
+      "qwen_algo": true,
+      "qwen_reason": true,
+      "kimi_thinking": true,
+      "minimax_code": true,
+      "minimax_agent": true,
+      "planner_maker": true,
+      "planner_runner": true,
+      "verifier": true,
+      "scout": true,
+      "challenger": true,
+      "hunter": false,
+      "workflow": true,
+      "list_workflows": true,
+      "create_workflow": true,
+      "visualize_workflow": true,
+      "workflow_start": true,
+      "continue_workflow": true,
+      "workflow_status": true,
+      "validate_workflow": true,
+      "validate_workflow_file": true,
+      "pingpong": true,
+      "qwen_competitive": false
+    }
+  }
+}
