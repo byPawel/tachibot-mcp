@@ -119,7 +119,7 @@ export async function callGemini(
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 70000); // 70s timeout (gemini-3.1-pro-preview needs longer)
 
     const response = await fetch(url, {
       method: "POST",
@@ -179,7 +179,7 @@ export async function callGemini(
     return text;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return `[Gemini timeout: Request exceeded 30s. Model: ${model}]`;
+      return `[Gemini timeout: Request exceeded 70s. Model: ${model}]`;
     }
     return `[Gemini error: ${error instanceof Error ? error.message : String(error)}]`;
   }
@@ -621,7 +621,7 @@ export const geminiSearchTool = {
     };
 
     try {
-      const url = `${GEMINI_API_URL}/models/${GEMINI_MODELS.GEMINI_3_PRO}:generateContent?key=${GEMINI_API_KEY}`;
+      const url = `${GEMINI_API_URL}/models/${GEMINI_MODELS.FLASH}:generateContent?key=${GEMINI_API_KEY}`;
 
       const systemInstruction = `You are a research assistant with access to Google Search.
 Search the web to answer the user's query with accurate, up-to-date information.
@@ -670,7 +670,7 @@ IMPORTANT:
       }
 
       const searchController = new AbortController();
-      const searchTimeoutId = setTimeout(() => searchController.abort(), 30000); // 30s timeout
+      const searchTimeoutId = setTimeout(() => searchController.abort(), 70000); // 70s timeout (gemini-3.1-pro-preview needs longer)
 
       const response = await fetch(url, {
         method: "POST",
@@ -723,7 +723,7 @@ IMPORTANT:
       return text + sources;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        return `[Gemini Search timeout: Request exceeded 30s]`;
+        return `[Gemini Search timeout: Request exceeded 70s]`;
       }
       return `[Gemini Search error: ${error instanceof Error ? error.message : String(error)}]`;
     }
