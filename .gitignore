@@ -71,6 +71,8 @@ test-*.sh
 delete_before_launch/
 CLAUDE.md
 workflow-output/
+tools.config.json
+*.backup
 
 # Dev logs
 devlog/
