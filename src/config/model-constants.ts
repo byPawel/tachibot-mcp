@@ -410,8 +410,9 @@ export const MODEL_PRICING: Record<string, number> = {
   "grok-3": 0.00035,
 
   // Perplexity
+  "sonar": 0.001,                  // cheapest search
   "sonar-pro": 0.006,
-  "sonar-reasoning-pro": 0.006,
+  "sonar-reasoning-pro": 0.006,   // avoid - expensive reasoning tokens
 
   // OpenRouter models - Kimi
   "moonshotai/kimi-k2-thinking": 0.002,
