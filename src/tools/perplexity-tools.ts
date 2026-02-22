@@ -130,7 +130,7 @@ export const perplexityAskTool = {
 
     const reportFn = reportProgress ?? (async () => {});
     const result = await withHeartbeat(
-      () => callPerplexity(messages, PerplexityModel.SONAR_PRO, args.searchDomain, args.searchRecency),
+      () => callPerplexity(messages, PerplexityModel.SONAR, args.searchDomain, args.searchRecency),
       reportFn
     );
     return stripFormatting(result);
@@ -233,7 +233,7 @@ ${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
     ];
     
     const result = await withHeartbeat(
-      () => callPerplexity(messages, PerplexityModel.SONAR_REASONING_PRO),
+      () => callPerplexity(messages, PerplexityModel.SONAR_PRO),
       reportFn
     );
     return stripFormatting(result);

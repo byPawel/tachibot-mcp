@@ -57,8 +57,9 @@ export const GEMINI_MODELS = {
 
 // Perplexity Models
 export const PERPLEXITY_MODELS = {
-  SONAR_PRO: "sonar-pro", // Main search model
-  SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model
+  SONAR: "sonar", // Lightweight search (cheapest)
+  SONAR_PRO: "sonar-pro", // Advanced search
+  SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model (expensive - avoid)
 } as const;
 
 // Grok Models (xAI) - Updated 2025-11-22 with correct API model names
@@ -145,7 +146,7 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
   maxTokens: 2000,
   temperature: 0.7,
   retries: 3,
-  timeout: 30000, // 30 seconds
+  timeout: 70000, // 70 seconds (Gemini 3.1 Pro Preview needs longer)
 } as const;
 
 // ============================================================================

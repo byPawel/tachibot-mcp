@@ -36,8 +36,8 @@ const MODELS = {
   GROK: GROK_MODELS._4_1_FAST_REASONING,        // grok-4-1-fast-reasoning
 
   // Perplexity
-  PERPLEXITY: PERPLEXITY_MODELS.SONAR_PRO,      // sonar-pro
-  PERPLEXITY_REASON: PERPLEXITY_MODELS.SONAR_REASONING, // sonar-reasoning-pro
+  PERPLEXITY: PERPLEXITY_MODELS.SONAR,           // sonar (cheapest)
+  PERPLEXITY_REASON: PERPLEXITY_MODELS.SONAR_PRO, // sonar-pro (was sonar-reasoning-pro)
 
   // OpenRouter
   QWEN: QWEN_MODELS.CODER_NEXT,                 // qwen/qwen3-coder-next (80B/3B MoE, 262K ctx)
