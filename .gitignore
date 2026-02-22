@@ -56,6 +56,8 @@ landing/
 # Test files
 check-key.js
 test-*.js
+test-*.cjs
+test-*.mjs
 test-*.sh
 
 # Claude Desktop Extension packages
