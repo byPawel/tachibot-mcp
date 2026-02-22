@@ -16,6 +16,7 @@ export interface TimeoutConfig {
   workflow: number;
   pingpong: number;
   api: number;
+  gemini: number;
   openrouter: number;
   progressThreshold: number;
 }
@@ -38,6 +39,9 @@ export function getTimeoutConfig(): TimeoutConfig {
 
     // Individual API call timeout (60 seconds)
     api: parseInt(process.env.TACHI_API_TIMEOUT || '60000'),
+
+    // Gemini timeout (30s - Flash is fast)
+    gemini: parseInt(process.env.TACHI_GEMINI_TIMEOUT || '30000'),
 
     // OpenRouter timeout (180 seconds for thinking models like Qwen)
     openrouter: parseInt(process.env.TACHI_OPENROUTER_TIMEOUT || '180000'),
@@ -163,8 +167,8 @@ export const SMART_TIMEOUT_DEFAULTS: SmartTimeoutConfig = {
       max: 60000      // 60 seconds
     },
     google: {
-      base: 15000,    // 15 seconds
-      max: 45000      // 45 seconds
+      base: 20000,    // 20 seconds - Flash with search grounding
+      max: 60000      // 60 seconds
     },
     openrouter: {
       base: 90000,    // 90 seconds - thinking models need more time

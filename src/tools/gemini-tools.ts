@@ -11,6 +11,7 @@ import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gate
 import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
+import { getTimeoutConfig } from "../config/timeout-config.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 // NOTE: dotenv is loaded in server.ts before any imports
@@ -119,7 +120,8 @@ export async function callGemini(
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 70000); // 70s timeout (gemini-3.1-pro-preview needs longer)
+    const timeouts = getTimeoutConfig();
+    const timeoutId = setTimeout(() => controller.abort(), timeouts.gemini);
 
     const response = await fetch(url, {
       method: "POST",
@@ -179,7 +181,7 @@ export async function callGemini(
     return text;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return `[Gemini timeout: Request exceeded 70s. Model: ${model}]`;
+      return `[Gemini timeout: Request exceeded ${getTimeoutConfig().gemini / 1000}s. Model: ${model}]`;
     }
     return `[Gemini error: ${error instanceof Error ? error.message : String(error)}]`;
   }
@@ -670,7 +672,8 @@ IMPORTANT:
       }
 
       const searchController = new AbortController();
-      const searchTimeoutId = setTimeout(() => searchController.abort(), 70000); // 70s timeout (gemini-3.1-pro-preview needs longer)
+      const timeouts = getTimeoutConfig();
+      const searchTimeoutId = setTimeout(() => searchController.abort(), timeouts.gemini);
 
       const response = await fetch(url, {
         method: "POST",
@@ -723,7 +726,7 @@ IMPORTANT:
       return text + sources;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        return `[Gemini Search timeout: Request exceeded 70s]`;
+        return `[Gemini Search timeout: Request exceeded ${getTimeoutConfig().gemini / 1000}s. Model: ${GEMINI_MODELS.FLASH}]`;
       }
       return `[Gemini Search error: ${error instanceof Error ? error.message : String(error)}]`;
     }
