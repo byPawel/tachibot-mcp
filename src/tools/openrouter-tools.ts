@@ -160,19 +160,21 @@ export async function callOpenRouter(
  */
 export const qwenCoderTool = {
   name: "qwen_coder",
-  description: "Code generation. Put CODE in 'code' parameter and REQUIREMENTS in 'requirements' parameter.",
+  description: "Code generation and analysis with Qwen3-Coder-Next. Put your REQUEST in the 'query' parameter.",
   parameters: z.object({
+    query: z.string().describe("Your request or question (REQUIRED - put your main request here)"),
     task: z.enum(["generate", "review", "optimize", "debug", "refactor", "explain", "analyze"])
-      .describe("Code task - must be one of: generate, review, optimize, debug, refactor, explain, analyze"),
-    code: z.string().optional().describe("The actual source code (for review/optimize/debug/refactor/explain/analyze tasks)"),
-    requirements: z.string().optional().default("").describe("Requirements or description for the task (for generate task, put your request here)"),
+      .optional()
+      .default("analyze")
+      .describe("Code task type (default: analyze)"),
+    code: z.string().optional().describe("Source code to work with (for review/optimize/debug/refactor/explain tasks)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
     useFree: z.boolean().optional().default(false).describe("Use free tier model instead of premium")
   }),
   execute: async (args: {
-    task: string;
+    query: string;
+    task?: string;
     code?: string;
-    requirements?: string;
     language?: string;
     useFree?: boolean
   }, { log, reportProgress }: any) => {
@@ -187,15 +189,14 @@ export const qwenCoderTool = {
     };
 
     const systemPrompt = `You are Qwen3-Coder-Next, an agentic coding model (80B/3B MoE, 262K context, SWE-Bench >70%).
-Task: ${taskPrompts[args.task as keyof typeof taskPrompts]}
+Task: ${taskPrompts[(args.task || "analyze") as keyof typeof taskPrompts]}
 ${args.language ? `Language: ${args.language}` : ''}
 Focus on: clean code, best practices, performance, and maintainability.
 ${FORMAT_INSTRUCTION}`;
 
-    const requirementsText = args.requirements || "Analyze and provide insights";
     const userPrompt = args.code
-      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequirements: ${requirementsText}`
-      : requirementsText;
+      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequest: ${args.query}`
+      : args.query;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -651,18 +652,20 @@ ${FORMAT_INSTRUCTION}`
  */
 export const kimiCodeTool = {
   name: "kimi_code",
-  description: "SWE-focused code generation/fixing with Kimi K2.5 (SWE-Bench 76.8%). Put CODE in 'code' parameter.",
+  description: "SWE-focused code generation/fixing with Kimi K2.5 (SWE-Bench 76.8%). Put your REQUEST in the 'query' parameter.",
   parameters: z.object({
+    query: z.string().describe("Your request or question (REQUIRED - put your main request here)"),
     task: z.enum(["generate", "fix", "review", "optimize", "debug", "refactor"])
-      .describe("Code task - must be one of: generate, fix, review, optimize, debug, refactor"),
-    code: z.string().optional().describe("The source code (for fix/review/optimize/debug/refactor tasks)"),
-    requirements: z.string().optional().default("").describe("Requirements or description (for generate task)"),
+      .optional()
+      .default("review")
+      .describe("Code task type (default: review)"),
+    code: z.string().optional().describe("Source code to work with (for fix/review/optimize/debug/refactor tasks)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')")
   }),
   execute: async (args: {
-    task: string;
+    query: string;
+    task?: string;
     code?: string;
-    requirements?: string;
     language?: string;
   }, { log, reportProgress }: any) => {
     const taskPrompts: Record<string, string> = {
@@ -675,14 +678,14 @@ export const kimiCodeTool = {
     };
 
     const systemPrompt = `You are Kimi K2.5, an expert SWE model (SWE-Bench 76.8%). You excel at repo-level code understanding and changes.
-Task: ${taskPrompts[args.task]}
+Task: ${taskPrompts[args.task || "review"]}
 ${args.language ? `Language: ${args.language}` : ''}
 Focus: Clean code, correct solutions, minimal changes for fixes. Understand the full repo context when reviewing.
 ${FORMAT_INSTRUCTION}`;
 
     const userPrompt = args.code
-      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequirements: ${args.requirements || 'Fix/improve the code'}`
-      : args.requirements || "Generate code";
+      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequest: ${args.query}`
+      : args.query;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -797,18 +800,20 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const kimiLongContextTool = {
   name: "kimi_long_context",
-  description: "Long-context analysis with Kimi K2.5 (256K context window, best-effort). Analyzes large documents, codebases, or text. Put CONTENT in 'content' parameter.",
+  description: "Long-context analysis with Kimi K2.5 (256K context window). Put CONTENT in the 'content' parameter.",
   parameters: z.object({
-    content: z.string().describe("The long text/document to analyze (REQUIRED)"),
+    content: z.string().describe("The long text/document to analyze (REQUIRED - put your content here)"),
     task: z.enum(["summarize", "extract", "analyze", "compare", "find"])
-      .describe("Analysis task: summarize, extract (key info), analyze (deep), compare (sections), find (specific info)"),
+      .optional()
+      .default("analyze")
+      .describe("Analysis task type (default: analyze)"),
     query: z.string().optional().describe("Specific question about the content (for extract/find tasks)"),
     outputFormat: z.enum(["brief", "detailed", "structured"]).optional().default("detailed")
       .describe("Output format: brief (TL;DR), detailed (thorough), structured (sections with headers)")
   }),
   execute: async (args: {
     content: string;
-    task: string;
+    task?: string;
     query?: string;
     outputFormat?: string;
   }, { log, reportProgress }: any) => {
@@ -827,7 +832,7 @@ export const kimiLongContextTool = {
     };
 
     const systemPrompt = `You are Kimi K2.5, expert at processing and analyzing large documents (best-effort 256K context window).
-Task: ${taskPrompts[args.task]}
+Task: ${taskPrompts[args.task || "analyze"]}
 Format: ${formatPrompts[args.outputFormat || "detailed"]}
 ${args.query ? `Specific query: ${args.query}` : ''}
 
@@ -906,18 +911,20 @@ ${FORMAT_INSTRUCTION}`
  */
 export const minimaxCodeTool = {
   name: "minimax_code",
-  description: "Single-pass code operations with MiniMax M2.5 (SWE-Bench 80.2%): generate, fix, review, optimize, debug, or refactor. Use for atomic code tasks that need one input → one output. For multi-step tasks, use minimax_agent instead. Put CODE in 'code' parameter.",
+  description: "Single-pass code operations with MiniMax M2.5 (SWE-Bench 80.2%). Put your REQUEST in the 'query' parameter. For multi-step tasks, use minimax_agent instead.",
   parameters: z.object({
+    query: z.string().describe("Your request or question (REQUIRED - put your main request here)"),
     task: z.enum(["generate", "fix", "review", "optimize", "debug", "refactor"])
-      .describe("Code task - must be one of: generate, fix, review, optimize, debug, refactor"),
-    code: z.string().optional().describe("The source code (for fix/review/optimize/debug/refactor tasks)"),
-    requirements: z.string().optional().default("").describe("Requirements or description (for generate task)"),
+      .optional()
+      .default("review")
+      .describe("Code task type (default: review)"),
+    code: z.string().optional().describe("Source code to work with (for fix/review/optimize/debug/refactor tasks)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')")
   }),
   execute: async (args: {
-    task: string;
+    query: string;
+    task?: string;
     code?: string;
-    requirements?: string;
     language?: string;
   }, { log, reportProgress }: any) => {
     // Task-specific prompts with TECHNIQUE tags and differentiated PROCESS+OUTPUT
@@ -964,21 +971,21 @@ OUTPUT: Refactored code in a fenced block. No API/signature changes unless expli
 
     const systemPrompt = `Expert code model. Single-pass: one input → one output. Output consumed by automated toolchain.
 
-${taskPrompts[args.task]}
+${taskPrompts[args.task || "review"]}
 ${langInstruction}
 Code in fenced blocks. No conversational filler. Be precise. If ambiguous, state your assumption and proceed.
 ${FORMAT_INSTRUCTION}`;
 
     const userPrompt = args.code
-      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequirements: ${args.requirements || 'Fix/improve the code'}`
-      : args.requirements || "Generate code";
+      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequest: ${args.query}`
+      : args.query;
 
     const messages = [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt }
     ];
 
-    const temp = taskTemperatures[args.task] ?? 0.3;
+    const temp = taskTemperatures[args.task || "review"] ?? 0.3;
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
       () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_5, temp, 4000),

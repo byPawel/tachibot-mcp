@@ -5,6 +5,19 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.5] - 2026-02-26
+
+### Fixed
+- **`qwen_coder` parameter validation** — Claude was putting queries in `task` enum or omitting it. Added `query` as required primary param, made `task` optional (default: `analyze`). Removes `requirements` param
+- **`kimi_code` parameter validation** — same fix: added `query` as required primary param, made `task` optional (default: `review`)
+- **`minimax_code` parameter validation** — same fix: added `query` as required primary param, made `task` optional (default: `review`)
+- **`kimi_long_context` parameter validation** — made `task` enum optional (default: `analyze`), `content` remains the required primary param
+- **Updated callers** — `prompt-technique-tools.ts` and `qwen-wrapper.ts` adapted to new `query` param
+
+### Changed
+- **Gemini 3.1 → 3.0 Pro rollback** — reverted from `gemini-3.1-pro-preview` to stable `gemini-3-pro-preview` (3.1 has widespread timeout/503 issues)
+- **Gemini timeout 30s → 90s** — Pro models need longer than Flash, bumped default
+
 ## [2.15.2] - 2026-02-19
 
 ### Changed

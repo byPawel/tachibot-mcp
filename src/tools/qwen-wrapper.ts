@@ -44,9 +44,9 @@ export const qwenTool = {
     switch (args.tool) {
       case "coder":
         return await qwenCoderTool.execute({
+          query: args.requirements || args.query || "",
           task: args.task || "generate",
           code: args.code,
-          requirements: args.requirements || args.query || "",
           language: args.language,
           useFree: args.useFree
         }, { log });

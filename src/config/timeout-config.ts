@@ -40,8 +40,8 @@ export function getTimeoutConfig(): TimeoutConfig {
     // Individual API call timeout (60 seconds)
     api: parseInt(process.env.TACHI_API_TIMEOUT || '60000'),
 
-    // Gemini timeout (30s - Flash is fast)
-    gemini: parseInt(process.env.TACHI_GEMINI_TIMEOUT || '30000'),
+    // Gemini timeout (90s - Pro models need longer than Flash)
+    gemini: parseInt(process.env.TACHI_GEMINI_TIMEOUT || '90000'),
 
     // OpenRouter timeout (180 seconds for thinking models like Qwen)
     openrouter: parseInt(process.env.TACHI_OPENROUTER_TIMEOUT || '180000'),

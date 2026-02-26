@@ -453,7 +453,7 @@ async function executeTargetTool(toolName: string, prompt: string, context: any)
     // OpenRouter tools (Qwen, Kimi)
     'qwen_coder': async () => {
       const { qwenCoderTool } = await import('./openrouter-tools.js');
-      return qwenCoderTool.execute({ task: 'analyze', code: prompt }, context);
+      return qwenCoderTool.execute({ query: prompt, task: 'analyze' }, context);
     },
     'qwen_algo': async () => {
       const { qwenAlgoTool } = await import('./openrouter-tools.js');
