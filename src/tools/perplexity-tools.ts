@@ -233,7 +233,7 @@ ${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
     ];
     
     const result = await withHeartbeat(
-      () => callPerplexity(messages, PerplexityModel.SONAR_PRO),
+      () => callPerplexity(messages, PerplexityModel.SONAR_REASONING),
       reportFn
     );
     return stripFormatting(result);
@@ -332,9 +332,9 @@ export function getAllPerplexityTools(): PerplexityToolDefinition[] {
 
   // Minimized tool set - keeping only essential Perplexity tools
   return [
-    perplexityAskTool as PerplexityToolDefinition,      // Web search
-    perplexityReasonTool as PerplexityToolDefinition,   // Complex reasoning
-    perplexityResearchTool as PerplexityToolDefinition,  // Deep research - needed by workflows
+    perplexityAskTool as PerplexityToolDefinition,      // Web search (sonar - cheap)
+    perplexityReasonTool as PerplexityToolDefinition,   // Reasoning (sonar-reasoning - cheap)
+    // Removed: perplexityResearchTool (sonar-deep-research — $5/$25 per M, burned $12 in 3 days)
     // Removed: perplexityFactCheckTool (can use verifier instead)
     // Removed: perplexityCodeSearchTool (can use perplexity_ask)
   ];

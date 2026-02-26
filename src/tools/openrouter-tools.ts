@@ -336,10 +336,10 @@ export const openRouterMultiModelTool = {
     model: z.enum([
       "qwen-coder", "qwen-coder-plus",
       "qwq-32b", "kimi-k2-thinking"
-    ]).describe("Model to use - must be one of: qwen-coder, qwen-coder-plus, qwq-32b, kimi-k2-thinking"),
+    ]).optional().default("qwen-coder").describe("Model to use (default: qwen-coder)"),
     temperature: z.coerce.number().optional().default(0.7).describe("Response temperature (0-1, default: 0.7)")
   }),
-  execute: async (args: { query: string; model: string; temperature?: number }, { log }: any) => {
+  execute: async (args: { query: string; model?: string; temperature?: number }, { log }: any) => {
     const modelMap = {
       "qwen-coder": OpenRouterModel.QWEN3_CODER_NEXT,
       "qwen-coder-plus": OpenRouterModel.QWEN3_CODER_NEXT,
@@ -358,7 +358,7 @@ export const openRouterMultiModelTool = {
       }
     ];
 
-    const selectedModel = modelMap[args.model as keyof typeof modelMap];
+    const selectedModel = modelMap[(args.model || "qwen-coder") as keyof typeof modelMap];
     if (!selectedModel) {
       return `[Model ${args.model} not available]`;
     }

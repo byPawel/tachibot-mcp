@@ -5,6 +5,20 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.6] - 2026-02-26
+
+### Fixed
+- **Full audit: 6 tools had required enum anti-pattern** — Claude couldn't fill required enums correctly, causing MCP -32602 errors. Fixed `usage_stats`, `openrouter_multi`, `gemini_judge`, `planner_maker`, `planner_runner`, `create_workflow`
+- **`gemini_judge`** — had zero required params. Made `perspectives` required as primary content param
+- **`openrouter_multi`** — `model` enum now optional (default: `qwen-coder`)
+- **`planner_maker` / `planner_runner`** — `mode` enum missing `.optional()` before `.default()`
+- **`create_workflow`** — `type` enum now optional (default: `custom`)
+- **`usage_stats`** — `action` enum now optional (default: `view`), added `query` param
+
+### Changed
+- **`perplexity_reason` downgraded** — `sonar-pro` ($3/$15/M) → `sonar-reasoning` ($1/$5/M), 3x cheaper
+- **`perplexity_research` removed** — `sonar-deep-research` ($5/$25/M) was burning $12 in 3 days
+
 ## [2.15.5] - 2026-02-26
 
 ### Fixed

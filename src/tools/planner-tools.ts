@@ -976,7 +976,7 @@ Example:
     context: z.string().optional().describe("Additional context"),
     codeContext: z.string().optional().describe("Actual code from relevant files for analysis (read files and paste here)"),
     answers: z.string().optional().describe("Answers to clarifying questions"),
-    mode: z.enum(["start", "continue"]).default("start")
+    mode: z.enum(["start", "continue"]).optional().default("start")
       .describe("start: begin new plan, continue: next step"),
     step: z.number().optional().describe("Current step number (for continue mode)"),
     prior: z.record(z.string()).optional()
@@ -1363,7 +1363,7 @@ The tool parses your plan and tracks progress through each step.`,
 
   parameters: z.object({
     plan: z.string().describe("The implementation plan from planner_maker"),
-    mode: z.enum(["start", "step", "verify"]).default("start")
+    mode: z.enum(["start", "step", "verify"]).optional().default("start")
       .describe("start: parse plan, step: work on step N, verify: checkpoint"),
     stepNum: z.number().optional().describe("Step number (1-indexed) for mode=step"),
     checkpoint: z.enum(["50%", "80%", "100%"]).optional().describe("Checkpoint for mode=verify"),

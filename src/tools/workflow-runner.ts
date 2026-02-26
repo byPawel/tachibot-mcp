@@ -334,14 +334,14 @@ export function registerWorkflowTools(server: FastMCP) {
   // Tool to create a new workflow
   tools.push({
     name: 'create_workflow',
-    description: 'Create workflow',
+    description: 'Create a new workflow. Put the WORKFLOW NAME in the "name" parameter.',
     parameters: z.object({
-      name: z.string(),
+      name: z.string().describe("Workflow name (REQUIRED)"),
       type: z.enum(['code-review', 'brainstorm', 'debug', 'research', 'custom'])
-        ,
-      steps: z.string().optional(),
+        .optional().default('custom').describe("Workflow type (default: custom)"),
+      steps: z.string().optional().describe("Workflow steps definition"),
     }),
-    execute: async (args: { name: string; type: 'code-review' | 'brainstorm' | 'debug' | 'research' | 'custom'; steps?: string }) => {
+    execute: async (args: { name: string; type?: 'code-review' | 'brainstorm' | 'debug' | 'research' | 'custom'; steps?: string }) => {
       try {
         let workflow;
 

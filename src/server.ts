@@ -629,14 +629,17 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
 // Usage Stats Tool - view/reset usage statistics
 safeAddTool({
   name: "usage_stats",
-  description: "View or reset tool usage statistics",
+  description: "View or reset tool usage statistics. Put your REQUEST in the 'query' parameter.",
   parameters: z.object({
-    action: z.enum(["view", "reset"]).describe("View stats or reset them"),
-    scope: z.enum(["current", "all"]).default("current").describe("Current repo or all repos"),
-    format: z.enum(["table", "json"]).default("table").describe("Output format"),
+    query: z.string().optional().default("view").describe("What to do: 'view' (default), 'reset', or any question about usage"),
+    action: z.enum(["view", "reset"]).optional().default("view").describe("Action (default: view)"),
+    scope: z.enum(["current", "all"]).optional().default("current").describe("Current repo or all repos"),
+    format: z.enum(["table", "json"]).optional().default("table").describe("Output format"),
   }),
-  execute: async (args: { action: string; scope: string; format: string }): Promise<string> => {
-    const { action, scope, format } = args;
+  execute: async (args: { query?: string; action?: string; scope?: string; format?: string }): Promise<string> => {
+    const action = args.action || (args.query?.includes("reset") ? "reset" : "view");
+    const scope = args.scope || "current";
+    const format = args.format || "table";
 
     if (action === "reset") {
       return resetStats(scope as 'current' | 'all');

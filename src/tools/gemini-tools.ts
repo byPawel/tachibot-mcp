@@ -482,9 +482,9 @@ ${args.details ? `Additional details: ${args.details}` : ''}`;
  */
 export const geminiJudgeTool = {
   name: "gemini_judge",
-  description: "Evaluate and synthesize multiple AI perspectives into a unified verdict. Put PERSPECTIVES in 'perspectives' parameter. Also accepts 'query' or 'text' as fallback.",
+  description: "Evaluate and synthesize multiple AI perspectives into a unified verdict. Put CONTENT in the 'perspectives' parameter.",
   parameters: z.object({
-    perspectives: z.string().optional().describe("The multiple AI perspectives/analyses to evaluate and synthesize (preferred parameter)"),
+    perspectives: z.string().describe("The multiple AI perspectives/analyses to evaluate and synthesize (REQUIRED - put your content here)"),
     query: z.string().optional().describe("Fallback: content to judge (use 'perspectives' instead)"),
     text: z.string().optional().describe("Fallback: content to judge (use 'perspectives' instead)"),
     question: z.string().optional().describe("The original question being judged"),
