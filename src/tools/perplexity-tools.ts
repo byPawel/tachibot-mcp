@@ -13,13 +13,13 @@ import { withHeartbeat } from "../utils/streaming-helper.js";
 // Perplexity API configuration
 const PERPLEXITY_API_URL = "https://api.perplexity.ai";
 
-// Available Perplexity models (2026)
+// Available Perplexity models (Feb 2026)
+// sonar-reasoning DEPRECATED — only sonar-reasoning-pro remains
 export enum PerplexityModel {
-  SONAR = "sonar",                                // Lightweight search (128k ctx)
-  SONAR_PRO = "sonar-pro",                        // Advanced search (200k ctx)
-  SONAR_REASONING = "sonar-reasoning",             // Fast reasoning w/ CoT (128k ctx)
-  SONAR_REASONING_PRO = "sonar-reasoning-pro",     // Advanced reasoning / DeepSeek R1 (128k ctx)
-  SONAR_DEEP_RESEARCH = "sonar-deep-research",     // Exhaustive research reports (128k ctx)
+  SONAR = "sonar",                                // Lightweight search ($1/$1 per M)
+  SONAR_PRO = "sonar-pro",                        // Advanced search ($3/$15 per M)
+  SONAR_REASONING_PRO = "sonar-reasoning-pro",     // Reasoning w/ CoT ($2/$8 per M)
+  SONAR_DEEP_RESEARCH = "sonar-deep-research",     // Exhaustive research ($2/$8 per M + extras)
 }
 
 /**
@@ -66,7 +66,13 @@ export async function callPerplexity(
     });
 
     if (!response.ok) {
-      throw new Error(`Perplexity API error: ${response.statusText}`);
+      const errorBody = await response.text().catch(() => "");
+      let detail = response.statusText;
+      try {
+        const parsed = JSON.parse(errorBody);
+        detail = parsed?.error?.message || detail;
+      } catch {}
+      throw new Error(`Perplexity ${response.status}: ${detail}`);
     }
 
     const data: any = await response.json();
@@ -233,7 +239,7 @@ ${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
     ];
     
     const result = await withHeartbeat(
-      () => callPerplexity(messages, PerplexityModel.SONAR_REASONING),
+      () => callPerplexity(messages, PerplexityModel.SONAR_REASONING_PRO),
       reportFn
     );
     return stripFormatting(result);

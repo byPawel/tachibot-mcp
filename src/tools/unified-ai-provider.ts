@@ -62,12 +62,12 @@ const PROVIDER_CONFIGS = {
   openai: {
     base: 'https://api.openai.com/v1',
     key: process.env.OPENAI_API_KEY,
-    models: ['gpt-5.2', 'gpt-5.2-pro']  // gpt-5.2 with reasoning.effort for "thinking"
+    models: ['gpt-5.4', 'gpt-5.3-codex', 'gpt-5.3', 'gpt-5.4-pro']
   },
   gpt52: {
     base: 'https://api.openai.com/v1',  // Uses /responses endpoint
     key: process.env.OPENAI_API_KEY,
-    models: ['gpt-5.2', 'gpt-5.2-pro'],  // reasoning.effort controls "thinking" mode
+    models: ['gpt-5.4', 'gpt-5.3-codex', 'gpt-5.3', 'gpt-5.4-pro'],
     special: true  // Needs special handling for reasoning_effort
   },
   mistral: {
@@ -245,12 +245,12 @@ async function handleGPT52(prompt: string, options: UnifiedAIOptions): Promise<s
   const config = PROVIDER_CONFIGS.gpt52;
   const endpoint = 'https://api.openai.com/v1/responses';
 
-  // Default to gpt-5.2 model (use reasoning.effort for "thinking" mode)
-  const model = options.model || 'gpt-5.2';
+  // Default to gpt-5.4 model (use reasoning.effort for "thinking" mode)
+  const model = options.model || 'gpt-5.4';
 
-  // Reasoning effort based on model - "high" for "thinking" mode
-  // gpt-5.2-pro gets high effort, gpt-5.2 uses medium by default
-  const reasoningEffort = model === 'gpt-5.2-pro' ? 'high' : 'medium';
+  // Reasoning effort based on model - "high" for pro/thinking mode
+  // gpt-5.4-pro gets high effort, others use medium by default
+  const reasoningEffort = model === 'gpt-5.4-pro' ? 'high' : 'medium';
 
   // Build input as array of message objects
   const inputMessages = [

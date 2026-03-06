@@ -5,6 +5,25 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] - 2026-03-06
+
+### Changed
+- **GPT-5.4 upgrade** — default OpenAI model bumped from `gpt-5.2` to `gpt-5.4` (most capable, Mar 2026, $2.50/$15 per 1M tokens)
+- **GPT-5.4-pro** — expert model upgraded from `gpt-5.2-pro` to `gpt-5.4-pro` ($30/$180 per 1M tokens)
+- **GPT-5.3-codex** — new agentic coding model for `openai_code_review` (Feb 2026)
+- **GPT-5.3** — new fast instant model available as option
+- **Gemini 3.1 Flash-Lite** — added as option (released Mar 3, fastest/cheapest in 3.1 series)
+- **Token limits bumped** — GPT-5.4 reasoning tokens eat into `max_output_tokens`, so all OpenAI tools bumped (reason: 8000, brainstorm: 6000, code_review: 6000, explain: 4000, search: 8000)
+- **Brainstorm min floor** — enforces 4000 token minimum to prevent truncation from reasoning overhead
+- **Pricing updated** — all model pricing tables updated with actual March 2026 rates
+
+### Fixed
+- **`openai_brainstorm` "No response from OpenAI"** — eliminated fragile `callOpenAIWithCustomParams` duplicate; brainstorm now uses `callOpenAI` with retry/fallback logic like all other OpenAI tools
+- **`isGPT52` → `isGPT5`** — model detection now matches all `gpt-5.x` models, not just 5.2
+
+### Removed
+- **`callOpenAIWithCustomParams`** — duplicate of `callOpenAI` without retry logic; was the root cause of brainstorm failures
+
 ## [2.15.6] - 2026-02-26
 
 ### Fixed

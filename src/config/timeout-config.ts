@@ -18,6 +18,7 @@ export interface TimeoutConfig {
   api: number;
   gemini: number;
   openrouter: number;
+  openrouterThinking: number;
   progressThreshold: number;
 }
 
@@ -43,12 +44,26 @@ export function getTimeoutConfig(): TimeoutConfig {
     // Gemini timeout (90s - Pro models need longer than Flash)
     gemini: parseInt(process.env.TACHI_GEMINI_TIMEOUT || '90000'),
 
-    // OpenRouter timeout (180 seconds for thinking models like Qwen)
+    // OpenRouter timeout (180s default, 600s for thinking/reasoning models)
     openrouter: parseInt(process.env.TACHI_OPENROUTER_TIMEOUT || '180000'),
+    openrouterThinking: parseInt(process.env.TACHI_OPENROUTER_THINKING_TIMEOUT || '600000'),
 
     // Progress threshold (30 seconds)
     progressThreshold: parseInt(process.env.TACHI_PROGRESS_THRESHOLD || '30000'),
   };
+}
+
+/**
+ * Get OpenRouter timeout based on model ID.
+ * Thinking/reasoning models get extended timeout (600s default).
+ * Standard models get 180s default.
+ */
+export function getOpenRouterModelTimeout(modelId: string): number {
+  const config = getTimeoutConfig();
+  if (modelId.includes('thinking') || modelId.includes('reasoning')) {
+    return config.openrouterThinking;
+  }
+  return config.openrouter;
 }
 
 /**

@@ -89,9 +89,11 @@ const nebulaTheme: Theme = {
 
   modelBadges: {
     // OpenAI - Emerald green (brand color)
-    openai: { bg: 'bgGreen', fg: 'black', label: ' gpt-5.2 ' },
-    'gpt-5.2': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.2 ' },
-    'gpt-5.2-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.2-pro ' },
+    openai: { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
+    'gpt-5.4': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
+    'gpt-5.3-codex': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.3-codex ' },
+    'gpt-5.3': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.3 ' },
+    'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.4-pro ' },
 
     // Gemini - Google blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
@@ -180,9 +182,11 @@ const cyberpunkTheme: Theme = {
 
   modelBadges: {
     // OpenAI - Electric green
-    openai: { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.2 ' },
-    'gpt-5.2': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.2 ' },
-    'gpt-5.2-pro': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.2-PRO ' },
+    openai: { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4 ' },
+    'gpt-5.4': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4 ' },
+    'gpt-5.3-codex': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.3-CODEX ' },
+    'gpt-5.3': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.3 ' },
+    'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.2-PRO ' },
 
     // Gemini - Electric blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI ' },
@@ -271,9 +275,11 @@ const minimalTheme: Theme = {
 
   modelBadges: {
     // All badges are simple, dark bg with white text
-    openai: { bg: 'bgBlack', fg: 'green', label: ' gpt-5.2 ' },
-    'gpt-5.2': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.2 ' },
-    'gpt-5.2-pro': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-5.2-pro ' },
+    openai: { bg: 'bgBlack', fg: 'green', label: ' gpt-5.4 ' },
+    'gpt-5.4': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.4 ' },
+    'gpt-5.3-codex': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.3-codex ' },
+    'gpt-5.3': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.3 ' },
+    'gpt-5.4-pro': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-5.4-pro ' },
 
     gemini: { bg: 'bgBlack', fg: 'blue', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlack', fg: 'blue', label: ' gemini-3 ' },
@@ -355,9 +361,11 @@ const oceanTheme: Theme = {
   description: 'Cool blues and teals - calm and professional',
 
   modelBadges: {
-    openai: { bg: 'bgGreen', fg: 'black', label: ' gpt-5.2 ' },
-    'gpt-5.2': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.2 ' },
-    'gpt-5.2-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.2-pro ' },
+    openai: { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
+    'gpt-5.4': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
+    'gpt-5.3-codex': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.3-codex ' },
+    'gpt-5.3': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.3 ' },
+    'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.4-pro ' },
 
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3 ' },
@@ -929,7 +937,7 @@ export function labelValue(label: string, value: string | number): string {
 }
 
 /**
- * Render a key-value pair inline (e.g., "model=gpt-5.2")
+ * Render a key-value pair inline (e.g., "model=gpt-5.4")
  */
 export function keyValue(key: string, value: string): string {
   return chalk.cyan(key) + chalk.gray('=') + chalk.white(value);

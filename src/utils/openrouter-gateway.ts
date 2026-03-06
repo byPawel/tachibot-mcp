@@ -21,11 +21,12 @@ const NO_GATEWAY_MODELS = new Set([
   'sonar',
 ]);
 
-// GPT-5.2 model mapping - OpenAI names → OpenRouter names (Dec 2025)
+// GPT-5.x model mapping - OpenAI names → OpenRouter names (Mar 2026)
 const GPT52_MODEL_MAP: Record<string, string> = {
-  'gpt-5.2-thinking': 'openai/gpt-5.2',           // Reasoning variant → base model
-  'gpt-5.2-pro': 'openai/gpt-5.2-pro',            // Pro variant
-  'gpt-5.2-instant': 'openai/gpt-5.2-chat-latest', // Instant → chat-latest
+  'gpt-5.4': 'openai/gpt-5.4',                     // Most capable (Mar 2026)
+  'gpt-5.3-codex': 'openai/gpt-5.3-codex',         // Agentic coding (Feb 2026)
+  'gpt-5.3': 'openai/gpt-5.3',                     // Fast instant (Mar 2026)
+  'gpt-5.4-pro': 'openai/gpt-5.4-pro',            // Expert variant
 };
 
 // Grok model mapping - our names → OpenRouter names

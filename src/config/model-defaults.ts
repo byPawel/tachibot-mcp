@@ -28,16 +28,16 @@ const MODELS = {
   // Google Gemini
   GEMINI: GEMINI_MODELS.GEMINI_3_PRO,           // gemini-3.1-pro-preview
 
-  // OpenAI (GPT-5.2)
-  OPENAI: OPENAI_MODELS.THINKING,               // gpt-5.2-thinking (default - SOTA reasoning)
-  OPENAI_REASON: OPENAI_MODELS.THINKING,        // gpt-5.2-thinking (deep reasoning)
+  // OpenAI (GPT-5.4)
+  OPENAI: OPENAI_MODELS.THINKING,               // gpt-5.4 (default - most capable)
+  OPENAI_REASON: OPENAI_MODELS.THINKING,        // gpt-5.4 (deep reasoning)
 
   // xAI Grok
   GROK: GROK_MODELS._4_1_FAST_REASONING,        // grok-4-1-fast-reasoning
 
   // Perplexity
   PERPLEXITY: PERPLEXITY_MODELS.SONAR,           // sonar (cheapest)
-  PERPLEXITY_REASON: PERPLEXITY_MODELS.SONAR_PRO, // sonar-pro (was sonar-reasoning-pro)
+  PERPLEXITY_REASON: PERPLEXITY_MODELS.SONAR_REASONING, // sonar-reasoning-pro ($2/$8 per M)
 
   // OpenRouter
   QWEN: QWEN_MODELS.CODER_NEXT,                 // qwen/qwen3-coder-next (80B/3B MoE, 262K ctx)
@@ -78,7 +78,7 @@ export function getChallengerModels(): string[] {
 
 /**
  * Get Verifier model configuration
- * All variants use Gemini 3 Pro; deep uses gpt-5.2-thinking for max reasoning
+ * All variants use Gemini 3 Pro; deep uses gpt-5.4 for max reasoning
  */
 export function getVerifierModels(): {
   quick: string[];

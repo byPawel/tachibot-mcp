@@ -7,7 +7,7 @@ import { z } from "zod";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
-import { getTimeoutConfig } from "../config/timeout-config.js";
+import { getOpenRouterModelTimeout } from "../config/timeout-config.js";
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env
@@ -43,8 +43,6 @@ const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
 };
 
-// Get timeout from centralized config (default: 180s for thinking models)
-const getOpenRouterTimeout = () => getTimeoutConfig().openrouter;
 
 /**
  * Optional parameters for OpenRouter API calls
@@ -76,8 +74,8 @@ export async function callOpenRouter(
     return `[OpenRouter API key not configured. Add OPENROUTER_API_KEY to .env file]`;
   }
 
-  // Create AbortController for timeout (use provided timeout or config default)
-  const effectiveTimeout = timeoutMs ?? getOpenRouterTimeout();
+  // Create AbortController for timeout (use provided timeout or model-aware default)
+  const effectiveTimeout = timeoutMs ?? getOpenRouterModelTimeout(model);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 

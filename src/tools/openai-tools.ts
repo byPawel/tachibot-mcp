@@ -118,33 +118,33 @@ function isPartialResponsesAPI(data: unknown): data is PartialResponsesAPI {
   return Array.isArray(obj.output);
 }
 
-// GPT-5.2 Models (Dec 2025) - Uses centralized constants
-// THINKING: gpt-5.2-thinking - SOTA reasoning (293% accuracy boost, $1.75/$14, 400K)
-// PRO: gpt-5.2-pro - Expert programming/science (88.4% GPQA, $21/$168, 400K)
-// INSTANT: gpt-5.2-instant - Fast conversations ($1.75/$14, 400K)
+// GPT-5.4 (Mar 2026) - Most capable, coding, agentic, professional
+// GPT-5.3-Codex (Feb 2026) - Agentic coding specialist
+// PRO: gpt-5.4-pro - Expert programming/science (88.4% GPQA, $21/$168, 400K)
 
 // Type alias for model strings
 export type OpenAIModel = string;
 
-// Re-export for backward compatibility (maps to gpt-5.2 models)
-// "Thinking" mode = gpt-5.2 with reasoning.effort="high"/"xhigh"
-export const OpenAI52Model = {
-  DEFAULT: OPENAI_MODELS.DEFAULT,     // gpt-5.2 (use with reasoning.effort)
-  THINKING: OPENAI_MODELS.DEFAULT,    // gpt-5.2 + high effort = "thinking"
-  PRO: OPENAI_MODELS.PRO,             // gpt-5.2-pro (expert mode)
-  INSTANT: OPENAI_MODELS.DEFAULT,     // gpt-5.2 + low effort = fast
+// Re-export for backward compatibility
+// "Thinking" mode = gpt-5.4 with reasoning.effort="high"/"xhigh"
+export const OpenAIModel5 = {
+  DEFAULT: OPENAI_MODELS.DEFAULT,     // gpt-5.4 (use with reasoning.effort)
+  THINKING: OPENAI_MODELS.DEFAULT,    // gpt-5.4 + high effort = "thinking"
+  PRO: OPENAI_MODELS.PRO,             // gpt-5.4-pro (expert mode)
+  INSTANT: OPENAI_MODELS.DEFAULT,     // gpt-5.4 + low effort = fast
   // Legacy aliases
   FULL: OPENAI_MODELS.DEFAULT,
   CODEX_MINI: OPENAI_MODELS.DEFAULT,
   CODEX: OPENAI_MODELS.PRO,
 } as const;
 
-// Backward compatibility alias
-export const OpenAI51Model = OpenAI52Model;
+// Backward compatibility aliases
+export const OpenAI52Model = OpenAIModel5;
+export const OpenAI51Model = OpenAIModel5;
 
 /**
  * Call OpenAI API with model fallback support
- * GPT-5.2 uses /v1/responses endpoint for all models
+ * GPT-5.x uses /v1/responses endpoint
  */
 export async function callOpenAI(
   messages: Array<{ role: string; content: string }>,
@@ -187,10 +187,12 @@ export async function callOpenAI(
     return { ...msg, content: validation.sanitized };
   });
 
-  // Model fallback chain - GPT-5.2 models have no fallbacks to test actual availability
+  // Model fallback chain - no fallbacks to test actual availability
   const modelFallbacks: Record<string, string[]> = {
-    "gpt-5.2": [],      // No fallback - test actual gpt-5.2
-    "gpt-5.2-pro": []   // No fallback - test actual gpt-5.2-pro
+    "gpt-5.4": [],           // No fallback - test actual gpt-5.4
+    "gpt-5.3-codex": [],     // No fallback - test actual gpt-5.3-codex
+    "gpt-5.3": [],           // No fallback - test actual gpt-5.3
+    "gpt-5.4-pro": []        // No fallback - test actual gpt-5.4-pro
   };
 
   const modelsToTry = [model, ...(modelFallbacks[model] || [])];
@@ -200,13 +202,13 @@ export async function callOpenAI(
   for (const currentModel of modelsToTry) {
     console.error(`🔍 TRACE: Trying model: ${currentModel}`);
     try {
-      // GPT-5.2 uses Responses API, others use Chat Completions
-      const isGPT52 = currentModel.startsWith('gpt-5.2');
-      const endpoint = isGPT52 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
+      // GPT-5.x uses Responses API, others use Chat Completions
+      const isGPT5 = currentModel.startsWith('gpt-5.');
+      const endpoint = isGPT5 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
 
       let requestBody: any;
 
-      if (isGPT52) {
+      if (isGPT5) {
         // Responses API format for GPT-5.2
         // Input is array of message objects [{role, content}]
         const inputMessages = validatedMessages.map(m => ({
@@ -233,7 +235,7 @@ export async function callOpenAI(
         };
       }
 
-      console.error(`🔍 TRACE: Using ${isGPT52 ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${currentModel}`);
+      console.error(`🔍 TRACE: Using ${isGPT5 ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${currentModel}`);
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -262,7 +264,7 @@ export async function callOpenAI(
       // Parse response based on API type
       let rawContent: string | undefined;
 
-      if (isGPT52) {
+      if (isGPT5) {
         // Parse Responses API response for GPT-5.2
         const parseResult = ResponsesAPISchema.safeParse(rawData);
         if (parseResult.success) {
@@ -316,158 +318,9 @@ export async function callOpenAI(
   }
 
   console.error(`🔍 TRACE: ALL MODELS FAILED - Last error: ${lastError}`);
-  return `[GPT-5.2 model "${model}" not available. Error: ${lastError}]`;
+  return `[GPT-5 model "${model}" not available. Error: ${lastError}]`;
 }
 
-/**
- * Call OpenAI API with custom parameters for specific models
- * GPT-5.2 models use /v1/responses endpoint
- */
-async function callOpenAIWithCustomParams(
-  messages: Array<{ role: string; content: string }>,
-  model: OpenAIModel = OPENAI_MODELS.DEFAULT,
-  temperature: number = 0.7,
-  maxTokens: number = 16384,  // Increased for detailed brainstorming
-  reasoningEffort: string = "low",
-  skipValidation: boolean = false
-): Promise<string> {
-  console.error(`🔍 TRACE: callOpenAIWithCustomParams called with model: ${model}, reasoning_effort: ${reasoningEffort}`);
-
-  // Try OpenRouter gateway first if enabled
-  if (isGatewayEnabled()) {
-    const gatewayResult = await tryOpenRouterGateway(model, messages, {
-      temperature,
-      max_tokens: maxTokens
-    });
-    if (gatewayResult) {
-      return gatewayResult;
-    }
-    console.error(`🔍 TRACE: Gateway returned null, falling back to direct OpenAI API`);
-  }
-
-  if (!OPENAI_API_KEY) {
-    console.error(`🔍 TRACE: No API key found`);
-    return `[OpenAI API key not configured. Add OPENAI_API_KEY to .env file]`;
-  }
-
-  // Validate and sanitize message content (skip for internal workflow calls)
-  const validatedMessages = messages.map((msg) => {
-    if (skipValidation) {
-      return msg; // Skip validation for internal workflow calls
-    }
-    const validation = validateToolInput(msg.content);
-    if (!validation.valid) {
-      throw new Error(validation.error || "Invalid message content");
-    }
-    return { ...msg, content: validation.sanitized };
-  });
-
-  try {
-    // GPT-5.2 uses Responses API, others use Chat Completions
-    const isGPT52 = model.startsWith('gpt-5.2');
-    const endpoint = isGPT52 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
-
-    let requestBody: any;
-
-    if (isGPT52) {
-      // Responses API format for GPT-5.2
-      // Input is array of message objects [{role, content}]
-      const inputMessages = validatedMessages.map(m => ({
-        role: m.role,
-        content: m.content
-      }));
-
-      requestBody = {
-        model: model,
-        input: inputMessages,
-        reasoning: {
-          effort: reasoningEffort || 'medium'
-        },
-        max_output_tokens: maxTokens
-      };
-    } else {
-      // Chat Completions format for older models
-      requestBody = {
-        model: model,
-        messages: validatedMessages,
-        max_completion_tokens: maxTokens,
-        temperature: temperature,
-        stream: false
-      };
-    }
-
-    console.error(`🔍 TRACE: Using ${isGPT52 ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${model}`);
-    console.error(`🔍 TRACE: Model params: max_tokens=${maxTokens}, reasoning_effort=${reasoningEffort}`);
-
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error(`🔍 TRACE: ${model} failed - Status: ${response.status}, Error: ${error}`);
-      return `[${model} failed: ${response.status} - ${error}]`;
-    }
-
-    const rawData = await response.json();
-
-    // Parse response based on API type
-    let rawContent: string | undefined;
-
-    if (isGPT52) {
-      // Parse Responses API response for GPT-5.2
-      const parseResult = ResponsesAPISchema.safeParse(rawData);
-      if (parseResult.success) {
-        const responsesData: ResponsesAPIResponse = parseResult.data;
-        for (const outputItem of responsesData.output) {
-          if (outputItem.content) {
-            for (const contentItem of outputItem.content) {
-              if (contentItem.text) {
-                rawContent = contentItem.text;
-                break;
-              }
-            }
-          }
-          if (rawContent) break;
-        }
-      } else {
-        console.error(`🔍 TRACE: Failed to parse Responses API response:`, parseResult.error);
-        if (isPartialResponsesAPI(rawData)) {
-          rawContent = rawData.output?.[0]?.content?.[0]?.text;
-        }
-      }
-    } else {
-      // Parse Chat Completions response for older models
-      const parseResult = ChatCompletionResponseSchema.safeParse(rawData);
-      if (parseResult.success) {
-        const chatData: ChatCompletionResponse = parseResult.data;
-        rawContent = chatData.choices[0]?.message?.content;
-      } else {
-        console.error(`🔍 TRACE: Failed to parse Chat Completions response:`, parseResult.error);
-        if (isPartialChatCompletion(rawData)) {
-          rawContent = rawData.choices?.[0]?.message?.content;
-        }
-      }
-    }
-
-    // Ensure result is always a string
-    const result = rawContent || "No response from OpenAI";
-
-    console.error(`🔍 TRACE: ${model} SUCCESS - Response length: ${result.length}`);
-
-    return stripFormatting(result);
-
-  } catch (error) {
-    const errorMsg = `${model}: ${error instanceof Error ? error.message : String(error)}`;
-    console.error(`🔍 TRACE: ${model} EXCEPTION - ${errorMsg}`);
-    return `[${model} error: ${errorMsg}]`;
-  }
-}
 
 /**
  * GPT-5 Reasoning Tool - Most advanced reasoning with confirmation
@@ -509,7 +362,7 @@ export const gpt5ReasonTool = {
     ];
     
     // Use GPT-5.2-thinking with high reasoning
-    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 4000, "high");
+    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 8000, "high");
   }
 };
 
@@ -588,7 +441,7 @@ ${FORMAT_INSTRUCTION}`
     // Use heartbeat to prevent MCP timeout during reasoning
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 4000, "high"),
+      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 8000, "high"),
       reportFn
     );
   }
@@ -606,9 +459,9 @@ export const openAIBrainstormTool = {
     problem: z.string().describe("The engineering problem or design tradeoff to brainstorm about (REQUIRED)"),
     constraints: z.string().optional().describe("Technical constraints: language, framework, performance requirements, team size"),
     quantity: z.number().optional().describe("Number of approaches to generate (default: 5)"),
-    model: z.enum(["gpt-5.2", "gpt-5.2-pro"])
+    model: z.enum(["gpt-5.4", "gpt-5.3-codex", "gpt-5.3", "gpt-5.4-pro"])
       .optional()
-      .describe("Model to use - gpt-5.2 (default) or gpt-5.2-pro (more expensive)"),
+      .describe("Model to use - gpt-5.4 (default), gpt-5.3-codex (coding), gpt-5.4-pro (expert)"),
     reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh"])
       .optional()
       .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh"),
@@ -621,8 +474,11 @@ export const openAIBrainstormTool = {
       quantity = 5,
       model = OPENAI_MODELS.DEFAULT,
       reasoning_effort = "medium",
-      max_tokens = 4000
+      max_tokens = 6000
     } = args;
+
+    // GPT-5.4 reasoning tokens eat into max_output_tokens — enforce minimum
+    const effectiveMaxTokens = Math.max(max_tokens, 4000);
 
     const messages = [
       {
@@ -663,13 +519,13 @@ ${FORMAT_INSTRUCTION}`
     ];
 
     const modelEnum = model as OpenAIModel;
-    return await callOpenAIWithCustomParams(messages, modelEnum, 0.95, max_tokens, reasoning_effort, options.skipValidation || false);
+    return await callOpenAI(messages, modelEnum, 0.95, effectiveMaxTokens, reasoning_effort, false, options.skipValidation || false);
   }
 };
 
 /**
  * OpenAI Code Review Tool
- * Comprehensive code review using GPT-5.1-codex-mini
+ * Comprehensive code review using GPT-5.x
  */
 export const openaiCodeReviewTool = {
   name: "openai_code_review",
@@ -705,7 +561,7 @@ ${FORMAT_INSTRUCTION}`
     // Use heartbeat to prevent MCP timeout
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.3, 4000, "medium"),
+      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.3, 6000, "medium"),
       reportFn
     );
   }
@@ -798,7 +654,7 @@ async function callOpenAIWithSearch(
   }
 
   const requestBody = {
-    model: OPENAI_MODELS.DEFAULT, // gpt-5.2
+    model: OPENAI_MODELS.DEFAULT, // gpt-5.4
     input: [
       {
         role: "system",

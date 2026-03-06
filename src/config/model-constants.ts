@@ -7,32 +7,37 @@
 // =============================================================================
 // OPENAI MODELS (provider-based naming)
 // =============================================================================
-// GPT-5.2 released Dec 11, 2025 - CURRENT
-// Model is "gpt-5.2", "thinking" is controlled by reasoning.effort parameter
-// OpenRouter uses prefix: openai/gpt-5.2-pro, openai/gpt-5.2
+// GPT-5.4 released Mar 5, 2026 - CURRENT (most capable, incorporates Codex)
+// GPT-5.3-Codex released Feb 5, 2026 - Agentic coding specialist
+// Model is "gpt-5.4", "thinking" is controlled by reasoning.effort parameter
+// OpenRouter uses prefix: openai/gpt-5.4, openai/gpt-5.4-pro
 export const OPENAI_MODELS = {
-  // GPT-5.2 Models (Dec 2025 - CURRENT)
-  // Note: "gpt-5.2" + reasoning.effort="high"/"xhigh" = "thinking" mode
-  DEFAULT: "gpt-5.2",               // Main model - use with reasoning.effort for "thinking"
-  PRO: "gpt-5.2-pro",               // Expert: programming, science, 88.4% GPQA ($21/$168, 400K)
+  // GPT-5.4 (Mar 2026 - CURRENT)
+  // Note: "gpt-5.4" + reasoning.effort="high"/"xhigh" = "thinking" mode
+  DEFAULT: "gpt-5.4",               // Most capable - coding, agentic, professional work
+  PRO: "gpt-5.4-pro",               // Expert: higher compute for harder problems
+
+  // GPT-5.3 Models (Feb-Mar 2026)
+  CODEX: "gpt-5.3-codex",           // Agentic coding specialist (Feb 5)
+  INSTANT: "gpt-5.3",               // Fast general, web search, conversational (Mar 3)
 
   // Aliases for backward compatibility
-  THINKING: "gpt-5.2",              // "Thinking" = gpt-5.2 with high reasoning effort
-  INSTANT: "gpt-5.2",               // Same model, just use lower reasoning effort
-  FULL: "gpt-5.2",                  // Map old FULL to DEFAULT
-  CODEX_MINI: "gpt-5.2",            // Map old codex-mini to DEFAULT
-  CODEX: "gpt-5.2-pro",             // Map old codex to PRO
-  CODEX_MAX: "gpt-5.2-pro",         // Map old codex-max to PRO
+  THINKING: "gpt-5.4",              // "Thinking" = gpt-5.4 with high reasoning effort
+  FULL: "gpt-5.4",                  // Map old FULL to DEFAULT
+  CODEX_MINI: "gpt-5.4",            // Map old codex-mini to DEFAULT
+  CODEX_MAX: "gpt-5.4-pro",         // Map old codex-max to PRO
 } as const;
 
 // OpenRouter model ID mapping (add prefix when using OpenRouter gateway)
 export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
-  "gpt-5.2": "openai/",
-  "gpt-5.2-pro": "openai/",
+  "gpt-5.4": "openai/",
+  "gpt-5.4-pro": "openai/",
+  "gpt-5.3-codex": "openai/",
+  "gpt-5.3": "openai/",
 } as const;
 
 // OpenAI Reasoning Effort Levels (for models that support it)
-// Use with gpt-5.2: none=fast, low/medium=balanced, high/xhigh="thinking" mode
+// Use with gpt-5.4: none=fast, low/medium=balanced, high/xhigh="thinking" mode
 export const OPENAI_REASONING = {
   NONE: "none",     // No extra reasoning (fastest, allows temperature)
   LOW: "low",       // Light reasoning
@@ -46,14 +51,16 @@ export const OPENAI_REASONING = {
 // GEMINI MODELS (Google)
 // =============================================================================
 export const GEMINI_MODELS = {
-  // Gemini 3 Pro - stable default (3.1 preview has widespread timeout/503 issues as of Feb 2026)
-  GEMINI_3_PRO: "gemini-3-pro-preview",     // Stable quality model, 1M context
-  GEMINI_3_1_PRO: "gemini-3.1-pro-preview", // Opt-in: enhanced reasoning, but unstable preview
-  GEMINI_3_FLASH: "gemini-3-flash-preview", // Fast frontier model
+  // Gemini 3 Pro - stable default (3.1 Pro released Feb 19 but still preview with 503/latency issues)
+  GEMINI_3_PRO: "gemini-3-pro-preview",       // Stable quality model, 1M context
+  GEMINI_3_1_PRO: "gemini-3.1-pro-preview",   // Enhanced reasoning, preview (GA expected Apr-May 2026)
+  GEMINI_3_FLASH: "gemini-3-flash-preview",    // Fast frontier model
+  GEMINI_3_1_FLASH_LITE: "gemini-3.1-flash-lite", // NEW Mar 3, 2026 - fastest/cheapest in 3.1 series
 
-  // Aliases - default to stable Pro
+  // Aliases - default to stable Pro (switch to 3.1 Pro after GA)
   PRO: "gemini-3-pro-preview",
   FLASH: "gemini-3-flash-preview",
+  FLASH_LITE: "gemini-3.1-flash-lite",
 } as const;
 
 // Perplexity Models
@@ -156,18 +163,18 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
-// UPDATED Dec 12, 2025: Use gpt-5.2 with reasoning.effort for "thinking" mode
-// PRO available for opt-in when extra quality needed (12x more expensive)
+// UPDATED Mar 6, 2026: GPT-5.4 (most capable), GPT-5.3-Codex for coding
+// PRO (gpt-5.4-pro) available for opt-in when extra quality needed
 export const CURRENT_MODELS = {
   openai: {
-    default: OPENAI_MODELS.DEFAULT,       // gpt-5.2 - use with reasoning.effort
-    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (gpt-5.2 + effort=high)
-    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (gpt-5.2 + effort=medium)
-    code: OPENAI_MODELS.DEFAULT,          // Code tasks (gpt-5.2 + effort=medium)
-    explain: OPENAI_MODELS.DEFAULT,       // Explanations (gpt-5.2 + effort=low)
-    search: OPENAI_MODELS.DEFAULT,        // Web search (gpt-5.2 + web_search tool)
-    // Premium option for opt-in (use sparingly - 12x more expensive)
-    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.2-pro - 88.4% GPQA, $21/$168)
+    default: OPENAI_MODELS.DEFAULT,       // gpt-5.4 - most capable (Mar 2026)
+    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (gpt-5.4 + effort=high)
+    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (gpt-5.4 + effort=medium)
+    code: OPENAI_MODELS.CODEX,            // Code tasks (gpt-5.3-codex - agentic coding leader)
+    explain: OPENAI_MODELS.DEFAULT,       // Explanations (gpt-5.4 + effort=low)
+    search: OPENAI_MODELS.DEFAULT,        // Web search (gpt-5.4 + web_search tool)
+    // Premium option for opt-in (use sparingly - much more expensive)
+    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.4-pro - higher compute)
   },
   grok: {
     reason: GROK_MODELS._4_1_FAST_REASONING,
@@ -181,8 +188,8 @@ export const CURRENT_MODELS = {
     default: GEMINI_MODELS.GEMINI_3_PRO,
   },
   perplexity: {
-    search: PERPLEXITY_MODELS.SONAR_PRO,
-    reason: PERPLEXITY_MODELS.SONAR_REASONING,
+    search: PERPLEXITY_MODELS.SONAR,           // $1/$1 per M (cheapest)
+    reason: PERPLEXITY_MODELS.SONAR_REASONING, // sonar-reasoning-pro $2/$8 per M
   },
   openrouter: {
     kimi: KIMI_MODELS.K2_5,                // K2.5 multimodal + agent swarm (thinking via reasoning param)
@@ -194,35 +201,35 @@ export const CURRENT_MODELS = {
 
 // Tool-specific defaults - References CURRENT_MODELS for easy bumping
 export const TOOL_DEFAULTS = {
-  // OpenAI tools
+  // OpenAI tools (GPT-5.4 reasoning tokens eat into max_output_tokens, so set higher)
   openai_reason: {
     model: CURRENT_MODELS.openai.reason,
     reasoning_effort: OPENAI_REASONING.HIGH,
-    maxTokens: 4000,
+    maxTokens: 8000,
     temperature: 0.7,
   },
   openai_brainstorm: {
     model: CURRENT_MODELS.openai.brainstorm,
     reasoning_effort: OPENAI_REASONING.MEDIUM,
-    maxTokens: 2000,
+    maxTokens: 6000,
     temperature: 0.9,
   },
   openai_code_review: {
     model: CURRENT_MODELS.openai.code,
     reasoning_effort: OPENAI_REASONING.MEDIUM,
-    maxTokens: 2000,
+    maxTokens: 6000,
     temperature: 0.3,
   },
   openai_explain: {
     model: CURRENT_MODELS.openai.explain,
     reasoning_effort: OPENAI_REASONING.LOW,
-    maxTokens: 1500,
+    maxTokens: 4000,
     temperature: 0.7,
   },
   openai_search: {
     model: CURRENT_MODELS.openai.search,
     reasoning_effort: OPENAI_REASONING.LOW,
-    maxTokens: 6000,
+    maxTokens: 8000,
     temperature: 0.3,
   },
 
@@ -348,13 +355,16 @@ export const DEFAULT_WORKFLOW_TOOL = "openai_brainstorm";
 // Used in tool outputs, usage stats, logs - keeps display consistent
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // OpenAI
-  "gpt-5.2": "gpt-5.2",
-  "gpt-5.2-pro": "gpt-5.2-pro",
+  "gpt-5.4": "gpt-5.4",
+  "gpt-5.3-codex": "gpt-5.3-codex",
+  "gpt-5.3": "gpt-5.3",
+  "gpt-5.4-pro": "gpt-5.4-pro",
 
   // Gemini
   "gemini-3-pro-preview": "gemini-3-pro",
   "gemini-3.1-pro-preview": "gemini-3.1-pro",
   "gemini-3-flash-preview": "gemini-3-flash",
+  "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
 
   // Grok (xAI)
   "grok-4-1-fast-reasoning": "grok-4.1",
@@ -395,13 +405,16 @@ export function getModelDisplayName(modelId: string): string {
 // Model pricing per 1K tokens (input/output average) for cost tracking
 export const MODEL_PRICING: Record<string, number> = {
   // OpenAI
-  "gpt-5.2": 0.00788,           // ($1.75 + $14) / 2 / 1000
-  "gpt-5.2-pro": 0.0945,        // ($21 + $168) / 2 / 1000
+  "gpt-5.4": 0.00875,           // ($2.50 + $15) / 2 / 1000 (Mar 2026)
+  "gpt-5.4-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Mar 2026)
+  "gpt-5.3-codex": 0.008,       // Estimated (agentic coding, Feb 2026)
+  "gpt-5.3": 0.007,             // Estimated (instant, Mar 2026)
 
   // Gemini
   "gemini-3-pro-preview": 0.006,   // ($1.25 + $10) / 2 / 1000
   "gemini-3.1-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
   "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000
+  "gemini-3.1-flash-lite": 0.001,       // Cheapest/fastest in 3.1 series (Mar 2026)
 
   // Grok - all cheap!
   "grok-4-1-fast-reasoning": 0.00035,
