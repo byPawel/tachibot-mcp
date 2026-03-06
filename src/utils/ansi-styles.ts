@@ -97,7 +97,7 @@ const nebulaTheme: Theme = {
 
     // Gemini - Google blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
-    'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3-pro ' },
+    'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3.1-pro ' },
     'gemini-3-flash-preview': { bg: 'bgCyanBright', fg: 'black', label: ' gemini-flash ' },
 
     // Grok - Magenta/purple

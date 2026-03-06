@@ -51,14 +51,14 @@ export const OPENAI_REASONING = {
 // GEMINI MODELS (Google)
 // =============================================================================
 export const GEMINI_MODELS = {
-  // Gemini 3 Pro - stable default (3.1 Pro released Feb 19 but still preview with 503/latency issues)
-  GEMINI_3_PRO: "gemini-3-pro-preview",       // Stable quality model, 1M context
-  GEMINI_3_1_PRO: "gemini-3.1-pro-preview",   // Enhanced reasoning, preview (GA expected Apr-May 2026)
+  // Gemini 3.1 Pro - default (3.0 Pro retires Mar 9, 2026)
+  GEMINI_3_PRO: "gemini-3.1-pro-preview",     // Migrated: 3.0 retires Mar 9
+  GEMINI_3_1_PRO: "gemini-3.1-pro-preview",   // Enhanced reasoning, 1M context
   GEMINI_3_FLASH: "gemini-3-flash-preview",    // Fast frontier model
-  GEMINI_3_1_FLASH_LITE: "gemini-3.1-flash-lite", // NEW Mar 3, 2026 - fastest/cheapest in 3.1 series
+  GEMINI_3_1_FLASH_LITE: "gemini-3.1-flash-lite", // Mar 3, 2026 - fastest/cheapest in 3.1 series
 
-  // Aliases - default to stable Pro (switch to 3.1 Pro after GA)
-  PRO: "gemini-3-pro-preview",
+  // Aliases
+  PRO: "gemini-3.1-pro-preview",
   FLASH: "gemini-3-flash-preview",
   FLASH_LITE: "gemini-3.1-flash-lite",
 } as const;
@@ -361,7 +361,6 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gpt-5.4-pro": "gpt-5.4-pro",
 
   // Gemini
-  "gemini-3-pro-preview": "gemini-3-pro",
   "gemini-3.1-pro-preview": "gemini-3.1-pro",
   "gemini-3-flash-preview": "gemini-3-flash",
   "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
@@ -411,7 +410,6 @@ export const MODEL_PRICING: Record<string, number> = {
   "gpt-5.3": 0.007,             // Estimated (instant, Mar 2026)
 
   // Gemini
-  "gemini-3-pro-preview": 0.006,   // ($1.25 + $10) / 2 / 1000
   "gemini-3.1-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
   "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000
   "gemini-3.1-flash-lite": 0.001,       // Cheapest/fastest in 3.1 series (Mar 2026)

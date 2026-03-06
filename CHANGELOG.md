@@ -5,6 +5,12 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.1] - 2026-03-06
+
+### Changed
+- **Gemini 3.1 Pro migration** — switched from `gemini-3-pro-preview` to `gemini-3.1-pro-preview` before March 9 retirement (1M context, enhanced reasoning)
+- Removed stale `gemini-3-pro-preview` entries from display names and pricing tables
+
 ## [2.16.0] - 2026-03-06
 
 ### Changed
