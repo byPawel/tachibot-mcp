@@ -228,13 +228,15 @@ export const qwqReasoningTool = {
       .optional()
       .default("multi-perspective")
       .describe("Reasoning approach: multi-perspective (default), mathematical, logical, creative"),
-    useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)")
+    useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
   execute: async (args: {
     problem: string;
     context?: string;
     approach?: string;
-    useFree?: boolean
+    useFree?: boolean;
+    files?: string[];
   }, { log }: any) => {
     const approachPrompts: Record<string, string> = {
       "multi-perspective": `TECHNIQUE [alternative_perspectives]: Analyze from 4 opposing viewpoints:
@@ -264,6 +266,10 @@ OUTPUT:
       creative: "Think creatively and explore unconventional solutions. Challenge conventional wisdom."
     };
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -275,7 +281,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: args.problem
+        content: args.problem + fileContext
       }
     ];
 
@@ -297,9 +303,10 @@ export const qwenGeneralTool = {
       .optional()
       .default("chat")
       .describe("Interaction mode (e.g., chat, analysis, creative, technical)"),
-    useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)")
+    useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
-  execute: async (args: { query: string; mode?: string; useFree?: boolean }, { log }: any) => {
+  execute: async (args: { query: string; mode?: string; useFree?: boolean; files?: string[] }, { log }: any) => {
     const modePrompts = {
       chat: "Provide helpful, conversational responses",
       analysis: "Provide detailed analysis and insights",
@@ -307,6 +314,10 @@ export const qwenGeneralTool = {
       technical: "Focus on technical accuracy and detail"
     };
     
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -316,10 +327,10 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: args.query
+        content: args.query + fileContext
       }
     ];
-    
+
     const model = args.useFree === true ? OpenRouterModel.QWEN3_30B : OpenRouterModel.QWEN3_CODER;
     return await callOpenRouter(messages, model, 0.7, 3000);
   }
@@ -562,14 +573,20 @@ export const qwenCompetitiveTool = {
       .optional()
       .default("python")
       .describe("Programming language - must be one of: python, cpp, java, javascript, rust"),
-    optimize: z.boolean().optional().default(true).describe("Optimize for time and space complexity")
+    optimize: z.boolean().optional().default(true).describe("Optimize for time and space complexity"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
   execute: async (args: {
     problem: string;
     constraints?: string;
     language?: string;
-    optimize?: boolean
+    optimize?: boolean;
+    files?: string[];
   }, { log }: any) => {
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -586,7 +603,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: args.problem
+        content: args.problem + fileContext
       }
     ];
 
