@@ -14,6 +14,7 @@ import { OPENAI_MODELS, OPENAI_REASONING, CURRENT_MODELS, TOOL_DEFAULTS } from "
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
+import { readFilesIntoContext } from "../utils/file-reader.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -409,18 +410,23 @@ export const openaiGpt5ReasonTool = {
   parameters: z.object({
     query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     mode: z.string()
       .optional()
       .default("analytical")
       .describe("Reasoning mode (e.g., mathematical, scientific, logical, analytical)")
   }),
-  execute: async (args: { query: string; context?: string; mode?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { query: string; context?: string; files?: string[]; mode?: string }, { log, reportProgress }: any) => {
     const modePrompts = {
       mathematical: "Focus on mathematical proofs, calculations, and formal logic",
       scientific: "Apply scientific method and empirical reasoning",
       logical: "Use formal logic and systematic deduction",
       analytical: "Break down complex problems into components"
     };
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
 
     const messages = [
       {
@@ -433,7 +439,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: args.query
+        content: args.query + fileContext
       }
     ];
 
@@ -457,6 +463,7 @@ export const openAIBrainstormTool = {
   parameters: z.object({
     problem: z.string().describe("The engineering problem or design tradeoff to brainstorm about (REQUIRED)"),
     constraints: z.string().optional().describe("Technical constraints: language, framework, performance requirements, team size"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     quantity: z.number().optional().describe("Number of approaches to generate (default: 5)"),
     model: z.enum(["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-pro"])
       .optional()
@@ -466,7 +473,7 @@ export const openAIBrainstormTool = {
       .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh"),
     max_tokens: z.number().optional().describe("Maximum tokens for response")
   }),
-  execute: async (args: { problem: string; constraints?: string; quantity?: number; model?: string; reasoning_effort?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
+  execute: async (args: { problem: string; constraints?: string; files?: string[]; quantity?: number; model?: string; reasoning_effort?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
     const {
       problem,
       constraints,
@@ -478,6 +485,10 @@ export const openAIBrainstormTool = {
 
     // GPT-5.4 reasoning tokens eat into max_output_tokens — enforce minimum
     const effectiveMaxTokens = Math.max(max_tokens, 4000);
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
 
     const messages = [
       {
@@ -513,7 +524,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: problem
+        content: problem + fileContext
       }
     ];
 
@@ -532,14 +543,19 @@ export const openaiCodeReviewTool = {
   parameters: z.object({
     code: z.string().describe("The actual source code to review (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     focusAreas: z.array(z.enum(["security", "performance", "readability", "bugs", "best-practices"]))
       .optional()
       .describe("Focus areas - array of: security, performance, readability, bugs, best-practices")
   }),
-  execute: async (args: { code: string; language?: string; focusAreas?: string[] }, { log, reportProgress }: any) => {
+  execute: async (args: { code: string; language?: string; files?: string[]; focusAreas?: string[] }, { log, reportProgress }: any) => {
     const focusText = args.focusAreas
       ? `Focus especially on: ${args.focusAreas.join(', ')}`
       : "Review all aspects: security, performance, readability, bugs, and best practices";
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
 
     const messages = [
       {
@@ -553,7 +569,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: `Review this code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\``
+        content: `Review this code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`` + fileContext
       }
     ];
 
