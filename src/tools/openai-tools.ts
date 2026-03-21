@@ -598,9 +598,10 @@ export const openaiExplainTool = {
     style: z.enum(["technical", "simple", "analogy", "visual"])
       .optional()
       .default("simple")
-      .describe("Explanation style - must be one of: technical, simple, analogy, visual")
+      .describe("Explanation style - must be one of: technical, simple, analogy, visual"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
   }),
-  execute: async (args: { topic: string; level?: string; style?: string }, { log }: any) => {
+  execute: async (args: { topic: string; level?: string; style?: string; files?: string[] }, { log }: any) => {
     const levelPrompts = {
       beginner: "Explain for someone with no prior knowledge",
       intermediate: "Explain for someone with basic understanding",
@@ -614,6 +615,10 @@ export const openaiExplainTool = {
       visual: "Describe with visual concepts and diagrams"
     };
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -625,7 +630,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: `Explain: ${args.topic}`
+        content: `Explain: ${args.topic}` + fileContext
       }
     ];
 
@@ -756,15 +761,20 @@ export const openaiSearchTool = {
       .describe("Search depth - low (fast), medium (balanced), high (comprehensive)"),
     country: z.string().optional().describe("Country for location-aware results (e.g., 'US', 'UK')"),
     city: z.string().optional().describe("City for location-aware results"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
   }),
   execute: async (
-    args: { query: string; searchContextSize?: "low" | "medium" | "high"; country?: string; city?: string },
+    args: { query: string; searchContextSize?: "low" | "medium" | "high"; country?: string; city?: string; files?: string[] },
     { log }: any
   ) => {
     const userLocation =
       args.country || args.city ? { country: args.country, city: args.city } : undefined;
 
-    return await callOpenAIWithSearch(args.query, {
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    return await callOpenAIWithSearch(args.query + fileContext, {
       searchContextSize: args.searchContextSize,
       userLocation,
       maxTokens: 6000,
