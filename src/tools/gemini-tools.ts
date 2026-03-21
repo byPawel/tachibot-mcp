@@ -200,9 +200,10 @@ export const geminiQueryTool = {
     model: z.enum(["gemini-3", "pro", "flash"])
       .optional()
       .default("gemini-3")
-      .describe("Model variant - must be one of: gemini-3 (default), pro, flash")
+      .describe("Model variant - must be one of: gemini-3 (default), pro, flash"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
-  execute: async (args: { prompt: string; model?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { prompt: string; model?: string; files?: string[] }, { log, reportProgress }: any) => {
     let model: string = GEMINI_MODELS.GEMINI_3_PRO; // Default to Gemini 3
     if (args.model === "flash") {
       model = GEMINI_MODELS.FLASH;
@@ -210,9 +211,10 @@ export const geminiQueryTool = {
       model = GEMINI_MODELS.PRO;
     }
     // Skip validation - queries may contain code or LLM-generated content
+    const fileContext = args.files?.length ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}` : "";
     const reportFn = reportProgress ?? (async () => {});
     const result = await withHeartbeat(
-      () => callGemini(args.prompt, model, undefined, 0.7, 'llm-orchestration'),
+      () => callGemini(args.prompt + fileContext, model, undefined, 0.7, 'llm-orchestration'),
       reportFn
     );
     return stripFormatting(result);
@@ -404,9 +406,10 @@ export const geminiSummarizeTool = {
     format: z.enum(["paragraph", "bullet-points", "outline"])
       .optional()
       .default("paragraph")
-      .describe("Output format - must be one of: paragraph, bullet-points, outline")
+      .describe("Output format - must be one of: paragraph, bullet-points, outline"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
-  execute: async (args: { content: string; length?: string; format?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { content: string; length?: string; format?: string; files?: string[] }, { log, reportProgress }: any) => {
     const lengthGuides = {
       brief: "1-2 sentences capturing the essence",
       moderate: "1-2 paragraphs with main points",
@@ -429,10 +432,11 @@ Focus on:
 ${FORMAT_INSTRUCTION}`;
 
     // Skip validation for internal summarization calls
+    const fileContext = args.files?.length ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}` : "";
     const reportFn = reportProgress ?? (async () => {});
     const result = await withHeartbeat(
       () => callGemini(
-        `Summarize this content:\n\n${args.content}`,
+        `Summarize this content:\n\n${args.content}` + fileContext,
         GEMINI_MODELS.GEMINI_3_PRO,
         systemPrompt,
         0.3,
