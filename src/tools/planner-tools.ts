@@ -13,6 +13,7 @@
 import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
+import { readFilesIntoContext } from "../utils/file-reader.js";
 
 // ═══════════════════════════════════════════════════════════════════
 // TYPES
@@ -981,6 +982,7 @@ Example:
     goal: z.string().optional().describe("Success criteria for this plan — what must be true when done. Checked at every checkpoint. Example: 'GDPR compliant, fail-closed, admin-only toggle'"),
     context: z.string().optional().describe("Additional context"),
     codeContext: z.string().optional().describe("Actual code from relevant files for analysis (read files and paste here)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     answers: z.string().optional().describe("Answers to clarifying questions"),
     mode: z.enum(["start", "continue"]).optional().default("start")
       .describe("start: begin new plan, continue: next step"),
@@ -1004,6 +1006,7 @@ Example:
     goal?: string;
     context?: string;
     codeContext?: string;
+    files?: string[];
     answers?: string;
     mode?: "start" | "continue";
     step?: number;
@@ -1014,7 +1017,15 @@ Example:
     debate?: boolean;
     issueFile?: string;
   }, ctx: MCPContext): Promise<string> => {
-    const { task, codeContext = "", answers = "", mode = "start", devlog = true } = args;
+    // Merge files into codeContext
+    const fileContent = args.files?.length
+      ? readFilesIntoContext(args.files)
+      : "";
+    const mergedCodeContext = fileContent
+      ? (args.codeContext ? `${args.codeContext}\n\n${fileContent}` : fileContent)
+      : (args.codeContext || "");
+    const { task, answers = "", mode = "start", devlog = true } = args;
+    const codeContext = mergedCodeContext;
     const goal = args.goal || "";
     const prior = args.prior || {};
 
@@ -1400,7 +1411,11 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
       .describe("start: parse plan, step: work on step N, verify: checkpoint"),
     stepNum: z.number().optional().describe("Step number (1-indexed) for mode=step"),
     checkpoint: z.enum(["step1", "10%", "25%", "50%", "80%", "100%"]).optional().describe("Checkpoint for mode=verify — step1 catches wrong-approach, 10% catches drift early, 25% validates strategy"),
-    code: z.string().optional().describe("Current code for verification"),
+    code: z.string().optional().describe("Current code snapshot for verification"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    diff: z.string().optional().describe("Git diff output showing what changed (run: git diff). Most important evidence for drift detection."),
+    testResults: z.string().optional().describe("Test output (run: npm test). Proof that implementation works."),
+    modifiedFiles: z.array(z.string()).optional().describe("List of modified files (run: git diff --name-only). Detects scope creep."),
     completed: z.array(z.number()).optional().describe("List of completed step numbers"),
     devlog: z.boolean().optional().default(true),
     ux: z.boolean().optional().default(false)
@@ -1416,14 +1431,36 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
     stepNum?: number;
     checkpoint?: "step1" | "10%" | "25%" | "50%" | "80%" | "100%";
     code?: string;
+    files?: string[];
+    diff?: string;
+    testResults?: string;
+    modifiedFiles?: string[];
     completed?: number[];
     devlog?: boolean;
     ux?: boolean;
     responsive?: boolean;
   }, _ctx: MCPContext): Promise<string> => {
-    const { plan, mode = "start", stepNum, checkpoint, code, completed = [], devlog = true, ux = false, responsive = false } = args;
+    // Merge files into code context
+    const fileContent = args.files?.length
+      ? readFilesIntoContext(args.files)
+      : "";
+    const mergedCode = fileContent
+      ? (args.code ? `${args.code}\n\n${fileContent}` : fileContent)
+      : args.code;
+    const { plan, mode = "start", stepNum, checkpoint, completed = [], devlog = true, ux = false, responsive = false } = args;
+    const code = mergedCode;
     const goal = args.goal || extractGoalFromPlan(plan) || "";
     const lines: string[] = [];
+
+    // Build evidence block for checkpoint prompts (unblinding)
+    const evidenceParts: string[] = [];
+    if (code) evidenceParts.push(`CODE:\n${code.substring(0, 3000)}${code.length > 3000 ? "\n[... truncated, " + code.length + " chars total]" : ""}`);
+    if (args.diff) evidenceParts.push(`GIT DIFF (what changed):\n${args.diff.substring(0, 3000)}${args.diff.length > 3000 ? "\n[... truncated]" : ""}`);
+    if (args.testResults) evidenceParts.push(`TEST RESULTS:\n${args.testResults.substring(0, 1000)}${args.testResults.length > 1000 ? "\n[... truncated]" : ""}`);
+    if (args.modifiedFiles?.length) evidenceParts.push(`MODIFIED FILES:\n${args.modifiedFiles.join("\n")}`);
+    const evidence = evidenceParts.length > 0
+      ? `\n\nEVIDENCE:\n${evidenceParts.join("\n\n")}`
+      : "";
 
     // Parse plan into steps
     const steps = parsePlanSteps(plan);
@@ -1613,7 +1650,7 @@ ${steps[0]?.details ? `Details: ${steps[0].details}` : ""}
 FULL PLAN (${totalSteps} steps):
 ${steps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
 ${goal ? `\nSTATED GOAL: "${goal}"` : ""}
-${code ? `\nCODE AFTER STEP 1:\n${code.substring(0, 1500) + (code.length > 1500 ? "\n[... truncated, showing first 1500 chars of " + code.length + " total]" : "")}` : ""}
+${evidence}
 
 ANSWER EACH — Y/N with evidence. Any N = STOP and redesign:
 
@@ -1652,7 +1689,7 @@ ${completedSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}
 REMAINING:
 ${remainingSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}
 ${goalPrompt}
-${code ? `\nCODE SO FAR:\n${code.substring(0, 1500) + (code.length > 1500 ? "\n[... truncated, showing first 1500 chars of " + code.length + " total]" : "")}` : ""}
+${evidence}
 
 CHECK:
 1. Does early work ACTUALLY serve the goal, or has implementation drifted?
@@ -1687,7 +1724,7 @@ ${completedSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}
 REMAINING:
 ${remainingSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}
 ${goalPrompt}
-${code ? `\nCODE SO FAR:\n${code.substring(0, 1500) + (code.length > 1500 ? "\n[... truncated, showing first 1500 chars of " + code.length + " total]" : "")}` : ""}
+${evidence}
 
 EVALUATE:
 1. Progress assessment — are completed steps implemented correctly?
