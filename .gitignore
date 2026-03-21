@@ -37,6 +37,9 @@ yarn-error.log*
 # Coverage directory used by tools like istanbul
 coverage/
 
+# Superpowers working plans (local only)
+docs/superpowers/
+
 # Optional npm cache directory
 .npm/
 
