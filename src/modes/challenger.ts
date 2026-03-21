@@ -22,6 +22,7 @@ import { createProgressStream } from '../utils/progress-stream.js';
 import { smartAPIClient } from '../utils/smart-api-client.js';
 import { providerRouter, ProviderConfig } from '../utils/provider-router.js';
 import { getSmartTimeout } from '../config/timeout-config.js';
+import { EMOJI_PALETTE } from '../utils/format-constants.js';
 import { execSync } from 'child_process';
 // import {
 //   renderTable,
@@ -999,7 +1000,7 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
 
       const challengesTableData = challenges.map((ch, i) => {
         const claim = claims.find(c => c.id === ch.claimId);
-        const severityIcon = ch.severity === 'high' ? '🔴' : ch.severity === 'medium' ? '🟡' : '🟢';
+        const severityIcon = ch.severity === 'high' ? EMOJI_PALETTE.bad : ch.severity === 'medium' ? EMOJI_PALETTE.warn : EMOJI_PALETTE.good;
         return {
           '#': String(i + 1),
           Severity: `${severityIcon} ${ch.severity}`,
@@ -1013,7 +1014,7 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
       // Show full challenges below
       challenges.forEach((ch, i) => {
         const claim = claims.find(c => c.id === ch.claimId);
-        const severityIcon = ch.severity === 'high' ? '🔴' : ch.severity === 'medium' ? '🟡' : '🟢';
+        const severityIcon = ch.severity === 'high' ? EMOJI_PALETTE.bad : ch.severity === 'medium' ? EMOJI_PALETTE.warn : EMOJI_PALETTE.good;
         lines.push(`${severityIcon} **Challenge #${i + 1}** (${ch.severity} severity)`);
         lines.push(`Original: "${claim?.text}"`);
         lines.push('');
@@ -1125,9 +1126,9 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
 
     lines.push(renderKeyValueTable({
       'Total Challenges': String(challenges.length),
-      '🔴 High Severity': String(highSeverity),
-      '🟡 Medium Severity': String(mediumSeverity),
-      '🟢 Low Severity': String(lowSeverity),
+      [EMOJI_PALETTE.bad + ' High Severity']: String(highSeverity),
+      [EMOJI_PALETTE.warn + ' Medium Severity']: String(mediumSeverity),
+      [EMOJI_PALETTE.good + ' Low Severity']: String(lowSeverity),
       'Alternatives': String(alternatives.length),
       'Groupthink Risk': groupthinkRisk,
     }));

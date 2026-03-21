@@ -1,3 +1,5 @@
+import { EMOJI_PALETTE } from '../utils/format-constants.js';
+
 export interface AuditorOptions {
   model?: string;
   maxTokens?: number;
@@ -497,7 +499,7 @@ export class Auditor {
     // Critical assumptions
     const criticalAssumptions = assumptions.filter(a => a.risk === 'high');
     if (criticalAssumptions.length > 0) {
-      synthesis += `**Critical Assumptions** 🔴:\n`;
+      synthesis += `**Critical Assumptions** ${EMOJI_PALETTE.bad}:\n`;
       criticalAssumptions.forEach(assumption => {
         synthesis += `- ${assumption.description}\n`;
         synthesis += `  Validation: ${assumption.validationMethod}\n`;
