@@ -5,6 +5,22 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.18.0] - 2026-03-21
+
+### Added
+- **Goal-oriented checkpoints** — `planner_maker` and `planner_runner` now accept `goal` parameter for success criteria tracking
+- **6 checkpoint gates** with 5 different models (no adjacent repeats): step1 (Gemini Sherlock), 10% (Grok), 25% (GPT + amendment protocol), 50% (Qwen), 80% (Kimi decompose), 100% (GPT+Gemini dual judge)
+- **Reflexion Lite** — at 100%, Gemini reflects on what worked/failed, lesson saved to devlog
+- **Amendment protocol** — at 25%, structured plan revision (evidence + proposed changes + impact) with human gate
+- **Unblinded checkpoints** — `diff`, `testResults`, `modifiedFiles` params replace blind `code.substring(0,1500)` with real evidence
+- **`files` param on all analysis tools** — 39 tools across 9 files can now read ACTUAL CODE from disk via `readFilesIntoContext()`
+- **Shared `src/utils/file-reader.ts`** — reusable file reader with line range support (`file.ts:100-200`), size limits, directory expansion
+- **Blueprint skill updated** — `goal` param, prompt template, `planner_runner` as default execution path
+
+### Fixed
+- **Step index reset bug** — filtered arrays used local index instead of original step number (found by 3-model consensus: Kimi + Gemini + Qwen reading actual code)
+- **Truncation indicators** — `code.substring()` now adds `[truncated]` so judge models know they're seeing partial code
+
 ## [2.17.2] - 2026-03-21
 
 ### Added
