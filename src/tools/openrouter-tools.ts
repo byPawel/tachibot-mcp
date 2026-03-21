@@ -673,13 +673,15 @@ export const kimiCodeTool = {
       .default("review")
       .describe("Code task type (default: review)"),
     code: z.string().optional().describe("Source code to work with (for fix/review/optimize/debug/refactor tasks)"),
-    language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')")
+    language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
   execute: async (args: {
     query: string;
     task?: string;
     code?: string;
     language?: string;
+    files?: string[];
   }, { log, reportProgress }: any) => {
     const taskPrompts: Record<string, string> = {
       generate: "Generate clean, production-ready code",
@@ -700,9 +702,13 @@ ${FORMAT_INSTRUCTION}`;
       ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequest: ${args.query}`
       : args.query;
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
+      { role: "user", content: userPrompt + fileContext }
     ];
 
     const reportFn = reportProgress ?? (async () => {});
@@ -919,13 +925,15 @@ export const kimiLongContextTool = {
       .describe("Analysis task type (default: analyze)"),
     query: z.string().optional().describe("Specific question about the content (for extract/find tasks)"),
     outputFormat: z.enum(["brief", "detailed", "structured"]).optional().default("detailed")
-      .describe("Output format: brief (TL;DR), detailed (thorough), structured (sections with headers)")
+      .describe("Output format: brief (TL;DR), detailed (thorough), structured (sections with headers)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
   execute: async (args: {
     content: string;
     task?: string;
     query?: string;
     outputFormat?: string;
+    files?: string[];
   }, { log, reportProgress }: any) => {
     const taskPrompts: Record<string, string> = {
       summarize: "Create a comprehensive summary capturing all key points",
@@ -949,9 +957,13 @@ ${args.query ? `Specific query: ${args.query}` : ''}
 Be thorough and systematic. Reference specific parts of the content when making claims.
 ${FORMAT_INSTRUCTION}`;
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       { role: "system", content: systemPrompt },
-      { role: "user", content: args.content }
+      { role: "user", content: args.content + fileContext }
     ];
 
     const reportFn = reportProgress ?? (async () => {});
