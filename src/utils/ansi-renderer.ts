@@ -248,7 +248,7 @@ export function renderOutput(
           output = badge + '\n';
         }
       }
-      output += stripMarkdown(content);
+      output += stripMarkdown(content, { boldHeaders: true });
       break;
     }
     case 'plain':

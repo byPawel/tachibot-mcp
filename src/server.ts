@@ -339,8 +339,8 @@ safeAddTool({
       models,
       temperature = 0.7,
       saveSession: _saveSession = true,
-      maxTokensPerRound = 2000,
-      pingPongStyle = "collaborative"
+      maxTokensPerRound: _maxTokensPerRound = 2000,
+      pingPongStyle: _pingPongStyle = "collaborative"
     } = args;
 
     // Validate and sanitize input
@@ -456,8 +456,7 @@ Ready to help synthesize your collective intelligence results!`;
         
       default: // simple mode
         // BigText header disabled - plain text only
-        const focusHeader = '';
-        const focusBadge = '';
+        // BigText header/badge removed — plain text only
         return `Enhanced reasoning for: "${query}"
 ${context ? `Context: ${context}` : ''}
 
@@ -589,8 +588,7 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
 
       // Build response with model output if available
       // BigText header disabled - plain text only
-      const thinkBadge = '';
-      const thinkHeader = '';
+      // BigText header/badge removed — plain text only
       let response = '';
       if (result.modelResponse) {
         response += `## Model Response (${args.model}):\n\n${result.modelResponse}\n\n---\n\n`;
@@ -858,7 +856,7 @@ async function initializeServer() {
 
     // Keep the process alive with a heartbeat
     // This ensures the server doesn't exit prematurely
-    const heartbeatInterval = setInterval(() => {
+    setInterval(() => {
       // Heartbeat to keep process alive
       // Log every 30 seconds to show we're still alive
       const now = new Date().toISOString();
