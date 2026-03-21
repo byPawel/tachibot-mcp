@@ -1384,9 +1384,12 @@ COORDINATOR PATTERN - tracks actual plan steps:
 3. Call with mode: "verify" at 50%, 80%, and 100% for checkpoints
 
 Checkpoints verify GOAL ALIGNMENT, not just progress:
-- 50%: GPT judge — "does current work serve the stated goal?"
-- 80%: Kimi decompose remaining work + goal alignment check
-- 100%: Gemini final judge — quality + goal alignment scoring
+- step1: Gemini Sherlock gate — "am I building the RIGHT thing?" (6 deduction questions)
+- 10%: GPT early drift — catch wrong approach before wasting 90%
+- 25%: GPT strategy validation — is the approach working? amendment protocol
+- 50%: GPT judge — progress + goal alignment
+- 80%: Kimi decompose remaining work + goal alignment
+- 100%: Gemini final judge + Reflexion Lite (lesson learned → devlog)
 
 Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).`,
 
@@ -1396,7 +1399,7 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
     mode: z.enum(["start", "step", "verify"]).optional().default("start")
       .describe("start: parse plan, step: work on step N, verify: checkpoint"),
     stepNum: z.number().optional().describe("Step number (1-indexed) for mode=step"),
-    checkpoint: z.enum(["50%", "80%", "100%"]).optional().describe("Checkpoint for mode=verify"),
+    checkpoint: z.enum(["step1", "10%", "25%", "50%", "80%", "100%"]).optional().describe("Checkpoint for mode=verify — step1 catches wrong-approach, 10% catches drift early, 25% validates strategy"),
     code: z.string().optional().describe("Current code for verification"),
     completed: z.array(z.number()).optional().describe("List of completed step numbers"),
     devlog: z.boolean().optional().default(true),
@@ -1411,7 +1414,7 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
     goal?: string;
     mode?: "start" | "step" | "verify";
     stepNum?: number;
-    checkpoint?: "50%" | "80%" | "100%";
+    checkpoint?: "step1" | "10%" | "25%" | "50%" | "80%" | "100%";
     code?: string;
     completed?: number[];
     devlog?: boolean;
@@ -1511,10 +1514,28 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
         lines.push("");
       }
 
-      // Checkpoint reminders
+      // Checkpoint reminders — early gates catch drift before wasted work
+      const tenPctStep = Math.max(2, Math.ceil(totalSteps * 0.1));
+      const quarterStep = Math.ceil(totalSteps * 0.25);
       const halfwayStep = Math.ceil(totalSteps / 2);
       const eightyPctStep = Math.ceil(totalSteps * 0.8);
-      if (stepNum === halfwayStep) {
+
+      if (stepNum === 1) {
+        lines.push("---");
+        lines.push("⚡ **STEP 1 CHECKPOINT** - After this step, verify you're building the RIGHT thing:");
+        lines.push(`\`planner_runner({ plan, mode: "verify", checkpoint: "step1", completed: [1]${goal ? `, goal: "${goal.substring(0, 60)}..."` : ""} })\``);
+      }
+      if (stepNum === tenPctStep && tenPctStep > 1) {
+        lines.push("---");
+        lines.push("⚡ **10% CHECKPOINT** - After this step, catch drift early:");
+        lines.push(`\`planner_runner({ plan, mode: "verify", checkpoint: "10%", completed: [...] })\``);
+      }
+      if (stepNum === quarterStep && quarterStep > tenPctStep) {
+        lines.push("---");
+        lines.push("⚡ **25% CHECKPOINT** - After this step, verify approach is working:");
+        lines.push(`\`planner_runner({ plan, mode: "verify", checkpoint: "25%", completed: [...] })\``);
+      }
+      if (stepNum === halfwayStep && halfwayStep !== quarterStep) {
         lines.push("---");
         lines.push("⚡ 50% CHECKPOINT - After this step, run verification:");
         lines.push(`\`planner_runner({ plan, mode: "verify", checkpoint: "50%", completed: [...] })\``);
@@ -1558,7 +1579,7 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
         lines.push("");
       }
 
-      if ((checkpoint === "50%" || checkpoint === "80%") && remainingSteps.length > 0) {
+      if ((checkpoint === "50%" || checkpoint === "80%" || checkpoint === "25%" || checkpoint === "10%") && remainingSteps.length > 0) {
         lines.push("⏳ Remaining:");
         for (const step of remainingSteps) {
           lines.push(`- ${step.title}`);
@@ -1570,7 +1591,126 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
         ? `\n\nGOAL ALIGNMENT CHECK:\nThe stated goal is: "${goal}"\n- Does current progress serve this goal?\n- Is there any drift from the goal?\n- Are remaining steps still aligned with the goal?\n- Flag any steps that might CONTRADICT the goal.`
         : "";
 
-      if (checkpoint === "50%") {
+      // ═══════════════════════════════════════════════════════════════
+      // EARLY GATES: step1 + 10% + 25% — catch drift before wasted work
+      // ═══════════════════════════════════════════════════════════════
+
+      if (checkpoint === "step1") {
+        // Step 1 gate: "Am I building the RIGHT thing?" — Sherlock-style deductions
+        const step1Prompt = `STEP 1 CHECKPOINT — "Am I building the RIGHT thing?"
+
+You are a detective examining an implementation plan BEFORE any real work begins.
+Deduce whether this plan will build what was actually requested.
+
+PLAN STEP 1: ${steps[0]?.title || "Unknown"}
+${steps[0]?.details ? `Details: ${steps[0].details}` : ""}
+
+FULL PLAN (${totalSteps} steps):
+${steps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+${goal ? `\nSTATED GOAL: "${goal}"` : ""}
+${code ? `\nCODE AFTER STEP 1:\n${code.substring(0, 1500)}` : ""}
+
+ANSWER EACH — Y/N with evidence. Any N = STOP and redesign:
+
+1. GOAL FIDELITY: Does the plan's direction match the stated goal exactly? (not a reinterpretation or adjacent goal)
+2. CRITERIA CHECK: Are success criteria specific and measurable? (not vague like "improve" or "better")
+3. CONSTRAINT SCAN: Does the approach violate any stated constraint? (tech stack, time, compliance)
+4. CONTRADICTION HUNT: Are any requirements internally contradictory? (A requires NOT-B)
+5. METHOD FIT: Does the high-level approach match the goal class? (e.g., not building an API when a config change suffices)
+6. ASSUMPTION AUDIT: Does step 1 assume anything unverified? (hallucinated prerequisites, unstated dependencies)
+
+VERDICT: PROCEED, STOP_AND_CLARIFY, or WRONG_APPROACH
+If not PROCEED: explain what's wrong and suggest correction.`;
+
+        lines.push("### 🔍 Step 1 Gate — Sherlock Deductions");
+        lines.push("");
+        lines.push("Execute this verification tool:");
+        lines.push("");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "gemini_analyze_text",
+          params: { text: step1Prompt, type: "key-points" },
+        }, null, 2));
+        lines.push("```");
+        lines.push("");
+        lines.push("If WRONG_APPROACH or STOP_AND_CLARIFY: **halt and redesign before continuing.**");
+
+      } else if (checkpoint === "10%") {
+        // 10% gate: "Is the approach working?" — early drift detection
+        const tenPctPrompt = `10% CHECKPOINT — Early Drift Detection
+
+${completed.length}/${totalSteps} steps done. Catching drift early saves the other 90%.
+
+COMPLETED:
+${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+
+REMAINING:
+${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+${goalPrompt}
+${code ? `\nCODE SO FAR:\n${code.substring(0, 1500)}` : ""}
+
+CHECK:
+1. Does early work ACTUALLY serve the goal, or has implementation drifted?
+2. Are we solving the RIGHT problem at the RIGHT level of abstraction?
+3. Any signs of over-engineering or under-engineering?
+4. Should any remaining steps be reordered or dropped?
+
+VERDICT: ON_TRACK or DRIFTING (with evidence and proposed correction)`;
+
+        lines.push("### 🔍 10% — Early Drift Detection");
+        lines.push("");
+        lines.push("Execute this verification tool:");
+        lines.push("");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "openai_reason",
+          params: { task: tenPctPrompt, reasoning_effort: "medium" },
+        }, null, 2));
+        lines.push("```");
+        lines.push("");
+        lines.push("If DRIFTING: pause and propose plan amendment before continuing.");
+
+      } else if (checkpoint === "25%") {
+        // 25% gate: "Is the strategy working?" — GPT judge
+        const quarterPrompt = `25% CHECKPOINT — Strategy Validation
+
+${completed.length}/${totalSteps} steps done. Quarter-way check: is the strategy sound?
+
+COMPLETED:
+${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+
+REMAINING:
+${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+${goalPrompt}
+${code ? `\nCODE SO FAR:\n${code.substring(0, 1500)}` : ""}
+
+EVALUATE:
+1. Progress assessment — are completed steps implemented correctly?
+2. Strategy check — is the overall approach proving effective?
+3. Goal alignment — any drift from stated goal?
+4. Plan amendment — should remaining steps change based on what we've learned?
+
+If amendment needed, provide:
+- EVIDENCE: What specifically went wrong or changed
+- PROPOSED REVISION: New/modified steps
+- IMPACT: What changes downstream
+
+VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
+
+        lines.push("### 🧠 25% — Strategy Validation (GPT Judge)");
+        lines.push("");
+        lines.push("Execute this verification tool:");
+        lines.push("");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "openai_reason",
+          params: { task: quarterPrompt, reasoning_effort: "high" },
+        }, null, 2));
+        lines.push("```");
+        lines.push("");
+        lines.push("If AMEND_PLAN: review proposed changes with user before continuing.");
+
+      } else if (checkpoint === "50%") {
         const verifyPrompt = `50% CHECKPOINT — Progress & Goal Alignment Review\n\nCOMPLETED STEPS:\n${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}\n\nREMAINING STEPS:\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}${goalPrompt}${code ? `\n\nCODE SNAPSHOT:\n${code.substring(0, 1500)}` : ""}\n\nRESPOND WITH:\n1. Progress assessment — are completed steps implemented correctly?\n2. Goal alignment — does current work serve the stated goal? Any drift?\n3. Remaining plan — should we adjust remaining steps to better serve the goal?\n4. Verdict: ON_TRACK or DRIFTING (with explanation)`;
 
         lines.push("### 🧠 GPT First Judge");
@@ -1622,6 +1762,45 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
         lines.push("```");
         lines.push("");
         lines.push("If APPROVED: Done! If NEEDS_REVISION: Address feedback and re-verify.");
+
+        // Reflexion Lite — Gemini judge: "What went wrong? What worked?"
+        const reflexionPrompt = `REFLEXION — Post-Implementation Learning
+
+This plan just completed ${completed.length}/${totalSteps} steps.
+${goal ? `Goal was: "${goal}"` : ""}
+
+ALL STEPS:
+${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}
+
+REFLECT:
+1. What WORKED well? (approaches worth repeating)
+2. What went WRONG or was harder than expected? (anti-patterns to avoid)
+3. Was the plan's structure effective? (too granular? too vague? wrong order?)
+4. Were checkpoints triggered at the right moments? (any drift caught late?)
+5. One-sentence LESSON for next time: "Next time, [do X] instead of [Y]"
+
+Output as structured JSON:
+{
+  "worked": ["..."],
+  "failed": ["..."],
+  "plan_quality": "good|adequate|poor",
+  "lesson": "..."
+}`;
+
+        lines.push("");
+        lines.push("### 🪞 Reflexion Lite — Learn from this run");
+        lines.push("");
+        lines.push("After the final judge, run reflexion (Gemini):");
+        lines.push("");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "gemini_analyze_text",
+          params: { text: reflexionPrompt, type: "key-points" },
+        }, null, 2));
+        lines.push("```");
+        lines.push("");
+        lines.push("Save the lesson to devlog:");
+        lines.push(`\`devlog_session_log({ entry: "Reflexion: [paste lesson here]", type: "learning" })\``);
       }
 
       // UX verification (when enabled) — two-step: Kimi flow analysis + Gemini scoring
@@ -1674,11 +1853,11 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
       // Next action
       lines.push("");
       lines.push("---");
-      if (checkpoint === "50%" || checkpoint === "80%") {
+      if (checkpoint === "100%") {
+        lines.push("▶ If APPROVED: Done! If NEEDS_REVISION: Address feedback and re-verify.");
+      } else {
         const nextStep = completed.length + 1;
         lines.push(`▶ After verification, continue: \`planner_runner({ plan, mode: "step", stepNum: ${nextStep}, completed: [${completed.join(", ")}] })\``);
-      } else {
-        lines.push("▶ If APPROVED: Done! If NEEDS_REVISION: Address feedback and re-verify.");
       }
     }
 
