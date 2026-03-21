@@ -761,20 +761,15 @@ export const openaiSearchTool = {
       .describe("Search depth - low (fast), medium (balanced), high (comprehensive)"),
     country: z.string().optional().describe("Country for location-aware results (e.g., 'US', 'UK')"),
     city: z.string().optional().describe("City for location-aware results"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
   }),
   execute: async (
-    args: { query: string; searchContextSize?: "low" | "medium" | "high"; country?: string; city?: string; files?: string[] },
+    args: { query: string; searchContextSize?: "low" | "medium" | "high"; country?: string; city?: string },
     { log }: any
   ) => {
     const userLocation =
       args.country || args.city ? { country: args.country, city: args.city } : undefined;
 
-    const fileContext = args.files?.length
-      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
-      : "";
-
-    return await callOpenAIWithSearch(args.query + fileContext, {
+    return await callOpenAIWithSearch(args.query, {
       searchContextSize: args.searchContextSize,
       userLocation,
       maxTokens: 6000,
