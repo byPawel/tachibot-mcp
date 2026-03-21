@@ -14,26 +14,24 @@
 export const OPENAI_MODELS = {
   // GPT-5.4 (Mar 2026 - CURRENT)
   // Note: "gpt-5.4" + reasoning.effort="high"/"xhigh" = "thinking" mode
-  DEFAULT: "gpt-5.4",               // Most capable - coding, agentic, professional work
+  DEFAULT: "gpt-5.4",               // Most capable - reasoning, agentic, professional work
+  MINI: "gpt-5.4-mini",             // Fast/efficient coding & subagents (400k ctx, Mar 17)
   PRO: "gpt-5.4-pro",               // Expert: higher compute for harder problems
-
-  // GPT-5.3 Models (Feb-Mar 2026)
-  CODEX: "gpt-5.3-codex",           // Agentic coding specialist (Feb 5)
-  INSTANT: "gpt-5.3",               // Fast general, web search, conversational (Mar 3)
 
   // Aliases for backward compatibility
   THINKING: "gpt-5.4",              // "Thinking" = gpt-5.4 with high reasoning effort
   FULL: "gpt-5.4",                  // Map old FULL to DEFAULT
-  CODEX_MINI: "gpt-5.4",            // Map old codex-mini to DEFAULT
+  CODEX: "gpt-5.4-mini",            // Map old codex to MINI (gpt-5.3-codex absorbed into 5.4)
+  CODEX_MINI: "gpt-5.4-mini",       // Map old codex-mini to MINI
   CODEX_MAX: "gpt-5.4-pro",         // Map old codex-max to PRO
+  INSTANT: "gpt-5.4-mini",          // Map old instant to MINI
 } as const;
 
 // OpenRouter model ID mapping (add prefix when using OpenRouter gateway)
 export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
   "gpt-5.4": "openai/",
+  "gpt-5.4-mini": "openai/",
   "gpt-5.4-pro": "openai/",
-  "gpt-5.3-codex": "openai/",
-  "gpt-5.3": "openai/",
 } as const;
 
 // OpenAI Reasoning Effort Levels (for models that support it)
@@ -163,17 +161,17 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
-// UPDATED Mar 6, 2026: GPT-5.4 (most capable), GPT-5.3-Codex for coding
-// PRO (gpt-5.4-pro) available for opt-in when extra quality needed
+// UPDATED Mar 21, 2026: GPT-5.4 (flagship) + GPT-5.4-mini (coding/fast)
+// gpt-5.3-codex retired — capabilities absorbed into gpt-5.4
 export const CURRENT_MODELS = {
   openai: {
     default: OPENAI_MODELS.DEFAULT,       // gpt-5.4 - most capable (Mar 2026)
     reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (gpt-5.4 + effort=high)
     brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (gpt-5.4 + effort=medium)
-    code: OPENAI_MODELS.CODEX,            // Code tasks (gpt-5.3-codex - agentic coding leader)
-    explain: OPENAI_MODELS.DEFAULT,       // Explanations (gpt-5.4 + effort=low)
+    code: OPENAI_MODELS.MINI,             // Code tasks (gpt-5.4-mini - 94% of flagship, 70% cheaper)
+    explain: OPENAI_MODELS.MINI,          // Explanations (gpt-5.4-mini - fast & capable)
     search: OPENAI_MODELS.DEFAULT,        // Web search (gpt-5.4 + web_search tool)
-    // Premium option for opt-in (use sparingly - much more expensive)
+    // Premium option for opt-in (use sparingly - $30/$180 per 1M tokens)
     premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.4-pro - higher compute)
   },
   grok: {
@@ -356,8 +354,7 @@ export const DEFAULT_WORKFLOW_TOOL = "openai_brainstorm";
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // OpenAI
   "gpt-5.4": "gpt-5.4",
-  "gpt-5.3-codex": "gpt-5.3-codex",
-  "gpt-5.3": "gpt-5.3",
+  "gpt-5.4-mini": "gpt-5.4-mini",
   "gpt-5.4-pro": "gpt-5.4-pro",
 
   // Gemini
@@ -405,9 +402,8 @@ export function getModelDisplayName(modelId: string): string {
 export const MODEL_PRICING: Record<string, number> = {
   // OpenAI
   "gpt-5.4": 0.00875,           // ($2.50 + $15) / 2 / 1000 (Mar 2026)
+  "gpt-5.4-mini": 0.002625,     // ($0.75 + $4.50) / 2 / 1000 (Mar 17, 2026)
   "gpt-5.4-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Mar 2026)
-  "gpt-5.3-codex": 0.008,       // Estimated (agentic coding, Feb 2026)
-  "gpt-5.3": 0.007,             // Estimated (instant, Mar 2026)
 
   // Gemini
   "gemini-3.1-pro-preview": 0.007, // ($2 + $12) / 2 / 1000

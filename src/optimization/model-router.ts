@@ -54,9 +54,8 @@ interface ModelCosts {
 const MODEL_COSTS: ModelCosts = {
   // GPT-5.x Models (Mar 2026 pricing) - ACTUAL API MODEL NAMES
   "gpt-5.4": { input: 0.0025, output: 0.015, latency: 1500 },            // Most capable (Mar 2026)
+  "gpt-5.4-mini": { input: 0.00075, output: 0.0045, latency: 800 },     // Fast coding (Mar 17, 2026)
   "gpt-5.4-pro": { input: 0.030, output: 0.180, latency: 2500 },        // Premium expert (Mar 2026)
-  "gpt-5.3-codex": { input: 0.002, output: 0.012, latency: 1200 },      // Agentic coding (Feb 2026)
-  "gpt-5.3": { input: 0.002, output: 0.012, latency: 800 },             // Fast instant (Mar 2026)
 
   // Gemini 3 models - Dec 2025
   "gemini-3-flash-preview": { input: 0.0005, output: 0.003, latency: 500 }, // Fast frontier

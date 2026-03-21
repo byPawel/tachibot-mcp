@@ -24,8 +24,7 @@ const NO_GATEWAY_MODELS = new Set([
 // GPT-5.x model mapping - OpenAI names → OpenRouter names (Mar 2026)
 const GPT52_MODEL_MAP: Record<string, string> = {
   'gpt-5.4': 'openai/gpt-5.4',                     // Most capable (Mar 2026)
-  'gpt-5.3-codex': 'openai/gpt-5.3-codex',         // Agentic coding (Feb 2026)
-  'gpt-5.3': 'openai/gpt-5.3',                     // Fast instant (Mar 2026)
+  'gpt-5.4-mini': 'openai/gpt-5.4-mini',           // Fast coding (Mar 17, 2026)
   'gpt-5.4-pro': 'openai/gpt-5.4-pro',            // Expert variant
 };
 

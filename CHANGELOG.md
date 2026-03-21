@@ -5,6 +5,21 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.0] - 2026-03-21
+
+### Changed
+- **GPT-5.4-mini added** — new fast/efficient coding model (400k context, $0.75/$4.50 per 1M tokens, SWE-Bench 54.4%)
+- **Code tasks use gpt-5.4-mini** — replaces `gpt-5.3-codex` for `openai_code_review` and explain tasks (94% of flagship quality, 70% cheaper)
+- **GPT-5.3 series retired** — `gpt-5.3-codex` and `gpt-5.3` removed from all registries; coding capabilities absorbed into `gpt-5.4`
+- **Model lineup simplified** — now just `gpt-5.4` (flagship), `gpt-5.4-mini` (coding/fast), `gpt-5.4-pro` (expert)
+
+### Added
+- Display name, pricing, fallback chain, model router, and ANSI style entries for `gpt-5.4-mini`
+- `gpt-5.4-mini` falls back to `gpt-5.4` if unavailable
+
+### Removed
+- `gpt-5.3-codex` and `gpt-5.3` from all model registries, OpenRouter mappings, provider configs, and style themes (backward-compat aliases preserved)
+
 ## [2.16.1] - 2026-03-06
 
 ### Changed

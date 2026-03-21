@@ -190,8 +190,7 @@ export async function callOpenAI(
   // Model fallback chain - no fallbacks to test actual availability
   const modelFallbacks: Record<string, string[]> = {
     "gpt-5.4": [],           // No fallback - test actual gpt-5.4
-    "gpt-5.3-codex": [],     // No fallback - test actual gpt-5.3-codex
-    "gpt-5.3": [],           // No fallback - test actual gpt-5.3
+    "gpt-5.4-mini": ["gpt-5.4"],  // Mini falls back to flagship
     "gpt-5.4-pro": []        // No fallback - test actual gpt-5.4-pro
   };
 
@@ -459,9 +458,9 @@ export const openAIBrainstormTool = {
     problem: z.string().describe("The engineering problem or design tradeoff to brainstorm about (REQUIRED)"),
     constraints: z.string().optional().describe("Technical constraints: language, framework, performance requirements, team size"),
     quantity: z.number().optional().describe("Number of approaches to generate (default: 5)"),
-    model: z.enum(["gpt-5.4", "gpt-5.3-codex", "gpt-5.3", "gpt-5.4-pro"])
+    model: z.enum(["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-pro"])
       .optional()
-      .describe("Model to use - gpt-5.4 (default), gpt-5.3-codex (coding), gpt-5.4-pro (expert)"),
+      .describe("Model to use - gpt-5.4 (default), gpt-5.4-mini (coding/fast), gpt-5.4-pro (expert)"),
     reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh"])
       .optional()
       .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh"),

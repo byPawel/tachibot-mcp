@@ -62,12 +62,12 @@ const PROVIDER_CONFIGS = {
   openai: {
     base: 'https://api.openai.com/v1',
     key: process.env.OPENAI_API_KEY,
-    models: ['gpt-5.4', 'gpt-5.3-codex', 'gpt-5.3', 'gpt-5.4-pro']
+    models: ['gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-pro']
   },
   gpt52: {
     base: 'https://api.openai.com/v1',  // Uses /responses endpoint
     key: process.env.OPENAI_API_KEY,
-    models: ['gpt-5.4', 'gpt-5.3-codex', 'gpt-5.3', 'gpt-5.4-pro'],
+    models: ['gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-pro'],
     special: true  // Needs special handling for reasoning_effort
   },
   mistral: {

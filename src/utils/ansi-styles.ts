@@ -91,8 +91,7 @@ const nebulaTheme: Theme = {
     // OpenAI - Emerald green (brand color)
     openai: { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
     'gpt-5.4': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
-    'gpt-5.3-codex': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.3-codex ' },
-    'gpt-5.3': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.3 ' },
+    'gpt-5.4-mini': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4-mini ' },
     'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.4-pro ' },
 
     // Gemini - Google blue
@@ -184,9 +183,8 @@ const cyberpunkTheme: Theme = {
     // OpenAI - Electric green
     openai: { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4 ' },
     'gpt-5.4': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4 ' },
-    'gpt-5.3-codex': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.3-CODEX ' },
-    'gpt-5.3': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.3 ' },
-    'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.2-PRO ' },
+    'gpt-5.4-mini': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4-MINI ' },
+    'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4-PRO ' },
 
     // Gemini - Electric blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI ' },
@@ -277,8 +275,7 @@ const minimalTheme: Theme = {
     // All badges are simple, dark bg with white text
     openai: { bg: 'bgBlack', fg: 'green', label: ' gpt-5.4 ' },
     'gpt-5.4': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.4 ' },
-    'gpt-5.3-codex': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.3-codex ' },
-    'gpt-5.3': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.3 ' },
+    'gpt-5.4-mini': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.4-mini ' },
     'gpt-5.4-pro': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-5.4-pro ' },
 
     gemini: { bg: 'bgBlack', fg: 'blue', label: ' gemini ' },
@@ -363,8 +360,7 @@ const oceanTheme: Theme = {
   modelBadges: {
     openai: { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
     'gpt-5.4': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
-    'gpt-5.3-codex': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.3-codex ' },
-    'gpt-5.3': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.3 ' },
+    'gpt-5.4-mini': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4-mini ' },
     'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.4-pro ' },
 
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },

@@ -89,7 +89,7 @@ export class FallbackStrategies {
         return {
           alternativeTool: 'gpt5_mini',
           fallbackUsed: 'cheaper-model',
-          warning: 'Falling back to gpt-5.3-codex (cost-efficient coding model)'
+          warning: 'Falling back to gpt-5.4-mini (cost-efficient coding model)'
         };
       }
     });
