@@ -1383,13 +1383,13 @@ COORDINATOR PATTERN - tracks actual plan steps:
 2. Call with mode: "step" and stepNum to work on specific step
 3. Call with mode: "verify" at 50%, 80%, and 100% for checkpoints
 
-Checkpoints verify GOAL ALIGNMENT, not just progress:
+Checkpoints verify GOAL ALIGNMENT with 5 different models (no repeats adjacent):
 - step1: Gemini Sherlock gate — "am I building the RIGHT thing?" (6 deduction questions)
-- 10%: GPT early drift — catch wrong approach before wasting 90%
+- 10%: Grok early drift — catch wrong approach before wasting 90%
 - 25%: GPT strategy validation — is the approach working? amendment protocol
-- 50%: GPT judge — progress + goal alignment
+- 50%: Qwen reason — progress + goal alignment (different perspective)
 - 80%: Kimi decompose remaining work + goal alignment
-- 100%: Gemini final judge + Reflexion Lite (lesson learned → devlog)
+- 100%: GPT first judge → Gemini final judge (dual) + Reflexion Lite
 
 Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).`,
 
@@ -1657,14 +1657,14 @@ CHECK:
 
 VERDICT: ON_TRACK or DRIFTING (with evidence and proposed correction)`;
 
-        lines.push("### 🔍 10% — Early Drift Detection");
+        lines.push("### 🔍 10% — Early Drift Detection (Grok)");
         lines.push("");
         lines.push("Execute this verification tool:");
         lines.push("");
         lines.push("```json");
         lines.push(JSON.stringify({
-          tool: "openai_reason",
-          params: { task: tenPctPrompt, reasoning_effort: "medium" },
+          tool: "grok_reason",
+          params: { query: tenPctPrompt },
         }, null, 2));
         lines.push("```");
         lines.push("");
@@ -1713,18 +1713,18 @@ VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
       } else if (checkpoint === "50%") {
         const verifyPrompt = `50% CHECKPOINT — Progress & Goal Alignment Review\n\nCOMPLETED STEPS:\n${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}\n\nREMAINING STEPS:\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}${goalPrompt}${code ? `\n\nCODE SNAPSHOT:\n${code.substring(0, 1500)}` : ""}\n\nRESPOND WITH:\n1. Progress assessment — are completed steps implemented correctly?\n2. Goal alignment — does current work serve the stated goal? Any drift?\n3. Remaining plan — should we adjust remaining steps to better serve the goal?\n4. Verdict: ON_TRACK or DRIFTING (with explanation)`;
 
-        lines.push("### 🧠 GPT First Judge");
+        lines.push("### 🔍 50% — Progress Check (Qwen Reason)");
         lines.push("");
         lines.push("Execute this verification tool:");
         lines.push("");
         lines.push("```json");
         lines.push(JSON.stringify({
-          tool: "openai_reason",
-          params: { task: verifyPrompt, reasoning_effort: "high" },
+          tool: "qwen_reason",
+          params: { query: verifyPrompt },
         }, null, 2));
         lines.push("```");
         lines.push("");
-        lines.push("After GPT judge, continue to next step or adjust plan based on verdict.");
+        lines.push("After Qwen judge, continue to next step or adjust plan based on verdict.");
 
       } else if (checkpoint === "80%") {
         const decomposeContext = `Remaining steps:\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}${s.details ? ': ' + s.details.substring(0, 100) : ''}`).join('\n')}\n\nCompleted: ${completedSteps.map(s => s.title).join(', ')}${goal ? `\n\nGOAL: ${goal}\nEnsure all remaining subtasks serve this goal. Flag any that don't.` : ""}`;
@@ -1750,18 +1750,29 @@ VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
       } else {
         const finalPrompt = `100% FINAL REVIEW — Quality + Goal Alignment\n\nALL STEPS:\n${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}${goalPrompt}${code ? `\n\nFINAL CODE:\n${code.substring(0, 2000)}` : ""}\n\nSCORE EACH /10:\n1. Quality — code correctness, error handling\n2. Completeness — all steps done, no gaps\n3. Goal alignment — does the implementation serve "${goal || 'the stated task'}"?\n4. Security — no vulnerabilities introduced\n5. Performance — no obvious bottlenecks\n\nVERDICT: APPROVED or NEEDS_REVISION\nIf NEEDS_REVISION, list specific items to fix.`;
 
+        lines.push("### 🧠 GPT First Judge");
+        lines.push("");
+        lines.push("Execute GPT review first:");
+        lines.push("");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "openai_reason",
+          params: { task: finalPrompt, reasoning_effort: "high" },
+        }, null, 2));
+        lines.push("```");
+        lines.push("");
         lines.push("### 🏛️ Gemini Final Judge");
         lines.push("");
-        lines.push("Execute this final verification tool:");
+        lines.push("Then execute Gemini for the final verdict:");
         lines.push("");
         lines.push("```json");
         lines.push(JSON.stringify({
           tool: "gemini_analyze_text",
-          params: { text: finalPrompt },
+          params: { text: finalPrompt + "\n\nNote: GPT already reviewed this. Provide your INDEPENDENT assessment — do NOT defer to GPT's verdict." },
         }, null, 2));
         lines.push("```");
         lines.push("");
-        lines.push("If APPROVED: Done! If NEEDS_REVISION: Address feedback and re-verify.");
+        lines.push("If BOTH approve: Done! If EITHER flags issues: Address feedback and re-verify.");
 
         // Reflexion Lite — Gemini judge: "What went wrong? What worked?"
         const reflexionPrompt = `REFLEXION — Post-Implementation Learning
