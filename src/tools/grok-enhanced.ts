@@ -8,6 +8,7 @@ import { config } from "dotenv";
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
+import { readFilesIntoContext } from "../utils/file-reader.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { link } from "../utils/ansi-renderer.js";
 import { stripFormatting } from "../utils/format-stripper.js";
@@ -274,7 +275,8 @@ export const grokReasonEnhanced = {
     context: z.string().optional(),
     useHeavy: z.boolean().optional(),
     enableLiveSearch: z.boolean().optional(),
-    maxSteps: z.number().optional()
+    maxSteps: z.number().optional(),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
   execute: async (args: any, { log }: any) => {
     const {
@@ -283,7 +285,8 @@ export const grokReasonEnhanced = {
       context,
       useHeavy = false,
       enableLiveSearch = false,
-      maxSteps = 5
+      maxSteps = 5,
+      files
     } = args;
     const approachPrompts = {
       analytical: "Break down the problem systematically and analyze each component",
@@ -293,6 +296,8 @@ export const grokReasonEnhanced = {
       "multi-agent": "Consider multiple perspectives and synthesize them"
     };
     
+    const fileContext = files?.length ? `\n\nSOURCE CODE:\n${readFilesIntoContext(files)}` : "";
+
     const messages = [
       {
         role: "system",
@@ -305,7 +310,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: problem
+        content: problem + fileContext
       }
     ];
 
