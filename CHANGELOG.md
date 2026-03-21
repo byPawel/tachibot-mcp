@@ -5,6 +5,29 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.19.0] - 2026-03-21
+
+### Added
+- **Sparse render mode** (`RENDER_OUTPUT=sparse`) — lightweight output formatting with ~72 tokens overhead per response
+- **ANSI model badges** — colored background badges for model name (provider color) + tool name (charcoal bg)
+- **Pastel section headers** — emoji section headers (`🧠 HEADER ───`) rendered as teal bg + dark bold text badges
+- **Color-coded verdicts** — `✅ pass` (sage green), `🫠 partial` (soft yellow), `💀 fail` (rose) with colored bg badges
+- **Summary badge** — tool name displayed as bold charcoal badge next to model badge
+- **`stripMarkdown` options** — `{ boldHeaders: true }` converts markdown/emoji headers to ANSI-styled badges
+- **Empty input guard** on `stripMarkdown` — early return for empty/whitespace input
+- **Strip markdown headers** — `##` prefixes and `───` decorators removed from output
+- **8 unit tests** for `stripMarkdown` covering headers, bold, bullets, code blocks, HR, empty input
+
+### Fixed
+- **ANSI truncation corruption** — truncate raw content BEFORE applying ANSI badges (prevents mid-escape code corruption)
+- **Summary badge without model** — tools returning null from `inferModelFromTool` (think, focus) still show tool name badge
+- **Unused imports** — cleaned up 10+ unused imports/variables in server.ts
+
+### Changed
+- **Emoji palette** — analysis 🧠, insight 🔮, key 🗝, verdict 👩‍⚖️ (replaced 🔍🧿🪩🎯)
+- **Auditor/Challenger** — use `EMOJI_PALETTE` constants instead of hardcoded emoji
+- **Planner** — topological task ordering with T-ID preservation and Dependencies metadata
+
 ## [2.18.0] - 2026-03-21
 
 ### Added
