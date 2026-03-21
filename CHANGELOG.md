@@ -5,6 +5,13 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.2] - 2026-03-21
+
+### Added
+- **`files` parameter on 8 more tools** — grok_architect, grok_brainstorm, openai_explain, openai_search, kimi_code, kimi_long_context, gemini_judge, gemini_brainstorm (23/37 tools now support `files`)
+- **Directory expansion in file reader** — pass `src/tools/` to read all code files in a directory (non-recursive, capped at 20 files)
+- **Smart char budget** — multi-file reads distribute token budget across files to prevent context overflow
+
 ## [2.17.1] - 2026-03-21
 
 ### Fixed
