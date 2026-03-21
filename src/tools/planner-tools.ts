@@ -1560,8 +1560,13 @@ Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
       // ═══════════════════════════════════════════════════════════════
       // VERIFY: Goal-oriented checkpoint with dual-judge verification
       // ═══════════════════════════════════════════════════════════════
-      const completedSteps = steps.filter((_, i) => completed.includes(i + 1));
-      const remainingSteps = steps.filter((_, i) => !completed.includes(i + 1));
+      // Preserve original step numbers (not filtered array indices)
+      const completedSteps = steps
+        .map((step, i) => ({ ...step, stepNum: i + 1 }))
+        .filter(s => completed.includes(s.stepNum));
+      const remainingSteps = steps
+        .map((step, i) => ({ ...step, stepNum: i + 1 }))
+        .filter(s => !completed.includes(s.stepNum));
 
       lines.push(`## 🔍 ${checkpoint} Checkpoint Verification`);
       lines.push("");
@@ -1608,7 +1613,7 @@ ${steps[0]?.details ? `Details: ${steps[0].details}` : ""}
 FULL PLAN (${totalSteps} steps):
 ${steps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
 ${goal ? `\nSTATED GOAL: "${goal}"` : ""}
-${code ? `\nCODE AFTER STEP 1:\n${code.substring(0, 1500)}` : ""}
+${code ? `\nCODE AFTER STEP 1:\n${code.substring(0, 1500) + (code.length > 1500 ? "\n[... truncated, showing first 1500 chars of " + code.length + " total]" : "")}` : ""}
 
 ANSWER EACH — Y/N with evidence. Any N = STOP and redesign:
 
@@ -1642,12 +1647,12 @@ If not PROCEED: explain what's wrong and suggest correction.`;
 ${completed.length}/${totalSteps} steps done. Catching drift early saves the other 90%.
 
 COMPLETED:
-${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+${completedSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}
 
 REMAINING:
-${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+${remainingSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}
 ${goalPrompt}
-${code ? `\nCODE SO FAR:\n${code.substring(0, 1500)}` : ""}
+${code ? `\nCODE SO FAR:\n${code.substring(0, 1500) + (code.length > 1500 ? "\n[... truncated, showing first 1500 chars of " + code.length + " total]" : "")}` : ""}
 
 CHECK:
 1. Does early work ACTUALLY serve the goal, or has implementation drifted?
@@ -1677,12 +1682,12 @@ VERDICT: ON_TRACK or DRIFTING (with evidence and proposed correction)`;
 ${completed.length}/${totalSteps} steps done. Quarter-way check: is the strategy sound?
 
 COMPLETED:
-${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+${completedSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}
 
 REMAINING:
-${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
+${remainingSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}
 ${goalPrompt}
-${code ? `\nCODE SO FAR:\n${code.substring(0, 1500)}` : ""}
+${code ? `\nCODE SO FAR:\n${code.substring(0, 1500) + (code.length > 1500 ? "\n[... truncated, showing first 1500 chars of " + code.length + " total]" : "")}` : ""}
 
 EVALUATE:
 1. Progress assessment — are completed steps implemented correctly?
@@ -1711,7 +1716,7 @@ VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
         lines.push("If AMEND_PLAN: review proposed changes with user before continuing.");
 
       } else if (checkpoint === "50%") {
-        const verifyPrompt = `50% CHECKPOINT — Progress & Goal Alignment Review\n\nCOMPLETED STEPS:\n${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}\n\nREMAINING STEPS:\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}${goalPrompt}${code ? `\n\nCODE SNAPSHOT:\n${code.substring(0, 1500)}` : ""}\n\nRESPOND WITH:\n1. Progress assessment — are completed steps implemented correctly?\n2. Goal alignment — does current work serve the stated goal? Any drift?\n3. Remaining plan — should we adjust remaining steps to better serve the goal?\n4. Verdict: ON_TRACK or DRIFTING (with explanation)`;
+        const verifyPrompt = `50% CHECKPOINT — Progress & Goal Alignment Review\n\nCOMPLETED STEPS:\n${completedSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}\n\nREMAINING STEPS:\n${remainingSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}${goalPrompt}${code ? `\n\nCODE SNAPSHOT:\n${code.substring(0, 1500) + (code.length > 1500 ? "\n[... truncated, showing first 1500 chars of " + code.length + " total]" : "")}` : ""}\n\nRESPOND WITH:\n1. Progress assessment — are completed steps implemented correctly?\n2. Goal alignment — does current work serve the stated goal? Any drift?\n3. Remaining plan — should we adjust remaining steps to better serve the goal?\n4. Verdict: ON_TRACK or DRIFTING (with explanation)`;
 
         lines.push("### 🔍 50% — Progress Check (Qwen Reason)");
         lines.push("");
@@ -1727,7 +1732,7 @@ VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
         lines.push("After Qwen judge, continue to next step or adjust plan based on verdict.");
 
       } else if (checkpoint === "80%") {
-        const decomposeContext = `Remaining steps:\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}${s.details ? ': ' + s.details.substring(0, 100) : ''}`).join('\n')}\n\nCompleted: ${completedSteps.map(s => s.title).join(', ')}${goal ? `\n\nGOAL: ${goal}\nEnsure all remaining subtasks serve this goal. Flag any that don't.` : ""}`;
+        const decomposeContext = `Remaining steps:\n${remainingSteps.map(s => `${s.stepNum}. ${s.title}${s.details ? ': ' + s.details.substring(0, 100) : ''}`).join('\n')}\n\nCompleted: ${completedSteps.map(s => `[${s.stepNum}] ${s.title}`).join(', ')}${goal ? `\n\nGOAL: ${goal}\nEnsure all remaining subtasks serve this goal. Flag any that don't.` : ""}`;
 
         lines.push("### 🔬 Kimi Decompose + Goal Check");
         lines.push("");
@@ -1748,7 +1753,7 @@ VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
         lines.push("Review subtasks for goal alignment, then continue.");
 
       } else {
-        const finalPrompt = `100% FINAL REVIEW — Quality + Goal Alignment\n\nALL STEPS:\n${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}${goalPrompt}${code ? `\n\nFINAL CODE:\n${code.substring(0, 2000)}` : ""}\n\nSCORE EACH /10:\n1. Quality — code correctness, error handling\n2. Completeness — all steps done, no gaps\n3. Goal alignment — does the implementation serve "${goal || 'the stated task'}"?\n4. Security — no vulnerabilities introduced\n5. Performance — no obvious bottlenecks\n\nVERDICT: APPROVED or NEEDS_REVISION\nIf NEEDS_REVISION, list specific items to fix.`;
+        const finalPrompt = `100% FINAL REVIEW — Quality + Goal Alignment\n\nALL STEPS:\n${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}${goalPrompt}${code ? `\n\nFINAL CODE:\n${code.substring(0, 2000) + (code.length > 2000 ? "\n[... truncated, showing first 2000 chars of " + code.length + " total]" : "")}` : ""}\n\nSCORE EACH /10:\n1. Quality — code correctness, error handling\n2. Completeness — all steps done, no gaps\n3. Goal alignment — does the implementation serve "${goal || 'the stated task'}"?\n4. Security — no vulnerabilities introduced\n5. Performance — no obvious bottlenecks\n\nVERDICT: APPROVED or NEEDS_REVISION\nIf NEEDS_REVISION, list specific items to fix.`;
 
         lines.push("### 🧠 GPT First Judge");
         lines.push("");
