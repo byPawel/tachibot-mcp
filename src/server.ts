@@ -759,8 +759,8 @@ async function initializeServer() {
       safeAddTool(kimiDecomposeTool);   // Task decomposition (Kimi K2.5 Agent Swarm)
       safeAddTool(kimiLongContextTool); // Long-context analysis (Kimi K2.5 - 256K)
       safeAddTool(qwenReasonTool);      // Heavy reasoning (Qwen3-Max-Thinking >1T params)
-      safeAddTool(minimaxCodeTool);     // MiniMax M2.5 - SWE-Bench 80.2%, open source
-      safeAddTool(minimaxAgentTool);    // MiniMax M2.5 - agentic workflows, open source
+      safeAddTool(minimaxCodeTool);     // MiniMax M2.7 - SWE-Pro 56.22%, #1 AI Intelligence Index
+      safeAddTool(minimaxAgentTool);    // MiniMax M2.7 - agentic workflows, self-evolving
 
       console.error(`✅ Registered OpenRouter tools (Qwen, QwQ, Kimi x4, MiniMax)`);
 

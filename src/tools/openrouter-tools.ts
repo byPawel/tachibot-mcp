@@ -32,10 +32,10 @@ export enum OpenRouterModel {
   KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - agentic reasoning
   KIMI_K2_5 = "moonshotai/kimi-k2.5",                   // Multimodal, Agent Swarm
 
-  // MiniMax models - VERY CHEAP, best agentic, open source
-  MINIMAX_M2_5 = "minimax/minimax-m2.5",               // SWE-Bench 80.2%, 37% faster than M2.1
+  // MiniMax models - VERY CHEAP, #1 AI Intelligence Index
+  MINIMAX_M2_7 = "minimax/minimax-m2.7",               // 2300B/100B MoE, SWE-Pro 56.22%, Multi-SWE #1
+  MINIMAX_M2_5 = "minimax/minimax-m2.5",               // SWE-Bench 80.2% (legacy)
   MINIMAX_M2_1 = "minimax/minimax-m2.1",               // 230B/10B MoE - SWE 72.5% (legacy)
-  MINIMAX_M2 = "minimax/minimax-m2",                   // Fallback
 }
 
 // Fallback map for when providers hit quota limits
@@ -1051,12 +1051,12 @@ ${FORMAT_INSTRUCTION}`
 
 /**
  * MiniMax Code Tool
- * Single-pass code operations with MiniMax M2.5 (SWE-Bench 80.2%)
+ * Single-pass code operations with MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index)
  * Best for: atomic code tasks — one input, one output, no planning needed
  */
 export const minimaxCodeTool = {
   name: "minimax_code",
-  description: "Single-pass code operations with MiniMax M2.5 (SWE-Bench 80.2%). Put your REQUEST in the 'query' parameter. For multi-step tasks, use minimax_agent instead.",
+  description: "Single-pass code operations with MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index). Put your REQUEST in the 'query' parameter. For multi-step tasks, use minimax_agent instead.",
   parameters: z.object({
     query: z.string().describe("Your request or question (REQUIRED - put your main request here)"),
     task: z.enum(["generate", "fix", "review", "optimize", "debug", "refactor"])
@@ -1138,7 +1138,7 @@ ${FORMAT_INSTRUCTION}`;
     const temp = taskTemperatures[args.task || "review"] ?? 0.3;
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_5, temp, 4000),
+      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_7, temp, 4000),
       reportFn
     );
   }
@@ -1146,12 +1146,12 @@ ${FORMAT_INSTRUCTION}`;
 
 /**
  * MiniMax Agent Tool
- * Multi-step task decomposition and execution with MiniMax M2.5
+ * Multi-step task decomposition and execution with MiniMax M2.7
  * Best for: tasks requiring planning, analysis, research synthesis, decision-making
  */
 export const minimaxAgentTool = {
   name: "minimax_agent",
-  description: "Multi-step task decomposition and execution with MiniMax M2.5: plan, analyze, research, decide. Use when a task needs breakdown into steps before execution. For single-pass code tasks, use minimax_code instead. Put TASK in 'task' parameter.",
+  description: "Multi-step task decomposition and execution with MiniMax M2.7: plan, analyze, research, decide. Use when a task needs breakdown into steps before execution. For single-pass code tasks, use minimax_code instead. Put TASK in 'task' parameter.",
   parameters: z.object({
     task: z.string().describe("The task to execute (REQUIRED - describe what needs to be done)"),
     context: z.string().optional().describe("Additional context about the environment or constraints"),
@@ -1216,7 +1216,7 @@ ${FORMAT_INSTRUCTION}`
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_5, 0.3, 4000),
+      () => callOpenRouter(messages, OpenRouterModel.MINIMAX_M2_7, 0.3, 4000),
       reportFn
     );
   }
@@ -1250,7 +1250,7 @@ export function getAllOpenRouterTools() {
     kimiLongContextTool, // Kimi K2.5 - long-context analysis (256K)
     // NEW tools (Jan 2026)
     qwenReasonTool,      // Qwen3-Max-Thinking - heavy reasoning
-    minimaxCodeTool,     // MiniMax M2.5 - SWE tasks (80.2%, cheap, open source)
-    minimaxAgentTool,    // MiniMax M2.5 - agentic workflows (cheap, open source)
+    minimaxCodeTool,     // MiniMax M2.7 - SWE-Pro 56.22%, #1 AI Intelligence Index
+    minimaxAgentTool,    // MiniMax M2.7 - agentic workflows, self-evolving
   ];
 }
