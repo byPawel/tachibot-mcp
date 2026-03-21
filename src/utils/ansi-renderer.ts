@@ -566,13 +566,13 @@ export function stripMarkdown(md: string, options?: StripMarkdownOptions): strin
     .replace(/^#{1,6}\s+(.+)$/gm, boldHeaders ? '\x1b[1m$1\x1b[0m' : '$1')
     // Emoji section headers — e.g. "🔍 TYPE SAFETY ───" → soft teal bg, dark bold text
     .replace(/^(.{1,2})\s+([A-Z][A-Z\s&]+?)\s*─+$/gm,
-      boldHeaders ? '\x1b[106m\x1b[30m\x1b[1m $1 $2 \x1b[0m' : '$1 $2')
+      boldHeaders ? '\x1b[48;5;73m\x1b[30m\x1b[1m $1 $2 \x1b[0m' : '$1 $2')
     // Verdict lines — color-coded: green=pass, yellow=partial, red=fail
     .replace(/^(✅|🫠|💀|🟢|🟡|🔴)\s*(pass|partial|fail)\b(.*)$/gmi,
       (_match: string, emoji: string, status: string, rest: string) => {
         if (!boldHeaders) return `${emoji} ${status}${rest}`;
         const s = status.toLowerCase();
-        const bg = s === 'pass' ? '\x1b[102m' : s === 'partial' ? '\x1b[103m' : '\x1b[101m';
+        const bg = s === 'pass' ? '\x1b[48;5;151m' : s === 'partial' ? '\x1b[48;5;186m' : '\x1b[48;5;174m';
         return `${bg}\x1b[30m\x1b[1m ${emoji} ${status} \x1b[0m${rest}`;
       })
     // Horizontal rules
