@@ -14,6 +14,7 @@ import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
+import { readFilesIntoContext } from "../utils/file-reader.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 const __filename = fileURLToPath(import.meta.url);
@@ -150,9 +151,10 @@ export const grokReasonTool = {
       .optional()
       .describe("Reasoning approach (e.g., analytical, creative, systematic, first-principles)"),
     context: z.string().optional().describe("Additional context for the problem"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     useHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for complex tasks")
   }),
-  execute: async (args: { problem: string; approach?: string; context?: string; useHeavy?: boolean }, { log, reportProgress }: any) => {
+  execute: async (args: { problem: string; approach?: string; context?: string; files?: string[]; useHeavy?: boolean }, { log, reportProgress }: any) => {
     const { problem, approach = "first-principles", context, useHeavy } = args;
     const approachPrompts = {
       analytical: "Break down the problem systematically and analyze each component",
@@ -160,6 +162,10 @@ export const grokReasonTool = {
       systematic: "Follow a step-by-step logical process",
       "first-principles": "Break down to fundamental truths and build up from there"
     };
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
 
     const messages = [
       {
@@ -171,7 +177,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: problem
+        content: problem + fileContext
       }
     ];
 
@@ -202,9 +208,10 @@ export const grokCodeTool = {
       .describe("Code task (e.g., analyze, optimize, debug, review, refactor)"),
     code: z.string().describe("The actual source code to analyze (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     requirements: z.string().optional().describe("Specific requirements or focus areas")
   }),
-  execute: async (args: { task: string; code: string; language?: string; requirements?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { task: string; code: string; language?: string; files?: string[]; requirements?: string }, { log, reportProgress }: any) => {
     const { task, code, language, requirements } = args;
     const taskPrompts = {
       analyze: "Analyze this code for logic, structure, and potential issues",
@@ -213,6 +220,10 @@ export const grokCodeTool = {
       review: "Review this code for best practices and improvements",
       refactor: "Refactor this code for better maintainability and clarity"
     };
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
 
     const messages = [
       {
@@ -225,7 +236,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: `Code:\n\`\`\`${language || ''}\n${code}\n\`\`\``
+        content: `Code:\n\`\`\`${language || ''}\n${code}\n\`\`\`` + fileContext
       }
     ];
 
@@ -251,9 +262,10 @@ export const grokDebugTool = {
     issue: z.string().describe("Description of the issue or bug (REQUIRED - put your problem here)"),
     code: z.string().optional().describe("Relevant code that has the issue"),
     error: z.string().optional().describe("Error message or stack trace"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     context: z.string().optional().describe("Additional context about the environment or conditions")
   }),
-  execute: async (args: { issue: string; code?: string; error?: string; context?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { issue: string; code?: string; error?: string; files?: string[]; context?: string }, { log, reportProgress }: any) => {
     const { issue, code, error, context } = args;
     let prompt = `Debug this issue: ${issue}\n`;
 
@@ -269,6 +281,10 @@ export const grokDebugTool = {
       prompt += `\nContext: ${context}\n`;
     }
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -282,7 +298,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: prompt
+        content: prompt + fileContext
       }
     ];
 
