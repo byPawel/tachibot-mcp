@@ -29,7 +29,7 @@ End only. One line + reason.`;
 export const EMOJI_PALETTE = {
   // Section headers
   analysis: '🧠',
-  verdict: '🎯',
+  verdict: '👩‍⚖️',
   insight: '🔮',
   key: '🗝',
   judge: '⚖️',
