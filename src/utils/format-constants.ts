@@ -6,7 +6,7 @@
 export const FORMAT_INSTRUCTION = `
 OUTPUT RULES:
 • No **bold** or __underline__ (CLI shows raw asterisks).
-• Allowed: \`code\`, \`\`\`blocks\`\`\`, lists, headers, emojis.
+• Allowed: \`code\`, \`\`\`blocks\`\`\`, lists, headers, emojis, | tables |.
 • Lines under 80 chars. Paragraphs ≤4 lines.
 • Blank line between sections.
 
