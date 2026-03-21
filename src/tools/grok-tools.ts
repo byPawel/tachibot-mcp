@@ -325,10 +325,16 @@ export const grokArchitectTool = {
     constraints: z.string().optional().describe("Technical or business constraints to consider"),
     scale: z.string()
       .optional()
-      .describe("Expected scale (e.g., small, medium, large, enterprise)")
+      .describe("Expected scale (e.g., small, medium, large, enterprise)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
   }),
-  execute: async (args: { requirements: string; constraints?: string; scale?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { requirements: string; constraints?: string; scale?: string; files?: string[] }, { log, reportProgress }: any) => {
     const { requirements, constraints, scale } = args;
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -340,7 +346,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: requirements
+        content: requirements + fileContext
       }
     ];
 
@@ -366,10 +372,16 @@ export const grokBrainstormTool = {
     topic: z.string().describe("The topic to brainstorm about (REQUIRED - put your idea/topic here)"),
     constraints: z.string().optional().describe("Any constraints or requirements to consider"),
     numIdeas: z.number().optional().describe("Number of radical rebuilds to generate (default: 5)"),
-    forceHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for deeper creativity")
+    forceHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for deeper creativity"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
   }),
-  execute: async (args: { topic: string; constraints?: string; numIdeas?: number; forceHeavy?: boolean }, { log, reportProgress }: any) => {
+  execute: async (args: { topic: string; constraints?: string; numIdeas?: number; forceHeavy?: boolean; files?: string[] }, { log, reportProgress }: any) => {
     const { topic, constraints, numIdeas = 5, forceHeavy = false } = args;
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -395,7 +407,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: topic
+        content: topic + fileContext
       }
     ];
 
