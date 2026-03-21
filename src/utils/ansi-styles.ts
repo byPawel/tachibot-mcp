@@ -549,18 +549,19 @@ const fgMap: Record<string, string> = {
 
 // Unicode colored emoji for badges (ANSI-free, works everywhere)
 const MODEL_EMOJI: Record<string, string> = {
-  grok: '🟣',      // purple
-  gemini: '🔵',    // blue
-  openai: '🟢',    // green
-  perplexity: '🔷', // cyan diamond
-  kimi: '🟡',      // yellow
-  qwen: '🔴',      // red
-  focus: '⚪',
-  workflow: '⬜',
-  scout: '🔍',
+  grok: '🔮',
+  gemini: '🌀',
+  openai: '🧠',
+  perplexity: '🔭',
+  kimi: '🐉',
+  qwen: '🐉',
+  minimax: '🤖',
+  focus: '🎯',
+  workflow: '🌊',
+  scout: '🔎',
   verifier: '✅',
   challenger: '⚔️',
-  think: '💭',
+  think: '🫨',
 };
 
 /**
@@ -590,6 +591,17 @@ export function renderModelBadge(model: string, theme?: Theme): string {
   const label = badgeStyle.label || ` ${normalized} `;
 
   return `${bg}${fg}${ANSI.bold}${label}${ANSI.reset}`;
+}
+
+/**
+ * Render a summary badge with dimmed bg + dark text (pairs with model badge)
+ * e.g. model badge: [bright magenta] grok [reset] + summary: [dim gray] search query [reset]
+ */
+export function renderSummaryBadge(summary: string): string {
+  // Dimmed bg sits next to the bright model badge
+  const bg = '\x1b[48;5;238m';  // dark gray bg (ansi256 color 238)
+  const fg = '\x1b[97m';        // bright white text
+  return `${bg}${fg} ${summary} ${ANSI.reset}`;
 }
 
 /**

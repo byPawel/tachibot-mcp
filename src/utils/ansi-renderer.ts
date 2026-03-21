@@ -238,16 +238,11 @@ export function renderOutput(
       output += '\n' + simpleGradient(60) + '\n';
       break;
     case 'sparse': {
-      // Sparse mode: colored badge bar (model + summary) + stripped plain text
-      if (options.model) {
-        const badge = renderModelBadge(options.model);
-        if (options.summary) {
-          // Combined bar: model badge + summary on same bg
-          output = badge + renderSummaryBadge(options.summary, options.model) + '\n';
-        } else {
-          output = badge + '\n';
-        }
-      }
+      // Sparse mode: badge bar (model + summary) + bold headers + stripped text
+      const parts: string[] = [];
+      if (options.model) parts.push(renderModelBadge(options.model));
+      if (options.summary) parts.push(renderSummaryBadge(options.summary));
+      if (parts.length) output += parts.join('') + '\n';
       output += stripMarkdown(content, { boldHeaders: true });
       break;
     }
@@ -555,6 +550,7 @@ export interface StripMarkdownOptions {
 }
 
 export function stripMarkdown(md: string, options?: StripMarkdownOptions): string {
+  if (!md || !md.trim()) return '';
   const { boldHeaders = false } = options || {};
   // 1. Extract code blocks to placeholders (protect from stripping)
   const codeBlocks: string[] = [];

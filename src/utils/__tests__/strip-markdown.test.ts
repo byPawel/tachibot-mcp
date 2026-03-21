@@ -37,4 +37,9 @@ describe('stripMarkdown', () => {
     expect(stripMarkdown('---')).toBe('');
     expect(stripMarkdown('***')).toBe('');
   });
+
+  it('returns empty string for empty/whitespace input', () => {
+    expect(stripMarkdown('')).toBe('');
+    expect(stripMarkdown('   ')).toBe('');
+  });
 });

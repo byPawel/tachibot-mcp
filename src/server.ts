@@ -258,15 +258,16 @@ function safeAddTool(tool: MCPTool): void {
           }
         }
 
-        // Apply render mode (sparse = chalk badge + plain text, plain = stripped, etc.)
+        // Apply render mode (sparse = badge + bold headers + stripped, etc.)
         if (typeof result === 'string') {
           const model = inferModelFromTool(tool.name) || undefined;
-          let rendered = renderOutput(result, { model, summary: tool.name });
-          // Safety net: cap at 25K chars to prevent Claude Code's 30K truncation
-          const MAX_RESPONSE_CHARS = 25000;
-          if (rendered.length > MAX_RESPONSE_CHARS) {
-            rendered = truncateSmart(rendered, MAX_RESPONSE_CHARS);
+          // Truncate raw content BEFORE ANSI rendering — prevents mid-escape corruption
+          let raw = result;
+          const MAX_RAW_CHARS = 24000;
+          if (raw.length > MAX_RAW_CHARS) {
+            raw = truncateSmart(raw, MAX_RAW_CHARS);
           }
+          const rendered = renderOutput(raw, { model, summary: tool.name });
           return { type: "text" as const, text: rendered };
         }
         return result;
