@@ -5,6 +5,7 @@
  * Uses the theme system from ansi-styles.ts and ink-markdown-renderer.tsx.
  *
  * Configuration:
+ *   RENDER_OUTPUT=sparse   - ANSI badge header for model/tool name + raw markdown body (~1.01x tokens)
  *   RENDER_OUTPUT=markdown - Raw markdown, no processing (default, ~1x tokens)
  *   RENDER_OUTPUT=ink      - React Ink rendering with themes, gradients, tables (~12x tokens)
  *   RENDER_OUTPUT=ansi     - Legacy marked-terminal rendering
@@ -27,6 +28,7 @@ process.env.FORCE_COLOR = '3';
 import {
   getTheme,
   renderModelBadge,
+  renderSummaryBadge,
   toolResultHeader,
   dividers,
   type Theme,
@@ -105,11 +107,13 @@ function getGradientModelBadge(model: string): string {
 // TYPES
 // ============================================================================
 
-export type RenderMode = 'ansi' | 'markdown' | 'plain' | 'ink';
+export type RenderMode = 'ansi' | 'markdown' | 'plain' | 'ink' | 'sparse';
 
 export interface RenderOptions {
   /** Model name for badge (e.g., 'grok', 'gemini') */
   model?: string;
+  /** Summary text shown in badge bar (e.g., tool name or description) */
+  summary?: string;
   /** Force specific render mode (overrides env var) */
   mode?: RenderMode;
   /** Show divider after badge */
@@ -154,7 +158,7 @@ export function clearThemeCache(): void {
 export function getRenderMode(): RenderMode {
   if (!cachedRenderMode) {
     const mode = process.env.RENDER_OUTPUT?.toLowerCase();
-    if (mode === 'ink' || mode === 'plain' || mode === 'ansi') {
+    if (mode === 'ink' || mode === 'plain' || mode === 'ansi' || mode === 'sparse') {
       cachedRenderMode = mode;
     } else {
       cachedRenderMode = 'markdown'; // default - raw markdown (~1x tokens vs ink's ~12x)
@@ -233,6 +237,20 @@ export function renderOutput(
       output += renderAnsi(content);
       output += '\n' + simpleGradient(60) + '\n';
       break;
+    case 'sparse': {
+      // Sparse mode: colored badge bar (model + summary) + stripped plain text
+      if (options.model) {
+        const badge = renderModelBadge(options.model);
+        if (options.summary) {
+          // Combined bar: model badge + summary on same bg
+          output = badge + renderSummaryBadge(options.summary, options.model) + '\n';
+        } else {
+          output = badge + '\n';
+        }
+      }
+      output += stripMarkdown(content);
+      break;
+    }
     case 'plain':
       output += stripMarkdown(content);
       break;
@@ -524,14 +542,20 @@ function renderAnsi(md: string): string {
 // ============================================================================
 
 /**
- * Strip decorative markdown formatting but KEEP structural elements.
- * Keeps: # headers, - bullets, 1. numbered lists, > blockquotes, | tables, indentation
- * Strips: **bold**, *italic*, ~~strike~~, `inline code` backticks, [link](url), ![img](url), ``` fences
+ * Strip markdown formatting to clean readable plain text.
+ * Keeps: - bullets, 1. numbered lists, > blockquotes, | tables, indentation, code blocks
+ * Strips: # headers, **bold**, *italic*, ~~strike~~, `inline code`, [link](url), ![img](url), ``` fences, ---
  *
  * Code blocks are protected via placeholder extraction to avoid corrupting code content.
  * Underscore italic is skipped to avoid mangling snake_case identifiers.
  */
-export function stripMarkdown(md: string): string {
+export interface StripMarkdownOptions {
+  /** Convert ## headers to ANSI bold instead of stripping # prefix */
+  boldHeaders?: boolean;
+}
+
+export function stripMarkdown(md: string, options?: StripMarkdownOptions): string {
+  const { boldHeaders = false } = options || {};
   // 1. Extract code blocks to placeholders (protect from stripping)
   const codeBlocks: string[] = [];
   let text = md.replace(/```[\s\S]*?```/g, (match) => {
@@ -542,6 +566,10 @@ export function stripMarkdown(md: string): string {
 
   // 2. Strip decorative formatting on non-code text
   text = text
+    // Headers — strip # prefix, keep text (or bold if boldHeaders)
+    .replace(/^#{1,6}\s+(.+)$/gm, boldHeaders ? '\x1b[1m$1\x1b[0m' : '$1')
+    // Horizontal rules
+    .replace(/^[-*_]{3,}\s*$/gm, '')
     // Normalize * bullets to - before italic strip (prevents stray * on "* Security:")
     .replace(/^(\s{0,3})\*(\s+)/gm, '$1-$2')
     // Images before links (avoid ![...] conflict)
