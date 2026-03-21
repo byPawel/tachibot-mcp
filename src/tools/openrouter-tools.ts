@@ -938,9 +938,16 @@ Wrap your final output in <output> tags. Everything outside <output> is discarde
       reportFn
     );
 
-    // Strip reasoning leak — extract content between <output> tags if present
+    // Strip reasoning leak from Kimi K2.5 (dumps CoT into message.content)
+    // Strategy: try <output> tags first, then find first section header
     const outputMatch = raw.match(/<output>([\s\S]*?)<\/output>/);
-    return outputMatch ? outputMatch[1].trim() : raw;
+    if (outputMatch) return outputMatch[1].trim();
+
+    // Fallback: find the first OVERVIEW section header and extract from there
+    const sectionStart = raw.search(/^OVERVIEW\b/m);
+    if (sectionStart > 0) return raw.slice(sectionStart).trim();
+
+    return raw;
   }
 };
 
