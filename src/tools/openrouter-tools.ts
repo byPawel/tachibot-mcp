@@ -4,10 +4,71 @@
  */
 
 import { z } from "zod";
+import * as fs from "fs";
+import * as path from "path";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { getOpenRouterModelTimeout } from "../config/timeout-config.js";
+
+// ═══════════════════════════════════════════════════════════════════
+// FILE READING HELPER — Lets tools look at ACTUAL CODE, not summaries
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Read files from disk and format as context for LLM tools.
+ * Supports glob-like paths, line ranges (file.ts:100-200), and size limits.
+ * Returns formatted string with file headers and line numbers.
+ */
+function readFilesIntoContext(filePaths: string[], maxCharsPerFile = 8000): string {
+  const sections: string[] = [];
+
+  for (const rawPath of filePaths) {
+    try {
+      // Parse optional line range: file.ts:100-200
+      const rangeMatch = rawPath.match(/^(.+?):(\d+)-(\d+)$/);
+      const filePath = rangeMatch ? rangeMatch[1] : rawPath;
+      const startLine = rangeMatch ? parseInt(rangeMatch[2], 10) : undefined;
+      const endLine = rangeMatch ? parseInt(rangeMatch[3], 10) : undefined;
+
+      const resolved = path.isAbsolute(filePath)
+        ? filePath
+        : path.join(process.cwd(), filePath);
+
+      if (!fs.existsSync(resolved)) {
+        sections.push(`--- FILE: ${rawPath} ---\n[File not found: ${resolved}]\n`);
+        continue;
+      }
+
+      const stat = fs.statSync(resolved);
+      if (stat.isDirectory()) {
+        sections.push(`--- FILE: ${rawPath} ---\n[Is a directory, not a file]\n`);
+        continue;
+      }
+
+      let content = fs.readFileSync(resolved, "utf-8");
+      const totalLines = content.split("\n").length;
+
+      // Apply line range if specified
+      if (startLine !== undefined && endLine !== undefined) {
+        const lines = content.split("\n");
+        content = lines.slice(startLine - 1, endLine).join("\n");
+      }
+
+      // Truncate if too large
+      if (content.length > maxCharsPerFile) {
+        content = content.substring(0, maxCharsPerFile) + `\n\n[... truncated at ${maxCharsPerFile} chars, file has ${totalLines} lines total]`;
+      }
+
+      const rangeLabel = startLine ? `:${startLine}-${endLine}` : ` (${totalLines} lines)`;
+      sections.push(`--- FILE: ${rawPath}${rangeLabel ? rangeLabel : ""} ---\n${content}\n`);
+    } catch (err) {
+      sections.push(`--- FILE: ${rawPath} ---\n[Error reading: ${String(err)}]\n`);
+    }
+  }
+
+  return sections.join("\n");
+}
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env
@@ -166,6 +227,7 @@ export const qwenCoderTool = {
       .default("analyze")
       .describe("Code task type (default: analyze)"),
     code: z.string().optional().describe("Source code to work with (for review/optimize/debug/refactor/explain tasks)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
     useFree: z.boolean().optional().default(false).describe("Use free tier model instead of premium")
   }),
@@ -173,6 +235,7 @@ export const qwenCoderTool = {
     query: string;
     task?: string;
     code?: string;
+    files?: string[];
     language?: string;
     useFree?: boolean
   }, { log, reportProgress }: any) => {
@@ -702,7 +765,7 @@ ${FORMAT_INSTRUCTION}`;
 // kimi_decompose configuration
 const DECOMPOSE_TEMPERATURE = 0.3;
 const DECOMPOSE_MAX_TOKENS = 4000;
-const DECOMPOSE_TIMEOUT_MS = 240_000;
+const DECOMPOSE_TIMEOUT_MS = 360_000;
 
 /**
  * Kimi Decompose Tool
@@ -715,6 +778,7 @@ export const kimiDecomposeTool = {
   parameters: z.object({
     task: z.string().describe("The task to decompose (REQUIRED - describe the complex task)"),
     context: z.string().optional().describe("Additional context about the project, codebase, or constraints"),
+    files: z.array(z.string()).optional().describe("File paths to read and include as context. Supports line ranges: 'src/foo.ts:100-200'. Files are read server-side — model sees ACTUAL CODE, not summaries."),
     depth: z.coerce.number().int().min(1).max(5).optional().default(3)
       .describe("Maximum decomposition depth levels (1-5, default: 3)"),
     outputFormat: z.enum(["tree", "flat", "dependencies"]).optional().default("tree")
@@ -723,6 +787,7 @@ export const kimiDecomposeTool = {
   execute: async (args: {
     task: string;
     context?: string;
+    files?: string[];
     depth: number;
     outputFormat: "tree" | "flat" | "dependencies";
   }, { reportProgress }: { reportProgress?: (progress: { progress: number; total: number }) => Promise<void> }) => {
@@ -850,9 +915,17 @@ Rules:
 - Use box-drawing characters (├─ └─ ──>) only for tree and dependencies formats
 - Titles should be concise (under 50 chars)
 - Acceptance criteria must be measurable (test counts, behavioral checks, not vague "works correctly")
-- Constraints should be specific (library versions, platform limits, not generic "be careful")`;
+- Constraints should be specific (library versions, platform limits, not generic "be careful")
 
-    const userPrompt = `Task to decompose: ${args.task}${args.context ? `\n\nContext: ${args.context}` : ''}`;
+CRITICAL: Do NOT include your reasoning or thinking process in the response.
+Think silently. Output ONLY the formatted sections (OVERVIEW, STRUCTURE, etc.).
+Wrap your final output in <output> tags. Everything outside <output> is discarded.`;
+
+    // Read files if provided — model sees ACTUAL CODE
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+    const userPrompt = `Task to decompose: ${args.task}${args.context ? `\n\nContext: ${args.context}` : ''}${fileContext}`;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -860,10 +933,14 @@ Rules:
     ];
 
     const reportFn = reportProgress ?? (async () => {});
-    return await withHeartbeat(
+    const raw = await withHeartbeat(
       () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, DECOMPOSE_TEMPERATURE, DECOMPOSE_MAX_TOKENS, {}, DECOMPOSE_TIMEOUT_MS),
       reportFn
     );
+
+    // Strip reasoning leak — extract content between <output> tags if present
+    const outputMatch = raw.match(/<output>([\s\S]*?)<\/output>/);
+    return outputMatch ? outputMatch[1].trim() : raw;
   }
 };
 
