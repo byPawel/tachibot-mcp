@@ -20,32 +20,71 @@ LISTS: Hierarchy for structure:
 
 CODE: \`\`\`lang blocks. Minimal inline comments.
 
-SECTIONS: 🔍 HEADER ───
+SECTIONS: 🧠 HEADER ───
 Blank line after. 2-4 sections max.
 
-VERDICT: 🟢 pass 🟡 partial 🔴 fail
+VERDICT: ✅ pass 🫠 partial 💀 fail
 End only. One line + reason.`;
 
 export const EMOJI_PALETTE = {
   // Section headers
-  analysis: '🔍',
+  analysis: '🧠',
   verdict: '🎯',
-  insight: '💡',
-  key: '⚡',
+  insight: '🔮',
+  key: '🗝',
   judge: '⚖️',
-  fix: '🔧',
+  fix: '🪛',
   search: '🔎',
-  idea: '💭',
-  warning: '⚠️',
+  idea: '🫧',
+  warning: '🫠',
+  sources: '📎',
+  compare: '⚡',
+  code: '🦾',
+  brainstorm: '🌩️',
+  reason: '🧪',
+  plan: '📋',
+  debug: '🐛',
+  security: '🛡️',
+  performance: '🔥',
+  architecture: '🏗️',
+  consensus: '🤝',
+  conflict: '⚔️',
+  caveat: '📌',
+  thinking: '🫨',
+  decompose: '🪆',
+  workflow: '🌊',
+  summary: '🧾',
 
   // Status indicators
   good: '🟢',
   warn: '🟡',
   bad: '🔴',
   info: '🔵',
+  pass: '✅',
+  fail: '💀',
+  partial: '🫠',
+  running: '⏳',
+  blocked: '🚫',
+  hot: '🔥',
+  cold: '🧊',
+
+  // Models
+  grok: '🔮',
+  gemini: '🌀',
+  openai: '🧠',
+  perplexity: '🔭',
+  kimi: '🐉',
+  qwen: '🐉',
+  minimax: '🤖',
 
   // Actions
   arrow: '→',
   check: '✓',
   cross: '✗',
+  link: '🔗',
+  pin: '📍',
+  time: '⏱️',
+  cost: '💰',
+  sparkle: '✨',
+  nuke: '💥',
 };
