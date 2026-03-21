@@ -702,7 +702,6 @@ ${FORMAT_INSTRUCTION}`;
 // kimi_decompose configuration
 const DECOMPOSE_TEMPERATURE = 0.5;
 const DECOMPOSE_MAX_TOKENS = 6000;
-const DECOMPOSE_TIMEOUT_MS = 240_000;
 
 /**
  * Kimi Decompose Tool
@@ -802,6 +801,7 @@ Context:     [key context — tech stack, compliance, existing infra]
 Goals:       [specific outcomes with behavioral specs]
 Constraints: [technical limitations]
 Metrics:     [measurable acceptance criteria]
+Reference:   [existing patterns to follow, similar code, prior art]
 Bottlenecks: [task IDs that block the most downstream work]
 
 EXECUTION FLOW (text flowchart showing blocking relationships)
@@ -861,8 +861,7 @@ Rules:
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
       () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, DECOMPOSE_TEMPERATURE, DECOMPOSE_MAX_TOKENS),
-      reportFn,
-      DECOMPOSE_TIMEOUT_MS
+      reportFn
     );
   }
 };
