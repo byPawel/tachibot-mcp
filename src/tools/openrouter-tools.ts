@@ -4,71 +4,11 @@
  */
 
 import { z } from "zod";
-import * as fs from "fs";
-import * as path from "path";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { getOpenRouterModelTimeout } from "../config/timeout-config.js";
-
-// ═══════════════════════════════════════════════════════════════════
-// FILE READING HELPER — Lets tools look at ACTUAL CODE, not summaries
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Read files from disk and format as context for LLM tools.
- * Supports glob-like paths, line ranges (file.ts:100-200), and size limits.
- * Returns formatted string with file headers and line numbers.
- */
-function readFilesIntoContext(filePaths: string[], maxCharsPerFile = 8000): string {
-  const sections: string[] = [];
-
-  for (const rawPath of filePaths) {
-    try {
-      // Parse optional line range: file.ts:100-200
-      const rangeMatch = rawPath.match(/^(.+?):(\d+)-(\d+)$/);
-      const filePath = rangeMatch ? rangeMatch[1] : rawPath;
-      const startLine = rangeMatch ? parseInt(rangeMatch[2], 10) : undefined;
-      const endLine = rangeMatch ? parseInt(rangeMatch[3], 10) : undefined;
-
-      const resolved = path.isAbsolute(filePath)
-        ? filePath
-        : path.join(process.cwd(), filePath);
-
-      if (!fs.existsSync(resolved)) {
-        sections.push(`--- FILE: ${rawPath} ---\n[File not found: ${resolved}]\n`);
-        continue;
-      }
-
-      const stat = fs.statSync(resolved);
-      if (stat.isDirectory()) {
-        sections.push(`--- FILE: ${rawPath} ---\n[Is a directory, not a file]\n`);
-        continue;
-      }
-
-      let content = fs.readFileSync(resolved, "utf-8");
-      const totalLines = content.split("\n").length;
-
-      // Apply line range if specified
-      if (startLine !== undefined && endLine !== undefined) {
-        const lines = content.split("\n");
-        content = lines.slice(startLine - 1, endLine).join("\n");
-      }
-
-      // Truncate if too large
-      if (content.length > maxCharsPerFile) {
-        content = content.substring(0, maxCharsPerFile) + `\n\n[... truncated at ${maxCharsPerFile} chars, file has ${totalLines} lines total]`;
-      }
-
-      const rangeLabel = startLine ? `:${startLine}-${endLine}` : ` (${totalLines} lines)`;
-      sections.push(`--- FILE: ${rawPath}${rangeLabel ? rangeLabel : ""} ---\n${content}\n`);
-    } catch (err) {
-      sections.push(`--- FILE: ${rawPath} ---\n[Error reading: ${String(err)}]\n`);
-    }
-  }
-
-  return sections.join("\n");
-}
+import { readFilesIntoContext } from "../utils/file-reader.js";
 
 // NOTE: dotenv is loaded in server.ts before any imports
 // No need to reload here - just read from process.env
@@ -440,6 +380,7 @@ export const qwenAlgoTool = {
     problem: z.string().describe("The algorithm problem or code to analyze (REQUIRED - put your question/code here)"),
     constraints: z.string().optional().describe("Input constraints: N size, time limit, memory limit (e.g., 'N≤10^5, 1s, 256MB')"),
     context: z.string().optional().describe("Additional context: current performance, environment, language"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     focus: z.string()
       .optional()
       .default("general")
@@ -449,6 +390,7 @@ export const qwenAlgoTool = {
     problem: string;
     constraints?: string;
     context?: string;
+    files?: string[];
     focus?: string;
   }, { log, reportProgress }: any) => {
     // Enhanced focus prompts with deep expertise
@@ -580,6 +522,9 @@ Be aggressive about optimization but honest about tradeoffs. Constant factors an
 ${FORMAT_INSTRUCTION}`;
 
     // Build user prompt with all available context
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
     let userPrompt = args.problem;
     if (args.constraints || args.context) {
       const parts = [];
@@ -587,6 +532,7 @@ ${FORMAT_INSTRUCTION}`;
       if (args.context) parts.push(`CONTEXT: ${args.context}`);
       userPrompt = `${parts.join('\n')}\n\nPROBLEM/CODE:\n${args.problem}`;
     }
+    userPrompt += fileContext;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -659,6 +605,7 @@ export const kimiThinkingTool = {
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     approach: z.string()
       .optional()
       .default("step-by-step")
@@ -668,6 +615,7 @@ export const kimiThinkingTool = {
   execute: async (args: {
     problem: string;
     context?: string;
+    files?: string[];
     approach?: string;
     maxSteps?: number
   }, { log, reportProgress }: any) => {
@@ -677,6 +625,10 @@ export const kimiThinkingTool = {
       creative: "Think creatively and explore unconventional solutions and approaches",
       systematic: "Apply systematic reasoning with clear logic chains and verification"
     };
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
 
     const messages = [
       {
@@ -688,7 +640,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: args.problem
+        content: args.problem + fileContext
       }
     ];
 
@@ -764,7 +716,7 @@ ${FORMAT_INSTRUCTION}`;
 
 // kimi_decompose configuration
 const DECOMPOSE_TEMPERATURE = 0.3;
-const DECOMPOSE_MAX_TOKENS = 4000;
+const DECOMPOSE_MAX_TOKENS = 4500;
 const DECOMPOSE_TIMEOUT_MS = 360_000;
 
 /**
@@ -1022,6 +974,7 @@ export const qwenReasonTool = {
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     approach: z.string()
       .optional()
       .default("mathematical")
@@ -1030,6 +983,7 @@ export const qwenReasonTool = {
   execute: async (args: {
     problem: string;
     context?: string;
+    files?: string[];
     approach?: string;
   }, { log, reportProgress }: any) => {
     const approachPrompts: Record<string, string> = {
@@ -1038,6 +992,10 @@ export const qwenReasonTool = {
       proof: "Construct formal proofs with clear steps",
       "step-by-step": "Break down systematically showing all work"
     };
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
 
     const messages = [
       {
@@ -1050,7 +1008,7 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: args.problem
+        content: args.problem + fileContext
       }
     ];
 
@@ -1077,12 +1035,14 @@ export const minimaxCodeTool = {
       .default("review")
       .describe("Code task type (default: review)"),
     code: z.string().optional().describe("Source code to work with (for fix/review/optimize/debug/refactor tasks)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')")
   }),
   execute: async (args: {
     query: string;
     task?: string;
     code?: string;
+    files?: string[];
     language?: string;
   }, { log, reportProgress }: any) => {
     // Task-specific prompts with TECHNIQUE tags and differentiated PROCESS+OUTPUT
@@ -1134,9 +1094,12 @@ ${langInstruction}
 Code in fenced blocks. No conversational filler. Be precise. If ambiguous, state your assumption and proceed.
 ${FORMAT_INSTRUCTION}`;
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
     const userPrompt = args.code
-      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequest: ${args.query}`
-      : args.query;
+      ? `Code:\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`\n\nRequest: ${args.query}${fileContext}`
+      : args.query + fileContext;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -1163,6 +1126,7 @@ export const minimaxAgentTool = {
   parameters: z.object({
     task: z.string().describe("The task to execute (REQUIRED - describe what needs to be done)"),
     context: z.string().optional().describe("Additional context about the environment or constraints"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     steps: z.coerce.number().int().min(1).max(20).optional().default(5).describe("Maximum steps to plan (1-20, default: 5)"),
     outputFormat: z.enum(["plan", "execute", "both"]).optional().default("both")
       .describe("Output: 'plan' (just steps), 'execute' (just results), 'both' (plan + results)")
@@ -1170,6 +1134,7 @@ export const minimaxAgentTool = {
   execute: async (args: {
     task: string;
     context?: string;
+    files?: string[];
     steps?: number;
     outputFormat?: string;
   }, { log, reportProgress }: any) => {
