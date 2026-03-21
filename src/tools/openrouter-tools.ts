@@ -1179,7 +1179,9 @@ ${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: args.task
+        content: args.task + (args.files?.length
+          ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+          : "")
       }
     ];
 
