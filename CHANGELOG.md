@@ -5,6 +5,13 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.19.3] - 2026-03-21
+
+### Fixed
+- **Section header regex** — now matches mixed case + optional dashes (works across all providers, not just Gemini)
+- **Planner 5/1 bug** — `parsePlanSteps` now matches `### Task [T-ID]:` format (was only matching `### Step N:`)
+- **Planner mismatch warning** — surfaces parse failures instead of masking with `Math.max`
+
 ## [2.19.2] - 2026-03-21
 
 ### Added
