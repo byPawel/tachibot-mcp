@@ -1338,11 +1338,13 @@ function generateProgressBar(current: number, total: number): string {
 function parsePlanSteps(plan: string): { title: string; details: string }[] {
   const steps: { title: string; details: string }[] = [];
 
-  // Try numbered steps first (### Step 1: or 1. or Step 1:)
+  // Try structured step/task headers (### Step 1:, ### Task T1:, 1., Step 1:)
   const stepPatterns = [
     /###\s*Step\s*\d+[:\s]+([^\n]+)([\s\S]*?)(?=###\s*Step|\n##[^#]|$)/gi,
+    /###\s*Task\s*[^\n:]+:\s*([^\n]+)([\s\S]*?)(?=###\s*Task|\n##[^#]|$)/gi,
     /^\s*(\d+)\.\s*([^\n]+)([\s\S]*?)(?=^\s*\d+\.|$)/gm,
     /^Step\s*\d+[:\s]+([^\n]+)([\s\S]*?)(?=^Step\s*\d+|$)/gim,
+    /^Task\s*[^\n:]+:\s*([^\n]+)([\s\S]*?)(?=^Task\s*\S+|$)/gim,
   ];
 
   for (const pattern of stepPatterns) {
