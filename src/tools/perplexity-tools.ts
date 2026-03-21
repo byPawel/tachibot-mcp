@@ -9,6 +9,7 @@ import { getPerplexityApiKey, hasPerplexityApiKey } from "../utils/api-keys.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
+import { readFilesIntoContext } from "../utils/file-reader.js";
 
 // Perplexity API configuration
 const PERPLEXITY_API_URL = "https://api.perplexity.ai";
@@ -106,6 +107,7 @@ export const perplexityAskTool = {
   description: "Web search. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("The search query or question (REQUIRED - put your question here)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     searchDomain: z.enum(["general", "academic", "news", "social"])
       .optional()
       .describe("Search domain - must be one of: general, academic, news, social"),
@@ -113,7 +115,7 @@ export const perplexityAskTool = {
       .optional()
       .describe("How recent the results should be - must be one of: hour, day, week, month, year")
   }),
-  execute: async (args: { query: string; searchDomain?: string; searchRecency?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { query: string; files?: string[]; searchDomain?: string; searchRecency?: string }, { log, reportProgress }: any) => {
     // Get current date for accurate recency context
     const now = new Date();
     const currentDate = now.toLocaleDateString('en-US', {
@@ -123,6 +125,10 @@ export const perplexityAskTool = {
       day: 'numeric'
     });
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -130,7 +136,7 @@ export const perplexityAskTool = {
       },
       {
         role: "user",
-        content: args.query
+        content: args.query + fileContext
       }
     ];
 
@@ -202,11 +208,12 @@ export const perplexityReasonTool = {
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     approach: z.string()
       .optional()
       .describe("Reasoning approach (e.g., analytical, creative, systematic, comparative)")
   }),
-  execute: async (args: { problem: string; context?: string; approach?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { problem: string; context?: string; files?: string[]; approach?: string }, { log, reportProgress }: any) => {
     const { problem, context, approach = "analytical" } = args;
     const reportFn = reportProgress ?? (async () => {});
 
@@ -226,6 +233,10 @@ export const perplexityReasonTool = {
       comparative: "Compare different approaches and evaluate trade-offs"
     };
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const messages = [
       {
         role: "system",
@@ -234,10 +245,10 @@ ${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
-        content: problem
+        content: problem + fileContext
       }
     ];
-    
+
     const result = await withHeartbeat(
       () => callPerplexity(messages, PerplexityModel.SONAR_REASONING_PRO),
       reportFn

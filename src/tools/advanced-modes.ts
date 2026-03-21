@@ -5,6 +5,7 @@ import { Architect } from "../modes/architect.js";
 import { CodeReviewer } from "../modes/code-reviewer.js";
 import { DocumentationWriter } from "../modes/documentation-writer.js";
 import { TestArchitect } from "../modes/test-architect.js";
+import { readFilesIntoContext } from "../utils/file-reader.js";
 // Workflow tools removed - using workflow-runner.ts instead
 
 const auditor = new Auditor();
@@ -20,20 +21,25 @@ export const auditorTool = {
   description: "Evidence-based audit. Put the CONTEXT in the 'context' parameter.",
   parameters: z.object({
     context: z.string().describe("What to audit (REQUIRED - put your audit request here)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     evidenceRequired: z.boolean().optional().describe("Require evidence for claims")
   }),
   execute: async (args: any, { log }: any) => {
     log.info("Starting audit");
-    
-    const result = await auditor.audit(args.context, {
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    const result = await auditor.audit(args.context + fileContext, {
       evidenceRequired: args.evidenceRequired
     });
-    
+
     log.info("Audit complete", {
       verified: result.verificationStatus.verified,
       disputed: result.verificationStatus.disputed
     });
-    
+
     return result.synthesis;
   }
 };
@@ -44,6 +50,7 @@ export const commitGuardianTool = {
   description: "Pre-commit validation. Put the CONTEXT in the 'context' parameter.",
   parameters: z.object({
     context: z.string().describe("Code changes to validate (REQUIRED - put your diff/changes here)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     strict: z.boolean().optional().describe("Use strict validation rules"),
     checkSecurity: z.boolean().optional().describe("Check for security issues"),
     checkQuality: z.boolean().optional().describe("Check code quality"),
@@ -51,20 +58,24 @@ export const commitGuardianTool = {
   }),
   execute: async (args: any, { log }: any) => {
     log.info("Validating commit");
-    
-    const result = await commitGuardian.validate(args.context, {
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    const result = await commitGuardian.validate(args.context + fileContext, {
       strict: args.strict,
       checkSecurity: args.checkSecurity,
       checkQuality: args.checkQuality,
       checkTests: args.checkTests
     });
-    
+
     log.info("Validation complete", {
       passed: result.passed,
       score: result.score,
       blockers: result.blockers.length
     });
-    
+
     return result.summary;
   }
 };
@@ -76,6 +87,7 @@ export const architectTool = {
   parameters: z.object({
     query: z.string().describe("What to analyze in the codebase (REQUIRED - put your question here)"),
     path: z.string().optional().describe("Path to the codebase to analyze"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     depth: z.enum(["shallow", "normal", "deep"])
       .optional()
       .describe("Analysis depth - must be one of: shallow, normal, deep"),
@@ -86,20 +98,24 @@ export const architectTool = {
       depth: args.depth || "normal",
       path: args.path
     });
-    
-    const result = await architect.analyze(args.query, {
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    const result = await architect.analyze(args.query + fileContext, {
       path: args.path,
       depth: args.depth,
       focusAreas: args.focusAreas
     });
-    
+
     log.info("Architecture analysis complete", {
       hotspots: result.hotspots.length,
       recommendations: result.recommendations.length,
       tokensUsed: result.tokensUsed,
       cost: result.cost
     });
-    
+
     return result.synthesis;
   }
 };
@@ -113,6 +129,7 @@ export const codeReviewerTool = {
   parameters: z.object({
     code: z.string().describe("The actual source code to review (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     focusAreas: z.array(z.enum(['security', 'performance', 'readability', 'bugs', 'best-practices']))
       .optional()
       .describe("Focus areas - array of: security, performance, readability, bugs, best-practices"),
@@ -122,24 +139,28 @@ export const codeReviewerTool = {
     model: z.string().optional().describe("Model to use for review")
   }),
   execute: async (args: any, { log }: any) => {
-    log.info("Starting code review", { 
+    log.info("Starting code review", {
       language: args.language || 'auto-detect',
       focusAreas: args.focusAreas || 'all'
     });
-    
-    const result = await codeReviewer.review(args.code, {
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    const result = await codeReviewer.review(args.code + fileContext, {
       language: args.language,
       focusAreas: args.focusAreas,
       severity: args.severity,
       model: args.model
     });
-    
+
     log.info("Code review complete", {
       issuesFound: result.issues.length,
       suggestions: result.suggestions.length,
       maintainabilityScore: result.metrics.maintainabilityScore
     });
-    
+
     return result.synthesis;
   }
 };
@@ -150,6 +171,7 @@ export const documentationWriterTool = {
   description: "Documentation generation. Put the CODE in the 'code' parameter.",
   parameters: z.object({
     code: z.string().describe("The source code to document (REQUIRED - put your code here)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     style: z.enum(['narrative', 'technical', 'beginner-friendly', 'api-reference'])
       .optional()
       .describe("Documentation style - must be one of: narrative, technical, beginner-friendly, api-reference"),
@@ -164,21 +186,25 @@ export const documentationWriterTool = {
       style: args.style || 'narrative',
       format: args.format || 'markdown'
     });
-    
-    const result = await documentationWriter.generateDocs(args.code, {
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    const result = await documentationWriter.generateDocs(args.code + fileContext, {
       style: args.style,
       includeExamples: args.includeExamples,
       generateToc: args.generateToc,
       format: args.format
     });
-    
+
     log.info("Documentation generation complete", {
       readmeLength: result.readme.split('\n').length,
       apiDocs: result.apiDocs.length,
       inlineComments: result.inlineComments.length,
       hasNarrativeDoc: !!result.narrativeDoc
     });
-    
+
     return result.synthesis;
   }
 };
@@ -189,6 +215,7 @@ export const testArchitectTool = {
   description: "Test suite design. Put the CODE in the 'code' parameter.",
   parameters: z.object({
     code: z.string().describe("The source code to create tests for (REQUIRED - put your code here)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     testFramework: z.enum(['jest', 'mocha', 'vitest', 'cypress', 'playwright'])
       .optional()
       .describe("Test framework - must be one of: jest, mocha, vitest, cypress, playwright"),
@@ -206,14 +233,18 @@ export const testArchitectTool = {
       testTypes: args.testTypes || ['unit', 'integration', 'e2e'],
       coverage: args.coverage || 'thorough'
     });
-    
-    const result = await testArchitect.architectTests(args.code, {
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    const result = await testArchitect.architectTests(args.code + fileContext, {
       testFramework: args.testFramework,
       testTypes: args.testTypes,
       coverage: args.coverage,
       generateMocks: args.generateMocks
     });
-    
+
     log.info("Test architecture complete", {
       totalTests: result.testSuite.totalTests,
       testFiles: result.testFiles.length,
@@ -221,7 +252,7 @@ export const testArchitectTool = {
       estimatedCoverage: result.testSuite.estimatedCoverage,
       edgeCases: result.edgeCases.length
     });
-    
+
     return result.synthesis;
   }
 };
