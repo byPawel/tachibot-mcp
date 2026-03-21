@@ -12,6 +12,7 @@ import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { getTimeoutConfig } from "../config/timeout-config.js";
+import { readFilesIntoContext } from "../utils/file-reader.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 // NOTE: dotenv is loaded in server.ts before any imports
@@ -278,9 +279,10 @@ export const geminiAnalyzeCodeTool = {
   parameters: z.object({
     code: z.string().describe("The actual source code to analyze (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     focus: z.string().optional().default("general").describe("Analysis focus (e.g., quality, security, performance, bugs, general)")
   }),
-  execute: async (args: { code: string; language?: string; focus?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { code: string; language?: string; files?: string[]; focus?: string }, { log, reportProgress }: any) => {
     const focusPrompts: Record<string, string> = {
       quality: "Focus on code quality, readability, and best practices",
       security: "Focus on security vulnerabilities and potential exploits",
@@ -294,11 +296,15 @@ export const geminiAnalyzeCodeTool = {
 ${focusText}.
 ${FORMAT_INSTRUCTION}`;
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     // Skip validation - code analysis naturally contains patterns that trigger false positives
     const reportFn = reportProgress ?? (async () => {});
     const result = await withHeartbeat(
       () => callGemini(
-        `Analyze this code:\n\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\``,
+        `Analyze this code:\n\n\`\`\`${args.language || ''}\n${args.code}\n\`\`\`${fileContext}`,
         GEMINI_MODELS.GEMINI_3_PRO,
         systemPrompt,
         0.3,
@@ -319,12 +325,13 @@ export const geminiAnalyzeTextTool = {
   description: "Rhetorical analysis: dissect arguments for bias, logical fallacies, and persuasion tactics. Use for evaluating claims, detecting manipulation, or understanding argument structure. Put the TEXT in the 'text' parameter.",
   parameters: z.object({
     text: z.string().describe("The text to analyze (REQUIRED - put your text here)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
     type: z.string()
       .optional()
       .default("rhetoric")
       .describe("Analysis type: rhetoric (bias/fallacies/persuasion), sentiment, summary, entities, key-points")
   }),
-  execute: async (args: { text: string; type?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { text: string; files?: string[]; type?: string }, { log, reportProgress }: any) => {
     const analysisPrompts: Record<string, string> = {
       rhetoric: `TECHNIQUE [systematic_analysis]: Break down into components, examine relationships and dependencies, identify patterns, evaluate strengths/weaknesses.
 TECHNIQUE [alternative_perspectives]: Analyze from 5 angles: naive reader, skeptical scientist, persuasion expert, logician, affected stakeholder.
@@ -357,10 +364,14 @@ ${analysisText}
 No preamble. Structured output only.
 ${FORMAT_INSTRUCTION}`;
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const reportFn = reportProgress ?? (async () => {});
     const result = await withHeartbeat(
       () => callGemini(
-        `Analyze this text:\n\n${args.text}`,
+        `Analyze this text:\n\n${args.text}${fileContext}`,
         GEMINI_MODELS.GEMINI_3_PRO,
         systemPrompt,
         0.3,
