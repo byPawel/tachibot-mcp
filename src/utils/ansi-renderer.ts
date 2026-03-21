@@ -598,7 +598,44 @@ export function stripMarkdown(md: string, options?: StripMarkdownOptions): strin
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-  // 3. Restore code blocks
+  // 3. Format markdown tables into aligned ASCII tables
+  text = text.replace(
+    /(?:^\|.+\|$\n?){2,}/gm,
+    (tableBlock: string) => {
+      const rows = tableBlock.trim().split('\n')
+        .filter(r => !/^\|[\s:|-]+\|$/.test(r)); // strip separator row (|:---|:---|)
+      if (rows.length === 0) return tableBlock;
+
+      // Parse cells
+      const parsed = rows.map(r =>
+        r.split('|').slice(1, -1).map(c => c.trim())
+      );
+
+      // Calculate column widths
+      const colCount = Math.max(...parsed.map(r => r.length));
+      const widths: number[] = Array(colCount).fill(0);
+      for (const row of parsed) {
+        for (let i = 0; i < row.length; i++) {
+          widths[i] = Math.max(widths[i], row[i].length);
+        }
+      }
+
+      // Build aligned table
+      const divider = '┼' + widths.map(w => '─'.repeat(w + 2)).join('┼') + '┼';
+      const formatRow = (cells: string[]) =>
+        '│' + cells.map((c, i) => ` ${c.padEnd(widths[i])} `).join('│') + '│';
+
+      const lines: string[] = [];
+      lines.push(formatRow(parsed[0])); // header
+      lines.push(divider);
+      for (let i = 1; i < parsed.length; i++) {
+        lines.push(formatRow(parsed[i]));
+      }
+      return lines.join('\n');
+    }
+  );
+
+  // 4. Restore code blocks
   text = text.replace(/@@CODE(\d+)@@/g, (_, n) => codeBlocks[+n]);
 
   return text;
