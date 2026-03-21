@@ -1472,7 +1472,11 @@ Evidence params (unblind the checkpoints):
 
     // Parse plan into steps
     const steps = parsePlanSteps(plan);
-    const totalSteps = Math.max(steps.length, completed.length); // handle completed exceeding parsed steps
+    const totalSteps = steps.length;
+    if (completed.length > totalSteps) {
+      lines.push(`⚠️ Plan parse mismatch: ${completed.length} steps completed but only ${totalSteps} parsed. Plan format may have degraded.`);
+      lines.push("");
+    }
 
     if (mode === "start") {
       // ═══════════════════════════════════════════════════════════════
