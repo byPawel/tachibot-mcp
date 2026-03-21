@@ -567,8 +567,8 @@ export function stripMarkdown(md: string, options?: StripMarkdownOptions): strin
   text = text
     // Markdown headers — strip # prefix (or bold if boldHeaders)
     .replace(/^#{1,6}\s+(.+)$/gm, boldHeaders ? '\x1b[1m$1\x1b[0m' : '$1')
-    // Emoji section headers — e.g. "🧠 TYPE SAFETY ───" → rotating pastel bg, dark bold text
-    .replace(/^(.{1,2})\s+([A-Z][A-Z\s&]+?)\s*─+$/gm,
+    // Emoji section headers — e.g. "🧠 TYPE SAFETY ───" or "🧠 Key Activities" → rotating pastel bg
+    .replace(/^(.{1,2})\s+([A-Z][\w\s&,()/-]{2,50}?)\s*─*$/gm,
       (_match: string, emoji: string, header: string) => {
         if (!boldHeaders) return `${emoji} ${header}`;
         const pastels = [146, 182, 152, 187, 116, 180]; // lavender, mauve, powder blue, sand, mint, peach
