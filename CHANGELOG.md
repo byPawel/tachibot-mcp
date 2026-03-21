@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.17.2] - 2026-03-21
 
 ### Added
-- **`files` parameter on 8 more tools** — grok_architect, grok_brainstorm, openai_explain, openai_search, kimi_code, kimi_long_context, gemini_judge, gemini_brainstorm (23/37 tools now support `files`)
+- **`files` parameter on 7 more tools** — grok_architect, grok_brainstorm, openai_explain, kimi_code, kimi_long_context, gemini_judge, gemini_brainstorm (22/37 tools now support `files`)
 - **Directory expansion in file reader** — pass `src/tools/` to read all code files in a directory (non-recursive, capped at 20 files)
 - **Smart char budget** — multi-file reads distribute token budget across files to prevent context overflow
 
