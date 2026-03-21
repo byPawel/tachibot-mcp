@@ -699,6 +699,11 @@ ${FORMAT_INSTRUCTION}`;
   }
 };
 
+// kimi_decompose configuration
+const DECOMPOSE_TEMPERATURE = 0.5;
+const DECOMPOSE_MAX_TOKENS = 6000;
+const DECOMPOSE_TIMEOUT_MS = 240_000;
+
 /**
  * Kimi Decompose Tool
  * Structured task decomposition using Kimi K2.5's Agent Swarm reasoning
@@ -718,62 +723,133 @@ export const kimiDecomposeTool = {
   execute: async (args: {
     task: string;
     context?: string;
-    depth?: number;
-    outputFormat?: string;
-  }, { log, reportProgress }: any) => {
+    depth: number;
+    outputFormat: "tree" | "flat" | "dependencies";
+  }, { reportProgress }: { reportProgress?: (progress: { progress: number; total: number }) => Promise<void> }) => {
     const formatInstructions: Record<string, string> = {
-      tree: `Output as indented tree. Use 2-space indent per level:
+      tree: `Output in FOUR sections. Follow this format EXACTLY:
 
+OVERVIEW
+Task:        [main task title]
+Context:     [key context from user input — tech stack, compliance, existing infra]
+Goals:       [specific outcomes, behavioral specs, fail modes]
+Constraints: [technical limitations, library restrictions, platform limits]
+Metrics:     [measurable acceptance criteria — test counts, perf targets, behavioral checks]
+Reference:   [existing patterns to follow, similar code, prior art]
+
+STRUCTURE (IDs and titles only — scannable at a glance)
 T1: Task title
-  T1.1: Subtask title
-    T1.1.1: Sub-subtask
-  T1.2: Subtask title`,
-      flat: `Output as flat numbered list:
+├─ T1.1: Subtask title ||
+├─ T1.2: Subtask title
+│  └─ T1.2.1: Sub-subtask
+└─ T1.3: Subtask title ||
+T2: Task title (after T1)
+└─ T2.1: Subtask title
 
-T1: Title  [deps: none]  [complexity: Medium]
-T1.1: Title  [deps: T1]  [complexity: Low]
-T2: Title  [deps: T1]  [complexity: High]`,
-      dependencies: `Output in two sections:
+Mark parallel tasks with || suffix. Show deps in parentheses.
 
-Section 1 - DEPENDENCY GRAPH: Show blocking flow
-  T1 ──► T2 ──► T4
-  T1 ──► T3 ──┘
+DETAILS (one block per task, reference IDs from STRUCTURE)
+[T1] Complexity: Med | Parallel: no | Deps: none
+     Goal: what this subtask achieves specifically
+     Constraints: relevant limitations for THIS subtask
+     Done when: measurable acceptance criteria
 
-Section 2 - TASKS: One block per task, indentation for subtasks:
+[T1.1] Complexity: Low | Parallel: yes | Deps: none
+       Goal: specific outcome
+       Done when: measurable criteria
 
-  T1: Title
-  ├─ Deps: none
-  ├─ Parallel: yes
-  ├─ Complexity: Medium
-  └─ Done when: acceptance criteria here
-    T1.1: Subtask title
-    ├─ Deps: none
-    └─ Done when: criteria`
+RISKS
+- [risk description] > Mitigation: [how to handle]
+- [risk description] > Mitigation: [how to handle]`,
+
+      flat: `Output in THREE sections. Follow this format EXACTLY:
+
+OVERVIEW
+Task:        [main task title]
+Context:     [key context — tech stack, compliance, existing infra]
+Goals:       [specific outcomes with behavioral specs]
+Constraints: [technical limitations]
+Metrics:     [measurable acceptance criteria]
+Reference:   [existing patterns to follow]
+
+TASKS (numbered list, one task per block)
+1. [T1] Task title
+   Goal: what this achieves
+   Deps: none | Parallel: no | Complexity: Med
+   Constraints: relevant limitations
+   Done when: measurable acceptance criteria
+
+2. [T1.1] Subtask title
+   Goal: what this achieves
+   Deps: T1 | Parallel: yes | Complexity: Low
+   Done when: measurable criteria
+
+3. [T2] Task title
+   Goal: what this achieves
+   Deps: T1 | Parallel: no | Complexity: High
+   Done when: measurable criteria
+
+Do NOT use box-drawing or tree characters. Plain numbered list.
+
+RISKS
+- [risk] > Mitigation: [approach]`,
+
+      dependencies: `Output in FOUR sections. Follow this format EXACTLY:
+
+OVERVIEW
+Task:        [main task title]
+Context:     [key context — tech stack, compliance, existing infra]
+Goals:       [specific outcomes with behavioral specs]
+Constraints: [technical limitations]
+Metrics:     [measurable acceptance criteria]
+Bottlenecks: [task IDs that block the most downstream work]
+
+EXECUTION FLOW (text flowchart showing blocking relationships)
+T1.1 ──> T1 ──> T2 ──> T4
+T1.2 ──┘       T3 ──┘
+
+TASK REQUIREMENTS (one block per task)
+[T1] Task title
+     Goal: what this achieves
+     Blocked by: none | Blocks: T2
+     Parallel: no | Complexity: Med
+     Constraints: relevant limitations
+     Done when: measurable acceptance criteria
+
+[T1.1] Subtask title
+       Goal: what this achieves
+       Blocked by: none | Blocks: T1
+       Parallel: yes | Complexity: Low
+       Done when: measurable criteria
+
+RISKS
+- [risk] > Mitigation: [approach]`
     };
 
     const systemPrompt = `You are Kimi K2.5, expert at structured task decomposition using Agent Swarm reasoning.
 
-Decompose the given task into subtasks following these rules:
-1. Each subtask gets a unique ID (T1, T1.1, T1.2, T2)
-2. Identify dependencies between subtasks
-3. Mark which subtasks can run in parallel
-4. Each subtask must have clear acceptance criteria
-5. Decompose to ${args.depth || 3} levels of depth maximum
+Your job is to produce SMART decompositions — not mechanical ID/deps lists, but context-aware plans that a developer can act on immediately.
 
-${formatInstructions[args.outputFormat || "tree"]}
+For every decomposition:
+1. Infer context, constraints, and risks even if the user didn't state them explicitly
+2. Each subtask gets a unique ID (T1, T1.1, T1.2, T2)
+3. Identify dependencies between subtasks
+4. Mark which subtasks can run in parallel
+5. Each subtask must have a specific GOAL (what it achieves) and measurable acceptance criteria
+6. Surface risks and mitigations — what could go wrong?
+7. Reference existing patterns when the context mentions them
+8. Decompose to ${args.depth ?? 3} levels of depth maximum
 
-For each subtask provide:
-- ID: Unique identifier
-- Title: Brief description
-- Dependencies: IDs that must complete first (or "none")
-- Parallel: yes/no
-- Acceptance Criteria: How to know it is done
-- Complexity: Low / Medium / High
+${formatInstructions[args.outputFormat ?? "tree"]}
 
-Use box-drawing characters (├─ └─ ──►) for visual structure.
-No bold (**) or italic (*). Use indentation and tree chars for hierarchy.
-
-${FORMAT_INSTRUCTION}`;
+Rules:
+- No bold (**) or italic (*) — output is for a CLI terminal
+- Keep lines under 80 characters
+- Blank line between sections
+- Use box-drawing characters (├─ └─ ──>) only for tree and dependencies formats
+- Titles should be concise (under 50 chars)
+- Acceptance criteria must be measurable (test counts, behavioral checks, not vague "works correctly")
+- Constraints should be specific (library versions, platform limits, not generic "be careful")`;
 
     const userPrompt = `Task to decompose: ${args.task}${args.context ? `\n\nContext: ${args.context}` : ''}`;
 
@@ -784,9 +860,9 @@ ${FORMAT_INSTRUCTION}`;
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.5, 6000),
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, DECOMPOSE_TEMPERATURE, DECOMPOSE_MAX_TOKENS),
       reportFn,
-      240000
+      DECOMPOSE_TIMEOUT_MS
     );
   }
 };
