@@ -564,9 +564,12 @@ export function stripMarkdown(md: string, options?: StripMarkdownOptions): strin
   text = text
     // Markdown headers — strip # prefix (or bold if boldHeaders)
     .replace(/^#{1,6}\s+(.+)$/gm, boldHeaders ? '\x1b[1m$1\x1b[0m' : '$1')
-    // Emoji section headers — e.g. "🔍 TYPE SAFETY ───" → charcoal bg badge with emoji
+    // Emoji section headers — e.g. "🔍 TYPE SAFETY ───" → colored bg, dark bold text
     .replace(/^(.{1,2})\s+([A-Z][A-Z\s&]+?)\s*─+$/gm,
-      boldHeaders ? '\x1b[48;5;236m\x1b[97m\x1b[1m $1 $2 \x1b[0m' : '$1 $2')
+      boldHeaders ? '\x1b[48;5;240m\x1b[30m\x1b[1m $1 $2 \x1b[0m' : '$1 $2')
+    // Verdict lines — e.g. "🫠 partial - reason" or "✅ pass - reason" → colored bg badge
+    .replace(/^(✅|🫠|💀|🟢|🟡|🔴)\s*(pass|partial|fail)\b(.*)$/gmi,
+      boldHeaders ? '\x1b[48;5;236m\x1b[97m\x1b[1m $1 $2 \x1b[0m$3' : '$1 $2$3')
     // Horizontal rules
     .replace(/^[-*_]{3,}\s*$/gm, '')
     // Normalize * bullets to - before italic strip (prevents stray * on "* Security:")
