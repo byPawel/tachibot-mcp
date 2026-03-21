@@ -232,9 +232,10 @@ export const geminiBrainstormTool = {
   parameters: z.object({
     prompt: z.string().describe("The ideas or topic to organize and refine (REQUIRED - put raw ideas or topic here)"),
     claudeThoughts: z.string().optional().describe("Claude's initial thoughts or raw ideas to cluster and refine"),
-    maxClusters: z.number().optional().default(5).describe("Number of idea clusters to create (default: 5)")
+    maxClusters: z.number().optional().default(5).describe("Number of idea clusters to create (default: 5)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
-  execute: async (args: { prompt: string; claudeThoughts?: string; maxClusters?: number }, { log, reportProgress }: any) => {
+  execute: async (args: { prompt: string; claudeThoughts?: string; maxClusters?: number; files?: string[] }, { log, reportProgress }: any) => {
     const systemPrompt = `Convergent synthesis engine. Output consumed by automated toolchain.
 
 TASK: Cluster and refine ideas into ${args.maxClusters || 5} prioritized groups.
@@ -259,9 +260,13 @@ Final: Which cluster has highest expected value and why. State the meta-pattern.
 No preamble. Structured output only.
 ${FORMAT_INSTRUCTION}`;
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const reportFn = reportProgress ?? (async () => {});
     const response = await withHeartbeat(
-      () => callGemini(args.prompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7, 'llm-orchestration'),
+      () => callGemini(args.prompt + fileContext, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.7, 'llm-orchestration'),
       reportFn
     );
 
@@ -502,7 +507,8 @@ export const geminiJudgeTool = {
     mode: z.enum(["synthesize", "evaluate", "rank", "resolve"])
       .optional()
       .default("synthesize")
-      .describe("Judge mode: synthesize (merge best), evaluate (score each), rank (order by quality), resolve (settle conflicts)")
+      .describe("Judge mode: synthesize (merge best), evaluate (score each), rank (order by quality), resolve (settle conflicts)"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
   }),
   execute: async (args: {
     perspectives?: string;
@@ -510,6 +516,7 @@ export const geminiJudgeTool = {
     text?: string;
     question?: string;
     mode?: string;
+    files?: string[];
   }, { log, reportProgress }: any) => {
     // Resolve perspectives from fallback params (AI clients sometimes use wrong param name)
     const perspectives = args.perspectives || args.query || args.text;
@@ -578,9 +585,13 @@ ${FORMAT_INSTRUCTION}`;
       ? `QUESTION: ${args.question}\n\nPERSPECTIVES TO JUDGE:\n${args.perspectives}`
       : args.perspectives;
 
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
     const reportFn = reportProgress ?? (async () => {});
     const result = await withHeartbeat(
-      () => callGemini(userPrompt, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.3, 'llm-orchestration'),
+      () => callGemini(userPrompt + fileContext, GEMINI_MODELS.GEMINI_3_PRO, systemPrompt, 0.3, 'llm-orchestration'),
       reportFn
     );
     return stripFormatting(result);
