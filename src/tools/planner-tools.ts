@@ -921,7 +921,8 @@ ${codeContext ? "\nNote: All analysis was performed on actual code provided." : 
 
 OUTPUT FORMAT — Each task must be bite-sized (2-5 min):
 
-### Task N: [Component Name]
+### Task [T-ID]: [Component Name]
+**Dependencies:** Blocked by: T1,T3 | Blocks: T4 | Parallel: yes/no | Complexity: Low/Med/High
 **Files:** Create: path/to/file | Modify: path/to/file:lines | Test: path/to/test
 **Step 1:** Write the failing test (show test code)
 **Step 2:** Run test to verify it fails (exact command + expected output)
@@ -936,7 +937,8 @@ REQUIREMENTS:
 4. Exact commands with expected output
 5. Checkpoints at 50%, 80%, and 100%
 6. Address ALL pre-mortem failure causes from critique as mitigations
-7. Order tasks simplest → hardest (least-to-most)
+7. Order tasks topologically: a task MUST appear after all tasks that block it. Within independent groups, order simplest → hardest (using Complexity).
+8. Preserve exact task IDs from TASK DECOMPOSITION (T1, T1.1, T2). Do NOT renumber. Each task MUST include the Dependencies line with Blocked by/Blocks/Parallel/Complexity fields.
 
 **QUALITY ASSESSMENT (at the end):**
    - Code Quality: X/10
