@@ -211,6 +211,7 @@ interface PlanMetadata {
   phases: string[];
   tools_used: string[];
   scores?: Record<string, number>;
+  goal?: string;
 }
 
 /**
@@ -248,6 +249,10 @@ function savePlanToFile(
   lines.push(`type: "plan"`);
   lines.push(`docType: "plan"`);
   lines.push(`planStatus: "${status}"`);
+
+  if (metadata.goal) {
+    lines.push(`planGoal: "${metadata.goal.replace(/"/g, '\\"')}"`);
+  }
 
   // Plan phases
   if (metadata.phases.length > 0) {
@@ -973,6 +978,7 @@ Example:
 
   parameters: z.object({
     task: z.string().describe("The task/goal to create a plan for"),
+    goal: z.string().optional().describe("Success criteria for this plan — what must be true when done. Checked at every checkpoint. Example: 'GDPR compliant, fail-closed, admin-only toggle'"),
     context: z.string().optional().describe("Additional context"),
     codeContext: z.string().optional().describe("Actual code from relevant files for analysis (read files and paste here)"),
     answers: z.string().optional().describe("Answers to clarifying questions"),
@@ -995,6 +1001,7 @@ Example:
 
   execute: async (args: {
     task: string;
+    goal?: string;
     context?: string;
     codeContext?: string;
     answers?: string;
@@ -1008,6 +1015,7 @@ Example:
     issueFile?: string;
   }, ctx: MCPContext): Promise<string> => {
     const { task, codeContext = "", answers = "", mode = "start", devlog = true } = args;
+    const goal = args.goal || "";
     const prior = args.prior || {};
 
     // Read issue file and merge into context
@@ -1058,6 +1066,7 @@ Example:
         const filepath = savePlanToFile(task, initialBody, {
           phases: workflow.map(s => s.phase),
           tools_used: [],
+          goal,
         }, { planStatus: "in-progress" });
         setPlanFilePath(task, filepath);
         ctx.log.info(`Plan file created: ${filepath}`);
@@ -1084,6 +1093,7 @@ Example:
             const filepath = savePlanToFile(task, incrementalBody, {
               phases: workflow.map(s => s.phase),
               tools_used: completedTools,
+              goal,
             }, { planStatus: "in-progress", existingFilepath: existingPath });
             setPlanFilePath(task, filepath);
             ctx.log.info(`Plan file updated: ${filepath} (step ${currentStep}/${totalSteps})`);
@@ -1133,7 +1143,7 @@ Example:
       const judgeDraft = fullOutputs.judge_draft || prior.judge_draft || "";
 
       // Build the saved plan: executive summary + full analysis
-      const planBody = [
+      let planBody = [
         judgeFinal || judgeDraft || "No final plan generated",
         "",
         "---",
@@ -1142,6 +1152,10 @@ Example:
         "",
         ...fullPlanSections,
       ].join("\n");
+
+      if (goal) {
+        planBody = `## 🎯 Goal\n\n> ${goal}\n\n---\n\n${planBody}`;
+      }
 
       // Parse quality scores from ALL accumulated text
       const allText = Object.values(fullOutputs).join("\n");
@@ -1158,6 +1172,7 @@ Example:
           phases: workflow.map(s => s.phase),
           tools_used: workflow.map(s => s.tool),
           scores: Object.keys(scores).length > 0 ? scores : undefined,
+          goal,
         }, { planStatus: "pending", existingFilepath: existingPath });
         clearPlanFilePath(task);
         ctx.log.info(`Plan saved to devlog: ${savedPath} (${planBody.length} chars)`);
@@ -1348,21 +1363,36 @@ function parsePlanSteps(plan: string): { title: string; details: string }[] {
   return steps;
 }
 
+/**
+ * Extract goal from plan frontmatter (planGoal field)
+ */
+function extractGoalFromPlan(plan: string): string | undefined {
+  const match = plan.match(/planGoal:\s*"([^"]+)"/);
+  if (match) return match[1];
+  const goalSection = plan.match(/##\s*🎯\s*Goal\s*\n+>\s*(.+)/);
+  if (goalSection) return goalSection[1].trim();
+  return undefined;
+}
+
 export const plannerRunnerTool = {
   name: "planner_runner",
-  description: `Execute implementation plans step-by-step with verification.
+  description: `Execute implementation plans step-by-step with goal-oriented verification.
 
 COORDINATOR PATTERN - tracks actual plan steps:
 1. Call with mode: "start" to parse plan and begin
 2. Call with mode: "step" and stepNum to work on specific step
 3. Call with mode: "verify" at 50%, 80%, and 100% for checkpoints
 
-The 80% checkpoint uses kimi_decompose to decompose remaining work into granular subtasks, ensuring nothing is missed before the final push.
+Checkpoints verify GOAL ALIGNMENT, not just progress:
+- 50%: GPT judge — "does current work serve the stated goal?"
+- 80%: Kimi decompose remaining work + goal alignment check
+- 100%: Gemini final judge — quality + goal alignment scoring
 
-The tool parses your plan and tracks progress through each step.`,
+Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).`,
 
   parameters: z.object({
     plan: z.string().describe("The implementation plan from planner_maker"),
+    goal: z.string().optional().describe("Success criteria — extracted from plan frontmatter or provided manually. Verified at every checkpoint."),
     mode: z.enum(["start", "step", "verify"]).optional().default("start")
       .describe("start: parse plan, step: work on step N, verify: checkpoint"),
     stepNum: z.number().optional().describe("Step number (1-indexed) for mode=step"),
@@ -1378,6 +1408,7 @@ The tool parses your plan and tracks progress through each step.`,
 
   execute: async (args: {
     plan: string;
+    goal?: string;
     mode?: "start" | "step" | "verify";
     stepNum?: number;
     checkpoint?: "50%" | "80%" | "100%";
@@ -1388,6 +1419,7 @@ The tool parses your plan and tracks progress through each step.`,
     responsive?: boolean;
   }, _ctx: MCPContext): Promise<string> => {
     const { plan, mode = "start", stepNum, checkpoint, code, completed = [], devlog = true, ux = false, responsive = false } = args;
+    const goal = args.goal || extractGoalFromPlan(plan) || "";
     const lines: string[] = [];
 
     // Parse plan into steps
@@ -1400,6 +1432,10 @@ The tool parses your plan and tracks progress through each step.`,
       // ═══════════════════════════════════════════════════════════════
       lines.push(`## 📋 Plan Parsed - ${totalSteps} Steps`);
       lines.push("");
+      if (goal) {
+        lines.push(`**🎯 Goal:** ${goal}`);
+        lines.push("");
+      }
 
       if (totalSteps === 0) {
         lines.push("⚠️ Could not parse steps from plan. Expected numbered steps or ### headers.");
@@ -1463,6 +1499,12 @@ The tool parses your plan and tracks progress through each step.`,
         lines.push("");
       }
 
+      // Goal reminder at every step
+      if (goal) {
+        lines.push(`> 🎯 **Goal:** ${goal}`);
+        lines.push("");
+      }
+
       // Show what's done
       if (completed.length > 0) {
         lines.push(`✅ Completed: ${completed.join(", ")}`);
@@ -1495,7 +1537,7 @@ The tool parses your plan and tracks progress through each step.`,
 
     } else if (mode === "verify" && checkpoint) {
       // ═══════════════════════════════════════════════════════════════
-      // VERIFY: Checkpoint with actual step context
+      // VERIFY: Goal-oriented checkpoint with dual-judge verification
       // ═══════════════════════════════════════════════════════════════
       const completedSteps = steps.filter((_, i) => completed.includes(i + 1));
       const remainingSteps = steps.filter((_, i) => !completed.includes(i + 1));
@@ -1503,9 +1545,11 @@ The tool parses your plan and tracks progress through each step.`,
       lines.push(`## 🔍 ${checkpoint} Checkpoint Verification`);
       lines.push("");
       lines.push(`Progress: ${completed.length}/${totalSteps} steps complete`);
+      if (goal) {
+        lines.push(`**🎯 Goal:** ${goal}`);
+      }
       lines.push("");
 
-      // What's done
       if (completedSteps.length > 0) {
         lines.push("✅ Completed:");
         for (const step of completedSteps) {
@@ -1514,7 +1558,6 @@ The tool parses your plan and tracks progress through each step.`,
         lines.push("");
       }
 
-      // What's left (for 50% and 80%)
       if ((checkpoint === "50%" || checkpoint === "80%") && remainingSteps.length > 0) {
         lines.push("⏳ Remaining:");
         for (const step of remainingSteps) {
@@ -1523,79 +1566,88 @@ The tool parses your plan and tracks progress through each step.`,
         lines.push("");
       }
 
-      // Verification tool call
-      lines.push("### 💭 Verification");
-      lines.push("");
+      const goalPrompt = goal
+        ? `\n\nGOAL ALIGNMENT CHECK:\nThe stated goal is: "${goal}"\n- Does current progress serve this goal?\n- Is there any drift from the goal?\n- Are remaining steps still aligned with the goal?\n- Flag any steps that might CONTRADICT the goal.`
+        : "";
 
-      if (checkpoint === "80%") {
-        // 80% checkpoint: decompose remaining work with kimi_decompose
-        lines.push("Run **kimi_decompose** to break remaining work into granular subtasks:");
+      if (checkpoint === "50%") {
+        const verifyPrompt = `50% CHECKPOINT — Progress & Goal Alignment Review\n\nCOMPLETED STEPS:\n${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}\n\nREMAINING STEPS:\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}${goalPrompt}${code ? `\n\nCODE SNAPSHOT:\n${code.substring(0, 1500)}` : ""}\n\nRESPOND WITH:\n1. Progress assessment — are completed steps implemented correctly?\n2. Goal alignment — does current work serve the stated goal? Any drift?\n3. Remaining plan — should we adjust remaining steps to better serve the goal?\n4. Verdict: ON_TRACK or DRIFTING (with explanation)`;
+
+        lines.push("### 🧠 GPT First Judge");
         lines.push("");
-        lines.push("```");
-        lines.push(`kimi_decompose({`);
-        lines.push(`  task: "Complete remaining implementation steps for the current plan",`);
-        lines.push(`  context: "Remaining steps:\\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}${s.details ? ': ' + s.details.substring(0, 100) : ''}`).join('\\n')}\\n\\nCompleted: ${completedSteps.map(s => s.title).join(', ')}",`);
-        lines.push(`  depth: 3,`);
-        lines.push(`  outputFormat: "dependencies"`);
-        lines.push(`})`);
+        lines.push("Execute this verification tool:");
+        lines.push("");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "openai_reason",
+          params: { task: verifyPrompt, reasoning_effort: "high" },
+        }, null, 2));
         lines.push("```");
         lines.push("");
-        lines.push("This decomposition ensures nothing is missed in the final 20% push.");
-        lines.push("Review the subtask breakdown, then continue with the next step.");
+        lines.push("After GPT judge, continue to next step or adjust plan based on verdict.");
+
+      } else if (checkpoint === "80%") {
+        const decomposeContext = `Remaining steps:\n${remainingSteps.map((s, i) => `${i + 1}. ${s.title}${s.details ? ': ' + s.details.substring(0, 100) : ''}`).join('\n')}\n\nCompleted: ${completedSteps.map(s => s.title).join(', ')}${goal ? `\n\nGOAL: ${goal}\nEnsure all remaining subtasks serve this goal. Flag any that don't.` : ""}`;
+
+        lines.push("### 🔬 Kimi Decompose + Goal Check");
+        lines.push("");
+        lines.push("Execute this decomposition tool:");
+        lines.push("");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "kimi_decompose",
+          params: {
+            task: "Complete remaining implementation steps — verify each subtask serves the stated goal",
+            context: decomposeContext,
+            depth: 3,
+            outputFormat: "dependencies",
+          },
+        }, null, 2));
+        lines.push("```");
+        lines.push("");
+        lines.push("Review subtasks for goal alignment, then continue.");
+
       } else {
-        const verifyPrompt = checkpoint === "50%"
-          ? `50% Progress Check:
+        const finalPrompt = `100% FINAL REVIEW — Quality + Goal Alignment\n\nALL STEPS:\n${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}${goalPrompt}${code ? `\n\nFINAL CODE:\n${code.substring(0, 2000)}` : ""}\n\nSCORE EACH /10:\n1. Quality — code correctness, error handling\n2. Completeness — all steps done, no gaps\n3. Goal alignment — does the implementation serve "${goal || 'the stated task'}"?\n4. Security — no vulnerabilities introduced\n5. Performance — no obvious bottlenecks\n\nVERDICT: APPROVED or NEEDS_REVISION\nIf NEEDS_REVISION, list specific items to fix.`;
 
-COMPLETED STEPS:
-${completedSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
-
-REMAINING STEPS:
-${remainingSteps.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}
-
-${code ? `CODE SNAPSHOT:\n${code.substring(0, 1500)}` : ""}
-
-Questions:
-1. Are completed steps implemented correctly?
-2. Any issues to address before continuing?
-3. Should we adjust remaining steps?`
-          : `100% Final Review:
-
-ALL STEPS:
-${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}
-
-${code ? `FINAL CODE:\n${code.substring(0, 2000)}` : ""}
-
-Provide:
-1. Score out of 10 for each: quality, completeness, security, performance
-2. Any issues found
-3. Verdict: APPROVED or NEEDS_REVISION`;
-
-        lines.push("Run verification tool:");
-        lines.push(`> ${checkpoint === "50%" ? "qwen_reason" : "gemini_analyze_text"}`);
+        lines.push("### 🏛️ Gemini Final Judge");
         lines.push("");
-        lines.push("<details><summary>Full prompt</summary>");
+        lines.push("Execute this final verification tool:");
         lines.push("");
-        lines.push(verifyPrompt);
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "gemini_analyze_text",
+          params: { text: finalPrompt },
+        }, null, 2));
+        lines.push("```");
         lines.push("");
-        lines.push("</details>");
+        lines.push("If APPROVED: Done! If NEEDS_REVISION: Address feedback and re-verify.");
       }
 
-      // UX verification (when enabled)
+      // UX verification (when enabled) — two-step: Kimi flow analysis + Gemini scoring
       if (ux) {
         lines.push("");
-        lines.push("### 🎨 UX Verification");
+        lines.push("### 🎨 UX Verification (2-step)");
         lines.push("");
-        lines.push("Run UX check → kimi_thinking then gemini_analyze_text:");
+        lines.push("**Step 1 — Kimi UX flow analysis:**");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "kimi_thinking",
+          params: {
+            task: `Trace the user journey for the ${checkpoint} implementation. Check: initial state, interactions, error states, empty states, loading states, keyboard/screen reader access.${goal ? ` Goal: ${goal}` : ""}`,
+          },
+        }, null, 2));
+        lines.push("```");
         lines.push("");
-        lines.push("<details><summary>UX verification prompts</summary>");
-        lines.push("");
-        lines.push("Kimi (UX flow analysis):");
-        lines.push(`> Trace the user journey for the ${checkpoint} implementation. Check: initial state, interactions, error states, empty states, loading states, keyboard/screen reader access.`);
-        lines.push("");
-        lines.push("Gemini (UX scoring):");
-        lines.push(`> Score /10: Usability, Accessibility (WCAG 2.1 AA), Interaction Design, Consistency, Performance UX. List top 3 UX blockers.`);
-        lines.push("");
-        lines.push("</details>");
+        lines.push("**Step 2 — Gemini UX scoring:**");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "gemini_analyze_text",
+          params: {
+            text: `Score /10: Usability, Accessibility (WCAG 2.1 AA), Interaction Design, Consistency, Performance UX. List top 3 UX blockers.${goal ? ` Goal alignment: ${goal}` : ""}`,
+          },
+        }, null, 2));
+        lines.push("```");
       }
 
       // Responsiveness verification (when enabled)
@@ -1603,27 +1655,20 @@ Provide:
         lines.push("");
         lines.push("### 📱 Responsiveness Verification");
         lines.push("");
-        lines.push("Run responsive check → gemini_analyze_text:");
-        lines.push("");
-        lines.push("<details><summary>Responsiveness verification prompt</summary>");
-        lines.push("");
-        lines.push(`> Review the implementation for responsive design:
-1. BREAKPOINTS: Are mobile (≤640px), tablet (641-1024px), desktop (>1024px) handled?
-2. TOUCH TARGETS: Minimum 44x44px for interactive elements?
-3. LAYOUT: Does content reflow correctly? Any horizontal scroll?
-4. TYPOGRAPHY: Font sizes readable on mobile? Line lengths appropriate?
-5. NAVIGATION: Does nav collapse/adapt? Hamburger menu on mobile?
-6. IMAGES/MEDIA: Responsive images? Aspect ratios maintained?
-7. FORMS: Input fields usable on mobile? Appropriate input types (tel, email)?
-Score each /10 and list specific breakpoint issues.`);
-        lines.push("");
-        lines.push("</details>");
+        lines.push("```json");
+        lines.push(JSON.stringify({
+          tool: "gemini_analyze_text",
+          params: {
+            text: `Responsive Design Review at ${checkpoint}:\n1. BREAKPOINTS: Are mobile (≤640px), tablet (641-1024px), desktop (>1024px) handled?\n2. TOUCH TARGETS: Minimum 44x44px for interactive elements?\n3. LAYOUT: Does content reflow correctly? Any horizontal scroll?\n4. TYPOGRAPHY: Font sizes readable on mobile? Line lengths appropriate?\n5. NAVIGATION: Does nav collapse/adapt? Hamburger menu on mobile?\n6. IMAGES/MEDIA: Responsive images? Aspect ratios maintained?\n7. FORMS: Input fields usable on mobile? Appropriate input types?\nScore each /10 and list specific breakpoint issues.`,
+          },
+        }, null, 2));
+        lines.push("```");
       }
 
       // Devlog hint
       if (devlog) {
         lines.push("");
-        lines.push(`📝 Devlog: \`devlog_session_log({ entry: "${checkpoint} checkpoint - ${completed.length}/${totalSteps} steps", type: "progress" })\``);
+        lines.push(`📝 Devlog: \`devlog_session_log({ entry: "${checkpoint} checkpoint - ${completed.length}/${totalSteps} steps${goal ? ` - goal: ${goal.substring(0, 40)}` : ""}", type: "progress" })\``);
       }
 
       // Next action
