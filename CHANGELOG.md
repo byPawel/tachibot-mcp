@@ -5,6 +5,19 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.1] - 2026-03-21
+
+### Fixed
+- **kimi_decompose readability overhaul** — output now uses OVERVIEW/STRUCTURE/DETAILS/RISKS sections instead of dense inline metadata
+- **Reasoning leak stripped** — Kimi K2.5 dumps CoT into content; now extracted via `<output>` tags with OVERVIEW fallback
+- **Conflicting FORMAT_INSTRUCTION removed** — emoji headers and verdict lines no longer clash with decomposition formatting
+- **Heartbeat interval fixed** — was incorrectly set to 240s instead of default 5s; network timeout now correctly passed to callOpenRouter (360s)
+- **Type safety** — args typed from zod schema, unused `log` removed, `||` replaced with `??`
+
+### Changed
+- **Smart decomposition** — model now infers context, constraints, risks, and measurable criteria even when user doesn't state them
+- **Tuned for format adherence** — temperature 0.3 (was 0.5), maxTokens 4500 (was 6000), timeout 360s (was 180s default)
+
 ## [2.17.0] - 2026-03-21
 
 ### Changed
