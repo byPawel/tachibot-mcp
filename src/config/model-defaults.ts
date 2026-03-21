@@ -43,7 +43,7 @@ const MODELS = {
   QWEN: QWEN_MODELS.CODER_NEXT,                 // qwen/qwen3-coder-next (80B/3B MoE, 262K ctx)
   QWEN_REASON: QWEN_MODELS.MAX_THINKING,        // qwen/qwen3-235b-a22b-thinking (235B MoE)
   KIMI: KIMI_MODELS.K2_5,                       // moonshotai/kimi-k2.5 (thinking via reasoning param)
-  MINIMAX: MINIMAX_MODELS.M2_5,                 // minimax/minimax-m2.5 (SWE 80.2%, open source)
+  MINIMAX: MINIMAX_MODELS.M2_7,                 // minimax/minimax-m2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index)
 } as const;
 
 export interface ModelConfig {

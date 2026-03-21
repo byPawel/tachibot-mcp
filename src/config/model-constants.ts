@@ -92,11 +92,11 @@ export const KIMI_MODELS = {
 } as const;
 
 // MiniMax Models (MiniMax via OpenRouter)
-// M2.5 released Feb 2026 - Best agentic model, SWE-Bench 80.2%, VERY CHEAP
+// M2.7 released Mar 18, 2026 - Self-evolving, #1 AI Intelligence Index, SWE-Pro 56.22%
 export const MINIMAX_MODELS = {
-  M2_5: "minimax/minimax-m2.5",                 // SWE-Bench 80.2%, 37% faster than M2.1, open source
-  M2_1: "minimax/minimax-m2.1",                 // 230B/10B MoE - SWE-Bench 72.5%, τ²-Bench 77.2% (legacy)
-  M2: "minimax/minimax-m2",                     // Fallback model
+  M2_7: "minimax/minimax-m2.7",                 // 2300B/100B MoE, 200K ctx, SWE-Pro 56.22%, Multi-SWE #1, $0.30/$1.20
+  M2_5: "minimax/minimax-m2.5",                 // SWE-Bench 80.2%, 37% faster than M2.1 (legacy)
+  M2_1: "minimax/minimax-m2.1",                 // 230B/10B MoE - SWE-Bench 72.5% (legacy)
 } as const;
 
 // Qwen Models (Alibaba via OpenRouter)
@@ -193,7 +193,7 @@ export const CURRENT_MODELS = {
     kimi: KIMI_MODELS.K2_5,                // K2.5 multimodal + agent swarm (thinking via reasoning param)
     qwen: QWEN_MODELS.CODER_NEXT,             // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70%
     qwen_reason: QWEN_MODELS.MAX_THINKING, // 235B MoE thinking mode (HMMT 98%)
-    minimax: MINIMAX_MODELS.M2_5,          // M2.5: SWE-Bench 80.2%, 37% faster, open source
+    minimax: MINIMAX_MODELS.M2_7,          // M2.7: SWE-Pro 56.22%, Multi-SWE #1, self-evolving
   }
 } as const;
 
@@ -319,12 +319,12 @@ export const TOOL_DEFAULTS = {
   },
   // MiniMax tools - VERY CHEAP, open source
   minimax_code: {
-    model: MINIMAX_MODELS.M2_5,           // SWE-Bench 80.2%, 37% faster
+    model: MINIMAX_MODELS.M2_7,           // SWE-Pro 56.22%, Multi-SWE #1
     maxTokens: 4000,
     temperature: 0.3,                      // Lower for precise code
   },
   minimax_agent: {
-    model: MINIMAX_MODELS.M2_5,           // SWE-Bench 80.2%, best agentic, open source
+    model: MINIMAX_MODELS.M2_7,           // SWE-Pro 56.22%, self-evolving, #1 AI Intelligence Index
     maxTokens: 4000,
     temperature: 0.5,                      // Balanced for agentic tasks
   },
@@ -388,9 +388,9 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen/qwen3-max-thinking": "qwen-max",
 
   // MiniMax
+  "minimax/minimax-m2.7": "minimax-m2.7",
   "minimax/minimax-m2.5": "minimax-m2.5",
   "minimax/minimax-m2.1": "minimax-m2.1",
-  "minimax/minimax-m2": "minimax-m2",
 } as const;
 
 // Helper to get display name (falls back to model ID if not mapped)
@@ -437,7 +437,7 @@ export const MODEL_PRICING: Record<string, number> = {
   "qwen/qwen3-max-thinking": 0.005,
 
   // OpenRouter models - MiniMax (VERY CHEAP!)
-  "minimax/minimax-m2.5": 0.000685,       // ~same pricing tier as M2.1, 37% faster
-  "minimax/minimax-m2.1": 0.000685,       // ($0.27 + $1.10) / 2 / 1000 - legacy
-  "minimax/minimax-m2": 0.0005,
+  "minimax/minimax-m2.7": 0.00075,        // ($0.30 + $1.20) / 2 / 1000 - flagship
+  "minimax/minimax-m2.5": 0.000685,       // legacy
+  "minimax/minimax-m2.1": 0.000685,       // legacy
 } as const;
