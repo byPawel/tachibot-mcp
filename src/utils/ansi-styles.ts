@@ -598,10 +598,10 @@ export function renderModelBadge(model: string, theme?: Theme): string {
  * e.g. model badge: [bright magenta] grok [reset] + summary: [dim gray] search query [reset]
  */
 export function renderSummaryBadge(summary: string): string {
-  // Dimmed bg + bold sits next to the bright model badge
-  const bg = '\x1b[48;5;238m';  // dark gray bg (ansi256 color 238)
+  // Soft indigo bg + white bold — pairs with bright model badge
+  const bg = '\x1b[48;5;61m';   // soft indigo bg (ansi256 color 61)
   const fg = '\x1b[97m';        // bright white text
-  return `${bg}${fg}${ANSI.bold} ${summary} ${ANSI.reset}`;
+  return `${bg}${fg}${ANSI.bold}  ${summary} ${ANSI.reset}`;
 }
 
 /**

@@ -549,8 +549,11 @@ export interface StripMarkdownOptions {
   boldHeaders?: boolean;
 }
 
+let sectionColorIdx = 0;
+
 export function stripMarkdown(md: string, options?: StripMarkdownOptions): string {
   if (!md || !md.trim()) return '';
+  sectionColorIdx = 0; // reset per call so colors cycle consistently
   const { boldHeaders = false } = options || {};
   // 1. Extract code blocks to placeholders (protect from stripping)
   const codeBlocks: string[] = [];
@@ -564,9 +567,14 @@ export function stripMarkdown(md: string, options?: StripMarkdownOptions): strin
   text = text
     // Markdown headers — strip # prefix (or bold if boldHeaders)
     .replace(/^#{1,6}\s+(.+)$/gm, boldHeaders ? '\x1b[1m$1\x1b[0m' : '$1')
-    // Emoji section headers — e.g. "🔍 TYPE SAFETY ───" → soft teal bg, dark bold text
+    // Emoji section headers — e.g. "🧠 TYPE SAFETY ───" → rotating pastel bg, dark bold text
     .replace(/^(.{1,2})\s+([A-Z][A-Z\s&]+?)\s*─+$/gm,
-      boldHeaders ? '\x1b[48;5;73m\x1b[30m\x1b[1m $1 $2 \x1b[0m' : '$1 $2')
+      (_match: string, emoji: string, header: string) => {
+        if (!boldHeaders) return `${emoji} ${header}`;
+        const pastels = [146, 182, 152, 187, 116, 180]; // lavender, mauve, powder blue, sand, mint, peach
+        const bg = `\x1b[48;5;${pastels[sectionColorIdx++ % pastels.length]}m`;
+        return `${bg}\x1b[30m\x1b[1m ${emoji} ${header} \x1b[0m`;
+      })
     // Verdict lines — color-coded: green=pass, yellow=partial, red=fail
     .replace(/^(✅|🫠|💀|🟢|🟡|🔴)\s*(pass|partial|fail)\b(.*)$/gmi,
       (_match: string, emoji: string, status: string, rest: string) => {
