@@ -242,7 +242,7 @@ export function renderOutput(
       const parts: string[] = [];
       if (options.model) parts.push(renderModelBadge(options.model));
       if (options.summary) parts.push(renderSummaryBadge(options.summary));
-      if (parts.length) output += parts.join('') + '\n';
+      if (parts.length) output += parts.join('') + '\n\n';
       output += stripMarkdown(content, { boldHeaders: true });
       break;
     }
