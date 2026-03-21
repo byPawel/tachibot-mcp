@@ -1472,7 +1472,7 @@ Evidence params (unblind the checkpoints):
 
     // Parse plan into steps
     const steps = parsePlanSteps(plan);
-    const totalSteps = steps.length;
+    const totalSteps = Math.max(steps.length, completed.length); // handle completed exceeding parsed steps
 
     if (mode === "start") {
       // ═══════════════════════════════════════════════════════════════
