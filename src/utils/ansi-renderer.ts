@@ -620,17 +620,21 @@ export function stripMarkdown(md: string, options?: StripMarkdownOptions): strin
         }
       }
 
-      // Build aligned table
-      const divider = '┼' + widths.map(w => '─'.repeat(w + 2)).join('┼') + '┼';
+      // Build aligned table with rounded corners
+      const topBorder = '╭' + widths.map(w => '─'.repeat(w + 2)).join('┬') + '╮';
+      const midBorder = '├' + widths.map(w => '─'.repeat(w + 2)).join('┼') + '┤';
+      const botBorder = '╰' + widths.map(w => '─'.repeat(w + 2)).join('┴') + '╯';
       const formatRow = (cells: string[]) =>
         '│' + cells.map((c, i) => ` ${c.padEnd(widths[i])} `).join('│') + '│';
 
       const lines: string[] = [];
+      lines.push(topBorder);
       lines.push(formatRow(parsed[0])); // header
-      lines.push(divider);
+      lines.push(midBorder);
       for (let i = 1; i < parsed.length; i++) {
         lines.push(formatRow(parsed[i]));
       }
+      lines.push(botBorder);
       return lines.join('\n');
     }
   );
