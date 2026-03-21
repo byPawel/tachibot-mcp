@@ -31,7 +31,7 @@ const savedThemeVars = {
   TACHIBOT_THEME: process.env.TACHIBOT_THEME,
 };
 
-const envResult = dotenvConfig({
+dotenvConfig({
   path: envPath,
   override: true  // API keys from .env take priority
 });
@@ -60,28 +60,27 @@ import { z } from "zod";
 import { InstructionOrchestrator } from "./orchestrator-instructions.js";
 import { validateToolInput, sanitizeForLogging } from "./utils/input-validator.js";
 import { isToolEnabled, logToolConfiguration } from "./utils/tool-config.js";
-import { stripMarkdown } from "./utils/ansi-renderer.js";
+import { renderOutput } from "./utils/ansi-renderer.js";
 import { getToolAnnotations } from "./utils/tool-annotations.js";
 import { truncateSmart } from "./utils/stream-distill.js";
 import { trackToolCall, inferModelFromTool, estimateTokens, isTrackingEnabled, getUsageSummary, getAllReposSummary, getStatsJson, resetStats } from "./utils/usage-tracker.js";
-import { checkForUpdates, getUpdateStatus } from "./utils/update-checker.js";
+import { checkForUpdates } from "./utils/update-checker.js";
 // import { renderBigText, renderToolBadge } from "./utils/ink-renderer.js";  // Disabled - plain text only
 // import { WorkflowVisualizerLite } from "./visualizer-lite.js"; // Unused - removed
 import { collaborativeOrchestrator } from "./collaborative-orchestrator.js";
-import { TechnicalDomain } from "./reasoning-chain.js";
 import { sequentialThinking, NextThoughtSchema, formatContextWindow } from "./sequential-thinking.js";
-import { getUnifiedAITools, getProviderInfo } from "./tools/unified-ai-provider.js";
+import { getProviderInfo } from "./tools/unified-ai-provider.js";
 import { getAllPerplexityTools, isPerplexityAvailable } from "./tools/perplexity-tools.js";
 import { getAllGrokTools, isGrokAvailable } from "./tools/grok-tools.js";
 import { registerWorkflowTools } from "./tools/workflow-runner.js";
 import { validateWorkflowTool, validateWorkflowFileTool } from "./tools/workflow-validator-tool.js";
-import { createFocusDeepPlan, generateFocusDeepVisualization, canRunFocusDeep } from "./focus-deep.js";
+import { canRunFocusDeep } from "./focus-deep.js";
 import { loadConfig } from "./config.js";
 // import { registerSessionTools } from "./session/session-tools.js"; // Removed - not needed for minimal tool set
 import { getAllAdvancedTools, areAdvancedModesAvailable } from "./tools/advanced-modes.js";
 import { isOpenAIAvailable, getAllOpenAITools } from "./tools/openai-tools.js";
 import { isGeminiAvailable, geminiBrainstormTool, geminiAnalyzeCodeTool } from "./tools/gemini-tools.js";
-import { getAllOpenRouterTools, isOpenRouterAvailable } from "./tools/openrouter-tools.js";
+import { isOpenRouterAvailable } from "./tools/openrouter-tools.js";
 import { getTachiTools } from "./tools/tachi-tool.js";
 import { getPromptTechniqueTools } from "./tools/prompt-technique-tools.js";
 // import { registerGPT5Tools, isGPT5Available } from "./tools/openai-gpt5-fixed.js"; // DISABLED - using regular openai-tools.ts
@@ -259,16 +258,16 @@ function safeAddTool(tool: MCPTool): void {
           }
         }
 
-        // Return clean plain text — strip markdown formatting since Claude Code
-        // doesn't render markdown in tool results (shows raw ** and ### as text)
+        // Apply render mode (sparse = chalk badge + plain text, plain = stripped, etc.)
         if (typeof result === 'string') {
-          let cleanText = stripMarkdown(result);
+          const model = inferModelFromTool(tool.name) || undefined;
+          let rendered = renderOutput(result, { model, summary: tool.name });
           // Safety net: cap at 25K chars to prevent Claude Code's 30K truncation
           const MAX_RESPONSE_CHARS = 25000;
-          if (cleanText.length > MAX_RESPONSE_CHARS) {
-            cleanText = truncateSmart(cleanText, MAX_RESPONSE_CHARS);
+          if (rendered.length > MAX_RESPONSE_CHARS) {
+            rendered = truncateSmart(rendered, MAX_RESPONSE_CHARS);
           }
-          return { type: "text" as const, text: cleanText };
+          return { type: "text" as const, text: rendered };
         }
         return result;
       }
@@ -336,10 +335,10 @@ safeAddTool({
       domain,
       tokenEfficient = false,
       rounds = 5,
-      executeNow = true,
+      executeNow: _executeNow = true,
       models,
       temperature = 0.7,
-      saveSession = true,
+      saveSession: _saveSession = true,
       maxTokensPerRound = 2000,
       pingPongStyle = "collaborative"
     } = args;
