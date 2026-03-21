@@ -1402,7 +1402,13 @@ Checkpoints verify GOAL ALIGNMENT with 5 different models (no repeats adjacent):
 - 80%: Kimi decompose remaining work + goal alignment
 - 100%: GPT first judge → Gemini final judge (dual) + Reflexion Lite
 
-Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).`,
+Pass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).
+
+Evidence params (unblind the checkpoints):
+- files: read actual source code from disk
+- diff: git diff output (what changed)
+- testResults: npm test output (proof it works)
+- modifiedFiles: list of touched files (scope creep detection)`,
 
   parameters: z.object({
     plan: z.string().describe("The implementation plan from planner_maker"),
@@ -1753,7 +1759,7 @@ VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
         lines.push("If AMEND_PLAN: review proposed changes with user before continuing.");
 
       } else if (checkpoint === "50%") {
-        const verifyPrompt = `50% CHECKPOINT — Progress & Goal Alignment Review\n\nCOMPLETED STEPS:\n${completedSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}\n\nREMAINING STEPS:\n${remainingSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}${goalPrompt}${code ? `\n\nCODE SNAPSHOT:\n${code.substring(0, 1500) + (code.length > 1500 ? "\n[... truncated, showing first 1500 chars of " + code.length + " total]" : "")}` : ""}\n\nRESPOND WITH:\n1. Progress assessment — are completed steps implemented correctly?\n2. Goal alignment — does current work serve the stated goal? Any drift?\n3. Remaining plan — should we adjust remaining steps to better serve the goal?\n4. Verdict: ON_TRACK or DRIFTING (with explanation)`;
+        const verifyPrompt = `50% CHECKPOINT — Progress & Goal Alignment Review\n\nCOMPLETED STEPS:\n${completedSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}\n\nREMAINING STEPS:\n${remainingSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}${goalPrompt}${evidence}\n\nRESPOND WITH:\n1. Progress assessment — are completed steps implemented correctly?\n2. Goal alignment — does current work serve the stated goal? Any drift?\n3. Remaining plan — should we adjust remaining steps to better serve the goal?\n4. Verdict: ON_TRACK or DRIFTING (with explanation)`;
 
         lines.push("### 🔍 50% — Progress Check (Qwen Reason)");
         lines.push("");
@@ -1790,7 +1796,7 @@ VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
         lines.push("Review subtasks for goal alignment, then continue.");
 
       } else {
-        const finalPrompt = `100% FINAL REVIEW — Quality + Goal Alignment\n\nALL STEPS:\n${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}${goalPrompt}${code ? `\n\nFINAL CODE:\n${code.substring(0, 2000) + (code.length > 2000 ? "\n[... truncated, showing first 2000 chars of " + code.length + " total]" : "")}` : ""}\n\nSCORE EACH /10:\n1. Quality — code correctness, error handling\n2. Completeness — all steps done, no gaps\n3. Goal alignment — does the implementation serve "${goal || 'the stated task'}"?\n4. Security — no vulnerabilities introduced\n5. Performance — no obvious bottlenecks\n\nVERDICT: APPROVED or NEEDS_REVISION\nIf NEEDS_REVISION, list specific items to fix.`;
+        const finalPrompt = `100% FINAL REVIEW — Quality + Goal Alignment\n\nALL STEPS:\n${steps.map((s, i) => `${i + 1}. ${s.title} ${completed.includes(i + 1) ? '✅' : '❌'}`).join('\n')}${goalPrompt}${evidence}\n\nSCORE EACH /10:\n1. Quality — code correctness, error handling\n2. Completeness — all steps done, no gaps\n3. Goal alignment — does the implementation serve "${goal || 'the stated task'}"?\n4. Security — no vulnerabilities introduced\n5. Performance — no obvious bottlenecks\n\nVERDICT: APPROVED or NEEDS_REVISION\nIf NEEDS_REVISION, list specific items to fix.`;
 
         lines.push("### 🧠 GPT First Judge");
         lines.push("");
