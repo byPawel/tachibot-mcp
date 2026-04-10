@@ -194,7 +194,7 @@ export function getAvailableModels(config: FocusConfig): string[] {
     models.push('sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research');
   }
   if (config.apiKeys.grok) {
-    models.push('grok-3', 'grok-3-fast', 'grok-4-0709');
+    models.push('grok-3', 'grok-4.20-0309-reasoning', 'grok-4.20-multi-agent-0309');
   }
   if (config.apiKeys.openrouter) {
     models.push('qwen3-coder', 'qwq-32b', 'qwen3-32b');

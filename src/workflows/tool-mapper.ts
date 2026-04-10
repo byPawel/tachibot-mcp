@@ -432,7 +432,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
       case "grok_brainstorm":
       case "grok_search":
         // Use reasoning model for reasoning/creative tasks
-        actualModel = GrokModel.GROK_4_1_FAST_REASONING; // Latest 4.1 (2M context, $0.20/$0.50)
+        actualModel = GrokModel.GROK_4_20_REASONING; // Grok 4.20 flagship (low hallucination, 2M context, $2/$6)
         return buildResult(
           await callGrok(
             toMessages(prompt, systemPrompt),
@@ -446,7 +446,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
       case "grok_code":
       case "grok_debug":
         // Use non-reasoning model for code/debug (tool-calling optimized)
-        actualModel = GrokModel.GROK_4_1_FAST; // Latest 4.1 non-reasoning (2M context, $0.20/$0.50)
+        actualModel = GrokModel.GROK_4_20_NON_REASONING; // Grok 4.20 non-reasoning (flagship quality)
         return buildResult(
           await callGrok(
             toMessages(prompt, systemPrompt),
@@ -458,7 +458,7 @@ Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide impl
         );
 
       case "grok_heavy": // Grok Heavy is grok-4-0709 with extended context
-        actualModel = GrokModel.GROK_4_HEAVY; // Expensive $3/$15
+        actualModel = GrokModel.GROK_4_20_MULTI_AGENT; // Grok 4.20 multi-agent (4-16 agents, $2/$6)
         return buildResult(
           await callGrok(
             toMessages(prompt, systemPrompt),

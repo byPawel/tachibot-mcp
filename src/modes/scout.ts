@@ -1,5 +1,6 @@
 import { ModelRouter } from '../workflows/model-router.js';
 import { getScoutModels, getDefaultModels } from '../config/model-defaults.js';
+import { GROK_MODELS } from '../config/model-constants.js';
 import { getGrokApiKey } from '../utils/api-keys.js';
 import { createProgressStream, createMultiModelReporter } from '../utils/progress-stream.js';
 import { smartAPIClient } from '../utils/smart-api-client.js';
@@ -750,7 +751,7 @@ export class Scout {
       const messages = [{ role: 'user', content: query }];
       
       const result = await callGrokEnhanced(messages, {
-        model: 'grok-4-0709' as any,
+        model: GROK_MODELS._4_20_REASONING as any,
         maxTokens,
         enableLiveSearch: options?.enableLiveSearch ?? true,
         searchSources: options?.maxSources ?? 100,

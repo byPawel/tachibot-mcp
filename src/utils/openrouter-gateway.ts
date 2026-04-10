@@ -30,6 +30,9 @@ const GPT52_MODEL_MAP: Record<string, string> = {
 
 // Grok model mapping - our names → OpenRouter names
 const GROK_MODEL_MAP: Record<string, string> = {
+  'grok-4.20-0309-reasoning': 'x-ai/grok-4.20',
+  'grok-4.20-0309-non-reasoning': 'x-ai/grok-4.20',
+  'grok-4.20-multi-agent-0309': 'x-ai/grok-4.20-multi-agent',
   'grok-4-1-fast-reasoning': 'x-ai/grok-4.1-fast',
   'grok-4-1-fast-non-reasoning': 'x-ai/grok-4.1-fast',
   'grok-4-fast-reasoning': 'x-ai/grok-4-fast',

@@ -68,10 +68,15 @@ export const PERPLEXITY_MODELS = {
   SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model (expensive - avoid)
 } as const;
 
-// Grok Models (xAI) - Updated 2025-11-22 with correct API model names
+// Grok Models (xAI) - Updated 2026-04-10 with Grok 4.20 (Mar 2026)
 export const GROK_MODELS = {
-  // Grok 4.1 models (Nov 2025) - LATEST & BEST
-  _4_1_FAST_REASONING: "grok-4-1-fast-reasoning",     // Latest: 2M context, $0.20/$0.50, enhanced reasoning
+  // Grok 4.20 models (Mar 10, 2026) - FLAGSHIP
+  _4_20_REASONING: "grok-4.20-0309-reasoning",           // Flagship: 2M context, $2/$6, low hallucination
+  _4_20_NON_REASONING: "grok-4.20-0309-non-reasoning",   // Standard: 2M context, $2/$6
+  _4_20_MULTI_AGENT: "grok-4.20-multi-agent-0309",       // Multi-agent: 4-16 agents via reasoning.effort, $2/$6
+
+  // Grok 4.1 fast models (Nov 2025) - BEST VALUE (10x cheaper)
+  _4_1_FAST_REASONING: "grok-4-1-fast-reasoning",     // Fast reasoning: 2M context, $0.20/$0.50
   _4_1_FAST_NON_REASONING: "grok-4-1-fast-non-reasoning", // Tool-calling optimized: 2M context, $0.20/$0.50
 
   // Grok 4 fast models (2025) - Still good
@@ -175,12 +180,12 @@ export const CURRENT_MODELS = {
     premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.4-pro - higher compute)
   },
   grok: {
-    reason: GROK_MODELS._4_1_FAST_REASONING,
-    code: GROK_MODELS._4_1_FAST_NON_REASONING,
-    debug: GROK_MODELS._4_1_FAST_NON_REASONING,
-    brainstorm: GROK_MODELS._4_1_FAST_REASONING,
-    search: GROK_MODELS._4_1_FAST_REASONING,
-    architect: GROK_MODELS._4_1_FAST_REASONING,
+    reason: GROK_MODELS._4_20_REASONING,            // grok-4.20-0309-reasoning (flagship, low hallucination)
+    code: GROK_MODELS._4_20_NON_REASONING,           // grok-4.20 non-reasoning (flagship quality, tool-calling)
+    debug: GROK_MODELS._4_20_NON_REASONING,          // grok-4.20 non-reasoning (low hallucination for debugging)
+    brainstorm: GROK_MODELS._4_20_NON_REASONING,    // grok-4.20-0309-non-reasoning (2M context)
+    search: GROK_MODELS._4_20_REASONING,             // grok-4.20 LOW HALLUCINATION - critical for search
+    architect: GROK_MODELS._4_20_MULTI_AGENT,        // grok-4.20-multi-agent-0309 (4-16 agent swarm)
   },
   gemini: {
     default: GEMINI_MODELS.GEMINI_3_PRO,
@@ -363,6 +368,9 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
 
   // Grok (xAI)
+  "grok-4.20-0309-reasoning": "grok-4.20",
+  "grok-4.20-0309-non-reasoning": "grok-4.20-fast",
+  "grok-4.20-multi-agent-0309": "grok-4.20-multi",
   "grok-4-1-fast-reasoning": "grok-4.1",
   "grok-4-1-fast-non-reasoning": "grok-4.1-fast",
   "grok-4-fast-reasoning": "grok-4",
@@ -410,7 +418,10 @@ export const MODEL_PRICING: Record<string, number> = {
   "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000
   "gemini-3.1-flash-lite": 0.001,       // Cheapest/fastest in 3.1 series (Mar 2026)
 
-  // Grok - all cheap!
+  // Grok
+  "grok-4.20-0309-reasoning": 0.004,        // ($2 + $6) / 2 / 1000
+  "grok-4.20-0309-non-reasoning": 0.004,    // ($2 + $6) / 2 / 1000
+  "grok-4.20-multi-agent-0309": 0.004,      // ($2 + $6) / 2 / 1000
   "grok-4-1-fast-reasoning": 0.00035,
   "grok-4-1-fast-non-reasoning": 0.00035,
   "grok-4-fast-reasoning": 0.00035,

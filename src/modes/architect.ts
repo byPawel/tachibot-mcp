@@ -142,8 +142,8 @@ export class Architect {
     
     specialized_verification: {
       models: {
-        'syntax_error': 'gpt-4-mini',
-        'type_error': 'gpt-4-mini',
+        'syntax_error': 'gpt-5.4-mini',
+        'type_error': 'gpt-5.4-mini',
         'algorithmic_complexity': 'qwq-32b',
         'performance_issue': 'qwq-32b',
         'architectural_smell': 'claude-opus-4.1',
@@ -153,7 +153,7 @@ export class Architect {
         'design_pattern_violation': 'claude-opus-4.1',
         'memory_leak': 'qwq-32b',
         'race_condition': 'claude-opus-4.1',
-        'code_duplication': 'gpt-4-mini',
+        'code_duplication': 'gpt-5.4-mini',
         'circular_dependency': 'claude-opus-4.1'
       },
       dynamicTokens: {
@@ -455,7 +455,7 @@ export class Architect {
       'claude-opus-4.1': 10,
       'qwq-32b': 8,
       'perplexity-reasoning': 7,
-      'gpt-4-mini': 5
+      'gpt-5.4-mini': 5
     };
     return priorities[model] || 5;
   }

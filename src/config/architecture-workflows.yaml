@@ -65,7 +65,7 @@ workflows:
           syntax_check:
             mode: "verifier"
             variant: "quick_verify"
-            model: "gpt-4-mini"
+            model: "gpt-5.4-mini"
             max_tokens: 5000
             input: "${gemini_ingest.syntax_issues}"
           
@@ -328,7 +328,7 @@ routing_rules:
 # Model selection matrix for different analysis types
 model_matrix:
   syntax_analysis:
-    primary: "gpt-4-mini"
+    primary: "gpt-5.4-mini"
     fallback: "gemini-3.1-pro-preview"
     
   security_analysis:

@@ -170,12 +170,12 @@ export const SMART_TIMEOUT_DEFAULTS: SmartTimeoutConfig = {
       max: 90000      // 90 seconds
     },
     grok: {
-      base: 30000,    // 30 seconds
-      max: 90000      // 90 seconds
+      base: 30000,    // 30 seconds - 4.1 fast models are quick
+      max: 120000     // 2 minutes - 4.20 reasoning models need more
     },
     openai: {
-      base: 20000,    // 20 seconds
-      max: 60000      // 60 seconds
+      base: 60000,    // 60 seconds - GPT-5.4 reasoning needs more time
+      max: 180000     // 3 minutes - high/xhigh reasoning effort
     },
     anthropic: {
       base: 20000,    // 20 seconds

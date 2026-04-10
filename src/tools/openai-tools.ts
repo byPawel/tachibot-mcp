@@ -237,14 +237,22 @@ export async function callOpenAI(
 
       console.error(`🔍 TRACE: Using ${isGPT5 ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${currentModel}`);
 
+      // GPT-5.4 with high reasoning effort can take 2+ minutes
+      const timeoutMs = (reasoningEffort === 'high' || reasoningEffort === 'xhigh') ? 180000 : 90000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const error = await response.text();
@@ -311,8 +319,14 @@ export async function callOpenAI(
       return stripFormatting(result);
 
     } catch (error) {
-      lastError = `${currentModel}: ${error instanceof Error ? error.message : String(error)}`;
-      console.error(`🔍 TRACE: ${currentModel} EXCEPTION - ${lastError}`);
+      // Handle abort/timeout specifically
+      if (error instanceof Error && error.name === 'AbortError') {
+        lastError = `${currentModel}: Timeout (reasoning_effort=${reasoningEffort})`;
+        console.error(`🔍 TRACE: ${currentModel} TIMEOUT - reasoning_effort=${reasoningEffort}`);
+      } else {
+        lastError = `${currentModel}: ${error instanceof Error ? error.message : String(error)}`;
+        console.error(`🔍 TRACE: ${currentModel} EXCEPTION - ${lastError}`);
+      }
       continue; // Try next model
     }
   }

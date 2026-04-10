@@ -100,7 +100,7 @@ modelProviderRegistry.registerMany([
 
   // Grok models
   { modelName: "grok", toolName: "grok_reason", provider: "x.ai" },
-  { modelName: "grok-4", toolName: "grok_reason", provider: "x.ai", aliases: ["grok-4-0709"] },
+  { modelName: "grok-4.20", toolName: "grok_reason", provider: "x.ai", aliases: ["grok-4.20-0309-reasoning", "grok-4.20-multi-agent-0309"] },
 
   // Claude models
   { modelName: "claude", toolName: "think", provider: "anthropic", aliases: ["claude-code", "reasoning", "analysis"] },

@@ -93,7 +93,7 @@ interface Challenge {
 |----------|--------|-------|
 | **Google Gemini** | `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview-lite` | Gemini 3 Pro is latest (Nov 2025) |
 | **OpenAI** | `gpt-5.1`, `gpt-5.1-codex-mini`, `gpt-5.1-codex`, `gpt-5-pro` | Codex models use /v1/responses endpoint |
-| **xAI (Grok)** | `grok-4-1-fast-reasoning`, `grok-4-1-fast-non-reasoning`, `grok-code-fast-1`, `grok-4-0709` | Grok 4.1 is latest (Nov 2025) |
+| **xAI (Grok)** | `grok-4.20-0309-reasoning`, `grok-4.20-0309-non-reasoning`, `grok-4.20-multi-agent-0309`, `grok-4-1-fast-reasoning`, `grok-4-1-fast-non-reasoning` | Grok 4.20 flagship (Mar 2026); 4.1-fast for code/debug |
 | **Perplexity** | `sonar-pro`, `sonar-reasoning-pro` | Web search enabled |
 | **OpenRouter** | `qwen/qwen3-coder-plus`, `moonshotai/kimi-k2-thinking` | Requires OPENROUTER_API_KEY |
 

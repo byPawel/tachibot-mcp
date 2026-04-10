@@ -113,20 +113,21 @@ Grok (by xAI) provides live web search, reasoning, and code analysis.
 
 #### Models Available
 
-- **grok-4-1-fast-reasoning** - Latest (Nov 2025): Enhanced reasoning, creativity & emotional intelligence (2M context)
-- **grok-4-1-fast-non-reasoning** - Tool-calling optimized: Fast inference, agentic workflows (2M context)
-- **grok-4-fast-reasoning** - Previous reasoning model
-- **grok-4-0709** - Heavy model (expensive, use sparingly)
+- **grok-4.20-0309-reasoning** - Flagship (Mar 2026): Low hallucination, 2M context, reasoning
+- **grok-4.20-0309-non-reasoning** - Standard: 2M context, tool-calling
+- **grok-4.20-multi-agent-0309** - Multi-agent: 4-16 agent swarm via reasoning.effort
+- **grok-4-1-fast-reasoning** - Fast reasoning (Nov 2025): 2M context, cheap
+- **grok-4-1-fast-non-reasoning** - Fast tool-calling: high-volume tasks
 - **grok-code-fast-1** - Coding specialist
 
 #### Pricing
 
 | Model | Input | Output | Notes |
 |-------|-------|--------|-------|
-| Grok-4.1 | $0.20 / 1M tokens | $0.50 / 1M tokens | Latest & best! |
-| Grok-4.1-fast | $0.20 / 1M tokens | $0.50 / 1M tokens | Tool-calling optimized |
-| Grok-4 | $5.00 / 1M tokens | $15.00 / 1M tokens | Previous version |
-| Grok-4-heavy | $10.00 / 1M tokens | $30.00 / 1M tokens | 256k context |
+| Grok-4.20 | $2.00 / 1M tokens | $6.00 / 1M tokens | Flagship (Mar 2026) |
+| Grok-4.20-multi-agent | $2.00 / 1M tokens | $6.00 / 1M tokens | 4-16 agent swarm |
+| Grok-4.1-fast | $0.20 / 1M tokens | $0.50 / 1M tokens | Best value (10x cheaper) |
+| Grok-4.1-fast (non-reasoning) | $0.20 / 1M tokens | $0.50 / 1M tokens | Tool-calling optimized |
 | **Live Search** | **$5 / 1k sources** | - | Extra cost per search! |
 
 **Important:** Grok live search (`grok_search` tool) costs $5 per 1000 sources searched. Control with `maxSearchSources` parameter or `GROK_SEARCH_SOURCES_LIMIT` env var.

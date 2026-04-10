@@ -101,6 +101,9 @@ const nebulaTheme: Theme = {
 
     // Grok - Magenta/purple
     grok: { bg: 'bgMagentaBright', fg: 'black', label: ' grok ' },
+    'grok-4.20-0309-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20 ' },
+    'grok-4.20-0309-non-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20 ' },
+    'grok-4.20-multi-agent-0309': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20-ma ' },
     'grok-4-1-fast-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.1 ' },
     'grok-4-1-fast-non-reasoning': { bg: 'bgMagenta', fg: 'black', label: ' grok-4.1-fast ' },
     'grok-code-fast-1': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-code ' },
@@ -193,6 +196,9 @@ const cyberpunkTheme: Theme = {
 
     // Grok - Hot magenta
     grok: { bg: 'bgMagentaBright', fg: 'black', label: ' ✦ GROK ' },
+    'grok-4.20-0309-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20 ' },
+    'grok-4.20-0309-non-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20 ' },
+    'grok-4.20-multi-agent-0309': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20-ma ' },
     'grok-4-1-fast-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' ✦ GROK-4.1 ' },
     'grok-4-1-fast-non-reasoning': { bg: 'bgMagenta', fg: 'white', label: ' ✦ GROK-FAST ' },
     'grok-code-fast-1': { bg: 'bgMagentaBright', fg: 'black', label: ' ✦ GROK-CODE ' },
@@ -283,6 +289,9 @@ const minimalTheme: Theme = {
     'gemini-3-flash-preview': { bg: 'bgBlack', fg: 'blueBright', label: ' gemini-flash ' },
 
     grok: { bg: 'bgBlack', fg: 'magenta', label: ' grok ' },
+    'grok-4.20-0309-reasoning': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.20 ' },
+    'grok-4.20-0309-non-reasoning': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.20 ' },
+    'grok-4.20-multi-agent-0309': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.20-ma ' },
     'grok-4-1-fast-reasoning': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.1 ' },
     'grok-4-1-fast-non-reasoning': { bg: 'bgBlack', fg: 'magentaBright', label: ' grok-fast ' },
     'grok-code-fast-1': { bg: 'bgBlack', fg: 'magenta', label: ' grok-code ' },
@@ -368,6 +377,9 @@ const oceanTheme: Theme = {
     'gemini-3-flash-preview': { bg: 'bgBlue', fg: 'white', label: ' gemini-flash ' },
 
     grok: { bg: 'bgMagenta', fg: 'white', label: ' grok ' },
+    'grok-4.20-0309-reasoning': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.20 ' },
+    'grok-4.20-0309-non-reasoning': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.20 ' },
+    'grok-4.20-multi-agent-0309': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.20-ma ' },
     'grok-4-1-fast-reasoning': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.1 ' },
     'grok-4-1-fast-non-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-fast ' },
     'grok-code-fast-1': { bg: 'bgMagenta', fg: 'white', label: ' grok-code ' },

@@ -161,7 +161,7 @@ Focus on recent, accurate information. Provide sources.${FORMAT_INSTRUCTION}`
     ];
 
     const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_1_FAST_REASONING,
+      model: GrokModel.GROK_4_20_REASONING,
       enableLiveSearch: true,
       searchSources: 20,
       temperature: 0.3,
@@ -218,7 +218,7 @@ async function solveHandler(query: string): Promise<string> {
           { role: "user", content: query }
         ],
         {
-          model: GrokModel.GROK_4_1_FAST_REASONING,
+          model: GrokModel.GROK_4_20_REASONING,
           enableLiveSearch: true,
           searchSources: 10,
           temperature: 0.3,
@@ -331,7 +331,7 @@ async function architectHandler(query: string): Promise<string> {
         { role: "user", content: query }
       ],
       {
-        model: GrokModel.GROK_4_1_FAST_REASONING,
+        model: GrokModel.GROK_4_20_REASONING,
         enableLiveSearch: true,
         searchSources: 15,
         temperature: 0.3,

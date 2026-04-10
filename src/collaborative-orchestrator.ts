@@ -20,6 +20,7 @@ import {
   ContextualMemory
 } from "./memory/index.js";
 import { createProgressStream, createMultiModelReporter } from "./utils/progress-stream.js";
+import { GROK_MODELS } from "./config/model-constants.js";
 import { modelProviderRegistry } from "./orchestrators/collaborative/registries/ModelProviderRegistry.js";
 import { VisualizationService } from "./orchestrators/collaborative/services/visualization/VisualizationService.js";
 import { ToolExecutionService } from "./orchestrators/collaborative/services/tool-execution/ToolExecutionService.js";
@@ -309,12 +310,11 @@ export class CollaborativeOrchestrator {
   }
 
   /**
-   * Use Grok 4 Heavy for all Grok operations
+   * Use Grok 4.20 Multi-Agent for all Grok operations
    */
   useGrok4Heavy(): void {
-    // Use GROK_4_0709 as the "heavy" model (reasoning model)
-    this.modelPreferences['grok'] = 'grok-4-0709';
-    this.modelPreferences['grok-4'] = 'grok-4-0709';
+    this.modelPreferences['grok'] = GROK_MODELS._4_20_MULTI_AGENT;
+    this.modelPreferences['grok-4'] = GROK_MODELS._4_20_MULTI_AGENT;
   }
 
   /**

@@ -58,6 +58,33 @@ export class ModelRouter {
       reasoning: 10,
       useFor: ['complex reasoning with evidence']
     }],
+    ['grok-4.20-0309-reasoning', {
+      id: 'grok-4.20-0309-reasoning',
+      cost: 10,
+      quality: 10,
+      speed: 7,
+      reasoning: 10,
+      context: '2M tokens',
+      useFor: ['reasoning', 'search', 'code', 'architecture']
+    }],
+    ['grok-4.20-0309-non-reasoning', {
+      id: 'grok-4.20-0309-non-reasoning',
+      cost: 10,
+      quality: 10,
+      speed: 9,
+      reasoning: 8,
+      context: '2M tokens',
+      useFor: ['code', 'general']
+    }],
+    ['grok-4.20-multi-agent-0309', {
+      id: 'grok-4.20-multi-agent-0309',
+      cost: 10,
+      quality: 10,
+      speed: 5,
+      reasoning: 10,
+      context: '2M tokens',
+      useFor: ['reasoning', 'architecture', 'multi-agent']
+    }],
     ['grok-4-1-fast-reasoning', {
       id: 'grok-4-1-fast-reasoning',
       cost: 9,
@@ -170,14 +197,14 @@ export class ModelRouter {
     }
     
     const taskTypeMap: Record<string, string> = {
-      'code': task.complexity > 0.7 ? 'qwen3-coder-480b' : 'grok-4-1-fast-non-reasoning',
+      'code': task.complexity > 0.7 ? 'qwen3-coder-480b' : 'grok-4.20-0309-non-reasoning',
       'research': 'perplexity-sonar-pro',
       'reasoning': task.complexity > 0.5 ? 'gpt5' : 'gpt5_mini',
       'scout': 'multi-model',
       'verifier': task.complexity > 0.5 ? 'gpt5' : 'gpt5_mini',
       'challenger': 'gpt5_mini',
       'auditor': 'perplexity-sonar-pro',
-      'architect': 'grok-4-1-fast-reasoning',
+      'architect': 'grok-4.20-0309-reasoning',
       'commit_guardian': 'gemini-3.1-pro-preview'
     };
     

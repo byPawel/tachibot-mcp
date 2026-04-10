@@ -33,7 +33,7 @@ const MODELS = {
   OPENAI_REASON: OPENAI_MODELS.THINKING,        // gpt-5.4 (deep reasoning)
 
   // xAI Grok
-  GROK: GROK_MODELS._4_1_FAST_REASONING,        // grok-4-1-fast-reasoning
+  GROK: GROK_MODELS._4_20_REASONING,             // grok-4.20-0309-reasoning
 
   // Perplexity
   PERPLEXITY: PERPLEXITY_MODELS.SONAR,           // sonar (cheapest)
