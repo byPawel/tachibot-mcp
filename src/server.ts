@@ -83,6 +83,7 @@ import { isGeminiAvailable, geminiBrainstormTool, geminiAnalyzeCodeTool } from "
 import { isOpenRouterAvailable } from "./tools/openrouter-tools.js";
 import { getTachiTools } from "./tools/tachi-tool.js";
 import { getPromptTechniqueTools } from "./tools/prompt-technique-tools.js";
+import { withParamAliases } from "./utils/param-aliases.js";
 // import { registerGPT5Tools, isGPT5Available } from "./tools/openai-gpt5-fixed.js"; // DISABLED - using regular openai-tools.ts
 import { initializeOptimizations } from "./optimization/index.js";
 import { FocusModeRegistry } from "./application/services/focus/FocusModeRegistry.js";
@@ -214,6 +215,10 @@ function safeAddTool(tool: MCPTool): void {
   if (!isToolEnabled(tool.name)) {
     return; // Skip disabled tools silently (logging handled by isToolEnabled)
   }
+
+  // Auto-alias common param names (query/problem/prompt/question/topic)
+  // so LLMs can use any synonym and the tool still works
+  tool = withParamAliases(tool);
 
   if (!registeredTools.has(tool.name)) {
     // Wrap execute with usage tracking
