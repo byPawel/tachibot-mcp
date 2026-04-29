@@ -1,6 +1,6 @@
 /**
  * OpenAI Tools Implementation
- * Provides GPT-5.2 model capabilities with reasoning_effort control
+ * Provides GPT-5.5 model capabilities with reasoning_effort control
  * Uses centralized model constants from model-constants.ts
  */
 

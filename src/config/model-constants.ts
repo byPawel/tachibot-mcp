@@ -7,35 +7,35 @@
 // =============================================================================
 // OPENAI MODELS (provider-based naming)
 // =============================================================================
-// GPT-5.4 released Mar 5, 2026 - CURRENT (most capable, incorporates Codex)
-// GPT-5.3-Codex released Feb 5, 2026 - Agentic coding specialist
-// Model is "gpt-5.4", "thinking" is controlled by reasoning.effort parameter
-// OpenRouter uses prefix: openai/gpt-5.4, openai/gpt-5.4-pro
+// GPT-5.5 released Apr 23, 2026 - CURRENT (agentic-focused, 1.1M context, omnimodal)
+// GPT-5.4 released Mar 5, 2026 - previous flagship (kept for MINI tier — no 5.5-mini yet)
+// Model is "gpt-5.5", "thinking" is controlled by reasoning.effort parameter
+// OpenRouter uses prefix: openai/gpt-5.5, openai/gpt-5.5-pro
 export const OPENAI_MODELS = {
-  // GPT-5.4 (Mar 2026 - CURRENT)
-  // Note: "gpt-5.4" + reasoning.effort="high"/"xhigh" = "thinking" mode
-  DEFAULT: "gpt-5.4",               // Most capable - reasoning, agentic, professional work
-  MINI: "gpt-5.4-mini",             // Fast/efficient coding & subagents (400k ctx, Mar 17)
-  PRO: "gpt-5.4-pro",               // Expert: higher compute for harder problems
+  // GPT-5.5 (Apr 23, 2026 - CURRENT)
+  // Note: "gpt-5.5" + reasoning.effort="high"/"xhigh" = "thinking" mode
+  DEFAULT: "gpt-5.5",               // Most capable - agentic, reasoning, omnimodal (1.1M ctx)
+  MINI: "gpt-5.4-mini",             // Fast/efficient coding & subagents (no 5.5-mini available yet)
+  PRO: "gpt-5.5-pro",               // Expert: higher compute for harder problems ($30/$180)
 
   // Aliases for backward compatibility
-  THINKING: "gpt-5.4",              // "Thinking" = gpt-5.4 with high reasoning effort
-  FULL: "gpt-5.4",                  // Map old FULL to DEFAULT
-  CODEX: "gpt-5.4-mini",            // Map old codex to MINI (gpt-5.3-codex absorbed into 5.4)
+  THINKING: "gpt-5.5",              // "Thinking" = gpt-5.5 with high reasoning effort
+  FULL: "gpt-5.5",                  // Map old FULL to DEFAULT
+  CODEX: "gpt-5.4-mini",            // Map old codex to MINI (no 5.5 mini yet)
   CODEX_MINI: "gpt-5.4-mini",       // Map old codex-mini to MINI
-  CODEX_MAX: "gpt-5.4-pro",         // Map old codex-max to PRO
+  CODEX_MAX: "gpt-5.5-pro",         // Map old codex-max to PRO
   INSTANT: "gpt-5.4-mini",          // Map old instant to MINI
 } as const;
 
 // OpenRouter model ID mapping (add prefix when using OpenRouter gateway)
 export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
-  "gpt-5.4": "openai/",
+  "gpt-5.5": "openai/",
+  "gpt-5.5-pro": "openai/",
   "gpt-5.4-mini": "openai/",
-  "gpt-5.4-pro": "openai/",
 } as const;
 
 // OpenAI Reasoning Effort Levels (for models that support it)
-// Use with gpt-5.4: none=fast, low/medium=balanced, high/xhigh="thinking" mode
+// Use with gpt-5.5: none=fast, low/medium=balanced, high/xhigh="thinking" mode
 export const OPENAI_REASONING = {
   NONE: "none",     // No extra reasoning (fastest, allows temperature)
   LOW: "low",       // Light reasoning
@@ -90,10 +90,12 @@ export const GROK_MODELS = {
 } as const;
 
 // Kimi Models (Moonshot AI via OpenRouter)
-// K2.5 released Jan 27, 2026 - Multimodal + Agent Swarm (100 sub-agents)
+// K2.6 released Apr 20, 2026 - 1T MoE, leads SWE-bench Pro for long-horizon coding
+// K2.5 released Jan 27, 2026 - kept as fallback
 export const KIMI_MODELS = {
   K2_THINKING: "moonshotai/kimi-k2-thinking",   // 1T MoE, 32B active - agentic reasoning (256k context)
-  K2_5: "moonshotai/kimi-k2.5",                 // Multimodal (vision/video), Agent Swarm, tops SWE-Bench
+  K2_6: "moonshotai/kimi-k2.6",                 // CURRENT: 1T MoE, SWE-Pro leader, ~$0.74/$4.65
+  K2_5: "moonshotai/kimi-k2.5",                 // Previous: multimodal + agent swarm (fallback)
 } as const;
 
 // MiniMax Models (MiniMax via OpenRouter)
@@ -108,7 +110,8 @@ export const MINIMAX_MODELS = {
 // Qwen3 235B Thinking (July 2025) - Largest reasoning model available
 // Qwen3-Coder-Next (Feb 2026) - Agentic coding specialist, 80B/3B MoE, 262K context
 export const QWEN_MODELS = {
-  CODER_NEXT: "qwen/qwen3-coder-next",         // NEW: 80B/3B MoE, 262K ctx, SWE-Bench >70%, $0.07/$0.30
+  PLUS_3_6: "qwen/qwen3.6-plus",               // NEW (Apr 2026): general-purpose flagship, $0.325/$1.95
+  CODER_NEXT: "qwen/qwen3-coder-next",         // 80B/3B MoE, 262K ctx, SWE-Bench >70%, $0.14/$0.80 (still PRIMARY coder — no 3.6-coder yet)
   CODER_PLUS: "qwen/qwen3-coder-plus",         // Code specialist (32K context)
   CODER: "qwen/qwen3-coder",                   // Legacy coder - 480B MoE, SWE-Bench 69.6%
   QWQ_32B: "qwen/qwq-32b",                     // Deep reasoning - CodeElo 1261
@@ -166,18 +169,18 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
-// UPDATED Mar 21, 2026: GPT-5.4 (flagship) + GPT-5.4-mini (coding/fast)
-// gpt-5.3-codex retired — capabilities absorbed into gpt-5.4
+// UPDATED Apr 26, 2026: GPT-5.5 (flagship, agentic-focused) + GPT-5.4-mini (coding/fast — no 5.5-mini yet)
+// Kimi K2.6 (Apr 20, 2026 - SWE-bench Pro leader)
 export const CURRENT_MODELS = {
   openai: {
-    default: OPENAI_MODELS.DEFAULT,       // gpt-5.4 - most capable (Mar 2026)
-    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (gpt-5.4 + effort=high)
-    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (gpt-5.4 + effort=medium)
-    code: OPENAI_MODELS.MINI,             // Code tasks (gpt-5.4-mini - 94% of flagship, 70% cheaper)
+    default: OPENAI_MODELS.DEFAULT,       // gpt-5.5 - most capable, agentic (Apr 2026)
+    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (gpt-5.5 + effort=high)
+    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (gpt-5.5 + effort=medium)
+    code: OPENAI_MODELS.MINI,             // Code tasks (gpt-5.4-mini - cheapest tier, no 5.5-mini yet)
     explain: OPENAI_MODELS.MINI,          // Explanations (gpt-5.4-mini - fast & capable)
-    search: OPENAI_MODELS.DEFAULT,        // Web search (gpt-5.4 + web_search tool)
+    search: OPENAI_MODELS.DEFAULT,        // Web search (gpt-5.5 + web_search tool)
     // Premium option for opt-in (use sparingly - $30/$180 per 1M tokens)
-    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.4-pro - higher compute)
+    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.5-pro - higher compute)
   },
   grok: {
     reason: GROK_MODELS._4_20_REASONING,            // grok-4.20-0309-reasoning (flagship, low hallucination)
@@ -195,9 +198,9 @@ export const CURRENT_MODELS = {
     reason: PERPLEXITY_MODELS.SONAR_REASONING, // sonar-reasoning-pro $2/$8 per M
   },
   openrouter: {
-    kimi: KIMI_MODELS.K2_5,                // K2.5 multimodal + agent swarm (thinking via reasoning param)
-    qwen: QWEN_MODELS.CODER_NEXT,             // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70%
-    qwen_reason: QWEN_MODELS.MAX_THINKING, // 235B MoE thinking mode (HMMT 98%)
+    kimi: KIMI_MODELS.K2_6,                // K2.6 (Apr 2026): 1T MoE, SWE-bench Pro leader
+    qwen: QWEN_MODELS.CODER_NEXT,          // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70% (no 3.6-coder yet)
+    qwen_reason: QWEN_MODELS.MAX_THINKING, // 235B MoE thinking mode (HMMT 98%) — still best for reasoning
     minimax: MINIMAX_MODELS.M2_7,          // M2.7: SWE-Pro 56.22%, Multi-SWE #1, self-evolving
   }
 } as const;
@@ -318,7 +321,7 @@ export const TOOL_DEFAULTS = {
     temperature: 0.3,                      // Lower for precise reasoning
   },
   kimi_thinking: {
-    model: KIMI_MODELS.K2_5,              // K2.5 multimodal (thinking via reasoning param)
+    model: KIMI_MODELS.K2_6,              // K2.6 (Apr 2026): 1T MoE, SWE-bench Pro leader
     maxTokens: 16000,
     temperature: 0.7,
   },
@@ -358,6 +361,8 @@ export const DEFAULT_WORKFLOW_TOOL = "openai_brainstorm";
 // Used in tool outputs, usage stats, logs - keeps display consistent
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // OpenAI
+  "gpt-5.5": "gpt-5.5",
+  "gpt-5.5-pro": "gpt-5.5-pro",
   "gpt-5.4": "gpt-5.4",
   "gpt-5.4-mini": "gpt-5.4-mini",
   "gpt-5.4-pro": "gpt-5.4-pro",
@@ -385,15 +390,18 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
 
   // Kimi (Moonshot)
   "moonshotai/kimi-k2-thinking": "kimi-k2",
+  "moonshotai/kimi-k2.6": "kimi-k2.6",
   "moonshotai/kimi-k2.5": "kimi-k2.5",
   "moonshotai/kimi-k2.5-thinking": "kimi-k2.5",
 
   // Qwen (Alibaba)
+  "qwen/qwen3.6-plus": "qwen3.6-plus",
   "qwen/qwen3-coder-next": "qwen-coder-next",
   "qwen/qwen3-coder-plus": "qwen-coder",
   "qwen/qwen3-coder": "qwen-coder",
   "qwen/qwq-32b": "qwq-32b",
   "qwen/qwen3-max-thinking": "qwen-max",
+  "qwen/qwen3-235b-a22b-thinking-2507": "qwen-235b-thinking",
 
   // MiniMax
   "minimax/minimax-m2.7": "minimax-m2.7",
@@ -409,7 +417,9 @@ export function getModelDisplayName(modelId: string): string {
 // Model pricing per 1K tokens (input/output average) for cost tracking
 export const MODEL_PRICING: Record<string, number> = {
   // OpenAI
-  "gpt-5.4": 0.00875,           // ($2.50 + $15) / 2 / 1000 (Mar 2026)
+  "gpt-5.5": 0.0175,            // ($5 + $30) / 2 / 1000 (Apr 23, 2026)
+  "gpt-5.5-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Apr 23, 2026)
+  "gpt-5.4": 0.00875,           // ($2.50 + $15) / 2 / 1000 (Mar 2026 - legacy)
   "gpt-5.4-mini": 0.002625,     // ($0.75 + $4.50) / 2 / 1000 (Mar 17, 2026)
   "gpt-5.4-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Mar 2026)
 
@@ -437,15 +447,18 @@ export const MODEL_PRICING: Record<string, number> = {
 
   // OpenRouter models - Kimi
   "moonshotai/kimi-k2-thinking": 0.002,
+  "moonshotai/kimi-k2.6": 0.0027,      // ($0.74 + $4.65) / 2 / 1000 (Apr 2026)
   "moonshotai/kimi-k2.5": 0.003,
   "moonshotai/kimi-k2.5-thinking": 0.003,
 
   // OpenRouter models - Qwen
-  "qwen/qwen3-coder-next": 0.000185,   // ($0.07 + $0.30) / 2 / 1000 - cheapest coder!
+  "qwen/qwen3.6-plus": 0.001138,       // ($0.325 + $1.95) / 2 / 1000 (Apr 2026)
+  "qwen/qwen3-coder-next": 0.00047,    // ($0.14 + $0.80) / 2 / 1000 (verified via OpenRouter Apr 2026)
   "qwen/qwen3-coder-plus": 0.0005,
   "qwen/qwen3-coder": 0.0003,
   "qwen/qwq-32b": 0.001,
   "qwen/qwen3-max-thinking": 0.005,
+  "qwen/qwen3-235b-a22b-thinking-2507": 0.000822, // ($0.15 + $1.50) / 2 / 1000
 
   // OpenRouter models - MiniMax (VERY CHEAP!)
   "minimax/minimax-m2.7": 0.00075,        // ($0.30 + $1.20) / 2 / 1000 - flagship

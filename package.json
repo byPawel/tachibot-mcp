@@ -2,7 +2,7 @@
   "name": "tachibot-mcp",
   "mcpName": "io.github.byPawel/tachibot-mcp",
   "displayName": "TachiBot MCP - Universal AI Orchestrator",
-  "version": "2.21.0",
+  "version": "2.21.1",
   "type": "module",
   "main": "dist/src/server.js",
   "bin": {
@@ -33,7 +33,7 @@
     "build:profiles": "node dist/scripts/build-profiles.js",
     "start": "node dist/src/server.js",
     "dev": "node dist/src/server.js",
-    "inspect": "npx fastmcp inspect dist/src/server.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/src/server.js",
     "tachi": "node dist/src/server.js",
     "tachi:start": "node dist/src/server.js",
     "tachi:build": "tsc && npm run build:profiles && node dist/src/server.js",
@@ -76,12 +76,12 @@
   "dependencies": {
     "@types/node": "^22.13.17",
     "@types/react": "^19.2.7",
-    "highlight.js": "^11.11.1",
     "cli-table3": "^0.6.5",
     "dotenv": "^16.4.5",
     "env-paths": "^4.0.0",
-    "fastmcp": "^3.26.7",
+    "fastmcp": "^4.0.0",
     "gradient-string": "^3.0.0",
+    "highlight.js": "^11.11.1",
     "ink": "^6.6.0",
     "ink-big-text": "^2.0.0",
     "ink-gradient": "^3.0.0",
@@ -98,11 +98,11 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "tsx": "^4.19.4",
     "@types/marked-terminal": "^6.1.1",
     "jest": "^29.7.0",
     "nodemon": "^3.1.9",
-    "ts-jest": "^29.4.5"
+    "ts-jest": "^29.4.5",
+    "tsx": "^4.19.4"
   },
   "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"
 }

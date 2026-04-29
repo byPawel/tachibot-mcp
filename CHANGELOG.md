@@ -5,6 +5,22 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.1] - 2026-04-26
+
+### Changed
+- **OpenAI: gpt-5.4 → gpt-5.5** (released 2026-04-23). Agentic-focused, 1.1M context, omnimodal. Pricing $5/$30 per M tokens. `gpt-5.5-pro` ($30/$180) for premium tier. `gpt-5.4-mini` retained for `code`/`explain` tools (no `gpt-5.5-mini` released yet).
+- **Kimi: kimi-k2.5 → kimi-k2.6** (released 2026-04-20). 1T MoE, leads SWE-bench Pro for long-horizon coding. Pricing ~$0.74/$4.65 per M tokens. K2.5 retained as fallback.
+
+### Added
+- **Qwen3.6-Plus** (`qwen/qwen3.6-plus`) registered in `QWEN_MODELS.PLUS_3_6`. New April 2026 general-purpose flagship at $0.325/$1.95 per M. Not yet wired as default — `qwen3-coder-next` (coder) and `qwen3-235b-thinking-2507` (reason) remain primary; awaiting `qwen3.6-coder` variant.
+- Display names + pricing for `gpt-5.5`, `gpt-5.5-pro`, `kimi-k2.6`, `qwen3.6-plus`, `qwen3-235b-a22b-thinking-2507`.
+- Auto-fallback: `kimi-k2.6` → `kimi-k2.5` on quota errors.
+
+### Notes
+- Grok 5 not released (Q2 2026 expected). Keeping `grok-4.20-0309-reasoning`.
+- Gemini 3.5 in preview, GA expected at Google I/O May 2026. Keeping `gemini-3.1-pro-preview`.
+- Verified all model IDs against live OpenAI `/v1/models` and OpenRouter `/v1/models` endpoints before release.
+
 ## [2.19.3] - 2026-03-21
 
 ### Fixed

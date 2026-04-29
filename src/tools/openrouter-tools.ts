@@ -30,7 +30,8 @@ export enum OpenRouterModel {
 
   // Moonshot AI models (Kimi)
   KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - agentic reasoning
-  KIMI_K2_5 = "moonshotai/kimi-k2.5",                   // Multimodal, Agent Swarm
+  KIMI_K2_6 = "moonshotai/kimi-k2.6",                   // CURRENT (Apr 20, 2026): SWE-bench Pro leader
+  KIMI_K2_5 = "moonshotai/kimi-k2.5",                   // Previous: multimodal + agent swarm (fallback)
 
   // MiniMax models - VERY CHEAP, #1 AI Intelligence Index
   MINIMAX_M2_7 = "minimax/minimax-m2.7",               // 2300B/100B MoE, SWE-Pro 56.22%, Multi-SWE #1
@@ -42,6 +43,7 @@ export enum OpenRouterModel {
 const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.QWEN3_CODER_NEXT]: OpenRouterModel.QWEN3_CODER, // Fall back to 480B if Coder-Next fails
   [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
+  [OpenRouterModel.KIMI_K2_6]: OpenRouterModel.KIMI_K2_5,          // Fall back to K2.5 if K2.6 fails
 };
 
 

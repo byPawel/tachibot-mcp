@@ -28,9 +28,9 @@ const MODELS = {
   // Google Gemini
   GEMINI: GEMINI_MODELS.GEMINI_3_PRO,           // gemini-3.1-pro-preview
 
-  // OpenAI (GPT-5.4)
-  OPENAI: OPENAI_MODELS.THINKING,               // gpt-5.4 (default - most capable)
-  OPENAI_REASON: OPENAI_MODELS.THINKING,        // gpt-5.4 (deep reasoning)
+  // OpenAI (GPT-5.5)
+  OPENAI: OPENAI_MODELS.THINKING,               // gpt-5.5 (default - most capable, agentic)
+  OPENAI_REASON: OPENAI_MODELS.THINKING,        // gpt-5.5 (deep reasoning)
 
   // xAI Grok
   GROK: GROK_MODELS._4_20_REASONING,             // grok-4.20-0309-reasoning
@@ -42,7 +42,7 @@ const MODELS = {
   // OpenRouter
   QWEN: QWEN_MODELS.CODER_NEXT,                 // qwen/qwen3-coder-next (80B/3B MoE, 262K ctx)
   QWEN_REASON: QWEN_MODELS.MAX_THINKING,        // qwen/qwen3-235b-a22b-thinking (235B MoE)
-  KIMI: KIMI_MODELS.K2_5,                       // moonshotai/kimi-k2.5 (thinking via reasoning param)
+  KIMI: KIMI_MODELS.K2_6,                       // moonshotai/kimi-k2.6 (Apr 2026 - SWE-bench Pro leader)
   MINIMAX: MINIMAX_MODELS.M2_7,                 // minimax/minimax-m2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index)
 } as const;
 
@@ -78,7 +78,7 @@ export function getChallengerModels(): string[] {
 
 /**
  * Get Verifier model configuration
- * All variants use Gemini 3 Pro; deep uses gpt-5.4 for max reasoning
+ * All variants use Gemini 3 Pro; deep uses gpt-5.5 for max reasoning
  */
 export function getVerifierModels(): {
   quick: string[];
