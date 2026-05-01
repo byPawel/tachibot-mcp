@@ -21,6 +21,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gemini 3.5 in preview, GA expected at Google I/O May 2026. Keeping `gemini-3.1-pro-preview`.
 - Verified all model IDs against live OpenAI `/v1/models` and OpenRouter `/v1/models` endpoints before release.
 
+## [2.21.0] - 2026-04-13
+
+### Added
+- **Auto-alias param names** — `z.preprocess()` hook in `safeAddTool` remaps `query` ↔ `problem` ↔ `prompt` ↔ `question` ↔ `topic` before Zod validation. LLMs that reach for the wrong synonym now succeed instead of hard-failing with `-32602 InvalidParams`.
+- **Zero per-tool changes** — single source of truth in `src/utils/param-aliases.ts`; every tool benefits automatically.
+- **11 unit tests** in `src/utils/__tests__/param-aliases.test.ts` covering directional aliasing, primary-wins precedence, and missing-key behavior.
+
+### Notes
+- Primary param value always wins when both primary and alias are provided.
+- Aliasing is transparent to tool implementations — the Zod schema sees the canonical key.
+
+## [2.20.0] - 2026-04-10
+
+### Changed
+- **Grok 4 → 4.20** — all defaults moved to flagship.
+  - `grok_reason` / `grok_search` → `grok-4.20-0309-reasoning` (low hallucination, 2M context)
+  - `grok_architect` → `grok-4.20-multi-agent-0309` (4–16 parallel agents)
+  - `grok_code` / `grok_debug` / `grok_brainstorm` → `grok-4.20-0309-non-reasoning` (fast turn-around)
+- **Smart timeout defaults bumped** — OpenAI 20→60s base, Grok max 90→120s.
+
+### Added
+- **AbortController on OpenAI** — 90s default, 180s for high-reasoning. No more hung calls.
+- **AbortController on Grok** — 60–180s based on model.
+- **`reasoning` param** on `callGrok` for multi-agent invocation; unified `GrokModel` enum.
+
+### Fixed
+- Stale `gpt-4-mini` → `gpt-5.4-mini` in architect + workflows.
+- Hardcoded `grok-4-0709` references across 6 scattered files (OpenRouter gateway, ANSI badges, model-router, tool-mapper).
+
+### Docs
+- Updated `docs/API_KEYS.md` and `docs/TOOL_PARAMETERS.md` for Grok 4.20.
+
 ## [2.19.3] - 2026-03-21
 
 ### Fixed
