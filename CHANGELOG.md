@@ -5,6 +5,14 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.2] - 2026-05-04
+
+### Fixed
+- Test suite: dropped stray `vitest` import in `strip-markdown` test (project uses Jest).
+
+### Docs
+- Backfilled CHANGELOG entries for v2.20.0 and v2.21.0.
+
 ## [2.21.1] - 2026-04-26
 
 ### Changed
