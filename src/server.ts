@@ -882,8 +882,24 @@ console.error("🔧 TachiBot MCP Server starting up...");
 console.error(`🔧 Node version: ${process.version}`);
 console.error(`🔧 Working directory: ${process.cwd()}`);
 
-// Keep the process alive
-console.error("📌 Setting up process.stdin.resume() to keep process alive");
+// ============================================================================
+// Process lifecycle — stdio MCP transport considerations
+//
+// This server communicates with the MCP client (e.g. Claude Desktop) exclusively
+// over stdio: the client reads JSON-RPC responses from our stdout and sends
+// requests to our stdin. stderr is used for diagnostic logging only.
+//
+// Because all three file descriptors are pipes (not TTYs), the server's entire
+// I/O depends on the client process staying alive. When the client exits:
+//   • stdin reaches EOF — no more requests will arrive
+//   • stdout/stderr become broken pipes — any write immediately fails with EPIPE
+//
+// The handlers below ensure the server responds to these conditions correctly
+// instead of spinning in a crash loop or accumulating zombie processes.
+// ============================================================================
+
+// Keep the event loop alive so the server does not exit between MCP requests.
+// Without this, Node would drain the queue and exit once startup completes.
 process.stdin.resume();
 
 // Handle process termination gracefully
@@ -897,38 +913,86 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-// SIGPIPE: client closed the pipe — exit cleanly
+// ── SIGPIPE (macOS / Linux only) ─────────────────────────────────────────────
+// The OS sends SIGPIPE to a process that writes to a pipe whose read end has
+// been closed (i.e. the MCP client exited). Default disposition is termination,
+// but Node.js ignores SIGPIPE by default — so we register an explicit handler
+// that exits cleanly with code 0. Windows does not have this signal; EPIPE is
+// handled via stream 'error' events below instead.
 if (process.platform !== 'win32') {
   process.on('SIGPIPE', () => {
     process.exit(0);
   });
 }
 
-// Catch unhandled promise rejections
+
+// ── Stream-level EPIPE handlers (all platforms, primary path on Windows) ─────
+// When the MCP client closes its end of the pipe, the next write to stdout or
+// stderr emits an 'error' event with code 'EPIPE' on the underlying stream.
+// Catching it here is the earliest possible interception point — the error never
+// propagates to uncaughtException — and is the *only* mechanism available on
+// Windows (which has no SIGPIPE signal).
+//
+// Why exit(0) and not just swallow the error?
+// A stdio MCP server is meaningless without a connected client: no client means
+// no requests to serve and no way to deliver responses. Exiting immediately frees
+// all resources and lets the process manager (launchd, systemd, etc.) decide
+// whether to restart.
+(process.stdout as NodeJS.WriteStream).on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EPIPE') process.exit(0);
+});
+(process.stderr as NodeJS.WriteStream).on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EPIPE') process.exit(0);
+});
+
+
+// ── Unhandled promise rejections ─────────────────────────────────────────────
+// Catches promises that were rejected without a .catch() handler. We log and
+// continue rather than exit, because a single failed async tool call should not
+// bring down the whole server.
+//
+// IMPORTANT: uses process.stderr.write() directly, NOT console.error().
+// If stderr is a broken pipe at the point this fires, console.error() would
+// itself throw EPIPE, which would re-enter uncaughtException below. Writing
+// directly to the stream lets the stream's own 'error' handler (above) deal
+// with a broken pipe without creating a re-entrant exception.
 process.on('unhandledRejection', (reason, _promise) => {
-  // Use process.stderr.write directly — avoids re-entering uncaughtException
-  // if stderr itself is broken (EPIPE).
   try {
     const reasonText = reason instanceof Error
       ? (reason.stack ?? reason.message)
       : String(reason);
     process.stderr.write(`Unhandled Rejection: ${reasonText}\n`);
   } catch {
-    // stderr broken — nothing to do
+    // stderr broken — the stream error handler above will exit; nothing to do here
   }
 });
 
-// Catch uncaught exceptions
+
+// ── Uncaught exceptions — last-resort handler ────────────────────────────────
+// Catches any synchronous exception or async error that escaped all other
+// handlers. Two failure modes need special treatment:
+//
+// 1. EPIPE — the MCP client disconnected and a write to stdout/stderr failed.
+//    The stream-level handlers above are the *primary* EPIPE defence; this
+//    branch is a safety net for the case where an EPIPE somehow bypasses them
+//    (e.g. a write performed outside the stream abstraction).
+//
+//    Critically, we must NOT call console.error() here for EPIPE errors.
+//    console.error() writes to process.stderr — the same broken pipe — which
+//    throws another EPIPE, re-enters this handler, throws again, and so on.
+//    The result is an infinite loop that pegs a CPU core at ~100% indefinitely
+//    while V8 serialises a full stack trace on every iteration.
+//
+// 2. EADDRINUSE / EACCES — a port or socket is already in use or access is
+//    denied. These are unrecoverable; exit with code 1.
+//
+// For all other exceptions we log (via process.stderr.write, not console.error,
+// for the same re-entrance reason) and continue — the server stays up so that
+// unrelated tools can still handle future requests.
 process.on('uncaughtException', (error: NodeJS.ErrnoException) => {
-  // EPIPE means the MCP client closed the connection (broken pipe).
-  // Calling console.error() here would write to the same broken pipe,
-  // throw another EPIPE, and re-enter this handler — infinite loop at ~100% CPU.
-  // A stdio MCP server has no purpose without a client: exit cleanly.
   if (error.code === 'EPIPE') {
     process.exit(0);
   }
-  // Use process.stderr.write() directly instead of console.error() so that
-  // a broken stderr cannot re-enter this handler.
   try {
     process.stderr.write(`Uncaught Exception: ${error.stack ?? error.message}\n`);
   } catch {
