@@ -897,17 +897,39 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
+// SIGPIPE: client closed the pipe — exit cleanly
+process.on('SIGPIPE', () => {
+  process.exit(0);
+});
+
 // Catch unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Don't exit on unhandled rejection - log and continue
+process.on('unhandledRejection', (reason, _promise) => {
+  // Use process.stderr.write directly — avoids re-entering uncaughtException
+  // if stderr itself is broken (EPIPE).
+  try {
+    process.stderr.write(`Unhandled Rejection: ${reason}\n`);
+  } catch {
+    // stderr broken — nothing to do
+  }
 });
 
 // Catch uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  // For MCP servers, we should try to continue if possible
-  // Only exit if it's a critical error
+process.on('uncaughtException', (error: NodeJS.ErrnoException) => {
+  // EPIPE means the MCP client closed the connection (broken pipe).
+  // Calling console.error() here would write to the same broken pipe,
+  // throw another EPIPE, and re-enter this handler — infinite loop at ~100% CPU.
+  // A stdio MCP server has no purpose without a client: exit cleanly.
+  if (error.code === 'EPIPE') {
+    process.exit(0);
+  }
+  // Use process.stderr.write() directly instead of console.error() so that
+  // a broken stderr cannot re-enter this handler.
+  try {
+    process.stderr.write(`Uncaught Exception: ${error.stack ?? error.message}\n`);
+  } catch {
+    // stderr also broken — exit rather than spin
+    process.exit(1);
+  }
   if (error.message?.includes('EADDRINUSE') || error.message?.includes('EACCES')) {
     process.exit(1);
   }
