@@ -48,16 +48,20 @@ export const OPENAI_REASONING = {
 // =============================================================================
 // GEMINI MODELS (Google)
 // =============================================================================
+// Gemini 3.5 Flash went GA May 19, 2026 (Google I/O) — agentic/coding, 1M ctx, $1.50/$9.
+// It is the new FLASH/search tier. Gemini 3.5 Pro is NOT out yet (June 2026), so the
+// reasoning DEFAULT stays on gemini-3.1-pro-preview until 3.5 Pro ships.
 export const GEMINI_MODELS = {
-  // Gemini 3.1 Pro - default (3.0 Pro retires Mar 9, 2026)
-  GEMINI_3_PRO: "gemini-3.1-pro-preview",     // Migrated: 3.0 retires Mar 9
+  // Gemini 3.1 Pro - reasoning default (3.0 Pro retired Mar 9, 2026)
+  GEMINI_3_PRO: "gemini-3.1-pro-preview",     // Default: top reasoning model available
   GEMINI_3_1_PRO: "gemini-3.1-pro-preview",   // Enhanced reasoning, 1M context
-  GEMINI_3_FLASH: "gemini-3-flash-preview",    // Fast frontier model
+  GEMINI_3_5_FLASH: "gemini-3.5-flash",        // GA May 19, 2026 - agentic/coding, 1M ctx
+  GEMINI_3_FLASH: "gemini-3-flash-preview",    // Legacy fast frontier (kept for model-router)
   GEMINI_3_1_FLASH_LITE: "gemini-3.1-flash-lite", // Mar 3, 2026 - fastest/cheapest in 3.1 series
 
   // Aliases
   PRO: "gemini-3.1-pro-preview",
-  FLASH: "gemini-3-flash-preview",
+  FLASH: "gemini-3.5-flash",                   // Bumped: 3-flash-preview -> 3.5-flash (May 2026)
   FLASH_LITE: "gemini-3.1-flash-lite",
 } as const;
 
