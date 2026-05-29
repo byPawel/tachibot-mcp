@@ -5,6 +5,19 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.3] - 2026-05-29
+
+### Added
+- **Gemini 3.5 Flash** (`gemini-3.5-flash`) — went GA at Google I/O on 2026-05-19. Now the Flash/search tier: `gemini_query` (`flash`), `gemini_search` grounding, and `tool-mapper` `flash` routing all resolve to it via `GEMINI_MODELS.FLASH`. Agentic/coding focus, 1M context, $1.50/$9 per M tokens. SWE-bench Verified 78.8%, Terminal-bench 76.2%.
+- Display name + pricing for `gemini-3.5-flash`; ANSI terminal labels in all 4 style maps.
+
+### Changed
+- `GEMINI_MODELS.FLASH` alias bumped `gemini-3-flash-preview` → `gemini-3.5-flash`. The legacy `GEMINI_3_FLASH` constant is retained for `model-router.ts` cost tiers.
+
+### Notes
+- **Reasoning default unchanged** — `gemini.default` stays `gemini-3.1-pro-preview`. Gemini 3.5 **Pro** is not yet released (announced at I/O, expected June 2026, no API model ID). Swap the default to 3.5 Pro once it ships.
+- No OpenAI change: GPT-5.5 (Apr 23) remains the latest flagship; no GPT-5.6 exists.
+
 ## [2.21.2] - 2026-05-04
 
 ### Fixed
