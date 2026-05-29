@@ -373,6 +373,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
 
   // Gemini
   "gemini-3.1-pro-preview": "gemini-3.1-pro",
+  "gemini-3.5-flash": "gemini-3.5-flash",
   "gemini-3-flash-preview": "gemini-3-flash",
   "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
 
@@ -429,7 +430,8 @@ export const MODEL_PRICING: Record<string, number> = {
 
   // Gemini
   "gemini-3.1-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
-  "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000
+  "gemini-3.5-flash": 0.00525,           // ($1.50 + $9) / 2 / 1000 (GA May 19, 2026)
+  "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000 (legacy)
   "gemini-3.1-flash-lite": 0.001,       // Cheapest/fastest in 3.1 series (Mar 2026)
 
   // Grok
