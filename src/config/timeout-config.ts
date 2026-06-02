@@ -60,7 +60,11 @@ export function getTimeoutConfig(): TimeoutConfig {
  */
 export function getOpenRouterModelTimeout(modelId: string): number {
   const config = getTimeoutConfig();
-  if (modelId.includes('thinking') || modelId.includes('reasoning')) {
+  // Kimi K2.x are slow reasoning models whose IDs ("moonshotai/kimi-k2.5",
+  // "kimi-k2.6") contain neither "thinking" nor "reasoning", so match them
+  // explicitly — otherwise they fall through to the 180s default and time out.
+  const isKimiReasoning = modelId.includes('kimi-k2');
+  if (modelId.includes('thinking') || modelId.includes('reasoning') || isKimiReasoning) {
     return config.openrouterThinking;
   }
   return config.openrouter;

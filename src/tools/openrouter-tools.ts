@@ -731,10 +731,11 @@ ${FORMAT_INSTRUCTION}`;
     ];
 
     const reportFn = reportProgress ?? (async () => {});
+    // 240s timeout belongs to callOpenRouter (its 6th arg), NOT withHeartbeat's
+    // intervalMs — passing it to withHeartbeat left the request on the 180s default.
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.3, 4000),
-      reportFn,
-      240000
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.3, 4000, {}, 240000),
+      reportFn
     );
   }
 };
@@ -986,10 +987,11 @@ ${FORMAT_INSTRUCTION}`;
     ];
 
     const reportFn = reportProgress ?? (async () => {});
+    // 300s timeout belongs to callOpenRouter (its 6th arg), NOT withHeartbeat's
+    // intervalMs — long-context calls over 256K need the headroom.
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.2, 8000),
-      reportFn,
-      300000
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_5, 0.2, 8000, {}, 300000),
+      reportFn
     );
   }
 };
