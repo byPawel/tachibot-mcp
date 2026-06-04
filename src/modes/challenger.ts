@@ -869,7 +869,7 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
       const messages = [
         {
           role: 'system',
-          content: 'You are Grok-3 with live search. Find official documentation and verify technical claims.'
+          content: 'You are Grok 4.3 with live search. Find official documentation and verify technical claims.'
         },
         {
           role: 'user',

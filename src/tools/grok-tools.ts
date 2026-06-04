@@ -191,7 +191,7 @@ export const grokReasonTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.1, an expert at logical reasoning and problem-solving.
+        content: `You are Grok 4.3, an expert at logical reasoning and problem-solving.
 ${approachPrompts[approach as keyof typeof approachPrompts]}.
 ${context ? `Context: ${context}` : ''}
 ${FORMAT_INSTRUCTION}`
@@ -249,7 +249,7 @@ export const grokCodeTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.1 Fast, expert programmer and code analyst.
+        content: `You are Grok 4.3, expert programmer and code analyst.
 Task: ${taskPrompts[task as keyof typeof taskPrompts]}
 ${language ? `Language: ${language}` : ''}
 ${requirements ? `Requirements: ${requirements}` : ''}

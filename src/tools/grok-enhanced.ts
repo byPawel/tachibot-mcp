@@ -285,7 +285,7 @@ export const grokReasonEnhanced = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok-4 in ${useHeavy ? 'Heavy' : 'Standard'} reasoning mode.
+        content: `You are Grok 4.3 in ${useHeavy ? 'Heavy' : 'Standard'} reasoning mode.
 ${approachPrompts[approach as keyof typeof approachPrompts]}.
 ${context ? `Context: ${context}` : ''}
 Maximum reasoning steps: ${maxSteps}
@@ -350,7 +350,7 @@ export const grokFunctionTool = {
     const messages = [
       {
         role: "system",
-        content: "You are Grok-4 with function calling capability. Use the provided functions to complete the task."
+        content: "You are Grok 4.3 with function calling capability. Use the provided functions to complete the task."
       },
       {
         role: "user",
@@ -425,7 +425,7 @@ export const grokSearchTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok-3 with live search. Search for: "${query}".
+        content: `You are Grok 4.3 with live search. Search for: "${query}".
 ${recencyPrompt}
 Provide concise, factual results with sources.
 Limit search to ${max_search_results} sources for cost control.
