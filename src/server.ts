@@ -777,6 +777,13 @@ async function initializeServer() {
       console.error(`✅ Registered planner tools (planner_maker, planner_runner, list_plans)`);
     }
 
+    // Register local-model tools (Ollama / LM Studio / llama.cpp / vLLM - zero-cost,
+    // offline, no API key). Registered unconditionally; profile membership is
+    // enforced by safeAddTool/isToolEnabled.
+    const { localQueryTool } = await import("./tools/local-tools.js");
+    safeAddTool(localQueryTool);
+    console.error(`✅ Registered local-model tools (local_query)`);
+
 
     // Register workflow tools
     registerWorkflowTools(server);

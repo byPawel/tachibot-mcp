@@ -56,6 +56,7 @@ export interface ToolsConfig {
   qwen_competitive: boolean;
   minimax_code: boolean;       // MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index)
   minimax_agent: boolean;      // MiniMax M2.7 (agentic, self-evolving)
+  local_query: boolean;        // Local open-weight models (Ollama/LM Studio/llama.cpp/vLLM) — zero-cost, offline
 
   // Workflow tools
   workflow: boolean;

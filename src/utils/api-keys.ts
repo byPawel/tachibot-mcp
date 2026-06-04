@@ -28,3 +28,15 @@ export const hasQwenApiKey = (): boolean => !!process.env.QWEN_API_KEY;
 
 export const getDeepSeekApiKey = (): string | undefined => process.env.DEEPSEEK_API_KEY;
 export const hasDeepSeekApiKey = (): boolean => !!process.env.DEEPSEEK_API_KEY;
+
+// Local LLM (Ollama / LM Studio / llama.cpp / vLLM — any OpenAI-compatible endpoint)
+// No API key required; presence is implied by a running local server.
+// Defaults target Ollama. Override via LOCAL_LLM_BASE_URL / LOCAL_LLM_MODEL.
+export const getLocalLLMBaseUrl = (): string =>
+  process.env.LOCAL_LLM_BASE_URL || "http://localhost:11434/v1"; // Ollama default (LM Studio: http://localhost:1234/v1)
+export const getLocalLLMModel = (): string =>
+  process.env.LOCAL_LLM_MODEL || "hermes3"; // Nous Hermes
+export const getLocalLLMApiKey = (): string => process.env.LOCAL_LLM_API_KEY || "local"; // most local servers ignore this
+// Treat local as "available" once the user has opted in by setting a base URL or model.
+export const hasLocalLLM = (): boolean =>
+  !!(process.env.LOCAL_LLM_BASE_URL || process.env.LOCAL_LLM_MODEL);

@@ -39,6 +39,7 @@ export const minimalProfile: ProfileConfig = {
     qwen_competitive: false,
     minimax_code: true,       // Cheap SWE - good for minimal
     minimax_agent: false,
+    local_query: false,
     workflow: true,
     list_workflows: false,
     create_workflow: false,

@@ -10,6 +10,7 @@ import { z } from "zod";
 import { callGrok } from "./grok-tools.js";
 import { callOpenAI } from "./openai-tools.js";
 import { callOpenRouter, OpenRouterModel } from "./openrouter-tools.js";
+import { callLocal } from "./local-tools.js";
 import { callGemini } from "./gemini-tools.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
@@ -81,6 +82,26 @@ const JUROR_REGISTRY: Record<string, {
       { role: "user", content: q }
     ], OpenRouterModel.MINIMAX_M2_7, 0.5, 3000),
   },
+  // Local open-weights jurors — free, offline, ZERO token cost. Their judgment is
+  // uncorrelated with the frontier vendors above, which is exactly what reduces
+  // shared-bias blind spots (arXiv:2404.18796). Requires a running local server
+  // (Ollama/LM Studio); see local-tools.ts for setup.
+  hermes: {
+    label: "Hermes (Local · Free)",
+    role: "Independent local juror — uncorrelated with frontier vendors. Direct, unfiltered reasoning.",
+    call: async (q) => callLocal([
+      { role: "system", content: `You are Hermes, a local open-weights model acting as an independent juror. Give direct, unfiltered, well-reasoned judgment. ${FORMAT_INSTRUCTION}` },
+      { role: "user", content: q }
+    ], { temperature: 0.5, maxTokens: 4000 }),
+  },
+  local: {
+    label: "Local LLM (Free)",
+    role: "Local open-weights juror running offline at zero token cost.",
+    call: async (q) => callLocal([
+      { role: "system", content: `You are a local open-weights model acting as an independent juror. Be rigorous and concise. ${FORMAT_INSTRUCTION}` },
+      { role: "user", content: q }
+    ], { temperature: 0.5, maxTokens: 4000 }),
+  },
 };
 
 const DEFAULT_JURORS = ["grok", "kimi", "qwen", "openai"];
@@ -91,7 +112,7 @@ export const juryTool = {
   parameters: z.object({
     question: z.string().describe("The question or problem for the jury to evaluate (REQUIRED)"),
     jurors: z.string().optional()
-      .describe("Comma-separated juror models (default: grok,kimi,qwen,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax"),
+      .describe("Comma-separated juror models (default: grok,kimi,qwen,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, hermes, local (free offline Ollama/LM Studio)"),
     mode: z.enum(["synthesize", "evaluate", "rank", "resolve"])
       .optional()
       .default("synthesize")
@@ -129,14 +150,27 @@ export const juryTool = {
           return { name, label: juror.label, result };
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
-          return { name, label: juror.label, result: `[Error: ${msg}]` };
+          // Drop a failed juror (e.g. an offline local model) rather than feeding
+          // its error text to the judge — keeps synthesis clean. Typed errors from
+          // callLocal land here, so no string-matching needed.
+          console.error(`⚠️ Dropping juror ${name}: ${msg}`);
+          return { name, label: juror.label, result: null as string | null };
         }
       });
       return Promise.all(promises);
     }, reportFn, 300000);
 
     // Phase 2: Format perspectives for the judge
-    const perspectives = jurorResults
+    const liveJurors = jurorResults.filter(
+      (j) => typeof j.result === "string" && j.result.length > 0,
+    );
+    const droppedCount = jurorResults.length - liveJurors.length;
+    if (droppedCount > 0) {
+      console.error(
+        `⚠️ ${droppedCount} juror(s) dropped (offline/error) — synthesizing from ${liveJurors.length}`,
+      );
+    }
+    const perspectives = liveJurors
       .map(j => `--- ${j.label} ---\n${j.result}`)
       .join("\n\n");
 

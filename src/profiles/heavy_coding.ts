@@ -50,6 +50,7 @@ export const heavyCodingProfile: ProfileConfig = {
     qwen_competitive: false,
     minimax_code: true,        // Cheap SWE - great for heavy coding
     minimax_agent: true,       // Cheap agentic - great for workflows
+    local_query: true,         // Local open-weight coding model (zero-cost/offline)
 
     // Workflow - minimal set for execution
     workflow: true,

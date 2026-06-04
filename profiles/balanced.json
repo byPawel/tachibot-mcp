@@ -1,5 +1,5 @@
 {
-  "description": "Balanced set for general use (~Xk tokens, 39 tools)",
+  "description": "Balanced set for general use (~Xk tokens, 40 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -37,6 +37,7 @@
     "qwen_competitive": false,
     "minimax_code": true,
     "minimax_agent": true,
+    "local_query": true,
     "workflow": true,
     "list_workflows": true,
     "create_workflow": true,

@@ -39,6 +39,7 @@ export const codeFocusProfile: ProfileConfig = {
     qwen_competitive: false,
     minimax_code: true,        // Cheap SWE - perfect for code focus
     minimax_agent: false,
+    local_query: true,
     workflow: true,
     list_workflows: true,
     create_workflow: false,

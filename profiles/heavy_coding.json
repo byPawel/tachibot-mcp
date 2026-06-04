@@ -1,5 +1,5 @@
 {
-  "description": "Default profile — heavy coding with all reasoning & code tools (45 tools)",
+  "description": "Default profile — heavy coding with all reasoning & code tools (46 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -37,6 +37,7 @@
     "qwen_competitive": false,
     "minimax_code": true,
     "minimax_agent": true,
+    "local_query": true,
     "workflow": true,
     "list_workflows": true,
     "create_workflow": false,
