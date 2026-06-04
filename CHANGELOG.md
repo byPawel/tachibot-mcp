@@ -5,6 +5,20 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.4] - 2026-06-01
+
+### Changed
+- **Grok bumped `grok-4.20` → `grok-4.3`** (xAI's Apr 30 2026 flagship). All Grok roles (`grok_reason`, `grok_code`, `grok_debug`, `grok_brainstorm`, `grok_search`, `grok_architect`) now resolve to `grok-4.3`: 1M context, lowest hallucination rate, and **cheaper** ($1.25/$2.50 vs 4.20's $2/$6). Pricing entry dropped `0.004` → `0.001875`.
+- `grok-4.3` is a single model ID with **configurable reasoning effort** (replacing 4.20's reasoning/non-reasoning/multi-agent split). `callGrok` now (a) treats `grok-4.3` as a long-timeout flagship (180s) and (b) forwards `reasoning.effort` for `grok-4.3` as well as multi-agent — so `grok_architect` keeps its `high`-effort behaviour.
+- Repointed `CURRENT_MODELS.grok`, `MODELS.GROK`, workflow `model-router` routing, `ModelProviderRegistry` alias, and `config.ts` available-models list to `grok-4.3`.
+
+### Added
+- `GROK_MODELS._4_3` / `GROK_MODELS._BUILD` constants (+ `GrokModel.GROK_4_3`, `GROK_4_3_LATEST`, `GROK_BUILD`). `grok-build-0.1` (May 29 2026 coding specialist, 256k ctx) added as a constant for future wiring.
+- Display name, pricing, OpenRouter-gateway mapping (`x-ai/grok-4.3`), cost-monitor entry, and ANSI terminal labels (all 4 style maps) for `grok-4.3`.
+
+### Notes
+- Legacy `GROK_4_20_*` enum keys are retained (now resolving to `grok-4.3`) for back-compat; grok-4.20 itself was **not** retired by xAI and remains a valid fallback.
+
 ## [2.21.3] - 2026-05-29
 
 ### Added

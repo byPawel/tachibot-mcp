@@ -492,11 +492,11 @@ export function getGrokStatus(): {
 } {
   return {
     available: isGrokAvailable(),
-    model: "grok-4.20-0309-reasoning",
+    model: "grok-4.3",
     features: [
-      'Grok 4.20 Reasoning (grok-4.20-0309-reasoning): Flagship, low hallucination, 2M context ($2/$6)',
-      'Grok 4.20 Non-Reasoning (grok-4.20-0309-non-reasoning): Tool-calling optimized, agentic workflows ($2/$6)',
-      'Grok 4.20 Multi-Agent (grok-4.20-multi-agent-0309): 4-16 parallel agents ($2/$6)',
+      'Grok 4.3 (grok-4.3): Flagship, lowest hallucination, 1M context, configurable reasoning effort ($1.25/$2.50)',
+      'Grok Build (grok-build-0.1): Fast agentic coding specialist, 256k context',
+      'Grok 4.20 (grok-4.20-0309-*): Legacy flagship, still available as fallback (2M context)',
       'Live web search with citations',
       'Function calling',
       'Structured outputs',

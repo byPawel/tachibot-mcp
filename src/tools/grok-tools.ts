@@ -25,12 +25,18 @@ config({ path: path.resolve(__dirname, '../../../.env') });
 const GROK_API_KEY = getGrokApiKey();
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
-// Available Grok models - Updated 2026-04-10 with Grok 4.20 (Mar 2026)
+// Available Grok models - Updated 2026-06-01 with Grok 4.3 (Apr 30, 2026 flagship)
 export enum GrokModel {
-  // Grok 4.20 models (Mar 10, 2026) - FLAGSHIP
-  GROK_4_20_REASONING = "grok-4.20-0309-reasoning",           // Flagship: 2M context, $2/$6, low hallucination
-  GROK_4_20_NON_REASONING = "grok-4.20-0309-non-reasoning",   // Standard: 2M context, $2/$6
-  GROK_4_20_MULTI_AGENT = "grok-4.20-multi-agent-0309",       // Multi-agent: 4-16 agents, $2/$6
+  // Grok 4.3 (Apr 30, 2026) - CURRENT FLAGSHIP
+  // Single model ID with configurable reasoning effort; 1M ctx, $1.25/$2.50 (cheaper than 4.20).
+  GROK_4_3 = "grok-4.3",                                      // Flagship: 1M ctx, reasoning.effort low|high
+  GROK_4_3_LATEST = "grok-4.3-latest",                        // Rolling alias for newest snapshot
+  GROK_BUILD = "grok-build-0.1",                              // Coding specialist (May 29, 2026): 256k ctx
+
+  // Grok 4.20 keys (Mar 2026) - DEPRECATED, retained for back-compat → now resolve to grok-4.3
+  GROK_4_20_REASONING = "grok-4.3",           // [deprecated] → grok-4.3
+  GROK_4_20_NON_REASONING = "grok-4.3",       // [deprecated] → grok-4.3
+  GROK_4_20_MULTI_AGENT = "grok-4.3",         // [deprecated] → grok-4.3 (architect passes high reasoning.effort)
 
   // Grok 4.1 fast models (Nov 2025) - BEST VALUE (10x cheaper)
   GROK_4_1_FAST_REASONING = "grok-4-1-fast-reasoning",     // Fast reasoning: 2M context, $0.20/$0.50
@@ -55,7 +61,7 @@ export enum GrokModel {
  */
 export async function callGrok(
   messages: Array<{ role: string; content: string }>,
-  model: GrokModel = GrokModel.GROK_4_20_REASONING,
+  model: GrokModel = GrokModel.GROK_4_3,
   temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased default for comprehensive responses
   forceVisibleOutput: boolean = true,
@@ -88,10 +94,10 @@ export async function callGrok(
     return { ...msg, content: validation.sanitized };
   });
 
-  // Grok 4.x reasoning can take 60-90s; 4.20 and multi-agent can take longer
+  // Grok 4.x reasoning can take 60-90s; 4.20/4.3 flagship and multi-agent can take longer
   const isReasoning = model.includes('reasoning') || model.includes('multi-agent');
-  const is420 = model.includes('4.20');
-  const timeoutMs = is420 ? 180000 : (isReasoning ? 120000 : 60000);
+  const isFlagship = model.includes('4.20') || model.startsWith('grok-4.3');
+  const timeoutMs = isFlagship ? 180000 : (isReasoning ? 120000 : 60000);
 
   try {
     // For Grok 4+ models, we need to handle reasoning tokens specially
@@ -107,7 +113,8 @@ export async function callGrok(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const isMultiAgent = model.includes('multi-agent');
+    // grok-4.3 (single flagship) and 4.20 multi-agent both accept reasoning.effort
+    const supportsReasoningEffort = model.includes('multi-agent') || model.startsWith('grok-4.3');
     const requestBody: any = {
       model,
       messages: validatedMessages,
@@ -115,7 +122,7 @@ export async function callGrok(
       max_tokens: maxTokens,
       stream: false
     };
-    if (isMultiAgent && reasoningEffort) {
+    if (supportsReasoningEffort && reasoningEffort) {
       requestBody.reasoning = { effort: reasoningEffort };
     }
 

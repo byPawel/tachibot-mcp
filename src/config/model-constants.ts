@@ -72,12 +72,19 @@ export const PERPLEXITY_MODELS = {
   SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model (expensive - avoid)
 } as const;
 
-// Grok Models (xAI) - Updated 2026-04-10 with Grok 4.20 (Mar 2026)
+// Grok Models (xAI) - Updated 2026-06-01 with Grok 4.3 (Apr 30, 2026 flagship)
 export const GROK_MODELS = {
-  // Grok 4.20 models (Mar 10, 2026) - FLAGSHIP
-  _4_20_REASONING: "grok-4.20-0309-reasoning",           // Flagship: 2M context, $2/$6, low hallucination
-  _4_20_NON_REASONING: "grok-4.20-0309-non-reasoning",   // Standard: 2M context, $2/$6
-  _4_20_MULTI_AGENT: "grok-4.20-multi-agent-0309",       // Multi-agent: 4-16 agents via reasoning.effort, $2/$6
+  // Grok 4.3 (Apr 30, 2026) - CURRENT FLAGSHIP
+  // Single model ID with configurable reasoning effort (replaces 4.20's reasoning/non-reasoning/multi-agent split).
+  // 1M context, $1.25/$2.50 (cheaper than 4.20), xAI's recommended model, lowest hallucination rate.
+  _4_3: "grok-4.3",                                      // Flagship: 1M ctx, $1.25/$2.50, reasoning.effort low|high
+  _4_3_LATEST: "grok-4.3-latest",                        // Rolling alias for newest 4.3 snapshot
+  _BUILD: "grok-build-0.1",                              // Coding specialist (May 29, 2026): 256k ctx, fast agentic coding
+
+  // Grok 4.20 models (Mar 10, 2026) - LEGACY (still valid; kept as fallback). Now resolve to 4.3 via deprecated keys.
+  _4_20_REASONING: "grok-4.3",                           // [deprecated key] → grok-4.3 (was grok-4.20-0309-reasoning)
+  _4_20_NON_REASONING: "grok-4.3",                       // [deprecated key] → grok-4.3 (was grok-4.20-0309-non-reasoning)
+  _4_20_MULTI_AGENT: "grok-4.3",                         // [deprecated key] → grok-4.3 (architect uses high reasoning.effort)
 
   // Grok 4.1 fast models (Nov 2025) - BEST VALUE (10x cheaper)
   _4_1_FAST_REASONING: "grok-4-1-fast-reasoning",     // Fast reasoning: 2M context, $0.20/$0.50
@@ -187,12 +194,12 @@ export const CURRENT_MODELS = {
     premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.5-pro - higher compute)
   },
   grok: {
-    reason: GROK_MODELS._4_20_REASONING,            // grok-4.20-0309-reasoning (flagship, low hallucination)
-    code: GROK_MODELS._4_20_NON_REASONING,           // grok-4.20 non-reasoning (flagship quality, tool-calling)
-    debug: GROK_MODELS._4_20_NON_REASONING,          // grok-4.20 non-reasoning (low hallucination for debugging)
-    brainstorm: GROK_MODELS._4_20_NON_REASONING,    // grok-4.20-0309-non-reasoning (2M context)
-    search: GROK_MODELS._4_20_REASONING,             // grok-4.20 LOW HALLUCINATION - critical for search
-    architect: GROK_MODELS._4_20_MULTI_AGENT,        // grok-4.20-multi-agent-0309 (4-16 agent swarm)
+    reason: GROK_MODELS._4_3,            // grok-4.3 (flagship, low hallucination, high reasoning effort)
+    code: GROK_MODELS._4_3,              // grok-4.3 (flagship quality, tool-calling)
+    debug: GROK_MODELS._4_3,             // grok-4.3 (low hallucination for debugging)
+    brainstorm: GROK_MODELS._4_3,        // grok-4.3 (1M context)
+    search: GROK_MODELS._4_3,            // grok-4.3 LOW HALLUCINATION - critical for search
+    architect: GROK_MODELS._4_3,         // grok-4.3 with high reasoning.effort (agentic swarm behaviour)
   },
   gemini: {
     default: GEMINI_MODELS.GEMINI_3_PRO,
@@ -378,6 +385,9 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
 
   // Grok (xAI)
+  "grok-4.3": "grok-4.3",
+  "grok-4.3-latest": "grok-4.3",
+  "grok-build-0.1": "grok-build",
   "grok-4.20-0309-reasoning": "grok-4.20",
   "grok-4.20-0309-non-reasoning": "grok-4.20-fast",
   "grok-4.20-multi-agent-0309": "grok-4.20-multi",
@@ -435,9 +445,12 @@ export const MODEL_PRICING: Record<string, number> = {
   "gemini-3.1-flash-lite": 0.001,       // Cheapest/fastest in 3.1 series (Mar 2026)
 
   // Grok
-  "grok-4.20-0309-reasoning": 0.004,        // ($2 + $6) / 2 / 1000
-  "grok-4.20-0309-non-reasoning": 0.004,    // ($2 + $6) / 2 / 1000
-  "grok-4.20-multi-agent-0309": 0.004,      // ($2 + $6) / 2 / 1000
+  "grok-4.3": 0.001875,                     // ($1.25 + $2.50) / 2 / 1000 (Apr 30, 2026 - cheaper than 4.20)
+  "grok-4.3-latest": 0.001875,
+  "grok-build-0.1": 0.001875,               // Coding specialist (estimate, same tier)
+  "grok-4.20-0309-reasoning": 0.004,        // ($2 + $6) / 2 / 1000 (legacy)
+  "grok-4.20-0309-non-reasoning": 0.004,    // ($2 + $6) / 2 / 1000 (legacy)
+  "grok-4.20-multi-agent-0309": 0.004,      // ($2 + $6) / 2 / 1000 (legacy)
   "grok-4-1-fast-reasoning": 0.00035,
   "grok-4-1-fast-non-reasoning": 0.00035,
   "grok-4-fast-reasoning": 0.00035,
