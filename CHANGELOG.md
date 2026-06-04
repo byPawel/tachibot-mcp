@@ -5,6 +5,16 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Kimi tools were calling a retired model.** All Kimi call sites hardcoded `moonshotai/kimi-k2.5`, which OpenRouter no longer serves — every `kimi_*` request failed with a JSON/timeout error (surfaced as "Kimi down"). The `KIMI_MODELS.K2_6` constant was already correct but unused by the tools. Repointed all 5 call sites — `kimi_thinking`, `kimi_code`, `kimi_decompose`, `kimi_long_context` (`openrouter-tools.ts`) and the Kimi juror (`jury-tool.ts`) — to `moonshotai/kimi-k2.6`.
+- Fixed the `MODEL_FALLBACKS` entry for `KIMI_K2_6`, which pointed at the retired `KIMI_K2_5`; it now falls back to `KIMI_K2_THINKING` (`moonshotai/kimi-k2-thinking`, still live).
+
+### Notes
+- The `KIMI_K2_5` enum value is retained for back-compat but is marked do-not-call; `moonshotai/kimi-k2.5` is no longer a valid OpenRouter model ID.
+- Same fix as commit `89c1c8f` on the `local-models-ollama` branch (released there as v2.21.5); applied here as a direct hotfix to `main`.
+
 ## [2.21.2] - 2026-05-04
 
 ### Fixed
