@@ -91,6 +91,9 @@ const PROVIDER_CONFIGS = {
     models: ['Meta-Llama-3.1-405B-Instruct-Turbo', 'Qwen/Qwen2.5-72B-Instruct-Turbo']
   },
   ollama: {
+    // NOTE: this is the OpenAI-compat /v1 path. It SILENTLY DROPS `num_ctx`
+    // (truncating context to 2048). For context-sensitive calls use callOllama()
+    // in ollama-tools.ts, which hits the native /api/chat endpoint instead.
     base: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
     key: 'ollama',  // Ollama doesn't need an API key
     models: ['llama3.3', 'qwen2.5', 'mistral', 'gemma2']
