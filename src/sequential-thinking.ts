@@ -99,10 +99,10 @@ export function formatContextWindow(value: number): string {
 
 /**
  * Memory provider configuration for pluggable memory MCPs
- * Supports devlog-mcp, mem0, or any custom memory MCP
+ * Supports dokoro-mcp, mem0, or any custom memory MCP
  */
 export interface MemoryProviderConfig {
-  provider: string;           // e.g., "devlog", "mem0", "custom"
+  provider: string;           // e.g., "dokoro", "mem0", "custom"
   saveToMemory?: boolean;     // Auto-save session to memory on complete
   loadFromMemory?: boolean;   // Load relevant context from memory
 }
@@ -1041,7 +1041,7 @@ export const sequentialThinking = new SequentialThinking();
 
 // Schema for memory provider configuration
 const MemoryProviderSchema = z.object({
-  provider: z.string().describe("Memory provider name: 'devlog', 'mem0', or custom"),
+  provider: z.string().describe("Memory provider name: 'dokoro', 'mem0', or custom"),
   saveToMemory: z.boolean().optional().describe("Auto-save session to memory on complete"),
   loadFromMemory: z.boolean().optional().describe("Load relevant context from memory at start"),
 }).optional();
@@ -1064,5 +1064,5 @@ export const NextThoughtSchema = z.object({
   objective: z.string().optional().describe("Session objective (for auto-session creation)"),
   distillContext: z.enum(["off", "light"]).optional().describe("Distillation mode: off (default, auto-distills at 8000+ tokens), light (preserves detail)"),
   finalJudge: z.string().optional().describe("Model to use as final judge when session completes (e.g., 'gemini'). Called automatically when nextThoughtNeeded=false"),
-  memoryProvider: MemoryProviderSchema.describe("Pluggable memory MCP: { provider: 'devlog'|'mem0', saveToMemory: true }"),
+  memoryProvider: MemoryProviderSchema.describe("Pluggable memory MCP: { provider: 'dokoro'|'mem0', saveToMemory: true }"),
 });

@@ -1,6 +1,6 @@
 /**
  * Memory Provider Interface
- * Common interface for all memory providers (mem0, DevLog, local, etc.)
+ * Common interface for all memory providers (mem0, Dokoro, local, etc.)
  */
 
 import { 

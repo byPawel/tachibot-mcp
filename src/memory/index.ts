@@ -11,7 +11,7 @@ export * from './memory-manager.js';
 // Provider exports
 export * from './providers/local-provider.js';
 export * from './providers/mem0-provider.js';
-// export * from './providers/devlog-provider.js';
+// export * from './providers/dokoro-provider.js';
 // export * from './providers/hybrid-provider.js';
 
 // Main API
@@ -40,7 +40,7 @@ export type {
   MemoryMetrics,
   MemoryConfig,
   Mem0Config,
-  DevLogConfig,
+  DokoroConfig,
   LocalStorageConfig,
   HybridConfig,
   MemoryTierConfig

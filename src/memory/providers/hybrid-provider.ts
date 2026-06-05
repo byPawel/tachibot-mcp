@@ -14,7 +14,7 @@ import {
   MemoryProvider
 } from '../memory-config.js';
 import { createMem0Provider } from './mem0-provider.js';
-import { createDevLogProvider } from './devlog-provider.js';
+import { createDokoroProvider } from './dokoro-provider.js';
 import { createLocalProvider } from './local-provider.js';
 
 /**
@@ -381,8 +381,8 @@ export class HybridProvider extends BaseMemoryProvider {
       case 'mem0':
         return await createMem0Provider(config.mem0 || {});
       
-      case 'devlog':
-        return await createDevLogProvider(config.devlog || {});
+      case 'dokoro':
+        return await createDokoroProvider(config.dokoro || {});
       
       case 'local':
         return await createLocalProvider(config.local || {

@@ -31,10 +31,10 @@ type MCPContext = {
 };
 
 /**
- * Structured hint for devlog tool invocation
+ * Structured hint for dokoro memory tool invocation
  */
-export interface DevlogHint {
-  tool: "devlog_session_log" | "devlog_plan_create" | "devlog_plan_check" | "devlog_plan_blocker" | "devlog_plan_validate";
+export interface DokoroHint {
+  tool: "dokoro_session_summary_add" | "dokoro_session_recall" | "dokoro_workspace_status";
   params: Record<string, any>;
   description?: string;
 }
@@ -58,7 +58,7 @@ export interface CoordinatorResponse {
   totalSteps: number;
   progress: string;  // e.g., "2/7 (29%)"
   nextTool?: ToolInstruction;
-  devlogHint?: DevlogHint;
+  dokoroHint?: DokoroHint;
   isComplete: boolean;
   result?: string;  // Final result when isComplete=true
 }
@@ -176,18 +176,18 @@ function getMaxTokens(tool: string): number {
 // ═══════════════════════════════════════════════════════════════════
 
 /**
- * Resolve devlog daily directory.
- * Uses DEVLOG_PATH env (same as devlog-mcp) or falls back to {cwd}/devlog.
+ * Resolve dokoro daily directory.
+ * Uses DOKORO_PATH env (same as dokoro-mcp) or falls back to {cwd}/dokoro.
  */
-function getDevlogDailyDir(): string {
-  const devlogPath = process.env.DEVLOG_PATH || path.join(process.cwd(), "devlog");
-  return path.join(devlogPath, "daily");
+function getDokoroDailyDir(): string {
+  const dokoroPath = process.env.DOKORO_PATH || path.join(process.cwd(), "dokoro");
+  return path.join(dokoroPath, "daily");
 }
 
 /**
  * Generate plan filename: YYYY-MM-DD-HHhMMm-dayname-plan-slug.md
  * Example: 2026-01-28-16h30m-tuesday-plan-sidebar-refactor.md
- * Matches devlog_workspace_dump naming convention.
+ * Matches dokoro_workspace_dump naming convention.
  */
 function generatePlanFilename(task: string): string {
   const now = new Date();
@@ -216,8 +216,8 @@ interface PlanMetadata {
 }
 
 /**
- * Save plan to devlog daily directory with proper frontmatter.
- * The file will be picked up by devlog-mcp migration and appear in devlog-ui.
+ * Save plan to dokoro daily directory with proper frontmatter.
+ * The file will be picked up by dokoro-mcp migration and appear in dokoro-ui.
  *
  * Called both incrementally (during creation) and at completion.
  * - During creation: planStatus = "in-progress", content = accumulated so far
@@ -229,7 +229,7 @@ function savePlanToFile(
   metadata: PlanMetadata,
   options?: { planStatus?: string; existingFilepath?: string }
 ): string {
-  const dailyDir = getDevlogDailyDir();
+  const dailyDir = getDokoroDailyDir();
 
   // Ensure daily directory exists
   if (!fs.existsSync(dailyDir)) {
@@ -437,10 +437,10 @@ function parseScoresFromPlan(planText: string): Record<string, number> {
 }
 
 /**
- * List recent plans from devlog daily directory (last N days)
+ * List recent plans from dokoro daily directory (last N days)
  */
 function listRecentPlans(days: number = 7): { filename: string; path: string; created: Date }[] {
-  const dailyDir = getDevlogDailyDir();
+  const dailyDir = getDokoroDailyDir();
   if (!fs.existsSync(dailyDir)) {
     return [];
   }
@@ -472,7 +472,7 @@ type WorkflowStep = {
   buildParams: (task: string, context: string, codeContext: string, answers: string, prior: Record<string, string>) => Record<string, any>;
   description: string;
   thinking: string;  // WHY this step, WHAT we expect, HOW it helps
-  devlogType?: "progress" | "note";
+  dokoroType?: "progress" | "note";
   condition?: (task: string, context: string) => boolean;  // If set, step only runs when true
   isSynthesis?: boolean;  // If true, gets more context (PRIOR_CONTEXT_LIMIT_SYNTHESIS)
 };
@@ -557,7 +557,7 @@ const ALL_WORKFLOW_STEPS: WorkflowStep[] = [
       };
     },
     description: "Search for relevant information + best practices",
-    devlogType: "progress",
+    dokoroType: "progress",
   },
 
   // Phase 2: Analysis (2 tools - WITH actual code review when provided)
@@ -629,7 +629,7 @@ ${DISTILL_SUFFIX}`,
       outputFormat: "dependencies",
     }),
     description: "Task decomposition with dependencies (Kimi K2.5)",
-    devlogType: "progress",
+    dokoroType: "progress",
   },
 
   // Phase 2b: Debate (CONDITIONAL - lightweight pro/con, main points only)
@@ -693,7 +693,7 @@ ${DISTILL_SUFFIX}`,
       type: "general",
     }),
     description: "Argue AGAINST + synthesize tensions (Gemini)",
-    devlogType: "progress",
+    dokoroType: "progress",
   },
 
   // Phase 3: Critique
@@ -732,7 +732,7 @@ ${DISTILL_SUFFIX}`,
       mode: "analytical",
     }),
     description: "Find holes and gaps (GPT)",
-    devlogType: "progress",
+    dokoroType: "progress",
   },
 
   // Phase 3b: UX Analysis (CONDITIONAL - Kimi systematic breakdown)
@@ -808,7 +808,7 @@ ${DISTILL_SUFFIX}`,
       type: "general",
     }),
     description: "UX scoring + requirements (Gemini)",
-    devlogType: "progress",
+    dokoroType: "progress",
   },
 
   // Phase 3d: Responsiveness Assessment (CONDITIONAL - only for responsive/mobile tasks)
@@ -859,7 +859,7 @@ ${DISTILL_SUFFIX}`,
       maxSteps: 4,
     }),
     description: "Responsive design assessment (Kimi)",
-    devlogType: "progress",
+    dokoroType: "progress",
   },
 
   // Phase 4: Judgment (2 tools)
@@ -949,7 +949,7 @@ ${prior.ux_judge ? `   - UX/Accessibility: X/10\n` : ""}${prior.responsive_judge
       type: "general",
     }),
     description: "Final plan in bite-sized TDD steps (Gemini)",
-    devlogType: "progress",
+    dokoroType: "progress",
     isSynthesis: true,
   },
 ];
@@ -991,8 +991,8 @@ Example:
     step: z.number().optional().describe("Current step number (for continue mode)"),
     prior: z.record(z.string()).optional()
       .describe("Results from previous steps: { search: '...', analyze_qwen: '...' }"),
-    devlog: z.boolean().optional().default(true)
-      .describe("Include devlog hints for sync"),
+    dokoro: z.boolean().optional().default(true)
+      .describe("Include dokoro hints for sync"),
     ux: z.boolean().optional().default(false)
       .describe("Enable UX/accessibility review steps (auto-detected from task keywords, or set true to force)"),
     responsive: z.boolean().optional().default(false)
@@ -1013,7 +1013,7 @@ Example:
     mode?: "start" | "continue";
     step?: number;
     prior?: Record<string, string>;
-    devlog?: boolean;
+    dokoro?: boolean;
     ux?: boolean;
     responsive?: boolean;
     debate?: boolean;
@@ -1026,7 +1026,7 @@ Example:
     const mergedCodeContext = fileContent
       ? (args.codeContext ? `${args.codeContext}\n\n${fileContent}` : fileContent)
       : (args.codeContext || "");
-    const { task, answers = "", mode = "start", devlog = true } = args;
+    const { task, answers = "", mode = "start", dokoro = true } = args;
     const codeContext = mergedCodeContext;
     const goal = args.goal || "";
     const prior = args.prior || {};
@@ -1073,7 +1073,7 @@ Example:
     const totalSteps = workflow.length;
 
     // On START: create the plan file immediately (empty, in-progress)
-    if (mode === "start" && devlog) {
+    if (mode === "start" && dokoro) {
       try {
         const initialBody = buildIncrementalPlan(workflow, {}, 0, totalSteps);
         const filepath = savePlanToFile(task, initialBody, {
@@ -1098,7 +1098,7 @@ Example:
         ctx.log.info(`Accumulated ${justCompletedStep.id}: ${(prior[justCompletedStep.id] || "").length} chars (disk: ${(accumulated[justCompletedStep.id] || "").length} chars)`);
 
         // INCREMENTAL SAVE: Update the plan file with current accumulated state
-        if (devlog) {
+        if (dokoro) {
           try {
             const completedTools = workflow.slice(0, currentStep).map(s => s.tool);
             const incrementalBody = buildIncrementalPlan(workflow, accumulated, currentStep, totalSteps);
@@ -1177,7 +1177,7 @@ Example:
       // Clean up accumulator cache
       cleanAccumulator(task);
 
-      // Save FINAL plan to devlog daily directory (reuse incremental filepath)
+      // Save FINAL plan to dokoro daily directory (reuse incremental filepath)
       let savedPath = "";
       try {
         const existingPath = getPlanFilePath(task);
@@ -1188,9 +1188,9 @@ Example:
           goal,
         }, { planStatus: "pending", existingFilepath: existingPath });
         clearPlanFilePath(task);
-        ctx.log.info(`Plan saved to devlog: ${savedPath} (${planBody.length} chars)`);
+        ctx.log.info(`Plan saved to dokoro: ${savedPath} (${planBody.length} chars)`);
       } catch (err) {
-        ctx.log.warn("Failed to save plan to devlog", { error: String(err) });
+        ctx.log.warn("Failed to save plan to dokoro", { error: String(err) });
       }
 
       // Response shows the judge_final summary (or full if short)
@@ -1205,21 +1205,21 @@ Example:
         result: displayResult,
       };
 
-      // Add devlog hint for completion
-      if (devlog) {
-        response.devlogHint = {
-          tool: "devlog_session_log",
+      // Add dokoro memory hint for completion
+      if (dokoro) {
+        response.dokoroHint = {
+          tool: "dokoro_session_summary_add",
           params: {
-            entry: `Plan complete: ${task.substring(0, 80)}${savedPath ? ` (saved to devlog)` : ''}`,
-            type: "progress",
+            summary: `Plan complete: ${task.substring(0, 80)}${savedPath ? ` (saved to dokoro)` : ''}`,
+            key_topics: [],
           },
-          description: "Log plan completion to devlog session",
+          description: "Log plan completion to dokoro session memory",
         };
       }
 
       // Add saved path info
       if (savedPath) {
-        response.result = `${displayResult}\n\n---\n📁 Full plan saved to devlog: \`${savedPath}\` (${planBody.length} chars)\nIncludes all analysis from ${fullPlanSections.length} steps.\nThe plan will appear in devlog-ui under the "Plans" filter.\n\nTo execute: \`planner_runner({ plan: <read file>, mode: "start" })\``;
+        response.result = `${displayResult}\n\n---\n📁 Full plan saved to dokoro: \`${savedPath}\` (${planBody.length} chars)\nIncludes all analysis from ${fullPlanSections.length} steps.\nThe plan will appear in dokoro-ui under the "Plans" filter.\n\nTo execute: \`planner_runner({ plan: <read file>, mode: "start" })\``;
       }
 
       return formatCoordinatorResponse(response, prior, workflow, getPlanFilePath(task));
@@ -1246,13 +1246,13 @@ Example:
       isComplete: false,
     };
 
-    // Add devlog hint if enabled
-    if (devlog && workflowStep.devlogType) {
-      response.devlogHint = {
-        tool: "devlog_session_log",
+    // Add dokoro memory hint if enabled
+    if (dokoro && workflowStep.dokoroType) {
+      response.dokoroHint = {
+        tool: "dokoro_session_summary_add",
         params: {
-          entry: `${workflowStep.phase}: ${workflowStep.description}`,
-          type: workflowStep.devlogType,
+          summary: `${workflowStep.phase}: ${workflowStep.description}`,
+          key_topics: [],
         },
         description: `Log ${workflowStep.phase.toLowerCase()} phase`,
       };
@@ -1279,9 +1279,9 @@ function formatCoordinatorResponse(response: CoordinatorResponse, _prior: Record
     lines.push("");
     lines.push(response.result || "");
 
-    if (response.devlogHint) {
+    if (response.dokoroHint) {
       lines.push("");
-      lines.push(`📝 Devlog: ${response.devlogHint.tool} → "${response.devlogHint.params.entry}"`);
+      lines.push(`📝 Dokoro: ${response.dokoroHint.tool} → "${response.dokoroHint.params.summary}"`);
     }
   } else {
     const tool = response.nextTool!;
@@ -1299,9 +1299,9 @@ function formatCoordinatorResponse(response: CoordinatorResponse, _prior: Record
     lines.push(`---`);
     lines.push(`Next → ${tool.tool} · ${tool.description}`);
 
-    // Devlog hint (tiny)
-    if (response.devlogHint) {
-      lines.push(`📝 ${response.devlogHint.params.entry}`);
+    // Dokoro hint (tiny)
+    if (response.dokoroHint) {
+      lines.push(`📝 ${response.dokoroHint.params.summary}`);
     }
 
     // Plan file path (so user can check progress)
@@ -1427,7 +1427,7 @@ Evidence params (unblind the checkpoints):
     testResults: z.string().optional().describe("Test output (run: npm test). Proof that implementation works."),
     modifiedFiles: z.array(z.string()).optional().describe("List of modified files (run: git diff --name-only). Detects scope creep."),
     completed: z.array(z.number()).optional().describe("List of completed step numbers"),
-    devlog: z.boolean().optional().default(true),
+    dokoro: z.boolean().optional().default(true),
     ux: z.boolean().optional().default(false)
       .describe("Add UX verification at checkpoints (usability, accessibility, interaction states)"),
     responsive: z.boolean().optional().default(false)
@@ -1446,7 +1446,7 @@ Evidence params (unblind the checkpoints):
     testResults?: string;
     modifiedFiles?: string[];
     completed?: number[];
-    devlog?: boolean;
+    dokoro?: boolean;
     ux?: boolean;
     responsive?: boolean;
   }, _ctx: MCPContext): Promise<string> => {
@@ -1457,7 +1457,7 @@ Evidence params (unblind the checkpoints):
     const mergedCode = fileContent
       ? (args.code ? `${args.code}\n\n${fileContent}` : fileContent)
       : args.code;
-    const { plan, mode = "start", stepNum, checkpoint, completed = [], devlog = true, ux = false, responsive = false } = args;
+    const { plan, mode = "start", stepNum, checkpoint, completed = [], dokoro = true, ux = false, responsive = false } = args;
     const code = mergedCode;
     const goal = args.goal || extractGoalFromPlan(plan) || "";
     const lines: string[] = [];
@@ -1482,7 +1482,7 @@ Evidence params (unblind the checkpoints):
 
     if (mode === "start") {
       // ═══════════════════════════════════════════════════════════════
-      // START: Show parsed plan and devlog hint
+      // START: Show parsed plan and dokoro hint
       // ═══════════════════════════════════════════════════════════════
       lines.push(`## 📋 Plan Parsed - ${totalSteps} Steps`);
       lines.push("");
@@ -1508,18 +1508,14 @@ Evidence params (unblind the checkpoints):
       }
       lines.push("");
 
-      // Devlog hint
-      if (devlog) {
-        lines.push("### 📝 Devlog Hint");
+      // Dokoro memory hint
+      if (dokoro) {
+        lines.push("### 📝 Dokoro Hint");
         lines.push("");
         lines.push("```");
-        lines.push(`devlog_plan_create({`);
-        lines.push(`  title: "${steps[0]?.title.substring(0, 40) || 'Implementation'}...",`);
-        lines.push(`  items: [`);
-        for (const step of steps.slice(0, 10)) {
-          lines.push(`    "${step.title}",`);
-        }
-        lines.push(`  ]`);
+        lines.push(`dokoro_session_summary_add({`);
+        lines.push(`  summary: "Started executing plan: ${steps[0]?.title.substring(0, 40) || 'Implementation'}... (${totalSteps} steps)",`);
+        lines.push(`  key_topics: []`);
         lines.push(`})`);
         lines.push("```");
         lines.push("");
@@ -1866,8 +1862,8 @@ Output as structured JSON:
         }, null, 2));
         lines.push("```");
         lines.push("");
-        lines.push("Save the lesson to devlog:");
-        lines.push(`\`devlog_session_log({ entry: "Reflexion: [paste lesson here]", type: "learning" })\``);
+        lines.push("Save the lesson to dokoro:");
+        lines.push(`\`dokoro_session_summary_add({ summary: "Reflexion: [paste lesson here]", key_topics: ["learning"] })\``);
       }
 
       // UX verification (when enabled) — two-step: Kimi flow analysis + Gemini scoring
@@ -1911,10 +1907,10 @@ Output as structured JSON:
         lines.push("```");
       }
 
-      // Devlog hint
-      if (devlog) {
+      // Dokoro memory hint
+      if (dokoro) {
         lines.push("");
-        lines.push(`📝 Devlog: \`devlog_session_log({ entry: "${checkpoint} checkpoint - ${completed.length}/${totalSteps} steps${goal ? ` - goal: ${goal.substring(0, 40)}` : ""}", type: "progress" })\``);
+        lines.push(`📝 Dokoro: \`dokoro_session_summary_add({ summary: "${checkpoint} checkpoint - ${completed.length}/${totalSteps} steps${goal ? ` - goal: ${goal.substring(0, 40)}` : ""}", key_topics: [] })\``);
       }
 
       // Next action
@@ -1955,7 +1951,7 @@ Shows plans from the last N days (default 7) with filename, task, and status.`,
     lines.push("");
 
     if (recentPlans.length === 0) {
-      const dailyDir = getDevlogDailyDir();
+      const dailyDir = getDokoroDailyDir();
       lines.push(`No plans found in \`${dailyDir}\``);
       lines.push("");
       lines.push("Create a plan with: `planner_maker({ task: \"...\", mode: \"start\" })`");
@@ -1981,7 +1977,7 @@ Shows plans from the last N days (default 7) with filename, task, and status.`,
     }
 
     lines.push("");
-    lines.push(`📁 Plans directory: \`${getDevlogDailyDir()}\``);
+    lines.push(`📁 Plans directory: \`${getDokoroDailyDir()}\``);
     lines.push("");
     lines.push("To execute a plan: read the file and call `planner_runner({ plan: <content>, mode: \"start\" })`");
 

@@ -1,9 +1,9 @@
 /**
  * Memory Configuration System
- * Flexible memory backend configuration with support for mem0, DevLog, local, and hybrid modes
+ * Flexible memory backend configuration with support for mem0, Dokoro, local, and hybrid modes
  */
 
-export type MemoryProvider = 'mem0' | 'devlog' | 'local' | 'hybrid' | 'none';
+export type MemoryProvider = 'mem0' | 'dokoro' | 'local' | 'hybrid' | 'none';
 export type MemoryTier = 'session' | 'working' | 'project' | 'team' | 'global';
 export type StorageType = 'sqlite' | 'json' | 'leveldb';
 
@@ -20,9 +20,9 @@ export interface Mem0Config {
 }
 
 /**
- * DevLog integration configuration
+ * Dokoro integration configuration
  */
-export interface DevLogConfig {
+export interface DokoroConfig {
   connectionString?: string;
   workspace?: string;
   projectId?: string;
@@ -66,7 +66,7 @@ export interface MemoryTierConfig {
 export interface MemoryConfig {
   provider: MemoryProvider;
   mem0?: Mem0Config;
-  devlog?: DevLogConfig;
+  dokoro?: DokoroConfig;
   local?: LocalStorageConfig;
   hybrid?: HybridConfig;
   tiers: MemoryTierConfig;
@@ -211,13 +211,13 @@ export function loadMemoryConfigFromEnv(): Partial<MemoryConfig> {
     };
   }
   
-  // DevLog configuration
-  if (process.env.DEVLOG_CONNECTION) {
-    config.devlog = {
-      connectionString: process.env.DEVLOG_CONNECTION,
-      workspace: process.env.DEVLOG_WORKSPACE,
-      projectId: process.env.DEVLOG_PROJECT,
-      enableSync: process.env.DEVLOG_SYNC !== 'false'
+  // Dokoro configuration
+  if (process.env.DOKORO_CONNECTION) {
+    config.dokoro = {
+      connectionString: process.env.DOKORO_CONNECTION,
+      workspace: process.env.DOKORO_WORKSPACE,
+      projectId: process.env.DOKORO_PROJECT,
+      enableSync: process.env.DOKORO_SYNC !== 'false'
     };
   }
   
@@ -279,8 +279,8 @@ export function validateMemoryConfig(config: MemoryConfig): { valid: boolean; er
     errors.push('Mem0 provider requires API key (MEM0_API_KEY or config.mem0.apiKey)');
   }
   
-  if (config.provider === 'devlog' && !config.devlog?.connectionString && !process.env.DEVLOG_CONNECTION) {
-    errors.push('DevLog provider requires connection string');
+  if (config.provider === 'dokoro' && !config.dokoro?.connectionString && !process.env.DOKORO_CONNECTION) {
+    errors.push('Dokoro provider requires connection string');
   }
   
   if (config.provider === 'local' && !config.local?.path) {

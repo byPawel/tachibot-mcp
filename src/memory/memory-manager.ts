@@ -18,7 +18,7 @@ import { IMemoryProvider } from './memory-interface.js';
 import { LocalProvider } from './providers/local-provider.js';
 import { Mem0Provider } from './providers/mem0-provider.js';
 import { randomBytes } from 'crypto';
-// import { DevLogProvider } from './providers/devlog-provider.js';
+// import { DokoroProvider } from './providers/dokoro-provider.js';
 // import { HybridProvider } from './providers/hybrid-provider.js';
 
 /**
@@ -308,9 +308,9 @@ export class HierarchicalMemoryManager {
           return null;
         }
       
-      case 'devlog':
-        // TODO: Implement DevLog provider
-        console.warn('DevLog provider not yet implemented');
+      case 'dokoro':
+        // TODO: Implement Dokoro provider
+        console.warn('Dokoro provider not yet implemented');
         return null;
       
       case 'local':

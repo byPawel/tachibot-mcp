@@ -358,7 +358,7 @@ const ThemedDivider: React.FC<{ width?: number }> = ({ width = 60 }) => {
  * Themed table - uses extractable InkTable component with theme integration
  *
  * The InkTable component is in a separate file (ink-table.tsx) for reusability
- * across projects (e.g., devlog-mcp). This wrapper applies the current theme.
+ * across projects (e.g., dokoro-mcp). This wrapper applies the current theme.
  */
 const ThemedTable: React.FC<{ table: Tokens.Table }> = ({ table }) => {
   const theme = useTheme();

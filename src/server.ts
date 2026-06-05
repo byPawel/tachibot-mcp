@@ -533,13 +533,13 @@ safeAddTool({
 **Light distillation**: nextThought({ thought: "...", model: "gemini", executeModel: true, distillContext: "light" })
 **Judge step**: nextThought({ thought: "Final verdict", model: "gemini", executeModel: true, contextWindow: "all", nextThoughtNeeded: false })
 **Auto final judge**: nextThought({ thought: "...", model: "kimi", executeModel: true, finalJudge: "gemini", nextThoughtNeeded: false })
-**With memory save**: nextThought({ ..., memoryProvider: { provider: "devlog", saveToMemory: true } })
+**With memory save**: nextThought({ ..., memoryProvider: { provider: "dokoro", saveToMemory: true } })
 
 Models: grok, gemini, openai, perplexity, kimi, qwen, think
 Context: "none" (fresh start), "recent" (last 3), "all" (full history), or a number
 Distillation: "off" (default, auto-distills at 8000+ tokens), "light" (preserves detail)
 FinalJudge: Auto-judge when session completes (uses ALL context)
-MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PROVIDER env for default`,
+MemoryProvider: Pluggable memory (dokoro, mem0, custom). Set TACHIBOT_MEMORY_PROVIDER env for default`,
   parameters: NextThoughtSchema,
   execute: async (args: NextThoughtArgs, context: MCPContext): Promise<string> => {
     const { log } = context;
@@ -618,7 +618,7 @@ MemoryProvider: Pluggable memory (devlog, mem0, custom). Set TACHIBOT_MEMORY_PRO
       }
 
       // Memory save hint suppressed - too noisy in output
-      // If needed, user can explicitly call devlog_session_log
+      // If needed, user can explicitly call dokoro_session_summary_add
 
       return response;
     } catch (error) {

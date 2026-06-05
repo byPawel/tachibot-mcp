@@ -19,8 +19,8 @@ export class MCPClient {
       'mcp__openai-mcp__openai_reason',
       'mcp__openai-mcp__openai_brainstorm',
       'mcp__think-mcp-server__think',
-      'mcp__devlog-search__search_devlogs',
-      'mcp__devlog-core__devlog_session_log'
+      'mcp__dokoro__dokoro_session_recall',
+      'mcp__dokoro__dokoro_session_summary_add'
     ]);
   }
 

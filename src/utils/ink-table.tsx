@@ -2,7 +2,7 @@
  * Ink Table Component - Native React Ink Table with Flexbox Layout
  *
  * A responsive, theme-aware table component for React Ink CLI applications.
- * Designed to be extractable/reusable across projects (e.g., devlog-mcp).
+ * Designed to be extractable/reusable across projects (e.g., dokoro-mcp).
  *
  * Features:
  * - Responsive: Adapts to terminal width automatically

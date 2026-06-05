@@ -3,11 +3,11 @@
  *
  * ARCHITECTURE: This is a FORMATTER, not an executor.
  * - tachibot formats session data into provider-specific hints
- * - Claude (the orchestrator) calls the actual devlog/mem0 tools
+ * - Claude (the orchestrator) calls the actual dokoro/mem0 tools
  * - This keeps tachibot pure (reasoning only) with zero coupling to other MCPs
  *
  * Supported providers:
- * - devlog: Session logging with devlog-mcp
+ * - dokoro: Session memory with dokoro
  * - mem0: AI memory with semantic search
  * - custom: Any MCP with save/load capabilities
  */
@@ -20,8 +20,8 @@ export interface MemoryProviderDefinition {
   name: string;
   description: string;
   tools: {
-    save?: string;     // Tool to save context/session (e.g., "devlog_session_log")
-    load?: string;     // Tool to load context (e.g., "devlog_workspace_status")
+    save?: string;     // Tool to save context/session (e.g., "dokoro_session_summary_add")
+    load?: string;     // Tool to load context (e.g., "dokoro_workspace_status")
     query?: string;    // Tool to query memory (e.g., "mem0_search")
   };
   /**
@@ -75,17 +75,17 @@ class MemoryProviderRegistry {
   }
 
   private registerBuiltinProviders(): void {
-    // devlog-mcp provider
+    // dokoro memory provider
     this.register({
-      name: "devlog",
-      description: "Session logging with devlog-mcp (workspace tracking, daily logs)",
+      name: "dokoro",
+      description: "Session memory with dokoro (workspace tracking, conversation summaries)",
       tools: {
-        save: "devlog_session_log",
-        load: "devlog_workspace_status",
+        save: "dokoro_session_summary_add",
+        load: "dokoro_workspace_status",
       },
       formatSaveInput: (data) => ({
-        entry: this.formatDevlogEntry(data),
-        type: "progress",
+        summary: this.formatDokoroEntry(data),
+        key_topics: [],
       }),
     });
 
@@ -109,7 +109,7 @@ class MemoryProviderRegistry {
     });
   }
 
-  private formatDevlogEntry(data: MemorySaveData): string {
+  private formatDokoroEntry(data: MemorySaveData): string {
     const parts: string[] = [];
 
     if (data.objective) {

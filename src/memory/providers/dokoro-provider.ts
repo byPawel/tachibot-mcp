@@ -1,30 +1,30 @@
 /**
- * DevLog Memory Provider
- * Integration with DevLog for development logging and memory persistence
+ * Dokoro Memory Provider
+ * Integration with Dokoro for development logging and memory persistence
  */
 
 import { BaseMemoryProvider } from '../memory-interface.js';
 import { 
   MemoryItem, 
   MemoryQuery, 
-  DevLogConfig,
+  DokoroConfig,
   ContextQuery,
   ContextualMemory,
   MemoryTier
 } from '../memory-config.js';
 
-// DevLog interface types
-interface DevLogClient {
+// Dokoro interface types
+interface DokoroClient {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  log(entry: DevLogEntry): Promise<string>;
-  query(params: DevLogQueryParams): Promise<DevLogEntry[]>;
-  update(id: string, updates: Partial<DevLogEntry>): Promise<boolean>;
+  log(entry: DokoroEntry): Promise<string>;
+  query(params: DokoroQueryParams): Promise<DokoroEntry[]>;
+  update(id: string, updates: Partial<DokoroEntry>): Promise<boolean>;
   delete(id: string): Promise<boolean>;
-  getStats(): Promise<DevLogStats>;
+  getStats(): Promise<DokoroStats>;
 }
 
-interface DevLogEntry {
+interface DokoroEntry {
   id?: string;
   type: string;
   content: string;
@@ -36,7 +36,7 @@ interface DevLogEntry {
   tags?: string[];
 }
 
-interface DevLogQueryParams {
+interface DokoroQueryParams {
   workspace?: string;
   project?: string;
   type?: string;
@@ -48,27 +48,27 @@ interface DevLogQueryParams {
   offset?: number;
 }
 
-interface DevLogStats {
+interface DokoroStats {
   totalEntries: number;
   entriesByType: Record<string, number>;
   storageUsedMB: number;
 }
 
 /**
- * DevLog provider implementation
+ * Dokoro provider implementation
  */
-export class DevLogProvider extends BaseMemoryProvider {
-  readonly name = 'devlog';
-  private config: DevLogConfig;
-  private client: DevLogClient | null = null;
+export class DokoroProvider extends BaseMemoryProvider {
+  readonly name = 'dokoro';
+  private config: DokoroConfig;
+  private client: DokoroClient | null = null;
   private isConnected: boolean = false;
   
-  constructor(config: DevLogConfig) {
+  constructor(config: DokoroConfig) {
     super();
     this.config = {
-      connectionString: config.connectionString || process.env.DEVLOG_CONNECTION,
-      workspace: config.workspace || process.env.DEVLOG_WORKSPACE || 'default',
-      projectId: config.projectId || process.env.DEVLOG_PROJECT,
+      connectionString: config.connectionString || process.env.DOKORO_CONNECTION,
+      workspace: config.workspace || process.env.DOKORO_WORKSPACE || 'default',
+      projectId: config.projectId || process.env.DOKORO_PROJECT,
       enableSync: config.enableSync !== false,
       ...config
     };
@@ -76,31 +76,31 @@ export class DevLogProvider extends BaseMemoryProvider {
   
   protected async doInitialize(): Promise<void> {
     try {
-      // Try to load DevLog client dynamically
-      const devlogModule = await this.loadDevLogModule();
+      // Try to load Dokoro client dynamically
+      const dokoroModule = await this.loadDokoroModule();
       
-      if (!devlogModule) {
-        // Create a mock/local implementation if DevLog is not available
-        this.client = this.createLocalDevLog();
+      if (!dokoroModule) {
+        // Create a mock/local implementation if Dokoro is not available
+        this.client = this.createLocalDokoro();
       } else {
-        // Use actual DevLog client
-        this.client = new devlogModule.DevLogClient({
+        // Use actual Dokoro client
+        this.client = new dokoroModule.DokoroClient({
           connectionString: this.config.connectionString,
           workspace: this.config.workspace
         });
       }
       
-      // Connect to DevLog
+      // Connect to Dokoro
       if (this.client) {
         await this.client.connect();
         this.isConnected = true;
       }
       
-      console.error(`DevLog provider initialized for workspace: ${this.config.workspace}`);
+      console.error(`Dokoro provider initialized for workspace: ${this.config.workspace}`);
     } catch (error) {
-      console.error('Failed to initialize DevLog provider:', error);
+      console.error('Failed to initialize Dokoro provider:', error);
       // Fall back to local implementation
-      this.client = this.createLocalDevLog();
+      this.client = this.createLocalDokoro();
       await this.client.connect();
       this.isConnected = true;
     }
@@ -108,12 +108,12 @@ export class DevLogProvider extends BaseMemoryProvider {
   
   async store(item: MemoryItem): Promise<string> {
     if (!this.isConnected || !this.client) {
-      throw new Error('DevLog provider not initialized');
+      throw new Error('Dokoro provider not initialized');
     }
     
     try {
-      // Convert MemoryItem to DevLog entry
-      const entry: DevLogEntry = {
+      // Convert MemoryItem to Dokoro entry
+      const entry: DokoroEntry = {
         type: `memory_${item.tier}`,
         content: item.content,
         metadata: {
@@ -131,7 +131,7 @@ export class DevLogProvider extends BaseMemoryProvider {
         timestamp: item.timestamp
       };
       
-      // Store in DevLog
+      // Store in Dokoro
       const id = await this.client.log(entry);
       
       // Update metrics
@@ -140,21 +140,21 @@ export class DevLogProvider extends BaseMemoryProvider {
       
       return id || item.id;
     } catch (error) {
-      console.error('Failed to store in DevLog:', error);
+      console.error('Failed to store in Dokoro:', error);
       throw error;
     }
   }
   
   async retrieve(query: MemoryQuery): Promise<MemoryItem[]> {
     if (!this.isConnected || !this.client) {
-      throw new Error('DevLog provider not initialized');
+      throw new Error('Dokoro provider not initialized');
     }
     
     try {
       const startTime = Date.now();
       
-      // Build DevLog query
-      const devlogQuery: DevLogQueryParams = {
+      // Build Dokoro query
+      const dokoroQuery: DokoroQueryParams = {
         workspace: this.config.workspace,
         project: query.projectId || this.config.projectId,
         search: query.text,
@@ -167,14 +167,14 @@ export class DevLogProvider extends BaseMemoryProvider {
       
       // Add tier filtering
       if (query.tiers && query.tiers.length > 0) {
-        devlogQuery.type = query.tiers.map(tier => `memory_${tier}`).join(',');
+        dokoroQuery.type = query.tiers.map(tier => `memory_${tier}`).join(',');
       }
       
-      // Query DevLog
-      const entries = await this.client.query(devlogQuery);
+      // Query Dokoro
+      const entries = await this.client.query(dokoroQuery);
       
       // Convert to MemoryItems
-      const items = this.convertDevLogEntries(entries);
+      const items = this.convertDokoroEntries(entries);
       
       // Filter by userId if specified
       let filteredItems = items;
@@ -195,19 +195,19 @@ export class DevLogProvider extends BaseMemoryProvider {
       
       return filteredItems;
     } catch (error) {
-      console.error('Failed to retrieve from DevLog:', error);
+      console.error('Failed to retrieve from Dokoro:', error);
       throw error;
     }
   }
   
   async update(id: string, updates: Partial<MemoryItem>): Promise<boolean> {
     if (!this.isConnected || !this.client) {
-      throw new Error('DevLog provider not initialized');
+      throw new Error('Dokoro provider not initialized');
     }
     
     try {
-      // Convert updates to DevLog format
-      const devlogUpdates: Partial<DevLogEntry> = {
+      // Convert updates to Dokoro format
+      const dokoroUpdates: Partial<DokoroEntry> = {
         content: updates.content,
         metadata: updates.metadata,
         tags: updates.tags
@@ -215,23 +215,23 @@ export class DevLogProvider extends BaseMemoryProvider {
       
       // Update tier in metadata if changed
       if (updates.tier) {
-        devlogUpdates.type = `memory_${updates.tier}`;
-        devlogUpdates.metadata = {
-          ...devlogUpdates.metadata,
+        dokoroUpdates.type = `memory_${updates.tier}`;
+        dokoroUpdates.metadata = {
+          ...dokoroUpdates.metadata,
           tier: updates.tier
         };
       }
       
-      return await this.client.update(id, devlogUpdates);
+      return await this.client.update(id, dokoroUpdates);
     } catch (error) {
-      console.error('Failed to update in DevLog:', error);
+      console.error('Failed to update in Dokoro:', error);
       return false;
     }
   }
   
   async delete(id: string): Promise<boolean> {
     if (!this.isConnected || !this.client) {
-      throw new Error('DevLog provider not initialized');
+      throw new Error('Dokoro provider not initialized');
     }
     
     try {
@@ -241,7 +241,7 @@ export class DevLogProvider extends BaseMemoryProvider {
       }
       return result;
     } catch (error) {
-      console.error('Failed to delete from DevLog:', error);
+      console.error('Failed to delete from Dokoro:', error);
       return false;
     }
   }
@@ -271,7 +271,7 @@ export class DevLogProvider extends BaseMemoryProvider {
   
   async export(): Promise<MemoryItem[]> {
     if (!this.isConnected || !this.client) {
-      throw new Error('DevLog provider not initialized');
+      throw new Error('Dokoro provider not initialized');
     }
     
     try {
@@ -282,9 +282,9 @@ export class DevLogProvider extends BaseMemoryProvider {
         limit: 100000 // Large limit to get all
       });
       
-      return this.convertDevLogEntries(entries);
+      return this.convertDokoroEntries(entries);
     } catch (error) {
-      console.error('Failed to export from DevLog:', error);
+      console.error('Failed to export from Dokoro:', error);
       throw error;
     }
   }
@@ -328,42 +328,42 @@ export class DevLogProvider extends BaseMemoryProvider {
   /**
    * Helper methods
    */
-  private async loadDevLogModule(): Promise<any> {
+  private async loadDokoroModule(): Promise<any> {
     try {
-      // Try to dynamically import devlog package
+      // Try to dynamically import dokoro package
       // @ts-ignore - Optional dependency
-      const devlog = await import('devlog');
-      return devlog;
+      const dokoro = await import('dokoro');
+      return dokoro;
     } catch (error) {
-      // DevLog package not installed
-      console.warn('DevLog package not installed. Using local implementation.');
+      // Dokoro package not installed
+      console.warn('Dokoro package not installed. Using local implementation.');
       return null;
     }
   }
   
-  private createLocalDevLog(): DevLogClient {
-    // Local implementation that mimics DevLog API
-    const localStore = new Map<string, DevLogEntry>();
+  private createLocalDokoro(): DokoroClient {
+    // Local implementation that mimics Dokoro API
+    const localStore = new Map<string, DokoroEntry>();
     let nextId = 1;
     
     return {
       async connect() {
-        console.error('Using local DevLog implementation');
+        console.error('Using local Dokoro implementation');
       },
       
       async disconnect() {
         localStore.clear();
       },
       
-      async log(entry: DevLogEntry): Promise<string> {
-        const id = entry.id || `devlog_${nextId++}`;
+      async log(entry: DokoroEntry): Promise<string> {
+        const id = entry.id || `dokoro_${nextId++}`;
         entry.id = id;
         entry.timestamp = entry.timestamp || new Date();
         localStore.set(id, entry);
         return id;
       },
       
-      async query(params: DevLogQueryParams): Promise<DevLogEntry[]> {
+      async query(params: DokoroQueryParams): Promise<DokoroEntry[]> {
         let results = Array.from(localStore.values());
         
         // Filter by type
@@ -427,7 +427,7 @@ export class DevLogProvider extends BaseMemoryProvider {
         return results;
       },
       
-      async update(id: string, updates: Partial<DevLogEntry>): Promise<boolean> {
+      async update(id: string, updates: Partial<DokoroEntry>): Promise<boolean> {
         const entry = localStore.get(id);
         if (!entry) return false;
         
@@ -440,7 +440,7 @@ export class DevLogProvider extends BaseMemoryProvider {
         return localStore.delete(id);
       },
       
-      async getStats(): Promise<DevLogStats> {
+      async getStats(): Promise<DokoroStats> {
         const entriesByType: Record<string, number> = {};
         
         localStore.forEach(entry => {
@@ -456,7 +456,7 @@ export class DevLogProvider extends BaseMemoryProvider {
     };
   }
   
-  private convertDevLogEntries(entries: DevLogEntry[]): MemoryItem[] {
+  private convertDokoroEntries(entries: DokoroEntry[]): MemoryItem[] {
     return entries.map(entry => {
       // Extract tier from type (e.g., "memory_session" -> "session")
       const tier = (entry.type.replace('memory_', '') || 'session') as MemoryTier;
@@ -481,15 +481,15 @@ export class DevLogProvider extends BaseMemoryProvider {
 }
 
 /**
- * Factory function to create DevLog provider
+ * Factory function to create Dokoro provider
  */
-export async function createDevLogProvider(config: DevLogConfig): Promise<DevLogProvider | null> {
+export async function createDokoroProvider(config: DokoroConfig): Promise<DokoroProvider | null> {
   try {
-    const provider = new DevLogProvider(config);
+    const provider = new DokoroProvider(config);
     await provider.initialize();
     return provider;
   } catch (error) {
-    console.error('Failed to create DevLog provider:', error);
+    console.error('Failed to create Dokoro provider:', error);
     return null;
   }
 }
