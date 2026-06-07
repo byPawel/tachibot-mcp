@@ -21,17 +21,6 @@ import { filesField } from "./factory/base-schemas.js";
 // TYPES
 // ═══════════════════════════════════════════════════════════════════
 
-type MCPContext = {
-  log: {
-    info: (message: string, metadata?: Record<string, any>) => void;
-    error: (message: string, metadata?: Record<string, any>) => void;
-    warn: (message: string, metadata?: Record<string, any>) => void;
-    debug: (message: string, metadata?: Record<string, any>) => void;
-  };
-  reportProgress?: (progress: { progress: number; total: number }) => Promise<void>;
-  [key: string]: any;
-};
-
 /**
  * Structured hint for dokoro memory tool invocation
  */
