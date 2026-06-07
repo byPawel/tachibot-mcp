@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import { workflowValidator } from '../validators/workflow-validator.js';
+import { defineModelTool } from './factory/define-model-tool.js';
 
 // Get all registered tools from the server
 // We'll treat ALL known tools as "enabled" for validation purposes
@@ -34,7 +35,7 @@ function getAllKnownTools(): Set<string> {
   ]);
 }
 
-export const validateWorkflowTool = {
+export const validateWorkflowTool = defineModelTool({
   name: 'validate_workflow',
   description: `Validates workflow YAML/JSON files for correctness.
 
@@ -75,9 +76,9 @@ Returns detailed error messages with suggestions for fixing issues.`,
       return `❌ Validation error: ${error.message}`;
     }
   }
-};
+});
 
-export const validateWorkflowFileTool = {
+export const validateWorkflowFileTool = defineModelTool({
   name: 'validate_workflow_file',
   description: `Validates a workflow file from the filesystem.
 
@@ -110,4 +111,4 @@ Returns detailed error messages with suggestions for fixing issues.`,
       return `❌ Validation error: ${error.message}`;
     }
   }
-};
+});
