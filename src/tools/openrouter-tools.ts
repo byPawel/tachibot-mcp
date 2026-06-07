@@ -4,6 +4,8 @@
  */
 
 import { z } from "zod";
+import { defineModelTool } from "./factory/define-model-tool.js";
+import { filesField, reasoningContextField } from "./factory/base-schemas.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
@@ -159,7 +161,7 @@ export async function callOpenRouter(
  * Qwen Coder Tool
  * Agentic code generation with Qwen3-Coder-Next (80B/3B MoE, 262K context, SWE-Bench >70%)
  */
-export const qwenCoderTool = {
+export const qwenCoderTool = defineModelTool({
   name: "qwen_coder",
   description: "Code generation and analysis with Qwen3-Coder-Next. Put your REQUEST in the 'query' parameter.",
   parameters: z.object({
@@ -169,7 +171,7 @@ export const qwenCoderTool = {
       .default("analyze")
       .describe("Code task type (default: analyze)"),
     code: z.string().optional().describe("Source code to work with (for review/optimize/debug/refactor/explain tasks)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
     useFree: z.boolean().optional().default(false).describe("Use free tier model instead of premium")
   }),
@@ -214,24 +216,24 @@ ${FORMAT_INSTRUCTION}`;
       reportFn
     );
   }
-};
+});
 
 /**
  * QwQ Reasoning Tool
  * Deep reasoning with QwQ-32B model
  */
-export const qwqReasoningTool = {
+export const qwqReasoningTool = defineModelTool({
   name: "qwq_reason",
   description: "Multi-perspective deliberation: simulate 4 opposing viewpoints (optimist/pessimist/domain-expert/contrarian) then synthesize a balanced verdict. Use when a problem needs debate, not just analysis. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
-    context: z.string().optional().describe("Additional context for the reasoning task"),
+    ...reasoningContextField,
     approach: z.string()
       .optional()
       .default("multi-perspective")
       .describe("Reasoning approach: multi-perspective (default), mathematical, logical, creative"),
     useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: {
     problem: string;
@@ -290,13 +292,13 @@ ${FORMAT_INSTRUCTION}`
     const model = args.useFree !== false ? OpenRouterModel.QWQ_32B : OpenRouterModel.QWQ_32B;
     return await callOpenRouter(messages, model, 0.3, 6000);
   }
-};
+});
 
 /**
  * Qwen General Tool
  * General-purpose assistance with Qwen3-32B
  */
-export const qwenGeneralTool = {
+export const qwenGeneralTool = defineModelTool({
   name: "qwen_general",
   description: "General-purpose assistance with Qwen3. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
@@ -306,7 +308,7 @@ export const qwenGeneralTool = {
       .default("chat")
       .describe("Interaction mode (e.g., chat, analysis, creative, technical)"),
     useFree: z.boolean().optional().default(true).describe("Use free tier model (default: true)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: { query: string; mode?: string; useFree?: boolean; files?: string[] }, { log }: any) => {
     const modePrompts = {
@@ -336,13 +338,13 @@ ${FORMAT_INSTRUCTION}`
     const model = args.useFree === true ? OpenRouterModel.QWEN3_30B : OpenRouterModel.QWEN3_CODER;
     return await callOpenRouter(messages, model, 0.7, 3000);
   }
-};
+});
 
 /**
  * Multi-Model Tool
  * Access various models via OpenRouter
  */
-export const openRouterMultiModelTool = {
+export const openRouterMultiModelTool = defineModelTool({
   name: "openrouter_multi",
   description: "Access Qwen and Kimi models. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
@@ -379,21 +381,21 @@ export const openRouterMultiModelTool = {
 
     return await callOpenRouter(messages, selectedModel, args.temperature || 0.7, 4000);
   }
-};
+});
 
 /**
  * Algorithm Optimization Tool
  * Principal Algorithm Engineer & Competitive Programming Coach
  * Deep algorithmic reasoning with Qwen3-235B-Thinking (235B MoE)
  */
-export const qwenAlgoTool = {
+export const qwenAlgoTool = defineModelTool({
   name: "qwen_algo",
   description: "Expert algorithm analysis: complexity profiling, optimization tiers, constraint-driven recommendations, competitive programming patterns. Put PROBLEM/CODE in 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The algorithm problem or code to analyze (REQUIRED - put your question/code here)"),
     constraints: z.string().optional().describe("Input constraints: N size, time limit, memory limit (e.g., 'N≤10^5, 1s, 256MB')"),
     context: z.string().optional().describe("Additional context: current performance, environment, language"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     focus: z.string()
       .optional()
       .default("general")
@@ -559,13 +561,13 @@ ${FORMAT_INSTRUCTION}`;
       reportFn
     );
   }
-};
+});
 
 /**
  * Code Competition Tool
  * Competitive programming and algorithm challenges
  */
-export const qwenCompetitiveTool = {
+export const qwenCompetitiveTool = defineModelTool({
   name: "qwen_competitive",
   description: "Competitive programming. Put the PROBLEM in the 'problem' parameter.",
   parameters: z.object({
@@ -576,7 +578,7 @@ export const qwenCompetitiveTool = {
       .default("python")
       .describe("Programming language - must be one of: python, cpp, java, javascript, rust"),
     optimize: z.boolean().optional().default(true).describe("Optimize for time and space complexity"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: {
     problem: string;
@@ -611,20 +613,20 @@ ${FORMAT_INSTRUCTION}`
 
     return await callOpenRouter(messages, OpenRouterModel.QWEN3_CODER_NEXT, 0.1, 6000);
   }
-};
+});
 
 /**
  * Kimi K2.6 Thinking Tool
  * Multimodal model with Agent Swarm (100 sub-agents) and built-in reasoning
  * $0.60/$3.00 per M tokens, 262K context
  */
-export const kimiThinkingTool = {
+export const kimiThinkingTool = defineModelTool({
   name: "kimi_thinking",
   description: "Kimi K2.6 multimodal reasoning with Agent Swarm. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
-    context: z.string().optional().describe("Additional context for the reasoning task"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...reasoningContextField,
+    ...filesField,
     approach: z.string()
       .optional()
       .default("step-by-step")
@@ -675,14 +677,14 @@ ${FORMAT_INSTRUCTION}`
       reportFn
     );
   }
-};
+});
 
 /**
  * Kimi Code Tool
  * SWE-focused code generation/fixing with Kimi K2.6 (SWE-Bench 76.8%)
  * Best for: code generation, bug fixing, refactoring, repo-level understanding
  */
-export const kimiCodeTool = {
+export const kimiCodeTool = defineModelTool({
   name: "kimi_code",
   description: "SWE-focused code generation/fixing with Kimi K2.6 (SWE-Bench 76.8%). Put your REQUEST in the 'query' parameter.",
   parameters: z.object({
@@ -693,7 +695,7 @@ export const kimiCodeTool = {
       .describe("Code task type (default: review)"),
     code: z.string().optional().describe("Source code to work with (for fix/review/optimize/debug/refactor tasks)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: {
     query: string;
@@ -737,7 +739,7 @@ ${FORMAT_INSTRUCTION}`;
       240000
     );
   }
-};
+});
 
 // kimi_decompose configuration
 const DECOMPOSE_TEMPERATURE = 0.3;
@@ -749,7 +751,7 @@ const DECOMPOSE_TIMEOUT_MS = 360_000;
  * Structured task decomposition using Kimi K2.6's Agent Swarm reasoning
  * Best for: breaking complex tasks into subtasks with dependencies and acceptance criteria
  */
-export const kimiDecomposeTool = {
+export const kimiDecomposeTool = defineModelTool({
   name: "kimi_decompose",
   description: "Structured task decomposition with Kimi K2.6 Agent Swarm reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.",
   parameters: z.object({
@@ -767,7 +769,7 @@ export const kimiDecomposeTool = {
     files?: string[];
     depth: number;
     outputFormat: "tree" | "flat" | "dependencies";
-  }, { reportProgress }: { reportProgress?: (progress: { progress: number; total: number }) => Promise<void> }) => {
+  }, { reportProgress }: any) => {
     const formatInstructions: Record<string, string> = {
       tree: `Output in FOUR sections. Follow this format EXACTLY:
 
@@ -926,14 +928,14 @@ Wrap your final output in <output> tags. Everything outside <output> is discarde
 
     return raw;
   }
-};
+});
 
 /**
  * Kimi Long Context Tool
  * Long-context analysis leveraging Kimi K2.6's 256K context window
  * Best for: analyzing large documents, codebases, or text bodies
  */
-export const kimiLongContextTool = {
+export const kimiLongContextTool = defineModelTool({
   name: "kimi_long_context",
   description: "Long-context analysis with Kimi K2.6 (256K context window). Put CONTENT in the 'content' parameter.",
   parameters: z.object({
@@ -945,7 +947,7 @@ export const kimiLongContextTool = {
     query: z.string().optional().describe("Specific question about the content (for extract/find tasks)"),
     outputFormat: z.enum(["brief", "detailed", "structured"]).optional().default("detailed")
       .describe("Output format: brief (TL;DR), detailed (thorough), structured (sections with headers)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: {
     content: string;
@@ -992,20 +994,20 @@ ${FORMAT_INSTRUCTION}`;
       300000
     );
   }
-};
+});
 
 /**
  * Qwen Reason Tool
  * Heavy reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT math)
  * Best for: math-heavy tasks, proofs, complex logic
  */
-export const qwenReasonTool = {
+export const qwenReasonTool = defineModelTool({
   name: "qwen_reason",
   description: "Heavy mathematical reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT). Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
-    context: z.string().optional().describe("Additional context for the reasoning task"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...reasoningContextField,
+    ...filesField,
     approach: z.string()
       .optional()
       .default("mathematical")
@@ -1049,14 +1051,14 @@ ${FORMAT_INSTRUCTION}`
       reportFn
     );
   }
-};
+});
 
 /**
  * MiniMax Code Tool
  * Single-pass code operations with MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index)
  * Best for: atomic code tasks — one input, one output, no planning needed
  */
-export const minimaxCodeTool = {
+export const minimaxCodeTool = defineModelTool({
   name: "minimax_code",
   description: "Single-pass code operations with MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index). Put your REQUEST in the 'query' parameter. For multi-step tasks, use minimax_agent instead.",
   parameters: z.object({
@@ -1066,7 +1068,7 @@ export const minimaxCodeTool = {
       .default("review")
       .describe("Code task type (default: review)"),
     code: z.string().optional().describe("Source code to work with (for fix/review/optimize/debug/refactor tasks)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')")
   }),
   execute: async (args: {
@@ -1144,20 +1146,20 @@ ${FORMAT_INSTRUCTION}`;
       reportFn
     );
   }
-};
+});
 
 /**
  * MiniMax Agent Tool
  * Multi-step task decomposition and execution with MiniMax M2.7
  * Best for: tasks requiring planning, analysis, research synthesis, decision-making
  */
-export const minimaxAgentTool = {
+export const minimaxAgentTool = defineModelTool({
   name: "minimax_agent",
   description: "Multi-step task decomposition and execution with MiniMax M2.7: plan, analyze, research, decide. Use when a task needs breakdown into steps before execution. For single-pass code tasks, use minimax_code instead. Put TASK in 'task' parameter.",
   parameters: z.object({
     task: z.string().describe("The task to execute (REQUIRED - describe what needs to be done)"),
     context: z.string().optional().describe("Additional context about the environment or constraints"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     steps: z.coerce.number().int().min(1).max(20).optional().default(5).describe("Maximum steps to plan (1-20, default: 5)"),
     outputFormat: z.enum(["plan", "execute", "both"]).optional().default("both")
       .describe("Output: 'plan' (just steps), 'execute' (just results), 'both' (plan + results)")
@@ -1222,7 +1224,7 @@ ${FORMAT_INSTRUCTION}`
       reportFn
     );
   }
-};
+});
 
 /**
  * Check if OpenRouter is available
