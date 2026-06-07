@@ -119,6 +119,65 @@ function sortDeep(value: unknown): unknown {
   return value;
 }
 
+// ---------------------------------------------------------------------------
+// Single-tool emit helper (shared by hard-case tests and base-schema tests)
+// ---------------------------------------------------------------------------
+
+/**
+ * Spin up a throwaway FastMCPSession with ONE tool and return the `inputSchema`
+ * exactly as an MCP client would receive it over the wire.
+ *
+ * This is the same FastMCP ListTools path used by the server-wide harness
+ * (`getEmittedTools`), kept here so tests can compare two emitted schemas
+ * without importing the full server.
+ */
+export async function emitOne(
+  toolName: string,
+  parameters: unknown,
+): Promise<unknown> {
+  const tool: CapturedTool = {
+    name: toolName,
+    description: "throwaway tool for emit-equality test",
+    parameters,
+  };
+
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const client = new Client(
+    { name: "emit-one-client", version: "0.0.0" },
+    { capabilities: {} },
+  );
+
+  const session = new (FastMCPSession as unknown as {
+    new (opts: Record<string, unknown>): { connect: (t: unknown) => Promise<void> };
+  })({
+    name: "emit-one-session",
+    version: "0.0.0",
+    tools: [tool],
+    prompts: [],
+    resources: [],
+    resourcesTemplates: [],
+    transportType: "stdio",
+  });
+
+  await Promise.all([
+    client.connect(clientTransport),
+    session.connect(serverTransport),
+  ]);
+
+  let result: { tools: Array<Record<string, unknown>> };
+  try {
+    result = (await client.listTools()) as unknown as {
+      tools: Array<Record<string, unknown>>;
+    };
+  } finally {
+    await client.close().catch(() => {});
+  }
+
+  const emitted = result.tools.find((t) => t.name === toolName);
+  if (!emitted) throw new Error(`Tool '${toolName}' not found in emitted list`);
+  return emitted["inputSchema"];
+}
+
 let cachedEmitted: EmittedTool[] | null = null;
 
 /**
