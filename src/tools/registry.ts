@@ -173,8 +173,10 @@ export async function getAllTools(
   // 6) Local-model tools (Ollama / LM Studio / llama.cpp / vLLM). Registered
   //    unconditionally; profile membership enforced downstream by
   //    safeAddTool/isToolEnabled. Dynamic import preserves original timing.
-  const { localQueryTool } = await import("./local-tools.js");
-  tools.push(localQueryTool as unknown as RegistryTool);
+  //    getAllLocalTools() is used so tools added via `npm run add-tool` are
+  //    automatically included without touching registry.ts (Task 2.3 fix).
+  const { getAllLocalTools } = await import("./local-tools.js");
+  tools.push(...(getAllLocalTools() as unknown as RegistryTool[]));
 
   // NOTE: registerWorkflowTools(server) is intentionally NOT here — it
   // registers directly onto the FastMCP server, not via safeAddTool. It stays
