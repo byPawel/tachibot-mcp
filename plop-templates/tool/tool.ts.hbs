@@ -1,0 +1,15 @@
+import { z } from "zod";
+import { defineModelTool } from "../factory/define-model-tool.js";
+
+export const {{toolConst name}} = defineModelTool({
+  name: "{{name}}",
+  description: "{{description}}",
+  parameters: z.object({
+    // TODO: define parameters
+    prompt: z.string().describe("Input prompt"),
+  }),
+  execute: async (args, ctx) => {
+    // TODO: implement
+    return "";
+  },
+});

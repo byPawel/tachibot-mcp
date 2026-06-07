@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import { defineModelTool } from "./factory/define-model-tool.js";
 import { callGrok } from "./grok-tools.js";
 import { callOpenAI } from "./openai-tools.js";
 import { callOpenRouter, OpenRouterModel } from "./openrouter-tools.js";
@@ -106,7 +107,7 @@ const JUROR_REGISTRY: Record<string, {
 
 const DEFAULT_JURORS = ["grok", "kimi", "qwen", "openai"];
 
-export const juryTool = {
+export const juryTool = defineModelTool({
   name: "jury",
   description: "Multi-model jury: runs question through configurable panel of AI jurors in parallel, then Gemini synthesizes a unified verdict. Put QUESTION in 'question' parameter.",
   parameters: z.object({
@@ -219,4 +220,4 @@ ${jurorSummary}
 VERDICT
 ${judgeResult}`);
   }
-};
+});

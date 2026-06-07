@@ -13,6 +13,8 @@ import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { getTimeoutConfig } from "../config/timeout-config.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
+import { defineModelTool } from "./factory/define-model-tool.js";
+import { filesField } from "./factory/base-schemas.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 // NOTE: dotenv is loaded in server.ts before any imports
@@ -192,7 +194,7 @@ export async function callGemini(
  * Gemini Query Tool
  * Direct querying of Gemini models for general information
  */
-export const geminiQueryTool = {
+export const geminiQueryTool = defineModelTool({
   name: "gemini_query",
   description: "Query Gemini. Put your PROMPT in the 'prompt' parameter.",
   parameters: z.object({
@@ -201,7 +203,7 @@ export const geminiQueryTool = {
       .optional()
       .default("gemini-3")
       .describe("Model variant - must be one of: gemini-3 (default), pro, flash"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: { prompt: string; model?: string; files?: string[] }, { log, reportProgress }: any) => {
     let model: string = GEMINI_MODELS.GEMINI_3_PRO; // Default to Gemini 3
@@ -219,7 +221,7 @@ export const geminiQueryTool = {
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Gemini Brainstorm Tool
@@ -228,14 +230,14 @@ export const geminiQueryTool = {
  * Note: skipValidation is used for internal LLM-to-LLM calls where input
  * has already been validated at the MCP entry point (server.ts).
  */
-export const geminiBrainstormTool = {
+export const geminiBrainstormTool = defineModelTool({
   name: "gemini_brainstorm",
   description: "Convergent synthesis: cluster, refine, and prioritize raw ideas into structured hierarchies. Use AFTER divergent ideation to organize and rank ideas by impact/feasibility. Put your PROMPT in the 'prompt' parameter.",
   parameters: z.object({
     prompt: z.string().describe("The ideas or topic to organize and refine (REQUIRED - put raw ideas or topic here)"),
     claudeThoughts: z.string().optional().describe("Claude's initial thoughts or raw ideas to cluster and refine"),
     maxClusters: z.number().optional().default(5).describe("Number of idea clusters to create (default: 5)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: { prompt: string; claudeThoughts?: string; maxClusters?: number; files?: string[] }, { log, reportProgress }: any) => {
     const systemPrompt = `Convergent synthesis engine. Output consumed by automated toolchain.
@@ -274,19 +276,19 @@ ${FORMAT_INSTRUCTION}`;
 
     return stripFormatting(response);
   }
-};
+});
 
 /**
  * Gemini Analyze Code Tool
  * Code quality and performance analysis
  */
-export const geminiAnalyzeCodeTool = {
+export const geminiAnalyzeCodeTool = defineModelTool({
   name: "gemini_analyze_code",
   description: "Analyze code for bugs, quality, security, or performance issues. Put the CODE in the 'code' parameter, NOT in 'focus'.",
   parameters: z.object({
     code: z.string().describe("The actual source code to analyze (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     focus: z.string().optional().default("general").describe("Analysis focus (e.g., quality, security, performance, bugs, general)")
   }),
   execute: async (args: { code: string; language?: string; files?: string[]; focus?: string }, { log, reportProgress }: any) => {
@@ -321,18 +323,18 @@ ${FORMAT_INSTRUCTION}`;
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Gemini Analyze Text Tool
  * Text analysis and sentiment detection
  */
-export const geminiAnalyzeTextTool = {
+export const geminiAnalyzeTextTool = defineModelTool({
   name: "gemini_analyze_text",
   description: "Rhetorical analysis: dissect arguments for bias, logical fallacies, and persuasion tactics. Use for evaluating claims, detecting manipulation, or understanding argument structure. Put the TEXT in the 'text' parameter.",
   parameters: z.object({
     text: z.string().describe("The text to analyze (REQUIRED - put your text here)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     type: z.string()
       .optional()
       .default("rhetoric")
@@ -388,13 +390,13 @@ ${FORMAT_INSTRUCTION}`;
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Gemini Summarize Tool
  * Content summarization at different levels
  */
-export const geminiSummarizeTool = {
+export const geminiSummarizeTool = defineModelTool({
   name: "gemini_summarize",
   description: "Summarization. Put the CONTENT in the 'content' parameter.",
   parameters: z.object({
@@ -407,7 +409,7 @@ export const geminiSummarizeTool = {
       .optional()
       .default("paragraph")
       .describe("Output format - must be one of: paragraph, bullet-points, outline"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: { content: string; length?: string; format?: string; files?: string[] }, { log, reportProgress }: any) => {
     const lengthGuides = {
@@ -446,13 +448,13 @@ ${FORMAT_INSTRUCTION}`;
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Gemini Image Prompt Tool
  * Create detailed prompts for image generation
  */
-export const geminiImagePromptTool = {
+export const geminiImagePromptTool = defineModelTool({
   name: "gemini_image_prompt",
   description: "Image prompt generation. Put the DESCRIPTION in the 'description' parameter.",
   parameters: z.object({
@@ -489,7 +491,7 @@ ${args.details ? `Additional details: ${args.details}` : ''}`;
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Gemini Judge Tool
@@ -500,7 +502,7 @@ ${args.details ? `Additional details: ${args.details}` : ''}`;
  * - Position bias mitigation (don't favor first/last)
  * - Extract-then-synthesize (not pick-a-winner)
  */
-export const geminiJudgeTool = {
+export const geminiJudgeTool = defineModelTool({
   name: "gemini_judge",
   description: "Evaluate and synthesize multiple AI perspectives into a unified verdict. Put CONTENT in the 'perspectives' parameter.",
   parameters: z.object({
@@ -512,7 +514,7 @@ export const geminiJudgeTool = {
       .optional()
       .default("synthesize")
       .describe("Judge mode: synthesize (merge best), evaluate (score each), rank (order by quality), resolve (settle conflicts)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.")
+    ...filesField
   }),
   execute: async (args: {
     perspectives?: string;
@@ -600,14 +602,14 @@ ${FORMAT_INSTRUCTION}`;
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Gemini Search Tool
  * Web search using Google Search grounding
  * Uses google_search_retrieval with dynamic retrieval config
  */
-export const geminiSearchTool = {
+export const geminiSearchTool = defineModelTool({
   name: "gemini_search",
   description: "Web search via Gemini with Google Search grounding",
   parameters: z.object({
@@ -757,7 +759,7 @@ IMPORTANT:
       return `[Gemini Search error: ${error instanceof Error ? error.message : String(error)}]`;
     }
   }
-};
+});
 
 /**
  * Check if Gemini is available

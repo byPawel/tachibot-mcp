@@ -1,0 +1,17 @@
+import { z } from "zod";
+import { {{toolConst name}} } from "../{{provider}}-tools/{{name}}.js";
+
+describe("{{toolConst name}}", () => {
+  it("has the correct wire name", () => {
+    expect({{toolConst name}}.name).toBe("{{name}}");
+  });
+
+  it("parameters is a ZodObject", () => {
+    expect({{toolConst name}}.parameters).toBeInstanceOf(z.ZodObject);
+  });
+
+  it("execute returns a string", async () => {
+    const result = await {{toolConst name}}.execute({ prompt: "test" }, {});
+    expect(typeof result).toBe("string");
+  });
+});
