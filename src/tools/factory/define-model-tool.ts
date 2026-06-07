@@ -28,12 +28,38 @@ export interface ModelTool<S extends z.ZodObject<z.ZodRawShape> = z.ZodObject<z.
  * transformation, NO added .describe()/defaults. The emitted JSON schema MUST
  * be unchanged. The body is exactly `return tool;` and must stay that way.
  *
+ * IDENTITY-PRESERVING: the RETURN type is the concrete tool type `T`, not
+ * `ModelTool<S>`. Wrapping a tool is therefore type-transparent — the wrapped
+ * const keeps the *exact* concrete type it would have unwrapped (e.g.
+ * `execute`'s real `Promise<string>` return and its concrete input where
+ * `.default()` fields are still optional at the call site). Returning
+ * `ModelTool<S>` instead would widen `execute` to
+ * `(input: z.infer<S>, ctx) => Promise<unknown>` and break direct callers such
+ * as `src/tools/prompt-technique-tools.ts` that invoke `.execute(...)` outside
+ * FastMCP's parse step.
+ *
+ * Two type params are required for BOTH goals at once:
+ *   - `S` is inferred from `tool.parameters` so the shape constraint's
+ *     `execute` input is `z.infer<S>` — i.e. the tool's OWN output type, which
+ *     its concrete `execute` is assignable to (contravariantly). Constraining
+ *     to the generic `ModelTool<z.ZodObject<z.ZodRawShape>>` instead resolves
+ *     the input to `{ [x: string]: any }` (an index signature with no required
+ *     keys), to which a concrete `execute(input: { prompt: string })` is NOT
+ *     assignable — so a single `T extends ModelTool<…>` param wrongly rejects
+ *     every real tool.
+ *   - `T extends ModelTool<S>` captures and returns the concrete tool type.
+ * The `ModelTool<S>` bound still validates the shape (rejects a missing
+ * `name`/`description`/`execute` or a non-`ZodObject` `parameters`).
+ *
  * C3: a future tool whose top-level `parameters` uses `.refine()` /
  * `.superRefine()` / `.transform()` would produce a `ZodEffects` (not a
  * `ZodObject`) and would require widening the `S` constraint here. No such
  * tool exists today (grep-confirmed), so the `z.ZodObject` constraint is
  * correct for now.
  */
-export function defineModelTool<S extends z.ZodObject<z.ZodRawShape>>(tool: ModelTool<S>): ModelTool<S> {
+export function defineModelTool<
+  S extends z.ZodObject<z.ZodRawShape>,
+  T extends ModelTool<S>,
+>(tool: T & { parameters: S }): T {
   return tool;
 }
