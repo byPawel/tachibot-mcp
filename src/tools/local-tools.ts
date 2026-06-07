@@ -158,3 +158,17 @@ export const localQueryTool = {
     }
   },
 };
+
+// plop:tools — generated tool imports are appended here by `npm run add-tool`
+
+/**
+ * Returns all local-model tools. The registry imports `localQueryTool` directly
+ * today; this getter is the extension point for tools added via `npm run add-tool`.
+ * `// plop:register` marks the insertion point inside the return array.
+ */
+export function getAllLocalTools() {
+  return [
+    localQueryTool,
+    // plop:register
+  ];
+}
