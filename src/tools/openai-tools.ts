@@ -5,6 +5,8 @@
  */
 
 import { z } from "zod";
+import { defineModelTool } from "./factory/define-model-tool.js";
+import { filesField, reasoningContextField } from "./factory/base-schemas.js";
 import { config } from "dotenv";
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -339,12 +341,12 @@ export async function callOpenAI(
 /**
  * GPT-5 Reasoning Tool - Most advanced reasoning with confirmation
  */
-export const gpt5ReasonTool = {
+export const gpt5ReasonTool = defineModelTool({
   name: "gpt5_reason",
   description: "Advanced reasoning using GPT-5. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
-    context: z.string().optional().describe("Additional context for the reasoning task"),
+    ...reasoningContextField,
     mode: z.enum(["mathematical", "scientific", "logical", "analytical"])
       .optional()
       .default("analytical")
@@ -378,17 +380,17 @@ export const gpt5ReasonTool = {
     // Use GPT-5.2-thinking with high reasoning
     return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 8000, "high");
   }
-};
+});
 
 /**
  * GPT-5-mini Reasoning Tool - Cost-efficient reasoning without confirmation
  */
-export const gpt5MiniReasonTool = {
+export const gpt5MiniReasonTool = defineModelTool({
   name: "gpt5_mini_reason",
   description: "Cost-efficient reasoning using GPT-5-mini. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
-    context: z.string().optional().describe("Additional context for the reasoning task"),
+    ...reasoningContextField,
     mode: z.enum(["mathematical", "scientific", "logical", "analytical"])
       .optional()
       .default("analytical")
@@ -416,15 +418,15 @@ export const gpt5MiniReasonTool = {
     // Use GPT-5.2-thinking with medium reasoning (cost-effective)
     return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 3000, "medium");
   }
-};
+});
 
-export const openaiGpt5ReasonTool = {
+export const openaiGpt5ReasonTool = defineModelTool({
   name: "openai_reason",
   description: "Mathematical reasoning using GPT-5.2-thinking. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
-    context: z.string().optional().describe("Additional context for the reasoning task"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...reasoningContextField,
+    ...filesField,
     mode: z.string()
       .optional()
       .default("analytical")
@@ -464,20 +466,20 @@ ${FORMAT_INSTRUCTION}`
       reportFn
     );
   }
-};
+});
 
 
 /**
  * OpenAI Brainstorm Tool
  * Creative engineering problem-solving - find the "3rd option"
  */
-export const openAIBrainstormTool = {
+export const openAIBrainstormTool = defineModelTool({
   name: "openai_brainstorm",
   description: "Find alternative approaches: when stuck on a programming problem, reveals 3rd/4th/5th options you haven't considered, with cost of each. Use when you think there's only 1-2 ways to do something. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The engineering problem or design tradeoff to brainstorm about (REQUIRED)"),
     constraints: z.string().optional().describe("Technical constraints: language, framework, performance requirements, team size"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     quantity: z.number().optional().describe("Number of approaches to generate (default: 5)"),
     model: z.enum(["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-pro"])
       .optional()
@@ -487,7 +489,7 @@ export const openAIBrainstormTool = {
       .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh"),
     max_tokens: z.number().optional().describe("Maximum tokens for response")
   }),
-  execute: async (args: { problem: string; constraints?: string; files?: string[]; quantity?: number; model?: string; reasoning_effort?: string; max_tokens?: number }, options: { log?: any; skipValidation?: boolean } = {}) => {
+  execute: async (args: { problem: string; constraints?: string; files?: string[]; quantity?: number; model?: string; reasoning_effort?: string; max_tokens?: number }, options: any = {}) => {
     const {
       problem,
       constraints,
@@ -545,19 +547,19 @@ ${FORMAT_INSTRUCTION}`
     const modelEnum = model as OpenAIModel;
     return await callOpenAI(messages, modelEnum, 0.95, effectiveMaxTokens, reasoning_effort, false, options.skipValidation || false);
   }
-};
+});
 
 /**
  * OpenAI Code Review Tool
  * Comprehensive code review using GPT-5.x
  */
-export const openaiCodeReviewTool = {
+export const openaiCodeReviewTool = defineModelTool({
   name: "openai_code_review",
   description: "Code review. Put the CODE in the 'code' parameter, NOT in 'focusAreas'.",
   parameters: z.object({
     code: z.string().describe("The actual source code to review (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     focusAreas: z.array(z.enum(["security", "performance", "readability", "bugs", "best-practices"]))
       .optional()
       .describe("Focus areas - array of: security, performance, readability, bugs, best-practices")
@@ -594,13 +596,13 @@ ${FORMAT_INSTRUCTION}`
       reportFn
     );
   }
-};
+});
 
 /**
  * OpenAI Explain Tool
  * Clear explanations for complex topics using GPT-5.1-codex-mini
  */
-export const openaiExplainTool = {
+export const openaiExplainTool = defineModelTool({
   name: "openai_explain",
   description: "Explain concepts. Put the TOPIC in the 'topic' parameter.",
   parameters: z.object({
@@ -613,7 +615,7 @@ export const openaiExplainTool = {
       .optional()
       .default("simple")
       .describe("Explanation style - must be one of: technical, simple, analogy, visual"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
   }),
   execute: async (args: { topic: string; level?: string; style?: string; files?: string[] }, { log }: any) => {
     const levelPrompts = {
@@ -650,7 +652,7 @@ ${FORMAT_INSTRUCTION}`
 
     return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 2500, "low");
   }
-};
+});
 
 /**
  * Call OpenAI Responses API with web_search tool enabled
@@ -763,7 +765,7 @@ async function callOpenAIWithSearch(
  * OpenAI Search Tool
  * Web search using GPT-5.2 with real-time web search capability
  */
-export const openaiSearchTool = {
+export const openaiSearchTool = defineModelTool({
   name: "openai_search",
   description: "Web search using GPT-5.2 with real-time web access. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
@@ -789,7 +791,7 @@ export const openaiSearchTool = {
       maxTokens: 6000,
     });
   },
-};
+});
 
 /**
  * Check if OpenAI is available
