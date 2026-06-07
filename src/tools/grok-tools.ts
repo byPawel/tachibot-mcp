@@ -8,6 +8,8 @@ import { config } from "dotenv";
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { grokSearchTool } from './grok-enhanced.js';
+import { defineModelTool } from './factory/define-model-tool.js';
+import { filesField } from './factory/base-schemas.js';
 import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
 import { getGrokApiKey, hasGrokApiKey } from "../utils/api-keys.js";
 import { stripFormatting } from "../utils/format-stripper.js";
@@ -163,7 +165,7 @@ export async function callGrok(
  * Grok Reasoning Tool
  * Deep logical reasoning with first principles thinking
  */
-export const grokReasonTool = {
+export const grokReasonTool = defineModelTool({
   name: "grok_reason",
   description: "Deep reasoning. Put your PROBLEM or QUESTION in the 'problem' parameter.",
   parameters: z.object({
@@ -172,7 +174,7 @@ export const grokReasonTool = {
       .optional()
       .describe("Reasoning approach (e.g., analytical, creative, systematic, first-principles)"),
     context: z.string().optional().describe("Additional context for the problem"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     useHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for complex tasks")
   }),
   execute: async (args: { problem: string; approach?: string; context?: string; files?: string[]; useHeavy?: boolean }, { log, reportProgress }: any) => {
@@ -215,13 +217,13 @@ ${FORMAT_INSTRUCTION}`
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Grok Code Tool
  * Code analysis, optimization, and debugging
  */
-export const grokCodeTool = {
+export const grokCodeTool = defineModelTool({
   name: "grok_code",
   description: "Code analysis. Put the CODE in the 'code' parameter, NOT in 'task'.",
   parameters: z.object({
@@ -229,7 +231,7 @@ export const grokCodeTool = {
       .describe("Code task (e.g., analyze, optimize, debug, review, refactor)"),
     code: z.string().describe("The actual source code to analyze (REQUIRED - put your code here)"),
     language: z.string().optional().describe("Programming language (e.g., 'typescript', 'python')"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     requirements: z.string().optional().describe("Specific requirements or focus areas")
   }),
   execute: async (args: { task: string; code: string; language?: string; files?: string[]; requirements?: string }, { log, reportProgress }: any) => {
@@ -270,20 +272,20 @@ ${FORMAT_INSTRUCTION}`
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Grok Debug Tool
  * Specialized debugging assistance
  */
-export const grokDebugTool = {
+export const grokDebugTool = defineModelTool({
   name: "grok_debug",
   description: "Debug assistance. Describe the ISSUE in the 'issue' parameter.",
   parameters: z.object({
     issue: z.string().describe("Description of the issue or bug (REQUIRED - put your problem here)"),
     code: z.string().optional().describe("Relevant code that has the issue"),
     error: z.string().optional().describe("Error message or stack trace"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     context: z.string().optional().describe("Additional context about the environment or conditions")
   }),
   execute: async (args: { issue: string; code?: string; error?: string; files?: string[]; context?: string }, { log, reportProgress }: any) => {
@@ -332,13 +334,13 @@ ${FORMAT_INSTRUCTION}`
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Grok Architect Tool
  * System architecture and design
  */
-export const grokArchitectTool = {
+export const grokArchitectTool = defineModelTool({
   name: "grok_architect",
   description: "Architecture design. Put your REQUIREMENTS in the 'requirements' parameter.",
   parameters: z.object({
@@ -347,7 +349,7 @@ export const grokArchitectTool = {
     scale: z.string()
       .optional()
       .describe("Expected scale (e.g., small, medium, large, enterprise)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
   }),
   execute: async (args: { requirements: string; constraints?: string; scale?: string; files?: string[] }, { log, reportProgress }: any) => {
     const { requirements, constraints, scale } = args;
@@ -380,13 +382,13 @@ ${FORMAT_INSTRUCTION}`
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Grok Brainstorm Tool
  * Creative brainstorming with Grok 4 Heavy
  */
-export const grokBrainstormTool = {
+export const grokBrainstormTool = defineModelTool({
   name: "grok_brainstorm",
   description: "Contrarian first-principles brainstorming: deconstruct a topic to atomic truths, challenge every assumption, then rebuild radical alternatives. Use when conventional thinking has stalled. Put your TOPIC in the 'topic' parameter.",
   parameters: z.object({
@@ -394,7 +396,7 @@ export const grokBrainstormTool = {
     constraints: z.string().optional().describe("Any constraints or requirements to consider"),
     numIdeas: z.number().optional().describe("Number of radical rebuilds to generate (default: 5)"),
     forceHeavy: z.boolean().optional().describe("Use expensive Grok 4 Heavy model ($3/$15) for deeper creativity"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
   }),
   execute: async (args: { topic: string; constraints?: string; numIdeas?: number; forceHeavy?: boolean; files?: string[] }, { log, reportProgress }: any) => {
     const { topic, constraints, numIdeas = 5, forceHeavy = false } = args;
@@ -442,7 +444,7 @@ ${FORMAT_INSTRUCTION}`
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Check if Grok is available
