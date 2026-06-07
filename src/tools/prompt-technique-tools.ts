@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { defineModelTool } from "./factory/define-model-tool.js";
 import { PromptEngineerLite } from "../prompt-engineer-lite.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { randomBytes } from "crypto";
@@ -169,7 +170,7 @@ function generateToken(): string {
  * Tool 1: list_prompt_techniques
  * Discovery tool - shows all 21 techniques organized by category
  */
-export const listPromptTechniquesTool = {
+export const listPromptTechniquesTool = defineModelTool({
   name: "list_prompt_techniques",
   description: "Discover available prompt engineering techniques. Shows all 31 techniques organized by category.",
   parameters: z.object({
@@ -209,13 +210,13 @@ export const listPromptTechniquesTool = {
 
     return stripFormatting(output);
   }
-};
+});
 
 /**
  * Tool 2: preview_prompt_technique
  * Read-only preview - shows enhanced prompt WITHOUT execution
  */
-export const previewPromptTechniqueTool = {
+export const previewPromptTechniqueTool = defineModelTool({
   name: "preview_prompt_technique",
   description: "Preview how a technique enhances your prompt WITHOUT executing. Returns an execution_token for later use.",
   parameters: z.object({
@@ -279,13 +280,13 @@ export const previewPromptTechniqueTool = {
 
     return stripFormatting(output);
   }
-};
+});
 
 /**
  * Tool 3: execute_prompt_technique
  * Executes tool with technique. Accepts token OR full params.
  */
-export const executePromptTechniqueTool = {
+export const executePromptTechniqueTool = defineModelTool({
   name: "execute_prompt_technique",
   description: "Execute a prompt technique. Use execution_token from preview, OR provide full params (technique, tool, query). Use \"last\" as token to execute most recent preview.",
   parameters: z.object({
@@ -380,7 +381,7 @@ export const executePromptTechniqueTool = {
 
     return stripFormatting(output);
   }
-};
+});
 
 /**
  * Execute target tool with the enhanced prompt
