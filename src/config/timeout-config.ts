@@ -70,7 +70,8 @@ export function getOpenRouterModelTimeout(modelId: string): number {
   const id = modelId.toLowerCase();
   if (
     id.includes('thinking') || id.includes('reasoning') ||
-    id.includes('kimi') || id.includes('deepseek') || id.includes('glm')
+    id.includes('kimi') || id.includes('deepseek') || id.includes('glm') ||
+    id.includes('stepfun') || id.includes('ernie')
   ) {
     return config.openrouterThinking;
   }

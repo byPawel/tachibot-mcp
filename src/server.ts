@@ -752,7 +752,7 @@ async function initializeServer() {
 
     // Register OpenRouter tools (Qwen, Kimi, MiniMax - filtered by profile via safeAddTool)
     if (isOpenRouterAvailable()) {
-      const { qwenCoderTool, qwenAlgoTool, qwqReasoningTool, qwenCompetitiveTool, kimiThinkingTool, kimiCodeTool, kimiDecomposeTool, kimiLongContextTool, qwenReasonTool, minimaxCodeTool, minimaxAgentTool, deepseekReasonTool, deepseekAlgoTool, glmReasonTool } = await import("./tools/openrouter-tools.js");
+      const { qwenCoderTool, qwenAlgoTool, qwqReasoningTool, qwenCompetitiveTool, kimiThinkingTool, kimiCodeTool, kimiDecomposeTool, kimiLongContextTool, qwenReasonTool, minimaxCodeTool, minimaxAgentTool, deepseekReasonTool, deepseekAlgoTool, glmReasonTool, stepfunReasonTool, ernieReasonTool } = await import("./tools/openrouter-tools.js");
 
       // safeAddTool checks isToolEnabled internally
       safeAddTool(qwenCoderTool);
@@ -769,8 +769,10 @@ async function initializeServer() {
       safeAddTool(deepseekReasonTool);  // DeepSeek V4 Pro - frontier reasoning/math (open-weight)
       safeAddTool(deepseekAlgoTool);    // DeepSeek V4 Pro - algorithmic code review (top AIME/CodeElo)
       safeAddTool(glmReasonTool);       // Zhipu GLM-5.1 - agentic reasoning (SWE-Bench Pro leader)
+      safeAddTool(stepfunReasonTool);   // StepFun Step 3.7 Flash - efficient reasoning
+      safeAddTool(ernieReasonTool);     // Baidu ERNIE 4.5 VL - broad-knowledge reasoning
 
-      console.error(`✅ Registered OpenRouter tools (Qwen, QwQ, Kimi x4, MiniMax, DeepSeek x2, GLM)`);
+      console.error(`✅ Registered OpenRouter tools (Qwen, QwQ, Kimi x4, MiniMax, DeepSeek x2, GLM, StepFun, ERNIE)`);
 
       // Register planner tools (multi-model council for plan creation/execution)
       const { plannerMakerTool, plannerRunnerTool, listPlansTool } = await import("./tools/planner-tools.js");

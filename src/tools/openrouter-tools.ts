@@ -46,6 +46,13 @@ export enum OpenRouterModel {
   // Zhipu GLM models - agentic / SWE-Bench Pro leader
   GLM_5_1 = "z-ai/glm-5.1",                            // SWE-Bench Pro leader, agentic tool-use (early 2026)
   GLM_5 = "z-ai/glm-5",                                // GLM-5 base (fallback)
+
+  // StepFun models - efficient reasoning (196B, high AIME/SWE-Verified)
+  STEPFUN_3_7 = "stepfun/step-3.7-flash",              // Latest (May 2026), efficient reasoning
+  STEPFUN_3_5 = "stepfun/step-3.5-flash",              // Previous flash (fallback)
+
+  // Baidu ERNIE - ONLY 4.5 VL is on OpenRouter (5.1 unavailable). Broad-knowledge juror.
+  ERNIE_4_5_VL = "baidu/ernie-4.5-vl-424b-a47b",       // 424B/47B-active MoE, human-preference/arena strength
 }
 
 // Fallback map for when providers hit quota limits
@@ -55,6 +62,7 @@ const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.KIMI_K2_6]: OpenRouterModel.KIMI_K2_THINKING,  // Fall back to k2-thinking if K2.6 fails (k2.5 retired from OpenRouter)
   [OpenRouterModel.DEEPSEEK_V4_PRO]: OpenRouterModel.DEEPSEEK_V4_FLASH, // Fall back to V4 Flash if Pro is rate-limited
   [OpenRouterModel.GLM_5_1]: OpenRouterModel.GLM_5,              // Fall back to GLM-5 base if 5.1 fails
+  [OpenRouterModel.STEPFUN_3_7]: OpenRouterModel.STEPFUN_3_5, // Fall back to 3.5 flash if 3.7 fails
 };
 
 
@@ -1422,6 +1430,107 @@ ${FORMAT_INSTRUCTION}`
 };
 
 /**
+ * StepFun Reason Tool
+ * Efficient reasoning with StepFun Step 3.7 Flash (196B, high AIME/SWE-Verified).
+ * Best for: cost-sensitive deep reasoning where quality must stay near-frontier.
+ */
+export const stepfunReasonTool = {
+  name: "stepfun_reason",
+  description: "Efficient deep reasoning with StepFun Step 3.7 Flash (196B — high AIME/SWE-Verified at lower cost). Put your PROBLEM in the 'problem' parameter.",
+  parameters: z.object({
+    problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    approach: z.string()
+      .optional()
+      .default("analytical")
+      .describe("Reasoning approach (e.g., analytical, mathematical, step-by-step)")
+  }),
+  execute: async (args: {
+    problem: string;
+    context?: string;
+    files?: string[];
+    approach?: string;
+  }, { log, reportProgress }: any) => {
+    const approachPrompts: Record<string, string> = {
+      analytical: "Analyze deeply, weighing perspectives and implications before concluding",
+      mathematical: "Apply rigorous mathematical reasoning with explicit derivations",
+      "step-by-step": "Break the problem down systematically, showing every intermediate step"
+    };
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+    const messages = [
+      {
+        role: "system",
+        content: `You are StepFun Step 3.7 Flash, an efficient reasoning model with strong AIME/SWE-Verified results.
+${approachPrompts[args.approach || 'analytical']}.
+Be efficient: reason tightly, then give a clear conclusion. Flag assumptions explicitly.
+${args.context ? `Context: ${args.context}` : ''}
+${FORMAT_INSTRUCTION}`
+      },
+      { role: "user", content: args.problem + fileContext }
+    ];
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.STEPFUN_3_7, 0.3, 8000),
+      reportFn
+    );
+  }
+};
+
+/**
+ * ERNIE Reason Tool
+ * Broad-knowledge reasoning with Baidu ERNIE 4.5 VL (424B/47B-active MoE).
+ * NOTE: ERNIE 5.1 is not on OpenRouter; 4.5 VL is the available model. Strong on
+ * human-preference / arena-style questions and broad knowledge.
+ */
+export const ernieReasonTool = {
+  name: "ernie_reason",
+  description: "Broad-knowledge reasoning with Baidu ERNIE 4.5 VL (424B MoE — human-preference/arena strength). Put your PROBLEM in the 'problem' parameter.",
+  parameters: z.object({
+    problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    approach: z.string()
+      .optional()
+      .default("analytical")
+      .describe("Reasoning approach (e.g., analytical, systematic, step-by-step)")
+  }),
+  execute: async (args: {
+    problem: string;
+    context?: string;
+    files?: string[];
+    approach?: string;
+  }, { log, reportProgress }: any) => {
+    const approachPrompts: Record<string, string> = {
+      analytical: "Analyze across multiple angles, weighing real-world preference and nuance",
+      systematic: "Apply systematic reasoning with clear logic chains",
+      "step-by-step": "Break the problem down systematically, showing every step"
+    };
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+    const messages = [
+      {
+        role: "system",
+        content: `You are Baidu ERNIE 4.5 VL, a 424B-parameter MoE with broad knowledge and strong human-preference alignment.
+${approachPrompts[args.approach || 'analytical']}.
+Give a well-rounded, decisive answer. Flag assumptions and uncertainty.
+${args.context ? `Context: ${args.context}` : ''}
+${FORMAT_INSTRUCTION}`
+      },
+      { role: "user", content: args.problem + fileContext }
+    ];
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.ERNIE_4_5_VL, 0.4, 6000),
+      reportFn
+    );
+  }
+};
+
+/**
  * Check if OpenRouter is available
  */
 export function isOpenRouterAvailable(): boolean {
@@ -1455,5 +1564,7 @@ export function getAllOpenRouterTools() {
     deepseekReasonTool,  // DeepSeek V4 Pro - frontier reasoning/math (open-weight)
     deepseekAlgoTool,    // DeepSeek V4 Pro - algorithmic code review (top AIME/CodeElo)
     glmReasonTool,       // Zhipu GLM-5.1 - agentic reasoning (SWE-Bench Pro leader)
+    stepfunReasonTool,   // StepFun Step 3.7 Flash - efficient reasoning
+    ernieReasonTool,     // Baidu ERNIE 4.5 VL - broad-knowledge reasoning
   ];
 }
