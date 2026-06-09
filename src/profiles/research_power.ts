@@ -39,6 +39,9 @@ export const researchPowerProfile: ProfileConfig = {
     qwen_competitive: false,
     minimax_code: false,
     minimax_agent: true,       // Agentic for research workflows
+    deepseek_reason: true,     // Frontier reasoning for research synthesis
+    deepseek_algo: false,      // Algo review not needed for research
+    glm_reason: true,          // Agentic reasoning for research workflows
     local_query: false,        // Research leans on cloud/search, not local
     workflow: true,
     list_workflows: false,

@@ -1,5 +1,5 @@
 {
-  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 30 tools)",
+  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 33 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -37,6 +37,9 @@
     "qwen_competitive": false,
     "minimax_code": true,
     "minimax_agent": false,
+    "deepseek_reason": true,
+    "deepseek_algo": true,
+    "glm_reason": true,
     "local_query": true,
     "workflow": true,
     "list_workflows": true,

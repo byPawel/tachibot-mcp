@@ -50,6 +50,9 @@ export const heavyCodingProfile: ProfileConfig = {
     qwen_competitive: false,
     minimax_code: true,        // Cheap SWE - great for heavy coding
     minimax_agent: true,       // Cheap agentic - great for workflows
+    deepseek_reason: true,     // Frontier reasoning/math (open-weight)
+    deepseek_algo: true,       // Algorithmic review - top AIME/CodeElo
+    glm_reason: true,          // Agentic SWE reasoning (SWE-Bench Pro leader)
     local_query: true,         // Local open-weight coding model (zero-cost/offline)
 
     // Workflow - minimal set for execution

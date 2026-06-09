@@ -37,6 +37,15 @@ export enum OpenRouterModel {
   MINIMAX_M2_7 = "minimax/minimax-m2.7",               // 2300B/100B MoE, SWE-Pro 56.22%, Multi-SWE #1
   MINIMAX_M2_5 = "minimax/minimax-m2.5",               // SWE-Bench 80.2% (legacy)
   MINIMAX_M2_1 = "minimax/minimax-m2.1",               // 230B/10B MoE - SWE 72.5% (legacy)
+
+  // DeepSeek models - open-weight frontier reasoning/math/CP leader (Apr 2026, MLA/GRPO)
+  DEEPSEEK_V4_PRO = "deepseek/deepseek-v4-pro",         // Frontier reasoning/coding/math, top AIME/CodeElo
+  DEEPSEEK_V4_FLASH = "deepseek/deepseek-v4-flash",     // Cheaper/faster V4 (fallback)
+  DEEPSEEK_R1_0528 = "deepseek/deepseek-r1-0528",       // Reasoning-focused math variant (fallback)
+
+  // Zhipu GLM models - agentic / SWE-Bench Pro leader
+  GLM_5_1 = "z-ai/glm-5.1",                            // SWE-Bench Pro leader, agentic tool-use (early 2026)
+  GLM_5 = "z-ai/glm-5",                                // GLM-5 base (fallback)
 }
 
 // Fallback map for when providers hit quota limits
@@ -44,6 +53,8 @@ const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.QWEN3_CODER_NEXT]: OpenRouterModel.QWEN3_CODER, // Fall back to 480B if Coder-Next fails
   [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
   [OpenRouterModel.KIMI_K2_6]: OpenRouterModel.KIMI_K2_THINKING,  // Fall back to k2-thinking if K2.6 fails (k2.5 retired from OpenRouter)
+  [OpenRouterModel.DEEPSEEK_V4_PRO]: OpenRouterModel.DEEPSEEK_V4_FLASH, // Fall back to V4 Flash if Pro is rate-limited
+  [OpenRouterModel.GLM_5_1]: OpenRouterModel.GLM_5,              // Fall back to GLM-5 base if 5.1 fails
 };
 
 
@@ -663,15 +674,16 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    // Use heartbeat to prevent MCP timeout during reasoning
-    // Kimi K2.6 thinking needs extra time — 240s (was 180s default, caused timeouts)
+    // Use heartbeat to prevent MCP timeout during reasoning.
+    // Timeout inherited from getOpenRouterModelTimeout() — Kimi → 600s (Agent Swarm
+    // needs the headroom; 180s/240s previously caused timeouts).
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
       () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_6, 0.4, 3000, {
         top_p: 0.9,
         presence_penalty: 0.1,
         frequency_penalty: 0.2
-      }, 240000),
+      }),
       reportFn
     );
   }
@@ -742,7 +754,7 @@ ${FORMAT_INSTRUCTION}`;
 // kimi_decompose configuration
 const DECOMPOSE_TEMPERATURE = 0.3;
 const DECOMPOSE_MAX_TOKENS = 4500;
-const DECOMPOSE_TIMEOUT_MS = 360_000;
+// Timeout inherited from getOpenRouterModelTimeout() — Kimi → 600s (Agent Swarm).
 
 /**
  * Kimi Decompose Tool
@@ -911,7 +923,7 @@ Wrap your final output in <output> tags. Everything outside <output> is discarde
 
     const reportFn = reportProgress ?? (async () => {});
     const raw = await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_6, DECOMPOSE_TEMPERATURE, DECOMPOSE_MAX_TOKENS, {}, DECOMPOSE_TIMEOUT_MS),
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_6, DECOMPOSE_TEMPERATURE, DECOMPOSE_MAX_TOKENS, {}),
       reportFn
     );
 
@@ -1225,6 +1237,191 @@ ${FORMAT_INSTRUCTION}`
 };
 
 /**
+ * DeepSeek Reason Tool
+ * Deep reasoning with DeepSeek V4 Pro (open-weight frontier, MLA/GRPO).
+ * Best for: math, chained logical reasoning, hard analysis. Top AIME/GPQA among open models.
+ */
+export const deepseekReasonTool = {
+  name: "deepseek_reason",
+  description: "Deep reasoning with DeepSeek V4 Pro (open-weight frontier — MLA/GRPO, top AIME/GPQA/math). Put your PROBLEM in the 'problem' parameter.",
+  parameters: z.object({
+    problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    approach: z.string()
+      .optional()
+      .default("analytical")
+      .describe("Reasoning approach (e.g., analytical, mathematical, first-principles, step-by-step)")
+  }),
+  execute: async (args: {
+    problem: string;
+    context?: string;
+    files?: string[];
+    approach?: string;
+  }, { log, reportProgress }: any) => {
+    const approachPrompts: Record<string, string> = {
+      analytical: "Analyze deeply, weighing multiple perspectives and implications before concluding",
+      mathematical: "Apply rigorous mathematical reasoning with explicit proofs and derivations",
+      "first-principles": "Strip to fundamental truths, discard assumptions, rebuild from atomic units",
+      "step-by-step": "Break the problem down systematically, showing every intermediate step"
+    };
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are DeepSeek V4 Pro, an open-weight frontier reasoning model (MLA/GRPO) with elite math and chained-reasoning ability.
+${approachPrompts[args.approach || 'analytical']}.
+Show your reasoning chain, then state a clear conclusion. Flag any assumptions and uncertainty explicitly.
+${args.context ? `Context: ${args.context}` : ''}
+${FORMAT_INSTRUCTION}`
+      },
+      {
+        role: "user",
+        content: args.problem + fileContext
+      }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.DEEPSEEK_V4_PRO, 0.3, 8000),
+      reportFn
+    );
+  }
+};
+
+/**
+ * DeepSeek Algo Tool
+ * Algorithmic code review with DeepSeek V4 Pro — correctness, Big-O, edge cases,
+ * data-structure choice, optimization tiers, CP constraint mapping.
+ * Best for: LeetCode-hard / competitive-programming-style review (math-heavy reasoning).
+ */
+export const deepseekAlgoTool = {
+  name: "deepseek_algo",
+  description: "Algorithmic code review with DeepSeek V4 Pro (top AIME/CodeElo): correctness, complexity/Big-O, edge cases, data-structure choice, optimization. Put PROBLEM/CODE in 'problem'.",
+  parameters: z.object({
+    problem: z.string().describe("The algorithm problem or code to review (REQUIRED - put your question/code here)"),
+    constraints: z.string().optional().describe("Input constraints: N size, time/memory limit (e.g., 'N≤10^5, 1s, 256MB')"),
+    context: z.string().optional().describe("Additional context: current performance, language, environment"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    focus: z.string()
+      .optional()
+      .default("general")
+      .describe("Review focus: correctness, complexity, optimize, data-structure, edge-cases, general")
+  }),
+  execute: async (args: {
+    problem: string;
+    constraints?: string;
+    context?: string;
+    files?: string[];
+    focus?: string;
+  }, { log, reportProgress }: any) => {
+    const systemPrompt = `You are DeepSeek V4 Pro acting as a Principal Algorithm Engineer and competitive-programming reviewer (ICPC/IOI/Codeforces level). Your edge is math-heavy chained reasoning — use it.
+
+REVIEW FOCUS: ${args.focus || 'general'}
+
+ALWAYS chase the best complexity class first: O(1) → O(log n) → O(n) → O(n log n) → O(n²) → worse.
+Only settle for a worse class when you can explain WHY the better one doesn't apply here.
+
+CONSTRAINT → COMPLEXITY (sanity-check feasibility):
+  N≤20: O(2^N) bitmask/backtracking · N≤40: O(2^(N/2)) meet-in-middle · N≤500: O(N³) · N≤2000: O(N²) ·
+  N≤2×10^5: O(N log N) · N≤10^6: O(N) · N≤10^9: O(√N)/O(log N) math/binary-search.
+
+OUTPUT:
+1. CORRECTNESS — invariants, off-by-one, overflow, recursion termination; is it actually right?
+2. COMPLEXITY — time + space (best/avg/worst), amortized where relevant; recurrence if any.
+3. EDGE CASES — empty, single, max-N, sorted/reverse, duplicates, negatives; name the 3 most likely to break it.
+4. DATA STRUCTURE — is the chosen structure optimal for the operation mix? If not, what and why.
+5. OPTIMIZATION — Tier A (algorithmic, change class) → Tier B (data structure) → Tier C (micro); quantify expected speedup.
+6. VERDICT — is it correct + viable for the constraints? Top recommendation with expected improvement.
+
+Be aggressive about optimization but honest about constant factors and tradeoffs.
+${args.context ? `CONTEXT: ${args.context}` : ''}
+${FORMAT_INSTRUCTION}`;
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+    let userPrompt = args.problem;
+    if (args.constraints) {
+      userPrompt = `CONSTRAINTS: ${args.constraints}\n\nPROBLEM/CODE:\n${args.problem}`;
+    }
+    userPrompt += fileContext;
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.DEEPSEEK_V4_PRO, 0.25, 8000),
+      reportFn
+    );
+  }
+};
+
+/**
+ * GLM Reason Tool
+ * Agentic reasoning & tool-use planning with Zhipu GLM-5.1 (SWE-Bench Pro leader).
+ * Best for: agentic task planning, tool-use strategy, software-engineering reasoning.
+ */
+export const glmReasonTool = {
+  name: "glm_reason",
+  description: "Agentic reasoning & tool-use planning with Zhipu GLM-5.1 (SWE-Bench Pro leader). Put your PROBLEM in the 'problem' parameter.",
+  parameters: z.object({
+    problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
+    context: z.string().optional().describe("Additional context for the reasoning task"),
+    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    approach: z.string()
+      .optional()
+      .default("agentic")
+      .describe("Reasoning approach (e.g., agentic, systematic, analytical, step-by-step)")
+  }),
+  execute: async (args: {
+    problem: string;
+    context?: string;
+    files?: string[];
+    approach?: string;
+  }, { log, reportProgress }: any) => {
+    const approachPrompts: Record<string, string> = {
+      agentic: "Reason as an agent: define the goal, plan tool-use/steps, anticipate failure modes, then decide",
+      systematic: "Apply systematic reasoning with clear logic chains and verification at each step",
+      analytical: "Analyze deeply across multiple perspectives before concluding",
+      "step-by-step": "Break the problem down systematically, showing every intermediate step"
+    };
+
+    const fileContext = args.files?.length
+      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
+      : "";
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are Zhipu GLM-5.1, a frontier agentic model and SWE-Bench Pro leader, strong at tool-use planning and software-engineering reasoning.
+${approachPrompts[args.approach || 'agentic']}.
+State your plan, reason through it, then give a decisive conclusion. Flag assumptions and risks explicitly.
+${args.context ? `Context: ${args.context}` : ''}
+${FORMAT_INSTRUCTION}`
+      },
+      {
+        role: "user",
+        content: args.problem + fileContext
+      }
+    ];
+
+    const reportFn = reportProgress ?? (async () => {});
+    return await withHeartbeat(
+      () => callOpenRouter(messages, OpenRouterModel.GLM_5_1, 0.3, 8000),
+      reportFn
+    );
+  }
+};
+
+/**
  * Check if OpenRouter is available
  */
 export function isOpenRouterAvailable(): boolean {
@@ -1254,5 +1451,9 @@ export function getAllOpenRouterTools() {
     qwenReasonTool,      // Qwen3-Max-Thinking - heavy reasoning
     minimaxCodeTool,     // MiniMax M2.7 - SWE-Pro 56.22%, #1 AI Intelligence Index
     minimaxAgentTool,    // MiniMax M2.7 - agentic workflows, self-evolving
+    // NEW tools (Jun 2026)
+    deepseekReasonTool,  // DeepSeek V4 Pro - frontier reasoning/math (open-weight)
+    deepseekAlgoTool,    // DeepSeek V4 Pro - algorithmic code review (top AIME/CodeElo)
+    glmReasonTool,       // Zhipu GLM-5.1 - agentic reasoning (SWE-Bench Pro leader)
   ];
 }

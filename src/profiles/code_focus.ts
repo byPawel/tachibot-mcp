@@ -39,6 +39,9 @@ export const codeFocusProfile: ProfileConfig = {
     qwen_competitive: false,
     minimax_code: true,        // Cheap SWE - perfect for code focus
     minimax_agent: false,
+    deepseek_reason: true,     // Frontier reasoning for hard logic
+    deepseek_algo: true,       // Algorithmic review - top AIME/CodeElo
+    glm_reason: true,          // Agentic SWE reasoning
     local_query: true,
     workflow: true,
     list_workflows: true,

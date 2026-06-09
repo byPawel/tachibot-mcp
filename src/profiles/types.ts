@@ -56,6 +56,9 @@ export interface ToolsConfig {
   qwen_competitive: boolean;
   minimax_code: boolean;       // MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index)
   minimax_agent: boolean;      // MiniMax M2.7 (agentic, self-evolving)
+  deepseek_reason: boolean;    // DeepSeek V4 Pro (open-weight frontier reasoning/math)
+  deepseek_algo: boolean;      // DeepSeek V4 Pro (algorithmic code review — top AIME/CodeElo)
+  glm_reason: boolean;         // Zhipu GLM-5.1 (agentic reasoning, SWE-Bench Pro leader)
   local_query: boolean;        // Local open-weight models (Ollama/LM Studio/llama.cpp/vLLM) — zero-cost, offline
 
   // Workflow tools

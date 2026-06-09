@@ -55,12 +55,23 @@ export function getTimeoutConfig(): TimeoutConfig {
 
 /**
  * Get OpenRouter timeout based on model ID.
- * Thinking/reasoning models get extended timeout (600s default).
+ * Thinking/reasoning/swarm models get extended timeout (600s default).
  * Standard models get 180s default.
+ *
+ * NOTE: All Kimi K2 variants (incl. 'moonshotai/kimi-k2.6') run the Agent Swarm
+ * and need the extended timeout — but their model IDs don't contain 'thinking',
+ * so we match 'kimi' explicitly. Same applies to DeepSeek V4 and Zhipu GLM, whose
+ * reasoning passes are slow but whose IDs lack the 'thinking'/'reasoning' marker.
+ * This keeps primary and fallback consistent and lets these tools inherit 600s
+ * instead of the 180s default. Single source of truth — no per-call timeouts.
  */
 export function getOpenRouterModelTimeout(modelId: string): number {
   const config = getTimeoutConfig();
-  if (modelId.includes('thinking') || modelId.includes('reasoning')) {
+  const id = modelId.toLowerCase();
+  if (
+    id.includes('thinking') || id.includes('reasoning') ||
+    id.includes('kimi') || id.includes('deepseek') || id.includes('glm')
+  ) {
     return config.openrouterThinking;
   }
   return config.openrouter;

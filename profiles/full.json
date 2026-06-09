@@ -1,5 +1,5 @@
 {
-  "description": "All tools enabled for maximum capability (52 tools)",
+  "description": "All tools enabled for maximum capability (55 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -37,6 +37,9 @@
     "qwen_competitive": true,
     "minimax_code": true,
     "minimax_agent": true,
+    "deepseek_reason": true,
+    "deepseek_algo": true,
+    "glm_reason": true,
     "local_query": true,
     "workflow": true,
     "list_workflows": true,
