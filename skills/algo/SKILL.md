@@ -71,10 +71,10 @@ mcp__tachibot-mcp__qwen_reason({
 **minimax_code** — Implementation review (SWE-Bench 80.2%, cheap second opinion):
 ```
 mcp__tachibot-mcp__minimax_code({
-  task: "[optimize if code given, generate if problem only]",
+  query: "[problem description + focus]",
+  task: "optimize",
   code: "[code if provided]",
-  language: "[language if detectable]",
-  requirements: "[problem description + focus]"
+  language: "[language if detectable]"
 })
 ```
 
