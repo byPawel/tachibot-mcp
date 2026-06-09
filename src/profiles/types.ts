@@ -59,6 +59,8 @@ export interface ToolsConfig {
   deepseek_reason: boolean;    // DeepSeek V4 Pro (open-weight frontier reasoning/math)
   deepseek_algo: boolean;      // DeepSeek V4 Pro (algorithmic code review — top AIME/CodeElo)
   glm_reason: boolean;         // Zhipu GLM-5.1 (agentic reasoning, SWE-Bench Pro leader)
+  stepfun_reason: boolean;     // StepFun Step 3.7 Flash (efficient reasoning)
+  ernie_reason: boolean;       // Baidu ERNIE 4.5 VL (broad-knowledge reasoning)
   local_query: boolean;        // Local open-weight models (Ollama/LM Studio/llama.cpp/vLLM) — zero-cost, offline
 
   // Workflow tools

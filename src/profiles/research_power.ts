@@ -42,6 +42,8 @@ export const researchPowerProfile: ProfileConfig = {
     deepseek_reason: true,     // Frontier reasoning for research synthesis
     deepseek_algo: false,      // Algo review not needed for research
     glm_reason: true,          // Agentic reasoning for research workflows
+    stepfun_reason: true,      // Efficient reasoning for research
+    ernie_reason: true,        // Broad-knowledge / arena strength for research
     local_query: false,        // Research leans on cloud/search, not local
     workflow: true,
     list_workflows: false,

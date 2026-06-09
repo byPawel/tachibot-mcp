@@ -1,5 +1,5 @@
 {
-  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 33 tools)",
+  "description": "Code-heavy work with debugging and analysis (~Xk tokens, 34 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -40,6 +40,8 @@
     "deepseek_reason": true,
     "deepseek_algo": true,
     "glm_reason": true,
+    "stepfun_reason": true,
+    "ernie_reason": false,
     "local_query": true,
     "workflow": true,
     "list_workflows": true,

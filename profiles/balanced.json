@@ -1,5 +1,5 @@
 {
-  "description": "Balanced set for general use (~Xk tokens, 43 tools)",
+  "description": "Balanced set for general use (~Xk tokens, 45 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -40,6 +40,8 @@
     "deepseek_reason": true,
     "deepseek_algo": true,
     "glm_reason": true,
+    "stepfun_reason": true,
+    "ernie_reason": true,
     "local_query": true,
     "workflow": true,
     "list_workflows": true,

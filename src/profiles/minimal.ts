@@ -42,6 +42,8 @@ export const minimalProfile: ProfileConfig = {
     deepseek_reason: false,
     deepseek_algo: false,
     glm_reason: false,
+    stepfun_reason: false,
+    ernie_reason: false,
     local_query: false,
     workflow: true,
     list_workflows: false,

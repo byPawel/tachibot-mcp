@@ -1,5 +1,5 @@
 {
-  "description": "Research-focused with Grok search + all Perplexity + brainstorming (~Xk tokens, 33 tools)",
+  "description": "Research-focused with Grok search + all Perplexity + brainstorming (~Xk tokens, 35 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -40,6 +40,8 @@
     "deepseek_reason": true,
     "deepseek_algo": false,
     "glm_reason": true,
+    "stepfun_reason": true,
+    "ernie_reason": true,
     "local_query": false,
     "workflow": true,
     "list_workflows": false,

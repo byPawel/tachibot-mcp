@@ -42,6 +42,8 @@ export const fullProfile: ProfileConfig = {
     deepseek_reason: true,
     deepseek_algo: true,
     glm_reason: true,
+    stepfun_reason: true,
+    ernie_reason: true,
     local_query: true,
     workflow: true,
     list_workflows: true,

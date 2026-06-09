@@ -53,6 +53,8 @@ export const heavyCodingProfile: ProfileConfig = {
     deepseek_reason: true,     // Frontier reasoning/math (open-weight)
     deepseek_algo: true,       // Algorithmic review - top AIME/CodeElo
     glm_reason: true,          // Agentic SWE reasoning (SWE-Bench Pro leader)
+    stepfun_reason: true,      // Efficient reasoning
+    ernie_reason: false,       // Not needed for heavy coding
     local_query: true,         // Local open-weight coding model (zero-cost/offline)
 
     // Workflow - minimal set for execution

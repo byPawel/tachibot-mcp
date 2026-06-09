@@ -42,6 +42,8 @@ export const codeFocusProfile: ProfileConfig = {
     deepseek_reason: true,     // Frontier reasoning for hard logic
     deepseek_algo: true,       // Algorithmic review - top AIME/CodeElo
     glm_reason: true,          // Agentic SWE reasoning
+    stepfun_reason: true,      // Efficient reasoning for code logic
+    ernie_reason: false,       // Broad-knowledge model not needed for code focus
     local_query: true,
     workflow: true,
     list_workflows: true,

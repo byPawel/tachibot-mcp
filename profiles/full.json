@@ -1,5 +1,5 @@
 {
-  "description": "All tools enabled for maximum capability (55 tools)",
+  "description": "All tools enabled for maximum capability (57 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -40,6 +40,8 @@
     "deepseek_reason": true,
     "deepseek_algo": true,
     "glm_reason": true,
+    "stepfun_reason": true,
+    "ernie_reason": true,
     "local_query": true,
     "workflow": true,
     "list_workflows": true,
