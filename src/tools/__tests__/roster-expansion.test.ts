@@ -31,3 +31,27 @@ describe("roster expansion: new tools", () => {
     expect(ernieReasonTool.parameters.safeParse({ problem: "x" }).success).toBe(true);
   });
 });
+
+import { JUROR_REGISTRY } from "../jury-tool";
+
+describe("roster expansion: jurors", () => {
+  it("adds deepseek + glm jurors with label/role/call", () => {
+    for (const k of ["deepseek", "glm", "stepfun", "ernie"]) {
+      expect(JUROR_REGISTRY[k]).toBeDefined();
+      expect(typeof JUROR_REGISTRY[k].label).toBe("string");
+      expect(JUROR_REGISTRY[k].label.length).toBeGreaterThan(0);
+      expect(typeof JUROR_REGISTRY[k].role).toBe("string");
+      expect(typeof JUROR_REGISTRY[k].call).toBe("function");
+    }
+  });
+});
+
+import { DEFAULT_JURORS } from "../jury-tool";
+
+describe("roster expansion: default panel", () => {
+  it("includes deepseek and stays 3-5 jurors", () => {
+    expect(DEFAULT_JURORS).toContain("deepseek");
+    expect(DEFAULT_JURORS.length).toBeGreaterThanOrEqual(3);
+    expect(DEFAULT_JURORS.length).toBeLessThanOrEqual(5);
+  });
+});
