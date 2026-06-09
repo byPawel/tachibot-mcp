@@ -27,6 +27,7 @@ Before calling any tool, check which tachibot-mcp tools are available in this se
 - **Has Gemini?** Use `gemini_analyze_text` as final judge
 - **Has Qwen?** Use `qwen_coder` for code analysis
 - **Has Kimi?** Use `kimi_thinking` for step-by-step
+- **Has OpenRouter?** Add `deepseek_reason` (frontier reasoning) + `glm_reason` (agentic) for lab diversity
 
 Minimum viable council: **any 2 models** from different providers.
 If only 1 model available: run it directly (no council needed).
@@ -48,6 +49,8 @@ Call ALL available analysis tools in parallel:
 **Reasoning** (pick all available):
 - `mcp__tachibot-mcp__grok_reason` - first principles analysis
 - `mcp__tachibot-mcp__kimi_thinking` - step-by-step, edge cases
+- `mcp__tachibot-mcp__deepseek_reason` - frontier open-weight reasoning/math
+- `mcp__tachibot-mcp__glm_reason` - agentic reasoning (SWE-Bench Pro leader)
 
 **Code** (if query involves code):
 - `mcp__tachibot-mcp__qwen_coder` - code review and bugs

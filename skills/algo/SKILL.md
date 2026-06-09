@@ -1,6 +1,6 @@
 ---
 name: algo
-description: Algorithm analysis with parallel multi-model reasoning — qwen_algo, qwen_reason, and minimax_code tackle your problem from different angles
+description: Algorithm analysis with parallel multi-model reasoning — deepseek_algo (lead), qwen_algo, qwen_reason, and minimax_code tackle your problem from different angles
 user-invocable: true
 ---
 
@@ -36,9 +36,19 @@ Extract:
 - **Problem** — the algorithm question or code
 - **Constraints** — if user mentions N size, time limits, memory limits, extract them
 
-### Step 2: Parallel Analysis (3 models)
+### Step 2: Parallel Analysis (4 models)
 
-Call ALL THREE in parallel:
+Call ALL FOUR in parallel:
+
+**deepseek_algo** — Lead algorithmic reviewer (DeepSeek V4 Pro, top AIME/CodeElo):
+```
+mcp__tachibot-mcp__deepseek_algo({
+  problem: "[problem/code]",
+  focus: "[focus]",
+  constraints: "[constraints if any]",
+  context: "[any additional context]"
+})
+```
 
 **qwen_algo** — Algorithm specialist (complexity, data structures, competitive patterns):
 ```
