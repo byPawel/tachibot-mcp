@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Jury: removed the `hermes` juror** — it was a persona variant of `local` calling the same `LOCAL_LLM_MODEL` weights while claiming "You are Hermes" (a false-role prompt). Council-reviewed rationale: jury independence comes from different model weights, not different system prompts on the same backend. `hermes` is kept as a **legacy alias** of `local`; panels are deduped after alias mapping, so `jurors: "hermes,local"` now yields one local vote instead of two correlated ones. 12 jurors total.
-- Docs now describe the Hermes connection honestly: the local juror runs whatever `LOCAL_LLM_MODEL` points at — including a Nous Hermes agent endpoint, which itself runs on GPT, Claude, or local open-weights underneath.
+- Docs now describe the Hermes connection honestly (verified via grok_search against Nous docs/GitHub): the local juror runs whatever `LOCAL_LLM_MODEL` points at, e.g. a Nous Hermes build via Ollama. The Hermes *agent* is model-agnostic — it consumes 300+ backends (GPT, Claude, Gemini, self-hosted Ollama/vLLM); it is not an OpenAI-compatible endpoint to point `LOCAL_LLM_BASE_URL` at.
 
 ## [2.22.0] - 2026-06-10
 

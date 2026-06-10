@@ -202,7 +202,7 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 `list_prompt_techniques` &#183; `preview_prompt_technique` &#183; `execute_prompt_technique`
 
 ### Local Models (1)
-`local_query` &mdash; any OpenAI-compatible local server (Ollama / LM Studio / llama.cpp / vLLM). Zero-cost, offline, private; also available as the `local` jury juror (`hermes` is accepted as a legacy alias). Runs whatever `LOCAL_LLM_MODEL` points at &mdash; including a [Hermes agent](https://hermes-agent.nousresearch.com) endpoint, which itself can run on GPT, Claude, or local open-weights underneath.
+`local_query` &mdash; any OpenAI-compatible local server (Ollama / LM Studio / llama.cpp / vLLM). Zero-cost, offline, private; also available as the `local` jury juror (`hermes` is accepted as a legacy alias). Runs whatever `LOCAL_LLM_MODEL` points at &mdash; e.g. a Nous Hermes build (`ollama pull hermes3`). Note the [Hermes agent](https://hermes-agent.nousresearch.com) itself is model-agnostic &mdash; it runs on 300+ backends (GPT, Claude, Gemini, DeepSeek, or self-hosted Ollama/vLLM) &mdash; so "Hermes" was never a guarantee of distinct weights.
 
 ### Advanced Modes (bonus)
 - **Challenger** &mdash; Critical analysis with multi-model fact-checking
