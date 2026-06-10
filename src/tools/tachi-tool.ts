@@ -12,6 +12,7 @@
  */
 
 import { z } from "zod";
+import { defineModelTool } from "./factory/define-model-tool.js";
 // import { renderBigText, icon } from "../utils/ink-renderer.js";
 
 // Import tool executors
@@ -505,7 +506,7 @@ async function executeMode(mode: Mode, query: string): Promise<string> {
 // TOOL DEFINITION
 // ============================================================================
 
-export const tachiTool = {
+export const tachiTool = defineModelTool({
   name: "tachi",
   description: `Smart AI assistant - just describe what you need. Put your QUERY in the 'query' parameter.
 
@@ -532,7 +533,7 @@ Examples:
   }),
   execute: async (
     { query, mode = "auto" }: { query: string; mode?: string },
-    context: { log: { info: (message: string, metadata?: Record<string, any>) => void; error: (message: string, metadata?: Record<string, any>) => void } }
+    context: any
   ): Promise<string> => {
     const { log } = context;
     // Route query to mode
@@ -572,7 +573,7 @@ Examples:
 
     return stripFormatting(response);
   },
-};
+});
 
 // Export for registration (removed focus alias - was wasting tokens)
 export function getTachiTools() {

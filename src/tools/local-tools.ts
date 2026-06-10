@@ -23,6 +23,7 @@
 
 import { z } from "zod";
 import { getLocalLLMBaseUrl, getLocalLLMModel, getLocalLLMApiKey } from "../utils/api-keys.js";
+import { defineModelTool } from "./factory/define-model-tool.js";
 
 /** Typed failure — consumers check `instanceof`, never regex a magic string. */
 export class LocalLLMError extends Error {
@@ -131,7 +132,7 @@ export async function callLocal(messages: LocalMessage[], opts: CallLocalOpts = 
  * so a human running local_query directly gets guidance, while callLocal still
  * surfaces the typed error to orchestrators (jury) for clean drop-on-failure.
  */
-export const localQueryTool = {
+export const localQueryTool = defineModelTool({
   name: "local_query",
   description:
     "Query a local open-weight model (Ollama / LM Studio / llama.cpp / vLLM) — zero-cost, offline, private. Set LOCAL_LLM_BASE_URL / LOCAL_LLM_MODEL; LOCAL_LLM_NUM_CTX for long prompts (Ollama).",
@@ -157,4 +158,18 @@ export const localQueryTool = {
       throw e;
     }
   },
-};
+});
+
+// plop:tools — generated tool imports are appended here by `npm run add-tool`
+
+/**
+ * Returns all local-model tools. The registry imports `localQueryTool` directly
+ * today; this getter is the extension point for tools added via `npm run add-tool`.
+ * `// plop:register` marks the insertion point inside the return array.
+ */
+export function getAllLocalTools() {
+  return [
+    localQueryTool,
+    // plop:register
+  ];
+}

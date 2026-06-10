@@ -1,0 +1,2449 @@
+[
+  {
+    "description": "Continue a focus session",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "sessionId": {
+          "description": "The session ID returned from a previous focus call",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sessionId"
+      ],
+      "type": "object"
+    },
+    "name": "continue_focus"
+  },
+  {
+    "description": "Continue workflow",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sessionId"
+      ],
+      "type": "object"
+    },
+    "name": "continue_workflow"
+  },
+  {
+    "description": "Create a new workflow. Put the WORKFLOW NAME in the \"name\" parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Workflow name (REQUIRED)",
+          "type": "string"
+        },
+        "steps": {
+          "description": "Workflow steps definition",
+          "type": "string"
+        },
+        "type": {
+          "default": "custom",
+          "description": "Workflow type (default: custom)",
+          "enum": [
+            "code-review",
+            "brainstorm",
+            "debug",
+            "research",
+            "custom"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "create_workflow"
+  },
+  {
+    "description": "Algorithmic code review with DeepSeek V4 Pro (top AIME/CodeElo): correctness, complexity/Big-O, edge cases, data-structure choice, optimization. Put PROBLEM/CODE in 'problem'.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "constraints": {
+          "description": "Input constraints: N size, time/memory limit (e.g., 'N≤10^5, 1s, 256MB')",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context: current performance, language, environment",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "focus": {
+          "default": "general",
+          "description": "Review focus: correctness, complexity, optimize, data-structure, edge-cases, general",
+          "type": "string"
+        },
+        "problem": {
+          "description": "The algorithm problem or code to review (REQUIRED - put your question/code here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "deepseek_algo"
+  },
+  {
+    "description": "Deep reasoning with DeepSeek V4 Pro (open-weight frontier — MLA/GRPO, top AIME/GPQA/math). Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "default": "analytical",
+          "description": "Reasoning approach (e.g., analytical, mathematical, first-principles, step-by-step)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "problem": {
+          "description": "The problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "deepseek_reason"
+  },
+  {
+    "description": "Broad-knowledge reasoning with Baidu ERNIE 4.5 VL (424B MoE — human-preference/arena strength). Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "default": "analytical",
+          "description": "Reasoning approach (e.g., analytical, systematic, step-by-step)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "problem": {
+          "description": "The problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "ernie_reason"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Execute Prompt Technique"
+    },
+    "description": "Execute a prompt technique. Use execution_token from preview, OR provide full params (technique, tool, query). Use \"last\" as token to execute most recent preview.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "execution_token": {
+          "description": "Token from preview, or \"last\" for most recent preview",
+          "type": "string"
+        },
+        "query": {
+          "description": "Your query or problem",
+          "type": "string"
+        },
+        "technique": {
+          "description": "Or provide full params: technique name",
+          "type": "string"
+        },
+        "tool": {
+          "description": "Target tool name",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "execute_prompt_technique"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Focus Mode Orchestrator"
+    },
+    "description": "Multi-model reasoning",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "type": "string"
+        },
+        "domain": {
+          "enum": [
+            "architecture",
+            "algorithms",
+            "debugging",
+            "security",
+            "performance",
+            "api_design",
+            "database",
+            "frontend",
+            "backend",
+            "devops",
+            "testing"
+          ],
+          "type": "string"
+        },
+        "executeNow": {
+          "type": "boolean"
+        },
+        "maxTokensPerRound": {
+          "type": "number"
+        },
+        "mode": {
+          "enum": [
+            "simple",
+            "debug",
+            "deep-reasoning",
+            "code-brainstorm",
+            "architecture-debate",
+            "research",
+            "analyze",
+            "focus-deep",
+            "tachibot-status"
+          ],
+          "type": "string"
+        },
+        "models": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "pingPongStyle": {
+          "enum": [
+            "competitive",
+            "collaborative",
+            "debate",
+            "build-upon"
+          ],
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "rounds": {
+          "type": "number"
+        },
+        "saveSession": {
+          "type": "boolean"
+        },
+        "temperature": {
+          "type": "number"
+        },
+        "tokenEfficient": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "focus"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Gemini Code Analysis"
+    },
+    "description": "Analyze code for bugs, quality, security, or performance issues. Put the CODE in the 'code' parameter, NOT in 'focus'.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "The actual source code to analyze (REQUIRED - put your code here)",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "focus": {
+          "default": "general",
+          "description": "Analysis focus (e.g., quality, security, performance, bugs, general)",
+          "type": "string"
+        },
+        "language": {
+          "description": "Programming language (e.g., 'typescript', 'python')",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "type": "object"
+    },
+    "name": "gemini_analyze_code"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Gemini Text Analysis"
+    },
+    "description": "Rhetorical analysis: dissect arguments for bias, logical fallacies, and persuasion tactics. Use for evaluating claims, detecting manipulation, or understanding argument structure. Put the TEXT in the 'text' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "text": {
+          "description": "The text to analyze (REQUIRED - put your text here)",
+          "type": "string"
+        },
+        "type": {
+          "default": "rhetoric",
+          "description": "Analysis type: rhetoric (bias/fallacies/persuasion), sentiment, summary, entities, key-points",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "type": "object"
+    },
+    "name": "gemini_analyze_text"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Gemini Brainstorming"
+    },
+    "description": "Convergent synthesis: cluster, refine, and prioritize raw ideas into structured hierarchies. Use AFTER divergent ideation to organize and rank ideas by impact/feasibility. Put your PROMPT in the 'prompt' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "claudeThoughts": {
+          "description": "Claude's initial thoughts or raw ideas to cluster and refine",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "maxClusters": {
+          "default": 5,
+          "description": "Number of idea clusters to create (default: 5)",
+          "type": "number"
+        },
+        "prompt": {
+          "description": "The ideas or topic to organize and refine (REQUIRED - put raw ideas or topic here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt"
+      ],
+      "type": "object"
+    },
+    "name": "gemini_brainstorm"
+  },
+  {
+    "description": "Evaluate and synthesize multiple AI perspectives into a unified verdict. Put CONTENT in the 'perspectives' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mode": {
+          "default": "synthesize",
+          "description": "Judge mode: synthesize (merge best), evaluate (score each), rank (order by quality), resolve (settle conflicts)",
+          "enum": [
+            "synthesize",
+            "evaluate",
+            "rank",
+            "resolve"
+          ],
+          "type": "string"
+        },
+        "perspectives": {
+          "description": "The multiple AI perspectives/analyses to evaluate and synthesize (REQUIRED - put your content here)",
+          "type": "string"
+        },
+        "query": {
+          "description": "Fallback: content to judge (use 'perspectives' instead)",
+          "type": "string"
+        },
+        "question": {
+          "description": "The original question being judged",
+          "type": "string"
+        },
+        "text": {
+          "description": "Fallback: content to judge (use 'perspectives' instead)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "perspectives"
+      ],
+      "type": "object"
+    },
+    "name": "gemini_judge"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Gemini Search"
+    },
+    "description": "Web search via Gemini with Google Search grounding",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "dynamicThreshold": {
+          "default": 0.7,
+          "description": "Confidence threshold for dynamic mode (0-1)",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "mode": {
+          "default": "on",
+          "description": "Search mode: 'on' always searches, 'dynamic' lets model decide, 'off' disables",
+          "enum": [
+            "dynamic",
+            "on",
+            "off"
+          ],
+          "type": "string"
+        },
+        "query": {
+          "description": "Search query",
+          "type": "string"
+        },
+        "recency": {
+          "default": "any",
+          "description": "Prefer results from this time range (enforced via prompt)",
+          "enum": [
+            "hour",
+            "day",
+            "week",
+            "month",
+            "year",
+            "any"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "gemini_search"
+  },
+  {
+    "description": "Agentic reasoning & tool-use planning with Zhipu GLM-5.1 (SWE-Bench Pro leader). Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "default": "agentic",
+          "description": "Reasoning approach (e.g., agentic, systematic, analytical, step-by-step)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "problem": {
+          "description": "The problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "glm_reason"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Grok Architecture Design"
+    },
+    "description": "Architecture design. Put your REQUIREMENTS in the 'requirements' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "constraints": {
+          "description": "Technical or business constraints to consider",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "requirements": {
+          "description": "The architecture requirements or design question (REQUIRED - put your question here)",
+          "type": "string"
+        },
+        "scale": {
+          "description": "Expected scale (e.g., small, medium, large, enterprise)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requirements"
+      ],
+      "type": "object"
+    },
+    "name": "grok_architect"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Grok Brainstorming"
+    },
+    "description": "Contrarian first-principles brainstorming: deconstruct a topic to atomic truths, challenge every assumption, then rebuild radical alternatives. Use when conventional thinking has stalled. Put your TOPIC in the 'topic' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "constraints": {
+          "description": "Any constraints or requirements to consider",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "forceHeavy": {
+          "description": "Use expensive Grok 4 Heavy model ($3/$15) for deeper creativity",
+          "type": "boolean"
+        },
+        "numIdeas": {
+          "description": "Number of radical rebuilds to generate (default: 5)",
+          "type": "number"
+        },
+        "topic": {
+          "description": "The topic to brainstorm about (REQUIRED - put your idea/topic here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "topic"
+      ],
+      "type": "object"
+    },
+    "name": "grok_brainstorm"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Grok Code Generation"
+    },
+    "description": "Code analysis. Put the CODE in the 'code' parameter, NOT in 'task'.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "The actual source code to analyze (REQUIRED - put your code here)",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "language": {
+          "description": "Programming language (e.g., 'typescript', 'python')",
+          "type": "string"
+        },
+        "requirements": {
+          "description": "Specific requirements or focus areas",
+          "type": "string"
+        },
+        "task": {
+          "description": "Code task (e.g., analyze, optimize, debug, review, refactor)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task",
+        "code"
+      ],
+      "type": "object"
+    },
+    "name": "grok_code"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Grok Debugging"
+    },
+    "description": "Debug assistance. Describe the ISSUE in the 'issue' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Relevant code that has the issue",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context about the environment or conditions",
+          "type": "string"
+        },
+        "error": {
+          "description": "Error message or stack trace",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "issue": {
+          "description": "Description of the issue or bug (REQUIRED - put your problem here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue"
+      ],
+      "type": "object"
+    },
+    "name": "grok_debug"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Grok Deep Reasoning"
+    },
+    "description": "Deep reasoning. Put your PROBLEM or QUESTION in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "description": "Reasoning approach (e.g., analytical, creative, systematic, first-principles)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the problem",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "problem": {
+          "description": "The problem or question to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        },
+        "useHeavy": {
+          "description": "Use expensive Grok 4 Heavy model ($3/$15) for complex tasks",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "grok_reason"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Grok Web Search"
+    },
+    "description": "Web search",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "max_search_results": {
+          "type": "number"
+        },
+        "query": {
+          "type": "string"
+        },
+        "recency": {
+          "enum": [
+            "all",
+            "day",
+            "week",
+            "month",
+            "year"
+          ],
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "allowed_websites": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "country": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "web",
+                  "news",
+                  "x",
+                  "rss"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "grok_search"
+  },
+  {
+    "description": "Multi-model jury: runs question through configurable panel of AI jurors in parallel, then Gemini synthesizes a unified verdict. Put QUESTION in 'question' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "description": "Additional context for all jurors",
+          "type": "string"
+        },
+        "jurors": {
+          "description": "Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, ernie, hermes, local (free offline Ollama/LM Studio)",
+          "type": "string"
+        },
+        "mode": {
+          "default": "synthesize",
+          "description": "Judge mode: synthesize (merge best), evaluate (score each), rank (order by quality), resolve (settle conflicts)",
+          "enum": [
+            "synthesize",
+            "evaluate",
+            "rank",
+            "resolve"
+          ],
+          "type": "string"
+        },
+        "question": {
+          "description": "The question or problem for the jury to evaluate (REQUIRED)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question"
+      ],
+      "type": "object"
+    },
+    "name": "jury"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Kimi Code Analysis"
+    },
+    "description": "SWE-focused code generation/fixing with Kimi K2.6 (SWE-Bench 76.8%). Put your REQUEST in the 'query' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Source code to work with (for fix/review/optimize/debug/refactor tasks)",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "language": {
+          "description": "Programming language (e.g., 'typescript', 'python')",
+          "type": "string"
+        },
+        "query": {
+          "description": "Your request or question (REQUIRED - put your main request here)",
+          "type": "string"
+        },
+        "task": {
+          "default": "review",
+          "description": "Code task type (default: review)",
+          "enum": [
+            "generate",
+            "fix",
+            "review",
+            "optimize",
+            "debug",
+            "refactor"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "kimi_code"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Kimi Problem Decomposition"
+    },
+    "description": "Structured task decomposition with Kimi K2.6 Agent Swarm reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "description": "Additional context about the project, codebase, or constraints",
+          "type": "string"
+        },
+        "depth": {
+          "default": 3,
+          "description": "Maximum decomposition depth levels (1-5, default: 3)",
+          "maximum": 5,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "files": {
+          "description": "File paths to read and include as context. Supports line ranges: 'src/foo.ts:100-200'. Files are read server-side — model sees ACTUAL CODE, not summaries.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "outputFormat": {
+          "default": "tree",
+          "description": "Output format: tree (hierarchical), flat (numbered list), dependencies (with dependency graph)",
+          "enum": [
+            "tree",
+            "flat",
+            "dependencies"
+          ],
+          "type": "string"
+        },
+        "task": {
+          "description": "The task to decompose (REQUIRED - describe the complex task)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "type": "object"
+    },
+    "name": "kimi_decompose"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Kimi Long Context"
+    },
+    "description": "Long-context analysis with Kimi K2.6 (256K context window). Put CONTENT in the 'content' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "description": "The long text/document to analyze (REQUIRED - put your content here)",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "outputFormat": {
+          "default": "detailed",
+          "description": "Output format: brief (TL;DR), detailed (thorough), structured (sections with headers)",
+          "enum": [
+            "brief",
+            "detailed",
+            "structured"
+          ],
+          "type": "string"
+        },
+        "query": {
+          "description": "Specific question about the content (for extract/find tasks)",
+          "type": "string"
+        },
+        "task": {
+          "default": "analyze",
+          "description": "Analysis task type (default: analyze)",
+          "enum": [
+            "summarize",
+            "extract",
+            "analyze",
+            "compare",
+            "find"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "type": "object"
+    },
+    "name": "kimi_long_context"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Kimi Deep Thinking"
+    },
+    "description": "Kimi K2.6 multimodal reasoning with Agent Swarm. Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "default": "step-by-step",
+          "description": "Reasoning approach (e.g., step-by-step, analytical, creative, systematic)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "maxSteps": {
+          "default": 3,
+          "description": "Maximum reasoning steps (1-10, default: 3)",
+          "maximum": 10,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "problem": {
+          "description": "The problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "kimi_thinking"
+  },
+  {
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List Plans"
+    },
+    "description": "List recently created plans from planner_maker.\nShows plans from the last N days (default 7) with filename, task, and status.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "days": {
+          "default": 7,
+          "description": "Show plans from last N days",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "name": "list_plans"
+  },
+  {
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List Prompt Techniques"
+    },
+    "description": "Discover available prompt engineering techniques. Shows all 31 techniques organized by category.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "default": "all",
+          "description": "Filter by category (default: all)",
+          "enum": [
+            "all",
+            "creative",
+            "research",
+            "analytical",
+            "reflective",
+            "reasoning",
+            "verification",
+            "meta",
+            "debate",
+            "judgment",
+            "engineering",
+            "research_advanced",
+            "decision",
+            "structured_coding"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "list_prompt_techniques"
+  },
+  {
+    "description": "List workflows",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "projectPath": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "list_workflows"
+  },
+  {
+    "description": "Query a local open-weight model (Ollama / LM Studio / llama.cpp / vLLM) — zero-cost, offline, private. Set LOCAL_LLM_BASE_URL / LOCAL_LLM_MODEL; LOCAL_LLM_NUM_CTX for long prompts (Ollama).",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "description": "Model tag, e.g. hermes3, qwen2.5",
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The prompt to send to the local model",
+          "type": "string"
+        },
+        "temperature": {
+          "default": 0.4,
+          "type": "number"
+        }
+      },
+      "required": [
+        "prompt"
+      ],
+      "type": "object"
+    },
+    "name": "local_query"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "MiniMax Agent"
+    },
+    "description": "Multi-step task decomposition and execution with MiniMax M2.7: plan, analyze, research, decide. Use when a task needs breakdown into steps before execution. For single-pass code tasks, use minimax_code instead. Put TASK in 'task' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "description": "Additional context about the environment or constraints",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "outputFormat": {
+          "default": "both",
+          "description": "Output: 'plan' (just steps), 'execute' (just results), 'both' (plan + results)",
+          "enum": [
+            "plan",
+            "execute",
+            "both"
+          ],
+          "type": "string"
+        },
+        "steps": {
+          "default": 5,
+          "description": "Maximum steps to plan (1-20, default: 5)",
+          "maximum": 20,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "task": {
+          "description": "The task to execute (REQUIRED - describe what needs to be done)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "type": "object"
+    },
+    "name": "minimax_agent"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "MiniMax Code Generation"
+    },
+    "description": "Single-pass code operations with MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index). Put your REQUEST in the 'query' parameter. For multi-step tasks, use minimax_agent instead.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Source code to work with (for fix/review/optimize/debug/refactor tasks)",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "language": {
+          "description": "Programming language (e.g., 'typescript', 'python')",
+          "type": "string"
+        },
+        "query": {
+          "description": "Your request or question (REQUIRED - put your main request here)",
+          "type": "string"
+        },
+        "task": {
+          "default": "review",
+          "description": "Code task type (default: review)",
+          "enum": [
+            "generate",
+            "fix",
+            "review",
+            "optimize",
+            "debug",
+            "refactor"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "minimax_code"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Sequential Thinking Chain"
+    },
+    "description": "Sequential thinking with optional multi-model execution. Auto-creates session if needed.\n\n**Basic** (thought logging): nextThought({ thought: \"Analyze X\", nextThoughtNeeded: true })\n**With execution**: nextThought({ thought: \"...\", model: \"gemini\", executeModel: true, nextThoughtNeeded: true })\n**Light distillation**: nextThought({ thought: \"...\", model: \"gemini\", executeModel: true, distillContext: \"light\" })\n**Judge step**: nextThought({ thought: \"Final verdict\", model: \"gemini\", executeModel: true, contextWindow: \"all\", nextThoughtNeeded: false })\n**Auto final judge**: nextThought({ thought: \"...\", model: \"kimi\", executeModel: true, finalJudge: \"gemini\", nextThoughtNeeded: false })\n**With memory save**: nextThought({ ..., memoryProvider: { provider: \"dokoro\", saveToMemory: true } })\n\nModels: grok, gemini, openai, perplexity, kimi, qwen, think\nContext: \"none\" (fresh start), \"recent\" (last 3), \"all\" (full history), or a number\nDistillation: \"off\" (default, auto-distills at 8000+ tokens), \"light\" (preserves detail)\nFinalJudge: Auto-judge when session completes (uses ALL context)\nMemoryProvider: Pluggable memory (dokoro, mem0, custom). Set TACHIBOT_MEMORY_PROVIDER env for default",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "branchFromThought": {
+          "description": "Branch from this thought number",
+          "type": "number"
+        },
+        "contextWindow": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "none",
+                "recent",
+                "all"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Context window: 'none' (fresh), 'recent' (last 3), 'all' (full history). Prefer string names over numbers"
+        },
+        "distillContext": {
+          "description": "Distillation mode: off (default, auto-distills at 8000+ tokens), light (preserves detail)",
+          "enum": [
+            "off",
+            "light"
+          ],
+          "type": "string"
+        },
+        "executeModel": {
+          "description": "Actually execute the model's tool and return response (default: false)",
+          "type": "boolean"
+        },
+        "finalJudge": {
+          "description": "Model to use as final judge when session completes (e.g., 'gemini'). Called automatically when nextThoughtNeeded=false",
+          "type": "string"
+        },
+        "isRevision": {
+          "description": "Mark this as a revision of an earlier thought",
+          "type": "boolean"
+        },
+        "memoryProvider": {
+          "additionalProperties": false,
+          "description": "Pluggable memory MCP: { provider: 'dokoro'|'mem0', saveToMemory: true }",
+          "properties": {
+            "loadFromMemory": {
+              "description": "Load relevant context from memory at start",
+              "type": "boolean"
+            },
+            "provider": {
+              "description": "Memory provider name: 'dokoro', 'mem0', or custom",
+              "type": "string"
+            },
+            "saveToMemory": {
+              "description": "Auto-save session to memory on complete",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "provider"
+          ],
+          "type": "object"
+        },
+        "model": {
+          "description": "Model to use: grok, gemini, openai, perplexity, kimi, qwen, think",
+          "type": "string"
+        },
+        "nextThoughtNeeded": {
+          "description": "Whether more thoughts are needed in the chain",
+          "type": "boolean"
+        },
+        "objective": {
+          "description": "Session objective (for auto-session creation)",
+          "type": "string"
+        },
+        "revisesThought": {
+          "description": "Which thought number this revises",
+          "type": "number"
+        },
+        "thought": {
+          "description": "The thought content or prompt for the model",
+          "type": "string"
+        },
+        "thoughtNumber": {
+          "description": "Override the thought number",
+          "type": "number"
+        },
+        "totalThoughts": {
+          "description": "Update estimated total thoughts",
+          "type": "number"
+        }
+      },
+      "required": [
+        "thought",
+        "nextThoughtNeeded"
+      ],
+      "type": "object"
+    },
+    "name": "nextThought"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "OpenAI Brainstorming"
+    },
+    "description": "Find alternative approaches: when stuck on a programming problem, reveals 3rd/4th/5th options you haven't considered, with cost of each. Use when you think there's only 1-2 ways to do something. Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "constraints": {
+          "description": "Technical constraints: language, framework, performance requirements, team size",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "max_tokens": {
+          "description": "Maximum tokens for response",
+          "type": "number"
+        },
+        "model": {
+          "description": "Model to use - gpt-5.4 (default), gpt-5.4-mini (coding/fast), gpt-5.4-pro (expert)",
+          "enum": [
+            "gpt-5.4",
+            "gpt-5.4-mini",
+            "gpt-5.4-pro"
+          ],
+          "type": "string"
+        },
+        "problem": {
+          "description": "The engineering problem or design tradeoff to brainstorm about (REQUIRED)",
+          "type": "string"
+        },
+        "quantity": {
+          "description": "Number of approaches to generate (default: 5)",
+          "type": "number"
+        },
+        "reasoning_effort": {
+          "description": "Reasoning effort level - must be one of: none, low, medium, high, xhigh",
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "openai_brainstorm"
+  },
+  {
+    "description": "Code review. Put the CODE in the 'code' parameter, NOT in 'focusAreas'.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "The actual source code to review (REQUIRED - put your code here)",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "focusAreas": {
+          "description": "Focus areas - array of: security, performance, readability, bugs, best-practices",
+          "items": {
+            "enum": [
+              "security",
+              "performance",
+              "readability",
+              "bugs",
+              "best-practices"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "language": {
+          "description": "Programming language (e.g., 'typescript', 'python')",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "type": "object"
+    },
+    "name": "openai_code_review"
+  },
+  {
+    "description": "Explain concepts. Put the TOPIC in the 'topic' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "level": {
+          "default": "intermediate",
+          "description": "Explanation level - must be one of: beginner, intermediate, expert",
+          "enum": [
+            "beginner",
+            "intermediate",
+            "expert"
+          ],
+          "type": "string"
+        },
+        "style": {
+          "default": "simple",
+          "description": "Explanation style - must be one of: technical, simple, analogy, visual",
+          "enum": [
+            "technical",
+            "simple",
+            "analogy",
+            "visual"
+          ],
+          "type": "string"
+        },
+        "topic": {
+          "description": "The topic or concept to explain (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "topic"
+      ],
+      "type": "object"
+    },
+    "name": "openai_explain"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "OpenAI Deep Reasoning"
+    },
+    "description": "Mathematical reasoning using GPT-5.2-thinking. Put your QUERY in the 'query' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mode": {
+          "default": "analytical",
+          "description": "Reasoning mode (e.g., mathematical, scientific, logical, analytical)",
+          "type": "string"
+        },
+        "query": {
+          "description": "The question or problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "openai_reason"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "OpenAI Web Search"
+    },
+    "description": "Web search using GPT-5.2 with real-time web access. Put your QUERY in the 'query' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "city": {
+          "description": "City for location-aware results",
+          "type": "string"
+        },
+        "country": {
+          "description": "Country for location-aware results (e.g., 'US', 'UK')",
+          "type": "string"
+        },
+        "query": {
+          "description": "The search query (REQUIRED - put your question here)",
+          "type": "string"
+        },
+        "searchContextSize": {
+          "default": "medium",
+          "description": "Search depth - low (fast), medium (balanced), high (comprehensive)",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "openai_search"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Perplexity Quick Ask"
+    },
+    "description": "Web search. Put your QUERY in the 'query' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "query": {
+          "description": "The search query or question (REQUIRED - put your question here)",
+          "type": "string"
+        },
+        "searchDomain": {
+          "description": "Search domain - must be one of: general, academic, news, social",
+          "enum": [
+            "general",
+            "academic",
+            "news",
+            "social"
+          ],
+          "type": "string"
+        },
+        "searchRecency": {
+          "description": "How recent the results should be - must be one of: hour, day, week, month, year",
+          "enum": [
+            "hour",
+            "day",
+            "week",
+            "month",
+            "year"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "perplexity_ask"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Perplexity Deep Reasoning"
+    },
+    "description": "Reasoning with search. Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "description": "Reasoning approach (e.g., analytical, creative, systematic, comparative)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "problem": {
+          "description": "The problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "perplexity_reason"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": false,
+      "title": "Plan Creator"
+    },
+    "description": "Multi-model council for creating implementation plans.\n\nCOORDINATOR PATTERN - Returns ONE tool to execute at a time:\n1. Call with mode: \"start\" to begin\n2. Execute the returned tool\n3. Call with mode: \"continue\" and prior results\n4. Repeat until isComplete: true\n\nExample:\n  planner_maker({ task: \"Add auth\", mode: \"start\" })\n  → { nextTool: { tool: \"grok_search\", params: {...} }, step: 1 }\n\n  [Execute grok_search]\n\n  planner_maker({ task: \"Add auth\", mode: \"continue\", step: 2, prior: { search: \"...\" } })\n  → { nextTool: { tool: \"qwen_coder\", params: {...} }, step: 2 }\n\n  ... continue until isComplete: true",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "answers": {
+          "description": "Answers to clarifying questions",
+          "type": "string"
+        },
+        "codeContext": {
+          "description": "Actual code from relevant files for analysis (read files and paste here)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context",
+          "type": "string"
+        },
+        "debate": {
+          "default": false,
+          "description": "Enable lightweight pro/con debate between Analysis and Critique (adds ~2 steps, main points only)",
+          "type": "boolean"
+        },
+        "dokoro": {
+          "default": true,
+          "description": "Include dokoro hints for sync",
+          "type": "boolean"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "goal": {
+          "description": "Success criteria for this plan — what must be true when done. Checked at every checkpoint. Example: 'GDPR compliant, fail-closed, admin-only toggle'",
+          "type": "string"
+        },
+        "issueFile": {
+          "description": "Path to an issue/spec markdown file. Server reads it and merges into context. Supports .md, .txt, .markdown files.",
+          "type": "string"
+        },
+        "mode": {
+          "default": "start",
+          "description": "start: begin new plan, continue: next step",
+          "enum": [
+            "start",
+            "continue"
+          ],
+          "type": "string"
+        },
+        "prior": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Results from previous steps: { search: '...', analyze_qwen: '...' }",
+          "type": "object"
+        },
+        "responsive": {
+          "default": false,
+          "description": "Enable responsive design review (auto-detected from keywords, or set true to force)",
+          "type": "boolean"
+        },
+        "step": {
+          "description": "Current step number (for continue mode)",
+          "type": "number"
+        },
+        "task": {
+          "description": "The task/goal to create a plan for",
+          "type": "string"
+        },
+        "ux": {
+          "default": false,
+          "description": "Enable UX/accessibility review steps (auto-detected from task keywords, or set true to force)",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "type": "object"
+    },
+    "name": "planner_maker"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": false,
+      "title": "Plan Executor"
+    },
+    "description": "Execute implementation plans step-by-step with goal-oriented verification.\n\nCOORDINATOR PATTERN - tracks actual plan steps:\n1. Call with mode: \"start\" to parse plan and begin\n2. Call with mode: \"step\" and stepNum to work on specific step\n3. Call with mode: \"verify\" at 50%, 80%, and 100% for checkpoints\n\nCheckpoints verify GOAL ALIGNMENT with 5 different models (no repeats adjacent):\n- step1: Gemini Sherlock gate — \"am I building the RIGHT thing?\" (6 deduction questions)\n- 10%: Grok early drift — catch wrong approach before wasting 90%\n- 25%: GPT strategy validation — is the approach working? amendment protocol\n- 50%: Qwen reason — progress + goal alignment (different perspective)\n- 80%: Kimi decompose remaining work + goal alignment\n- 100%: GPT first judge → Gemini final judge (dual) + Reflexion Lite\n\nPass goal= explicitly, or it's extracted from plan frontmatter (planGoal field).\n\nEvidence params (unblind the checkpoints):\n- files: read actual source code from disk\n- diff: git diff output (what changed)\n- testResults: npm test output (proof it works)\n- modifiedFiles: list of touched files (scope creep detection)",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint": {
+          "description": "Checkpoint for mode=verify — step1 catches wrong-approach, 10% catches drift early, 25% validates strategy",
+          "enum": [
+            "step1",
+            "10%",
+            "25%",
+            "50%",
+            "80%",
+            "100%"
+          ],
+          "type": "string"
+        },
+        "code": {
+          "description": "Current code snapshot for verification",
+          "type": "string"
+        },
+        "completed": {
+          "description": "List of completed step numbers",
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "diff": {
+          "description": "Git diff output showing what changed (run: git diff). Most important evidence for drift detection.",
+          "type": "string"
+        },
+        "dokoro": {
+          "default": true,
+          "type": "boolean"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "goal": {
+          "description": "Success criteria — extracted from plan frontmatter or provided manually. Verified at every checkpoint.",
+          "type": "string"
+        },
+        "mode": {
+          "default": "start",
+          "description": "start: parse plan, step: work on step N, verify: checkpoint",
+          "enum": [
+            "start",
+            "step",
+            "verify"
+          ],
+          "type": "string"
+        },
+        "modifiedFiles": {
+          "description": "List of modified files (run: git diff --name-only). Detects scope creep.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "plan": {
+          "description": "The implementation plan from planner_maker",
+          "type": "string"
+        },
+        "responsive": {
+          "default": false,
+          "description": "Add responsiveness verification at checkpoints (mobile/tablet/desktop, breakpoints, touch targets)",
+          "type": "boolean"
+        },
+        "stepNum": {
+          "description": "Step number (1-indexed) for mode=step",
+          "type": "number"
+        },
+        "testResults": {
+          "description": "Test output (run: npm test). Proof that implementation works.",
+          "type": "string"
+        },
+        "ux": {
+          "default": false,
+          "description": "Add UX verification at checkpoints (usability, accessibility, interaction states)",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "plan"
+      ],
+      "type": "object"
+    },
+    "name": "planner_runner"
+  },
+  {
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Preview Prompt Technique"
+    },
+    "description": "Preview how a technique enhances your prompt WITHOUT executing. Returns an execution_token for later use.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "query": {
+          "description": "Your query or problem",
+          "type": "string"
+        },
+        "technique": {
+          "description": "Technique name (e.g., first_principles, tree_of_thoughts)",
+          "type": "string"
+        },
+        "tool": {
+          "description": "Target tool (e.g., grok_reason, gemini_brainstorm)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "technique",
+        "tool",
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "preview_prompt_technique"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Qwen Algorithm Expert"
+    },
+    "description": "Expert algorithm analysis: complexity profiling, optimization tiers, constraint-driven recommendations, competitive programming patterns. Put PROBLEM/CODE in 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "constraints": {
+          "description": "Input constraints: N size, time limit, memory limit (e.g., 'N≤10^5, 1s, 256MB')",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context: current performance, environment, language",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "focus": {
+          "default": "general",
+          "description": "Analysis focus: optimize, complexity, data-structure, memory, correctness, competitive, cache, general",
+          "type": "string"
+        },
+        "problem": {
+          "description": "The algorithm problem or code to analyze (REQUIRED - put your question/code here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "qwen_algo"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Qwen Code Expert"
+    },
+    "description": "Code generation and analysis with Qwen3-Coder-Next. Put your REQUEST in the 'query' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Source code to work with (for review/optimize/debug/refactor/explain tasks)",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "language": {
+          "description": "Programming language (e.g., 'typescript', 'python')",
+          "type": "string"
+        },
+        "query": {
+          "description": "Your request or question (REQUIRED - put your main request here)",
+          "type": "string"
+        },
+        "task": {
+          "default": "analyze",
+          "description": "Code task type (default: analyze)",
+          "enum": [
+            "generate",
+            "review",
+            "optimize",
+            "debug",
+            "refactor",
+            "explain",
+            "analyze"
+          ],
+          "type": "string"
+        },
+        "useFree": {
+          "default": false,
+          "description": "Use free tier model instead of premium",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "qwen_coder"
+  },
+  {
+    "description": "Competitive programming. Put the PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "constraints": {
+          "description": "Problem constraints (e.g., 'n <= 10^5')",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "language": {
+          "default": "python",
+          "description": "Programming language - must be one of: python, cpp, java, javascript, rust",
+          "enum": [
+            "python",
+            "cpp",
+            "java",
+            "javascript",
+            "rust"
+          ],
+          "type": "string"
+        },
+        "optimize": {
+          "default": true,
+          "description": "Optimize for time and space complexity",
+          "type": "boolean"
+        },
+        "problem": {
+          "description": "The competitive programming problem (REQUIRED - put your problem here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "qwen_competitive"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Qwen Reasoning"
+    },
+    "description": "Heavy mathematical reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT). Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "default": "mathematical",
+          "description": "Reasoning approach (e.g., mathematical, logical, proof, step-by-step)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "problem": {
+          "description": "The problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "qwen_reason"
+  },
+  {
+    "description": "Multi-perspective deliberation: simulate 4 opposing viewpoints (optimist/pessimist/domain-expert/contrarian) then synthesize a balanced verdict. Use when a problem needs debate, not just analysis. Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "default": "multi-perspective",
+          "description": "Reasoning approach: multi-perspective (default), mathematical, logical, creative",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "problem": {
+          "description": "The problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        },
+        "useFree": {
+          "default": true,
+          "description": "Use free tier model (default: true)",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "qwq_reason"
+  },
+  {
+    "description": "Efficient deep reasoning with StepFun Step 3.7 Flash (196B — high AIME/SWE-Verified at lower cost). Put your PROBLEM in the 'problem' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "approach": {
+          "default": "analytical",
+          "description": "Reasoning approach (e.g., analytical, mathematical, step-by-step)",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context for the reasoning task",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "problem": {
+          "description": "The problem to reason about (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "problem"
+      ],
+      "type": "object"
+    },
+    "name": "stepfun_reason"
+  },
+  {
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Tachi Smart Router"
+    },
+    "description": "Smart AI assistant - just describe what you need. Put your QUERY in the 'query' parameter.\n\nAuto-routes to the best mode based on your query:\n• Research: \"what is...\", \"how does...\", \"explain...\"\n• Solve: \"fix...\", \"debug...\", \"implement...\", \"error...\"\n• Verify: \"check...\", \"is this correct...\", \"review...\"\n• Creative: \"brainstorm...\", \"ideas for...\", \"name...\"\n• Architect: \"design...\", \"which should I use...\", \"tradeoffs...\"\n• Judge: \"which is best...\", \"evaluate...\", \"compare...\"\n\nExamples:\n  tachi \"debug this null pointer error\"\n  tachi \"how does React useEffect work\"\n  tachi \"microservices vs monolith for 10M users\"\n  tachi \"judge: React vs Vue vs Svelte\"",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "auto",
+          "description": "Force specific mode - must be one of: auto, research, solve, verify, creative, architect, judge",
+          "enum": [
+            "auto",
+            "research",
+            "solve",
+            "verify",
+            "creative",
+            "architect",
+            "judge"
+          ],
+          "type": "string"
+        },
+        "query": {
+          "description": "What you need help with (REQUIRED - put your question here)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "tachi"
+  },
+  {
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Think (Log Reasoning)"
+    },
+    "description": "Log reasoning",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "thought": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "thought"
+      ],
+      "type": "object"
+    },
+    "name": "think"
+  },
+  {
+    "annotations": {
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Usage Statistics"
+    },
+    "description": "View or reset tool usage statistics. Put your REQUEST in the 'query' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "default": "view",
+          "description": "Action (default: view)",
+          "enum": [
+            "view",
+            "reset"
+          ],
+          "type": "string"
+        },
+        "format": {
+          "default": "table",
+          "description": "Output format",
+          "enum": [
+            "table",
+            "json"
+          ],
+          "type": "string"
+        },
+        "query": {
+          "default": "view",
+          "description": "What to do: 'view' (default), 'reset', or any question about usage",
+          "type": "string"
+        },
+        "scope": {
+          "default": "current",
+          "description": "Current repo or all repos",
+          "enum": [
+            "current",
+            "all"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "usage_stats"
+  },
+  {
+    "description": "Validates workflow YAML/JSON files for correctness.\n\nChecks:\n- Valid YAML/JSON syntax\n- Interpolation references (${step.output}, ${variable}) point to valid steps/variables\n- Tool names exist and are enabled in tools.config.json\n- No circular dependencies in step execution order\n- Variable names follow snake_case convention\n\nReturns detailed error messages with suggestions for fixing issues.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "default": "text",
+          "description": "Output format: \"text\" for human-readable, \"json\" for structured data",
+          "enum": [
+            "text",
+            "json"
+          ],
+          "type": "string"
+        },
+        "isJson": {
+          "default": false,
+          "description": "Set to true if the content is JSON instead of YAML",
+          "type": "boolean"
+        },
+        "workflowContent": {
+          "description": "The YAML or JSON content of the workflow to validate",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflowContent"
+      ],
+      "type": "object"
+    },
+    "name": "validate_workflow"
+  },
+  {
+    "description": "Validates a workflow file from the filesystem.\n\nChecks:\n- Valid YAML/JSON syntax\n- Interpolation references (${step.output}, ${variable}) point to valid steps/variables\n- Tool names exist and are enabled in tools.config.json\n- No circular dependencies in step execution order\n- Variable names follow snake_case convention\n\nReturns detailed error messages with suggestions for fixing issues.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "filePath": {
+          "description": "Path to the workflow file (YAML or JSON)",
+          "type": "string"
+        },
+        "format": {
+          "default": "text",
+          "description": "Output format: \"text\" for human-readable, \"json\" for structured data",
+          "enum": [
+            "text",
+            "json"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "filePath"
+      ],
+      "type": "object"
+    },
+    "name": "validate_workflow_file"
+  },
+  {
+    "description": "Visualize workflow",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": "visualize_workflow"
+  },
+  {
+    "description": "Execute workflows with Ink rendering, comparison table, and optional AI judge",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "compare": {
+          "description": "Show comparison summary table (default: true)",
+          "type": "boolean"
+        },
+        "file": {
+          "description": "Workflow YAML file path",
+          "type": "string"
+        },
+        "judge": {
+          "description": "Enable AI judge to evaluate all steps at end",
+          "type": "boolean"
+        },
+        "judgeTool": {
+          "description": "Tool for judging (default: gemini_analyze_text)",
+          "type": "string"
+        },
+        "maxStepTokens": {
+          "description": "Max tokens per step (default: 2500)",
+          "type": "number"
+        },
+        "name": {
+          "description": "Workflow name to execute",
+          "type": "string"
+        },
+        "projectPath": {
+          "type": "string"
+        },
+        "query": {
+          "description": "Input query for the workflow",
+          "type": "string"
+        },
+        "truncateSteps": {
+          "description": "Truncate step outputs (default: true)",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "workflow"
+  },
+  {
+    "description": "Start workflow session",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "variables": {
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "workflow_start"
+  },
+  {
+    "description": "Workflow status",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sessionId"
+      ],
+      "type": "object"
+    },
+    "name": "workflow_status"
+  }
+]

@@ -14,21 +14,12 @@ import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
 import { readFilesIntoContext } from "../utils/file-reader.js";
+import { defineModelTool } from "./factory/define-model-tool.js";
+import { filesField } from "./factory/base-schemas.js";
 
 // ═══════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════
-
-type MCPContext = {
-  log: {
-    info: (message: string, metadata?: Record<string, any>) => void;
-    error: (message: string, metadata?: Record<string, any>) => void;
-    warn: (message: string, metadata?: Record<string, any>) => void;
-    debug: (message: string, metadata?: Record<string, any>) => void;
-  };
-  reportProgress?: (progress: { progress: number; total: number }) => Promise<void>;
-  [key: string]: any;
-};
 
 /**
  * Structured hint for dokoro memory tool invocation
@@ -958,7 +949,7 @@ ${prior.ux_judge ? `   - UX/Accessibility: X/10\n` : ""}${prior.responsive_judge
 // PLANNER_MAKER - Coordinator Pattern
 // ═══════════════════════════════════════════════════════════════════
 
-export const plannerMakerTool = {
+export const plannerMakerTool = defineModelTool({
   name: "planner_maker",
   description: `Multi-model council for creating implementation plans.
 
@@ -984,7 +975,7 @@ Example:
     goal: z.string().optional().describe("Success criteria for this plan — what must be true when done. Checked at every checkpoint. Example: 'GDPR compliant, fail-closed, admin-only toggle'"),
     context: z.string().optional().describe("Additional context"),
     codeContext: z.string().optional().describe("Actual code from relevant files for analysis (read files and paste here)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     answers: z.string().optional().describe("Answers to clarifying questions"),
     mode: z.enum(["start", "continue"]).optional().default("start")
       .describe("start: begin new plan, continue: next step"),
@@ -1018,7 +1009,7 @@ Example:
     responsive?: boolean;
     debate?: boolean;
     issueFile?: string;
-  }, ctx: MCPContext): Promise<string> => {
+  }, ctx: any): Promise<string> => {
     // Merge files into codeContext
     const fileContent = args.files?.length
       ? readFilesIntoContext(args.files)
@@ -1260,7 +1251,7 @@ Example:
 
     return formatCoordinatorResponse(response, prior, workflow, getPlanFilePath(task));
   },
-};
+});
 
 /**
  * Format coordinator response for terminal display
@@ -1389,7 +1380,7 @@ function extractGoalFromPlan(plan: string): string | undefined {
   return undefined;
 }
 
-export const plannerRunnerTool = {
+export const plannerRunnerTool = defineModelTool({
   name: "planner_runner",
   description: `Execute implementation plans step-by-step with goal-oriented verification.
 
@@ -1422,7 +1413,7 @@ Evidence params (unblind the checkpoints):
     stepNum: z.number().optional().describe("Step number (1-indexed) for mode=step"),
     checkpoint: z.enum(["step1", "10%", "25%", "50%", "80%", "100%"]).optional().describe("Checkpoint for mode=verify — step1 catches wrong-approach, 10% catches drift early, 25% validates strategy"),
     code: z.string().optional().describe("Current code snapshot for verification"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     diff: z.string().optional().describe("Git diff output showing what changed (run: git diff). Most important evidence for drift detection."),
     testResults: z.string().optional().describe("Test output (run: npm test). Proof that implementation works."),
     modifiedFiles: z.array(z.string()).optional().describe("List of modified files (run: git diff --name-only). Detects scope creep."),
@@ -1449,7 +1440,7 @@ Evidence params (unblind the checkpoints):
     dokoro?: boolean;
     ux?: boolean;
     responsive?: boolean;
-  }, _ctx: MCPContext): Promise<string> => {
+  }, _ctx: any): Promise<string> => {
     // Merge files into code context
     const fileContent = args.files?.length
       ? readFilesIntoContext(args.files)
@@ -1926,13 +1917,13 @@ Output as structured JSON:
 
     return lines.join("\n");
   },
-};
+});
 
 // ═══════════════════════════════════════════════════════════════════
 // LIST_PLANS - Find recent plans
 // ═══════════════════════════════════════════════════════════════════
 
-export const listPlansTool = {
+export const listPlansTool = defineModelTool({
   name: "list_plans",
   description: `List recently created plans from planner_maker.
 Shows plans from the last N days (default 7) with filename, task, and status.`,
@@ -1941,7 +1932,7 @@ Shows plans from the last N days (default 7) with filename, task, and status.`,
     days: z.number().optional().default(7).describe("Show plans from last N days"),
   }),
 
-  execute: async (args: { days?: number }, _ctx: MCPContext): Promise<string> => {
+  execute: async (args: { days?: number }, _ctx: any): Promise<string> => {
     const { days = 7 } = args;
     const lines: string[] = [];
 
@@ -1983,7 +1974,7 @@ Shows plans from the last N days (default 7) with filename, task, and status.`,
 
     return lines.join("\n");
   },
-};
+});
 
 // ═══════════════════════════════════════════════════════════════════
 // EXPORTS

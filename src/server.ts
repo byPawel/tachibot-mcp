@@ -73,16 +73,14 @@ import { getProviderInfo } from "./tools/unified-ai-provider.js";
 import { getAllPerplexityTools, isPerplexityAvailable } from "./tools/perplexity-tools.js";
 import { getAllGrokTools, isGrokAvailable } from "./tools/grok-tools.js";
 import { registerWorkflowTools } from "./tools/workflow-runner.js";
-import { validateWorkflowTool, validateWorkflowFileTool } from "./tools/workflow-validator-tool.js";
+import { getAllTools } from "./tools/registry.js";
 import { canRunFocusDeep } from "./focus-deep.js";
 import { loadConfig } from "./config.js";
 // import { registerSessionTools } from "./session/session-tools.js"; // Removed - not needed for minimal tool set
 import { getAllAdvancedTools, areAdvancedModesAvailable } from "./tools/advanced-modes.js";
 import { isOpenAIAvailable, getAllOpenAITools } from "./tools/openai-tools.js";
-import { isGeminiAvailable, geminiBrainstormTool, geminiAnalyzeCodeTool } from "./tools/gemini-tools.js";
+import { isGeminiAvailable } from "./tools/gemini-tools.js";
 import { isOpenRouterAvailable } from "./tools/openrouter-tools.js";
-import { getTachiTools } from "./tools/tachi-tool.js";
-import { getPromptTechniqueTools } from "./tools/prompt-technique-tools.js";
 import { withParamAliases } from "./utils/param-aliases.js";
 // import { registerGPT5Tools, isGPT5Available } from "./tools/openai-gpt5-fixed.js"; // DISABLED - using regular openai-tools.ts
 import { initializeOptimizations } from "./optimization/index.js";
@@ -699,130 +697,29 @@ const availableProviders = Object.entries(providerInfo)
   .map(([name]) => name);
 console.error(`✅ Available AI providers: ${availableProviders.join(', ')}`);
 
-// Register Perplexity tools separately (custom API, not OpenAI-compatible)
-if (isPerplexityAvailable()) {
-  const perplexityTools = getAllPerplexityTools();
-  perplexityTools.forEach(tool => {
-    safeAddTool(tool);
-  });
-  console.error(`✅ Registered ${perplexityTools.length} Perplexity tools (custom API)`);
-}
-
-// Register Grok tools separately (custom API, not OpenAI-compatible)
-if (isGrokAvailable()) {
-  const grokTools = getAllGrokTools();
-  grokTools.forEach(tool => {
-    safeAddTool(tool);
-  });
-  console.error(`✅ Registered ${grokTools.length} Grok tools (custom API)`);
-}
-
-// Register all OpenAI tools (includes openai_reason, openai_brainstorm, etc.)
-if (isOpenAIAvailable()) {
-  const openaiTools = getAllOpenAITools();
-  openaiTools.forEach(tool => {
-    safeAddTool(tool);
-  });
-  console.error(`✅ Registered ${openaiTools.length} OpenAI tools (GPT-5 suite)`);
-}
-
 // Async initialization function to handle dynamic imports and startup
 async function initializeServer() {
   try {
-    // Register select Gemini tools (brainstorm, analyze, search)
-    if (isGeminiAvailable()) {
-      const { geminiAnalyzeTextTool, geminiJudgeTool, geminiSearchTool } = await import("./tools/gemini-tools.js");
-      const geminiTools = [
-        geminiBrainstormTool,     // Creative brainstorming
-        geminiAnalyzeCodeTool,    // Code analysis
-        geminiAnalyzeTextTool,    // Text analysis (sentiment, summary, etc.)
-        geminiJudgeTool,          // Multi-perspective evaluation & synthesis
-        geminiSearchTool          // Web search with Google Search grounding
-      ];
-      geminiTools.forEach(tool => {
-        safeAddTool(tool);
-      });
-      console.error(`✅ Registered ${geminiTools.length} Gemini tools (brainstorm, code, text, judge, search)`);
-
-      // Register Jury tool (multi-model panel with Gemini judge)
-      const { juryTool } = await import("./tools/jury-tool.js");
-      safeAddTool(juryTool);
-      console.error(`✅ Registered jury tool (multi-model panel)`);
+    // Register ALL provider tools via the central scan registry. getAllTools()
+    // evaluates the SAME is*Available() guards, in the SAME order, with the SAME
+    // async dynamic-import timing the per-provider blocks used to use inline here
+    // — so the registered set is byte-identical across every API-key scenario.
+    // This single loop replaces the former Perplexity/Grok/OpenAI sync blocks and
+    // the Gemini+jury / OpenRouter+planner / local / workflow-validator /
+    // advanced / tachi / prompt-technique async blocks. The 5 inline tools
+    // (think/focus/nextThought/usage_stats/continue_focus) are registered above
+    // and are intentionally NOT returned by the registry, so there is no overlap.
+    for (const t of await getAllTools()) {
+      safeAddTool(t);
     }
+    console.error(`✅ Registered provider tools via central registry`);
 
-    // Register OpenRouter tools (Qwen, Kimi, MiniMax - filtered by profile via safeAddTool)
-    if (isOpenRouterAvailable()) {
-      const { qwenCoderTool, qwenAlgoTool, qwqReasoningTool, qwenCompetitiveTool, kimiThinkingTool, kimiCodeTool, kimiDecomposeTool, kimiLongContextTool, qwenReasonTool, minimaxCodeTool, minimaxAgentTool, deepseekReasonTool, deepseekAlgoTool, glmReasonTool, stepfunReasonTool, ernieReasonTool } = await import("./tools/openrouter-tools.js");
-
-      // safeAddTool checks isToolEnabled internally
-      safeAddTool(qwenCoderTool);
-      safeAddTool(qwenAlgoTool);
-      safeAddTool(qwqReasoningTool);    // QwQ-32B - multi-perspective deliberation (free tier)
-      safeAddTool(qwenCompetitiveTool);
-      safeAddTool(kimiThinkingTool);
-      safeAddTool(kimiCodeTool);        // SWE-focused code (Kimi K2.5 - 76.8% SWE-Bench)
-      safeAddTool(kimiDecomposeTool);   // Task decomposition (Kimi K2.5 Agent Swarm)
-      safeAddTool(kimiLongContextTool); // Long-context analysis (Kimi K2.5 - 256K)
-      safeAddTool(qwenReasonTool);      // Heavy reasoning (Qwen3-Max-Thinking >1T params)
-      safeAddTool(minimaxCodeTool);     // MiniMax M2.7 - SWE-Pro 56.22%, #1 AI Intelligence Index
-      safeAddTool(minimaxAgentTool);    // MiniMax M2.7 - agentic workflows, self-evolving
-      safeAddTool(deepseekReasonTool);  // DeepSeek V4 Pro - frontier reasoning/math (open-weight)
-      safeAddTool(deepseekAlgoTool);    // DeepSeek V4 Pro - algorithmic code review (top AIME/CodeElo)
-      safeAddTool(glmReasonTool);       // Zhipu GLM-5.1 - agentic reasoning (SWE-Bench Pro leader)
-      safeAddTool(stepfunReasonTool);   // StepFun Step 3.7 Flash - efficient reasoning
-      safeAddTool(ernieReasonTool);     // Baidu ERNIE 4.5 VL - broad-knowledge reasoning
-
-      console.error(`✅ Registered OpenRouter tools (Qwen, QwQ, Kimi x4, MiniMax, DeepSeek x2, GLM, StepFun, ERNIE)`);
-
-      // Register planner tools (multi-model council for plan creation/execution)
-      const { plannerMakerTool, plannerRunnerTool, listPlansTool } = await import("./tools/planner-tools.js");
-      safeAddTool(plannerMakerTool);   // Council-based plan creation
-      safeAddTool(plannerRunnerTool);  // Plan execution with checkpoints
-      safeAddTool(listPlansTool);      // List recent plans
-      console.error(`✅ Registered planner tools (planner_maker, planner_runner, list_plans)`);
-    }
-
-    // Register local-model tools (Ollama / LM Studio / llama.cpp / vLLM - zero-cost,
-    // offline, no API key). Registered unconditionally; profile membership is
-    // enforced by safeAddTool/isToolEnabled.
-    const { localQueryTool } = await import("./tools/local-tools.js");
-    safeAddTool(localQueryTool);
-    console.error(`✅ Registered local-model tools (local_query)`);
-
-
-    // Register workflow tools
+    // Register workflow tools (registers directly onto FastMCP, not via
+    // safeAddTool — intentionally OUT of the registry, kept in its original spot).
     registerWorkflowTools(server);
     console.error(`✅ Registered workflow tools (execute, list, create, visualize)`);
 
-    // Register workflow validator tools
-    safeAddTool(validateWorkflowTool);
-    safeAddTool(validateWorkflowFileTool);
-    console.error(`✅ Registered workflow validator tools`);
-
     // Session management tools removed - not needed for minimal TachiBot
-
-    // Register advanced mode tools (Verifier, Challenger, Scout, etc.)
-    if (areAdvancedModesAvailable()) {
-      const advancedTools = getAllAdvancedTools();
-      advancedTools.forEach(tool => {
-        safeAddTool(tool);
-      });
-      console.error(`✅ Registered ${advancedTools.length} advanced mode tools`);
-    }
-
-    // Register tachi tools (smart auto-routing AI assistant)
-    const tachiTools = getTachiTools();
-    tachiTools.forEach(tool => {
-      safeAddTool(tool);
-    });
-    console.error(`✅ Registered tachi tools (tachi, focus alias)`);
-
-    // Register prompt technique tools (transparent prompt engineering)
-    const promptTechniqueTools = getPromptTechniqueTools();
-    promptTechniqueTools.forEach(tool => {
-      safeAddTool(tool);
-    });
-    console.error(`✅ Registered ${promptTechniqueTools.length} prompt technique tools`);
 
     // Log startup information
     const perplexityCount = isPerplexityAvailable() ? getAllPerplexityTools().length : 0;

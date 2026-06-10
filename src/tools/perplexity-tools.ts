@@ -10,6 +10,8 @@ import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
+import { defineModelTool } from "./factory/define-model-tool.js";
+import { filesField, reasoningContextField } from "./factory/base-schemas.js";
 
 // Perplexity API configuration
 const PERPLEXITY_API_URL = "https://api.perplexity.ai";
@@ -102,12 +104,12 @@ export async function callPerplexity(
  * Perplexity Ask Tool
  * Search the web and retrieve up-to-date information
  */
-export const perplexityAskTool = {
+export const perplexityAskTool = defineModelTool({
   name: "perplexity_ask",
   description: "Web search. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("The search query or question (REQUIRED - put your question here)"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...filesField,
     searchDomain: z.enum(["general", "academic", "news", "social"])
       .optional()
       .describe("Search domain - must be one of: general, academic, news, social"),
@@ -147,13 +149,13 @@ export const perplexityAskTool = {
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Perplexity Research Tool
  * Deep research with multiple queries and synthesis
  */
-export const perplexityResearchTool = {
+export const perplexityResearchTool = defineModelTool({
   name: "perplexity_research",
   description: "Deep research using sonar-deep-research. Synthesizes hundreds of sources into a comprehensive report. Put your TOPIC in the 'topic' parameter.",
   parameters: z.object({
@@ -196,19 +198,19 @@ export const perplexityResearchTool = {
 
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Perplexity Reason Tool
  * Perform complex reasoning tasks
  */
-export const perplexityReasonTool = {
+export const perplexityReasonTool = defineModelTool({
   name: "perplexity_reason",
   description: "Reasoning with search. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
-    context: z.string().optional().describe("Additional context for the reasoning task"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
+    ...reasoningContextField,
+    ...filesField,
     approach: z.string()
       .optional()
       .describe("Reasoning approach (e.g., analytical, creative, systematic, comparative)")
@@ -255,13 +257,13 @@ ${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
     );
     return stripFormatting(result);
   }
-};
+});
 
 /**
  * Perplexity Fact Check Tool
  * Verify claims with evidence
  */
-export const perplexityFactCheckTool = {
+export const perplexityFactCheckTool = defineModelTool({
   name: "perplexity_fact_check",
   description: "Fact-check claims. Put the CLAIM in the 'claim' parameter.",
   parameters: z.object({
@@ -288,13 +290,13 @@ ${args.context ? `Additional context: ${args.context}` : ''}`
     
     return stripFormatting(await callPerplexity(messages, PerplexityModel.SONAR_PRO, "general", "month"));
   }
-};
+});
 
 /**
  * Perplexity Code Search Tool
  * Search for code examples and documentation
  */
-export const perplexityCodeSearchTool = {
+export const perplexityCodeSearchTool = defineModelTool({
   name: "perplexity_code_search",
   description: "Code search. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
@@ -323,7 +325,7 @@ Focus on:
     
     return stripFormatting(await callPerplexity(messages, PerplexityModel.SONAR_PRO));
   }
-};
+});
 
 /**
  * Check if Perplexity is available

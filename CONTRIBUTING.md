@@ -47,6 +47,10 @@ Use the issue templates and include:
 - Open a [Discussion](https://github.com/pavveu/tachibot-mcp/discussions)
 - Create an issue
 
+## Adding a tool
+
+Run `npm run add-tool` and answer the prompts (provider, wire name, description). It scaffolds a `defineModelTool(...)` in the provider file at the `// plop:tools`/`// plop:register` anchors and a test stub. Fill in the `parameters` and `execute` TODOs. The emitted-schema golden test (`npm run test:golden`) guards the tool-name/schema wire contract.
+
 ## License
 
 By submitting code to this project, you agree that your contributions will be licensed under the AGPL-3.0 license and you grant Pawel Pawlowski the right to relicense your contributions under alternative licenses (including commercial licenses).
