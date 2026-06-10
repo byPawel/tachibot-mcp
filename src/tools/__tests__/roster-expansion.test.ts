@@ -55,3 +55,15 @@ describe("roster expansion: default panel", () => {
     expect(DEFAULT_JURORS.length).toBeLessThanOrEqual(5);
   });
 });
+
+describe("local juror honesty", () => {
+  it("has exactly one local juror — no hermes persona variant", () => {
+    expect(JUROR_REGISTRY["local"]).toBeDefined();
+    expect(JUROR_REGISTRY["hermes"]).toBeUndefined();
+  });
+  it("local juror prompt anchors true identity (no false-role claim)", () => {
+    // The system prompt must not claim to BE a specific model like Hermes;
+    // it should describe the juror as a local open-weights model.
+    expect(JUROR_REGISTRY["local"].role).toMatch(/local open-weights/i);
+  });
+});

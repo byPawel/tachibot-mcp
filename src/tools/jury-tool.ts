@@ -115,18 +115,14 @@ export const JUROR_REGISTRY: Record<string, {
       { role: "user", content: q }
     ], OpenRouterModel.ERNIE_4_5_VL, 0.4, 3000),
   },
-  // Local open-weights jurors — free, offline, ZERO token cost. Their judgment is
+  // Local open-weights juror — free, offline, ZERO token cost. Its judgment is
   // uncorrelated with the frontier vendors above, which is exactly what reduces
-  // shared-bias blind spots (arXiv:2404.18796). Requires a running local server
-  // (Ollama/LM Studio); see local-tools.ts for setup.
-  hermes: {
-    label: "Hermes (Local · Free)",
-    role: "Independent local juror — uncorrelated with frontier vendors. Direct, unfiltered reasoning.",
-    call: async (q) => callLocal([
-      { role: "system", content: `You are Hermes, a local open-weights model acting as an independent juror. Give direct, unfiltered, well-reasoned judgment. ${FORMAT_INSTRUCTION}` },
-      { role: "user", content: q }
-    ], { temperature: 0.5, maxTokens: 4000 }),
-  },
+  // shared-bias blind spots (arXiv:2404.18796). Runs whatever LOCAL_LLM_MODEL
+  // points at (Ollama/LM Studio/llama.cpp/vLLM); see local-tools.ts for setup.
+  // NOTE: there is intentionally only ONE local juror. Persona variants on the
+  // same weights (the old 'hermes' juror) add fake diversity — jury independence
+  // comes from different model weights, not different system prompts — and
+  // claiming "You are Hermes" to a non-Hermes backend is a false-role prompt.
   local: {
     label: "Local LLM (Free)",
     role: "Local open-weights juror running offline at zero token cost.",
@@ -137,6 +133,14 @@ export const JUROR_REGISTRY: Record<string, {
   },
 };
 
+// Legacy juror names accepted for back-compat. 'hermes' was a persona variant
+// of the local juror (same weights, different costume) — panels that request it
+// get the honest local juror instead. Names are deduped after mapping so
+// "hermes,local" yields one local vote, not two correlated ones.
+const JUROR_ALIASES: Record<string, string> = {
+  hermes: "local",
+};
+
 export const DEFAULT_JURORS = ["grok", "deepseek", "kimi", "openai"];
 
 export const juryTool = defineModelTool({
@@ -145,7 +149,7 @@ export const juryTool = defineModelTool({
   parameters: z.object({
     question: z.string().describe("The question or problem for the jury to evaluate (REQUIRED)"),
     jurors: z.string().optional()
-      .describe("Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, ernie, hermes, local (free offline Ollama/LM Studio)"),
+      .describe("Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, ernie, local (free offline — uses LOCAL_LLM_MODEL via Ollama/LM Studio; 'hermes' accepted as legacy alias)"),
     mode: z.enum(["synthesize", "evaluate", "rank", "resolve"])
       .optional()
       .default("synthesize")
@@ -158,10 +162,14 @@ export const juryTool = defineModelTool({
     mode?: string;
     context?: string;
   }, { log, reportProgress }: any) => {
-    // Parse juror list
-    const jurorNames = args.jurors
-      ? args.jurors.split(",").map(j => j.trim().toLowerCase())
-      : DEFAULT_JURORS;
+    // Parse juror list; map legacy aliases, then dedupe so an alias and its
+    // target (e.g. "hermes,local") count as one juror, not two correlated votes.
+    const jurorNames = [...new Set(
+      (args.jurors
+        ? args.jurors.split(",").map(j => j.trim().toLowerCase())
+        : DEFAULT_JURORS
+      ).map(j => JUROR_ALIASES[j] ?? j)
+    )];
 
     // Validate jurors
     const validJurors = jurorNames.filter(j => JUROR_REGISTRY[j]);

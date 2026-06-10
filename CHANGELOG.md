@@ -5,6 +5,12 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Jury: removed the `hermes` juror** — it was a persona variant of `local` calling the same `LOCAL_LLM_MODEL` weights while claiming "You are Hermes" (a false-role prompt). Council-reviewed rationale: jury independence comes from different model weights, not different system prompts on the same backend. `hermes` is kept as a **legacy alias** of `local`; panels are deduped after alias mapping, so `jurors: "hermes,local"` now yields one local vote instead of two correlated ones. 12 jurors total.
+- Docs now describe the Hermes connection honestly: the local juror runs whatever `LOCAL_LLM_MODEL` points at — including a Nous Hermes agent endpoint, which itself runs on GPT, Claude, or local open-weights underneath.
+
 ## [2.22.0] - 2026-06-10
 
 ### Added

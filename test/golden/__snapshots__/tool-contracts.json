@@ -825,7 +825,7 @@
           "type": "string"
         },
         "jurors": {
-          "description": "Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, ernie, hermes, local (free offline Ollama/LM Studio)",
+          "description": "Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, ernie, local (free offline — uses LOCAL_LLM_MODEL via Ollama/LM Studio; 'hermes' accepted as legacy alias)",
           "type": "string"
         },
         "mode": {
