@@ -5,9 +5,10 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.23.0] - 2026-06-11
 
 ### Changed
+- **Tool registration via central scan registry** — merged the tool-standardization refactor (PR #5): all provider tools register through `src/tools/registry.ts` + `defineModelTool` factory, with golden wire-contract tests (57 tool schemas snapshot-locked) and a plop `add-tool` generator. No behavior change; the registered tool surface is byte-identical.
 - **Jury: removed the `hermes` juror** — it was a persona variant of `local` calling the same `LOCAL_LLM_MODEL` weights while claiming "You are Hermes" (a false-role prompt). Council-reviewed rationale: jury independence comes from different model weights, not different system prompts on the same backend. `hermes` is kept as a **legacy alias** of `local`; panels are deduped after alias mapping, so `jurors: "hermes,local"` now yields one local vote instead of two correlated ones. 12 jurors total.
 - Docs now describe the Hermes connection honestly (verified via grok_search against Nous docs/GitHub): the local juror runs whatever `LOCAL_LLM_MODEL` points at, e.g. a Nous Hermes build via Ollama. The Hermes *agent* is model-agnostic — it consumes 300+ backends (GPT, Claude, Gemini, self-hosted Ollama/vLLM); it is not an OpenAI-compatible endpoint to point `LOCAL_LLM_BASE_URL` at.
 
