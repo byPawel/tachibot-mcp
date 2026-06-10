@@ -43,6 +43,9 @@ export default {
     '**/?(*.)+(spec|test).ts',
   ],
 
+  // Don't descend into agent worktrees or build output
+  testPathIgnorePatterns: ['/node_modules/', '/.claude/', '/dist/'],
+
   // Coverage configuration
   collectCoverageFrom: [
     'src/**/*.ts',

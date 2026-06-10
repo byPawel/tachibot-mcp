@@ -5,6 +5,19 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.22.0] - 2026-06-10
+
+### Added
+- **Four new reasoning providers** via OpenRouter: **DeepSeek V4 Pro** (`deepseek_reason`, `deepseek_algo` — open-weight frontier math/CP, top AIME/CodeElo), **Zhipu GLM-5.1** (`glm_reason` — SWE-Bench Pro leader, agentic tool-use), **StepFun Step 3.7 Flash** (`stepfun_reason` — efficient reasoning at flash-tier cost), **Baidu ERNIE 4.5 VL** (`ernie_reason` — broad knowledge, human-preference strength). Each with quota fallbacks and 600s reasoning timeouts.
+- **Local model provider** (`local_query`): any OpenAI-compatible server — Ollama, LM Studio, llama.cpp, vLLM. Ollama gets the native `/api/chat` endpoint so `num_ctx` is honored; failures raise a typed `LocalLLMError`. Configure via `LOCAL_LLM_BASE_URL` / `LOCAL_LLM_MODEL` / `LOCAL_LLM_NUM_CTX`.
+- **Jury roster expansion**: new jurors `deepseek`, `glm`, `stepfun`, `ernie`, `hermes`, `local` (13 total). New lab-diverse default panel: `grok, deepseek, kimi, openai`. Offline jurors are dropped (not error-leaked) when the local server is down.
+- **Three new Claude Code skills**: `/lens` (long-context analysis over Kimi's 256K window), `/reflect` (grounded reflexion loop against external evidence), `/tot` (Tree-of-Thought with jury-based branch pruning). 12 skills total.
+- `deepseek_algo` is now the lead model in `/algo` (strongest algorithmic review).
+
+### Changed
+- Profile counts: minimal 12, code_focus 34, research_power 35, balanced 45, heavy_coding 50, full 57.
+- Merged the `local-models-ollama` release line (v2.21.3–v2.21.5): Gemini 3.5 Flash search tier, Grok 4.3 default, Kimi K2.6 repoints.
+
 ## [2.21.5] - 2026-06-04
 
 ### Fixed

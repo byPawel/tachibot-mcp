@@ -5,17 +5,17 @@
 ### Multi-Model AI Orchestration Platform
 
 [![Version](https://img.shields.io/badge/version-2.15.2-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
-[![Tools](https://img.shields.io/badge/tools-51_active-brightgreen.svg)](#-tool-ecosystem-51-tools)
+[![Tools](https://img.shields.io/badge/tools-57_active-brightgreen.svg)](#-tool-ecosystem-57-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**51 AI tools. 7 providers. One protocol.**
+**57 AI tools. 12 providers. One protocol.**
 
 Orchestrate Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi K2.5, and MiniMax M2.5
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
-[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-51-tools) &#183; [Documentation](https://tachibot.com/docs)
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-57-tools) &#183; [Documentation](https://tachibot.com/docs)
 
 <br>
 
@@ -70,7 +70,7 @@ Techniques are embedded directly in tool system prompts for automatic applicatio
 
 ## Skills (Claude Code)
 
-TachiBot ships with 9 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
+TachiBot ships with 12 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
 
 | Skill | What it does | Example |
 |-------|-------------|---------|
@@ -81,7 +81,10 @@ TachiBot ships with 9 slash commands for Claude Code. These orchestrate the tool
 | `/breakdown` | Strategic decomposition with pre-mortem | `/breakdown refactor payment module` |
 | `/decompose` | Split into sub-problems, deep-dive each one | `/decompose implement collaborative editor` |
 | `/prompt` | Recommend the right thinking technique (31 available) | `/prompt why do users churn` |
-| `/algo` | Algorithm analysis with 3 specialized models | `/algo optimize LRU cache O(1)` |
+| `/algo` | Algorithm analysis with 4 specialized models (DeepSeek lead) | `/algo optimize LRU cache O(1)` |
+| `/lens` | Long-context analysis over Kimi's 256K window | `/lens find inconsistencies in this spec` |
+| `/reflect` | Grounded reflexion loop — critique vs external evidence | `/reflect harden this auth middleware` |
+| `/tot` | Tree-of-Thought: branch → jury-prune → synthesize | `/tot design a rate limiter` |
 | `/tachi` | Help - see available skills, tools, key status | `/tachi` |
 
 Skills automatically adapt to your configured API keys. Even with just 1-2 providers, all skills work.
@@ -93,7 +96,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ## Key Features
 
 ### Multi-Model Intelligence
-- **51 AI Tools** across 7 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax
+- **57 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
 - **Gemini 3.5 Flash** (`gemini-3.5-flash`, GA May 19 2026) &mdash; Flash/search tier; reasoning default stays `gemini-3.1-pro-preview`
 - **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
 - **Smart Routing** &mdash; Automatic model selection for optimal results
@@ -109,11 +112,11 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 | Profile | Tools | Best For |
 |---------|-------|----------|
 | **Minimal** | 12 | Quick tasks, low token budget |
-| **Research Power** | 31 | Deep investigation, multi-source |
-| **Code Focus** | 29 | Software development, SWE tasks |
-| **Balanced** | 39 | General-purpose, mixed workflows |
-| **Heavy Coding** (default) | 45 | Max code tools + agentic workflows |
-| **Full** | 51 | Everything enabled |
+| **Research Power** | 35 | Deep investigation, multi-source |
+| **Code Focus** | 34 | Software development, SWE tasks |
+| **Balanced** | 45 | General-purpose, mixed workflows |
+| **Heavy Coding** (default) | 50 | Max code tools + agentic workflows |
+| **Full** | 57 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support
@@ -175,16 +178,16 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## Tool Ecosystem (51 Tools)
+## Tool Ecosystem (57 Tools)
 
 ### Research & Search (6)
 `perplexity_ask` &#183; `perplexity_research` &#183; `perplexity_reason` &#183; `grok_search` &#183; `openai_search` &#183; `gemini_search`
 
-### Reasoning & Planning (9)
-`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans`
+### Reasoning & Planning (13)
+`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans`
 
-### Code Intelligence (8)
-`kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `minimax_code` &#183; `minimax_agent`
+### Code Intelligence (9)
+`kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `deepseek_algo` &#183; `minimax_code` &#183; `minimax_agent`
 
 ### Analysis & Judgment (11)
 `gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_judge` &#183; `jury` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `kimi_long_context`
@@ -197,6 +200,9 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ### Prompt Engineering (3)
 `list_prompt_techniques` &#183; `preview_prompt_technique` &#183; `execute_prompt_technique`
+
+### Local Models (1)
+`local_query` &mdash; any OpenAI-compatible local server (Ollama / LM Studio / llama.cpp / vLLM). Zero-cost, offline, private; also available as `hermes`/`local` jury jurors.
 
 ### Advanced Modes (bonus)
 - **Challenger** &mdash; Critical analysis with multi-model fact-checking
