@@ -111,6 +111,7 @@ export class CostMonitor extends EventEmitter {
       "claude-3.5-sonnet",
       { model: "claude-3.5-sonnet", inputCost: 0.003, outputCost: 0.015 },
     ],
+    ["grok-4.3", { model: "grok-4.3", inputCost: 0.00125, outputCost: 0.0025 }],
     ["grok-4.20-0309-reasoning", { model: "grok-4.20-0309-reasoning", inputCost: 0.002, outputCost: 0.006 }],
   ]);
 

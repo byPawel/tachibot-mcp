@@ -5,15 +5,41 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.21.5] - 2026-06-04
 
 ### Fixed
-- **Kimi tools were calling a retired model.** All Kimi call sites hardcoded `moonshotai/kimi-k2.5`, which OpenRouter no longer serves — every `kimi_*` request failed with a JSON/timeout error (surfaced as "Kimi down"). The `KIMI_MODELS.K2_6` constant was already correct but unused by the tools. Repointed all 5 call sites — `kimi_thinking`, `kimi_code`, `kimi_decompose`, `kimi_long_context` (`openrouter-tools.ts`) and the Kimi juror (`jury-tool.ts`) — to `moonshotai/kimi-k2.6`.
+- **Kimi tools were calling a retired model.** All Kimi call sites hardcoded `moonshotai/kimi-k2.5`, which OpenRouter no longer serves — every `kimi_*` request failed with a JSON/timeout error (surfaced as "Kimi down"). The model config (`KIMI_MODELS.K2_6`) was already correct but unused by the tools. Repointed all 5 call sites — `kimi_thinking`, `kimi_code`, `kimi_decompose`, `kimi_long_context` (`openrouter-tools.ts`) and the Kimi juror (`jury-tool.ts`) — to `moonshotai/kimi-k2.6`.
 - Fixed the `MODEL_FALLBACKS` entry for `KIMI_K2_6`, which pointed at the retired `KIMI_K2_5`; it now falls back to `KIMI_K2_THINKING` (`moonshotai/kimi-k2-thinking`, still live).
 
 ### Notes
 - The `KIMI_K2_5` enum value is retained for back-compat but is marked do-not-call; `moonshotai/kimi-k2.5` is no longer a valid OpenRouter model ID.
-- Same fix as commit `89c1c8f` on the `local-models-ollama` branch (released there as v2.21.5); applied here as a direct hotfix to `main`.
+
+## [2.21.4] - 2026-06-01
+
+### Changed
+- **Grok bumped `grok-4.20` → `grok-4.3`** (xAI's Apr 30 2026 flagship). All Grok roles (`grok_reason`, `grok_code`, `grok_debug`, `grok_brainstorm`, `grok_search`, `grok_architect`) now resolve to `grok-4.3`: 1M context, lowest hallucination rate, and **cheaper** ($1.25/$2.50 vs 4.20's $2/$6). Pricing entry dropped `0.004` → `0.001875`.
+- `grok-4.3` is a single model ID with **configurable reasoning effort** (replacing 4.20's reasoning/non-reasoning/multi-agent split). `callGrok` now (a) treats `grok-4.3` as a long-timeout flagship (180s) and (b) forwards `reasoning.effort` for `grok-4.3` as well as multi-agent — so `grok_architect` keeps its `high`-effort behaviour.
+- Repointed `CURRENT_MODELS.grok`, `MODELS.GROK`, workflow `model-router` routing, `ModelProviderRegistry` alias, and `config.ts` available-models list to `grok-4.3`.
+
+### Added
+- `GROK_MODELS._4_3` / `GROK_MODELS._BUILD` constants (+ `GrokModel.GROK_4_3`, `GROK_4_3_LATEST`, `GROK_BUILD`). `grok-build-0.1` (May 29 2026 coding specialist, 256k ctx) added as a constant for future wiring.
+- Display name, pricing, OpenRouter-gateway mapping (`x-ai/grok-4.3`), cost-monitor entry, and ANSI terminal labels (all 4 style maps) for `grok-4.3`.
+
+### Notes
+- Legacy `GROK_4_20_*` enum keys are retained (now resolving to `grok-4.3`) for back-compat; grok-4.20 itself was **not** retired by xAI and remains a valid fallback.
+
+## [2.21.3] - 2026-05-29
+
+### Added
+- **Gemini 3.5 Flash** (`gemini-3.5-flash`) — went GA at Google I/O on 2026-05-19. Now the Flash/search tier: `gemini_query` (`flash`), `gemini_search` grounding, and `tool-mapper` `flash` routing all resolve to it via `GEMINI_MODELS.FLASH`. Agentic/coding focus, 1M context, $1.50/$9 per M tokens. SWE-bench Verified 78.8%, Terminal-bench 76.2%.
+- Display name + pricing for `gemini-3.5-flash`; ANSI terminal labels in all 4 style maps.
+
+### Changed
+- `GEMINI_MODELS.FLASH` alias bumped `gemini-3-flash-preview` → `gemini-3.5-flash`. The legacy `GEMINI_3_FLASH` constant is retained for `model-router.ts` cost tiers.
+
+### Notes
+- **Reasoning default unchanged** — `gemini.default` stays `gemini-3.1-pro-preview`. Gemini 3.5 **Pro** is not yet released (announced at I/O, expected June 2026, no API model ID). Swap the default to 3.5 Pro once it ships.
+- No OpenAI change: GPT-5.5 (Apr 23) remains the latest flagship; no GPT-5.6 exists.
 
 ## [2.21.2] - 2026-05-04
 

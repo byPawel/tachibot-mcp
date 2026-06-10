@@ -94,6 +94,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 
 ### Multi-Model Intelligence
 - **51 AI Tools** across 7 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax
+- **Gemini 3.5 Flash** (`gemini-3.5-flash`, GA May 19 2026) &mdash; Flash/search tier; reasoning default stays `gemini-3.1-pro-preview`
 - **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
 - **Smart Routing** &mdash; Automatic model selection for optimal results
 - **OpenRouter Gateway** &mdash; Optional single API key for all providers

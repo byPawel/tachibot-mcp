@@ -97,10 +97,14 @@ const nebulaTheme: Theme = {
     // Gemini - Google blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3.1-pro ' },
+    'gemini-3.5-flash': { bg: 'bgCyanBright', fg: 'black', label: ' gemini-3.5-flash ' },
     'gemini-3-flash-preview': { bg: 'bgCyanBright', fg: 'black', label: ' gemini-flash ' },
 
     // Grok - Magenta/purple
     grok: { bg: 'bgMagentaBright', fg: 'black', label: ' grok ' },
+    'grok-4.3': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.3 ' },
+    'grok-4.3-latest': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.3 ' },
+    'grok-build-0.1': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-build ' },
     'grok-4.20-0309-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20 ' },
     'grok-4.20-0309-non-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20 ' },
     'grok-4.20-multi-agent-0309': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20-ma ' },
@@ -192,10 +196,14 @@ const cyberpunkTheme: Theme = {
     // Gemini - Electric blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI-3 ' },
+    'gemini-3.5-flash': { bg: 'bgCyanBright', fg: 'black', label: ' ◈ GEMINI-3.5-FLASH ' },
     'gemini-3-flash-preview': { bg: 'bgCyanBright', fg: 'black', label: ' ◈ GEMINI-FLASH ' },
 
     // Grok - Hot magenta
     grok: { bg: 'bgMagentaBright', fg: 'black', label: ' ✦ GROK ' },
+    'grok-4.3': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.3 ' },
+    'grok-4.3-latest': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.3 ' },
+    'grok-build-0.1': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-build ' },
     'grok-4.20-0309-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20 ' },
     'grok-4.20-0309-non-reasoning': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20 ' },
     'grok-4.20-multi-agent-0309': { bg: 'bgMagentaBright', fg: 'black', label: ' grok-4.20-ma ' },
@@ -286,9 +294,13 @@ const minimalTheme: Theme = {
 
     gemini: { bg: 'bgBlack', fg: 'blue', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlack', fg: 'blue', label: ' gemini-3 ' },
+    'gemini-3.5-flash': { bg: 'bgBlack', fg: 'blueBright', label: ' gemini-3.5-flash ' },
     'gemini-3-flash-preview': { bg: 'bgBlack', fg: 'blueBright', label: ' gemini-flash ' },
 
     grok: { bg: 'bgBlack', fg: 'magenta', label: ' grok ' },
+    'grok-4.3': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.3 ' },
+    'grok-4.3-latest': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.3 ' },
+    'grok-build-0.1': { bg: 'bgBlack', fg: 'magenta', label: ' grok-build ' },
     'grok-4.20-0309-reasoning': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.20 ' },
     'grok-4.20-0309-non-reasoning': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.20 ' },
     'grok-4.20-multi-agent-0309': { bg: 'bgBlack', fg: 'magenta', label: ' grok-4.20-ma ' },
@@ -374,9 +386,13 @@ const oceanTheme: Theme = {
 
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3 ' },
+    'gemini-3.5-flash': { bg: 'bgBlue', fg: 'white', label: ' gemini-3.5-flash ' },
     'gemini-3-flash-preview': { bg: 'bgBlue', fg: 'white', label: ' gemini-flash ' },
 
     grok: { bg: 'bgMagenta', fg: 'white', label: ' grok ' },
+    'grok-4.3': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.3 ' },
+    'grok-4.3-latest': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.3 ' },
+    'grok-build-0.1': { bg: 'bgMagenta', fg: 'white', label: ' grok-build ' },
     'grok-4.20-0309-reasoning': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.20 ' },
     'grok-4.20-0309-non-reasoning': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.20 ' },
     'grok-4.20-multi-agent-0309': { bg: 'bgMagenta', fg: 'white', label: ' grok-4.20-ma ' },
