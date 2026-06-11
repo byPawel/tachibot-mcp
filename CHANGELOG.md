@@ -5,6 +5,11 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.1] - 2026-06-11
+
+### Changed
+- **MiniMax M2.7 → M3** (`minimax/minimax-m3`, released May 31 on OpenRouter, API-verified via grok_search): 1M-token context (up from 200K), MSA sparse attention (~1/20 compute at 1M ctx vs prior gen), native multimodal, tuned for long-horizon agentic work. Same promo pricing as M2.7 ($0.30/$1.20 per M). Powers `minimax_code`, `minimax_agent`, and the `minimax` juror. M2.7 kept as quota fallback via `MODEL_FALLBACKS`.
+
 ## [2.23.0] - 2026-06-11
 
 ### Changed

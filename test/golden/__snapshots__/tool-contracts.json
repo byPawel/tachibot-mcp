@@ -1159,7 +1159,7 @@
       "readOnlyHint": true,
       "title": "MiniMax Agent"
     },
-    "description": "Multi-step task decomposition and execution with MiniMax M2.7: plan, analyze, research, decide. Use when a task needs breakdown into steps before execution. For single-pass code tasks, use minimax_code instead. Put TASK in 'task' parameter.",
+    "description": "Multi-step task decomposition and execution with MiniMax M3: plan, analyze, research, decide. Use when a task needs breakdown into steps before execution. For single-pass code tasks, use minimax_code instead. Put TASK in 'task' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -1210,7 +1210,7 @@
       "readOnlyHint": true,
       "title": "MiniMax Code Generation"
     },
-    "description": "Single-pass code operations with MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index). Put your REQUEST in the 'query' parameter. For multi-step tasks, use minimax_agent instead.",
+    "description": "Single-pass code operations with MiniMax M3 (1M ctx, strong agentic/coding). Put your REQUEST in the 'query' parameter. For multi-step tasks, use minimax_agent instead.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,

@@ -110,9 +110,10 @@ export const KIMI_MODELS = {
 } as const;
 
 // MiniMax Models (MiniMax via OpenRouter)
-// M2.7 released Mar 18, 2026 - Self-evolving, #1 AI Intelligence Index, SWE-Pro 56.22%
+// M3 released May 31, 2026 - 1M ctx, MSA sparse attention (~1/20 compute at 1M), native multimodal
 export const MINIMAX_MODELS = {
-  M2_7: "minimax/minimax-m2.7",                 // 2300B/100B MoE, 200K ctx, SWE-Pro 56.22%, Multi-SWE #1, $0.30/$1.20
+  M3: "minimax/minimax-m3",                     // 1M ctx, MSA sparse attention, multimodal, agentic/coding, $0.30/$1.20
+  M2_7: "minimax/minimax-m2.7",                 // 2300B/100B MoE, 200K ctx, SWE-Pro 56.22%, Multi-SWE #1 (fallback)
   M2_5: "minimax/minimax-m2.5",                 // SWE-Bench 80.2%, 37% faster than M2.1 (legacy)
   M2_1: "minimax/minimax-m2.1",                 // 230B/10B MoE - SWE-Bench 72.5% (legacy)
 } as const;
@@ -212,7 +213,7 @@ export const CURRENT_MODELS = {
     kimi: KIMI_MODELS.K2_6,                // K2.6 (Apr 2026): 1T MoE, SWE-bench Pro leader
     qwen: QWEN_MODELS.CODER_NEXT,          // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70% (no 3.6-coder yet)
     qwen_reason: QWEN_MODELS.MAX_THINKING, // 235B MoE thinking mode (HMMT 98%) — still best for reasoning
-    minimax: MINIMAX_MODELS.M2_7,          // M2.7: SWE-Pro 56.22%, Multi-SWE #1, self-evolving
+    minimax: MINIMAX_MODELS.M3,            // M3: 1M ctx, MSA sparse attention, agentic/coding
   }
 } as const;
 
@@ -338,12 +339,12 @@ export const TOOL_DEFAULTS = {
   },
   // MiniMax tools - VERY CHEAP, open source
   minimax_code: {
-    model: MINIMAX_MODELS.M2_7,           // SWE-Pro 56.22%, Multi-SWE #1
+    model: MINIMAX_MODELS.M3,             // 1M ctx, MSA sparse attention, agentic/coding
     maxTokens: 4000,
     temperature: 0.3,                      // Lower for precise code
   },
   minimax_agent: {
-    model: MINIMAX_MODELS.M2_7,           // SWE-Pro 56.22%, self-evolving, #1 AI Intelligence Index
+    model: MINIMAX_MODELS.M3,             // 1M ctx, multimodal, long-horizon agentic work
     maxTokens: 4000,
     temperature: 0.5,                      // Balanced for agentic tasks
   },
@@ -419,6 +420,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen/qwen3-235b-a22b-thinking-2507": "qwen-235b-thinking",
 
   // MiniMax
+  "minimax/minimax-m3": "minimax-m3",
   "minimax/minimax-m2.7": "minimax-m2.7",
   "minimax/minimax-m2.5": "minimax-m2.5",
   "minimax/minimax-m2.1": "minimax-m2.1",
@@ -480,7 +482,8 @@ export const MODEL_PRICING: Record<string, number> = {
   "qwen/qwen3-235b-a22b-thinking-2507": 0.000822, // ($0.15 + $1.50) / 2 / 1000
 
   // OpenRouter models - MiniMax (VERY CHEAP!)
-  "minimax/minimax-m2.7": 0.00075,        // ($0.30 + $1.20) / 2 / 1000 - flagship
+  "minimax/minimax-m3": 0.00075,          // ($0.30 + $1.20) / 2 / 1000 - flagship (promo pricing)
+  "minimax/minimax-m2.7": 0.00075,        // ($0.30 + $1.20) / 2 / 1000 - fallback
   "minimax/minimax-m2.5": 0.000685,       // legacy
   "minimax/minimax-m2.1": 0.000685,       // legacy
 } as const;

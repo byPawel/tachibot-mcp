@@ -161,8 +161,8 @@ export async function getAllTools(
         kimiDecomposeTool, // Task decomposition (Kimi K2.5 Agent Swarm)
         kimiLongContextTool, // Long-context analysis (Kimi K2.5 - 256K)
         qwenReasonTool, // Heavy reasoning (Qwen3-Max-Thinking >1T params)
-        minimaxCodeTool, // MiniMax M2.7 - SWE-Pro 56.22%
-        minimaxAgentTool, // MiniMax M2.7 - agentic workflows
+        minimaxCodeTool, // MiniMax M3 - 1M ctx, agentic/coding
+        minimaxAgentTool, // MiniMax M3 - agentic workflows
         deepseekReasonTool, // DeepSeek V4 Pro — frontier reasoning/math (open-weight)
         deepseekAlgoTool, // DeepSeek V4 Pro — algorithmic code review (top AIME/CodeElo)
         glmReasonTool, // Zhipu GLM-5.1 — agentic reasoning (SWE-Bench Pro leader)

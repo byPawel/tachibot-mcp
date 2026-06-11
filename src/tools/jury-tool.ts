@@ -79,9 +79,9 @@ export const JUROR_REGISTRY: Record<string, {
     label: "MiniMax (Agentic)",
     role: "Focus on practical execution steps and agentic task planning.",
     call: async (q) => callOpenRouter([
-      { role: "system", content: `You are MiniMax M2.7, a self-evolving agentic model (SWE-Pro 56.22%, #1 AI Intelligence Index). Focus on practical execution and step-by-step plans. ${FORMAT_INSTRUCTION}` },
+      { role: "system", content: `You are MiniMax M3, an agentic model built for long-horizon multi-step work (1M context, MSA sparse attention). Focus on practical execution and step-by-step plans. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.MINIMAX_M2_7, 0.5, 3000),
+    ], OpenRouterModel.MINIMAX_M3, 0.5, 3000),
   },
   deepseek: {
     label: "DeepSeek V4 Pro (Frontier Reasoning)",

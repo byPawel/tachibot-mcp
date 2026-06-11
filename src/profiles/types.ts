@@ -54,8 +54,8 @@ export interface ToolsConfig {
   kimi_decompose: boolean;       // NEW: Kimi K2.5 (task decomposition)
   kimi_long_context: boolean;    // NEW: Kimi K2.5 (256K context analysis)
   qwen_competitive: boolean;
-  minimax_code: boolean;       // MiniMax M2.7 (SWE-Pro 56.22%, #1 AI Intelligence Index)
-  minimax_agent: boolean;      // MiniMax M2.7 (agentic, self-evolving)
+  minimax_code: boolean;       // MiniMax M3 (1M ctx, MSA sparse attention, agentic/coding)
+  minimax_agent: boolean;      // MiniMax M3 (agentic, multimodal, long-horizon)
   deepseek_reason: boolean;    // DeepSeek V4 Pro (open-weight frontier reasoning/math)
   deepseek_algo: boolean;      // DeepSeek V4 Pro (algorithmic code review — top AIME/CodeElo)
   glm_reason: boolean;         // Zhipu GLM-5.1 (agentic reasoning, SWE-Bench Pro leader)

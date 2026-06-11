@@ -68,7 +68,7 @@ mcp__tachibot-mcp__qwen_reason({
 })
 ```
 
-**minimax_code** — Implementation review (SWE-Bench 80.2%, cheap second opinion):
+**minimax_code** — Implementation review (MiniMax M3, 1M ctx, cheap second opinion):
 ```
 mcp__tachibot-mcp__minimax_code({
   query: "[problem description + focus]",

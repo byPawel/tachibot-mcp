@@ -12,7 +12,7 @@
 
 **57 AI tools. 12 providers. One protocol.**
 
-Orchestrate Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi K2.5, and MiniMax M2.5
+Orchestrate Perplexity, Grok, GPT-5.5, Gemini, Qwen, Kimi K2.6, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 [Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-57-tools) &#183; [Documentation](https://tachibot.com/docs)
