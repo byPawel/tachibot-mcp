@@ -82,3 +82,7 @@ devlog/
 
 # Internal plans (may contain personal/sensitive content)
 docs/plans/
+
+# Local artifacts
+.plan-cache/
+evals/
