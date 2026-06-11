@@ -11,7 +11,7 @@ export * from './memory-manager.js';
 // Provider exports
 export * from './providers/local-provider.js';
 export * from './providers/mem0-provider.js';
-// export * from './providers/dokoro-provider.js';
+export * from './providers/dokoro-provider.js';
 // export * from './providers/hybrid-provider.js';
 
 // Main API

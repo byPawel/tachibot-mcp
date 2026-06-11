@@ -18,7 +18,7 @@ import { IMemoryProvider } from './memory-interface.js';
 import { LocalProvider } from './providers/local-provider.js';
 import { Mem0Provider } from './providers/mem0-provider.js';
 import { randomBytes } from 'crypto';
-// import { DokoroProvider } from './providers/dokoro-provider.js';
+import { DokoroProvider } from './providers/dokoro-provider.js';
 // import { HybridProvider } from './providers/hybrid-provider.js';
 
 /**
@@ -309,9 +309,14 @@ export class HierarchicalMemoryManager {
         }
       
       case 'dokoro':
-        // TODO: Implement Dokoro provider
-        console.warn('Dokoro provider not yet implemented');
-        return null;
+        try {
+          const provider = new DokoroProvider(this.config.dokoro || {});
+          await provider.initialize();
+          return provider;
+        } catch (error) {
+          console.error('Failed to create Dokoro provider:', error);
+          return null;
+        }
       
       case 'local':
         return await this.createLocalProvider();
