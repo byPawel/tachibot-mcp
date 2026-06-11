@@ -29,6 +29,12 @@ export interface DokoroConfig {
   workspace?: string;
   projectId?: string;
   enableSync?: boolean;
+  /**
+   * When true, project-scoped queries match item.projectId exactly,
+   * excluding files without a projectId (e.g. dokoro daily/ plans).
+   * Default false: untagged files stay visible to project queries.
+   */
+  strictProjectFilter?: boolean;
 }
 
 /**

@@ -33,6 +33,27 @@ function makeItem(overrides: Partial<MemoryItem> = {}): MemoryItem {
 describe('DokoroProvider (file-backed)', () => {
   let workspace: string;
   let provider: DokoroProvider;
+  let savedDokoroProject: string | undefined;
+  let savedDokoroConnection: string | undefined;
+
+  beforeAll(() => {
+    // DOKORO_PROJECT would inject a projectId into untagged files (skewing
+    // the project-filter assertions) and DOKORO_CONNECTION would override
+    // DOKORO_PATH in the env-resolution test
+    savedDokoroProject = process.env.DOKORO_PROJECT;
+    savedDokoroConnection = process.env.DOKORO_CONNECTION;
+    delete process.env.DOKORO_PROJECT;
+    delete process.env.DOKORO_CONNECTION;
+  });
+
+  afterAll(() => {
+    if (savedDokoroProject !== undefined) {
+      process.env.DOKORO_PROJECT = savedDokoroProject;
+    }
+    if (savedDokoroConnection !== undefined) {
+      process.env.DOKORO_CONNECTION = savedDokoroConnection;
+    }
+  });
 
   beforeEach(async () => {
     workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'dokoro-provider-test-'));
@@ -107,6 +128,88 @@ describe('DokoroProvider (file-backed)', () => {
     expect(await provider.delete(id)).toBe(true);
     await expect(fs.access(filePath)).rejects.toThrow();
     expect(await provider.delete(id)).toBe(false);
+  });
+
+  it('store() syncs the file-backed id onto the caller\'s item', async () => {
+    const item = makeItem();
+    const preStoreId = item.id;
+
+    const returnedId = await provider.store(item);
+
+    expect(item.id).toBe(returnedId);
+    expect(item.id).not.toBe(preStoreId);
+
+    // Callers holding the item (not the return value) can update/delete
+    expect(await provider.update(item.id, { content: 'Synced-id update.' })).toBe(true);
+    const filePath = path.join(workspace, 'sessions', `${item.id}.md`);
+    expect(await fs.readFile(filePath, 'utf-8')).toContain('Synced-id update.');
+
+    expect(await provider.delete(item.id)).toBe(true);
+    await expect(fs.access(filePath)).rejects.toThrow();
+  });
+
+  it('flips to in-memory mode when a write fails mid-session', async () => {
+    // Stub the write helper (chmod-based simulation is flaky on CI)
+    (provider as any).writeMemoryFile = async () => {
+      throw new Error('disk full (simulated)');
+    };
+
+    const item = makeItem({ content: 'survives the simulated disk failure' });
+    const id = await provider.store(item);
+    expect(id).toBe(item.id);
+
+    // retrieve() must switch modes together with store(): the item is
+    // findable, and no file was written
+    const results = await provider.retrieve({ text: 'simulated disk failure' });
+    expect(results).toHaveLength(1);
+    const files = await fs.readdir(path.join(workspace, 'sessions'));
+    expect(files).toHaveLength(0);
+
+    // update/delete operate on the fallback store too
+    expect(await provider.update(id, { content: 'updated in fallback' })).toBe(true);
+    expect(await provider.delete(id)).toBe(true);
+  });
+
+  it('project filter is lenient by default and exact-match with strictProjectFilter', async () => {
+    await provider.store(makeItem({ content: 'tagged alpha memory', projectId: 'alpha' }));
+    await provider.store(makeItem({ content: 'tagged beta memory', projectId: 'beta' }));
+    await provider.store(makeItem({ content: 'untagged workspace note' }));
+
+    // Lenient default: matching project + untagged files; other projects excluded
+    const lenient = await provider.retrieve({ projectId: 'alpha' });
+    const lenientContents = lenient.map(i => i.content);
+    expect(lenientContents).toEqual(
+      expect.arrayContaining(['tagged alpha memory', 'untagged workspace note'])
+    );
+    expect(lenientContents).not.toContain('tagged beta memory');
+
+    // Strict mode: exact match only
+    const strict = new DokoroProvider({ connectionString: workspace, strictProjectFilter: true });
+    await strict.initialize();
+    const strictResults = await strict.retrieve({ projectId: 'alpha' });
+    expect(strictResults.map(i => i.content)).toEqual(['tagged alpha memory']);
+    await strict.close();
+  });
+
+  it('explicit-undefined config fields do not clobber env/default resolution', async () => {
+    const saved = process.env.DOKORO_PATH;
+    process.env.DOKORO_PATH = workspace;
+    try {
+      const fromEnv = new DokoroProvider({ connectionString: undefined, workspace: undefined });
+      await fromEnv.initialize();
+
+      const id = await fromEnv.store(makeItem({ content: 'resolved via env' }));
+      await expect(
+        fs.access(path.join(workspace, 'sessions', `${id}.md`))
+      ).resolves.toBeUndefined();
+      await fromEnv.close();
+    } finally {
+      if (saved !== undefined) {
+        process.env.DOKORO_PATH = saved;
+      } else {
+        delete process.env.DOKORO_PATH;
+      }
+    }
   });
 
   it('falls back to in-memory storage when the workspace is unwritable', async () => {

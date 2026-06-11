@@ -45,12 +45,14 @@ export class DokoroProvider extends BaseMemoryProvider {
 
   constructor(config: DokoroConfig) {
     super();
+    // Spread first, then resolve defaults — explicit-undefined fields in the
+    // caller's config must not clobber env/default resolution.
     this.config = {
-      connectionString: config.connectionString || process.env.DOKORO_CONNECTION,
-      workspace: config.workspace || process.env.DOKORO_WORKSPACE || 'default',
-      projectId: config.projectId || process.env.DOKORO_PROJECT,
-      enableSync: config.enableSync !== false,
-      ...config
+      ...config,
+      connectionString: config.connectionString ?? process.env.DOKORO_CONNECTION,
+      workspace: config.workspace ?? process.env.DOKORO_WORKSPACE ?? 'default',
+      projectId: config.projectId ?? process.env.DOKORO_PROJECT,
+      enableSync: config.enableSync !== false
     };
 
     // connectionString acts as a DOKORO_PATH override; same resolution
@@ -92,10 +94,20 @@ export class DokoroProvider extends BaseMemoryProvider {
         const filePath = await this.writeMemoryFile(item);
         this.metrics.totalItems++;
         this.metrics.itemsByTier[item.tier]++;
-        // The file basename (without .md) is the durable id for file-backed items
-        return path.basename(filePath, '.md');
+        // The file basename (without .md) is the durable id for file-backed
+        // items. Sync it back onto the caller's item so code holding the
+        // pre-store id via item.id can still update()/delete() later.
+        item.id = path.basename(filePath, '.md');
+        return item.id;
       } catch (error) {
-        console.error('Dokoro provider: failed to write memory file, storing in memory:', error);
+        // Flip to in-memory mode so store/retrieve/update/delete switch
+        // together — leaving fileBacked true would strand this item in the
+        // fallback store where retrieve() (file scan) never sees it.
+        this.fileBacked = false;
+        console.error(
+          'Dokoro provider: failed to write memory file, switching to in-memory fallback for this session:',
+          error
+        );
       }
     }
 
@@ -469,7 +481,18 @@ export class DokoroProvider extends BaseMemoryProvider {
     }
 
     if (query.projectId) {
-      results = results.filter(item => !item.projectId || item.projectId === query.projectId);
+      if (this.config.strictProjectFilter) {
+        results = results.filter(item => item.projectId === query.projectId);
+      } else {
+        // Deliberately lenient default: dokoro daily/ files (plans, work
+        // records) carry no projectId in their frontmatter, so exact-match
+        // filtering would hide the entire dokoro workspace whenever the
+        // memory manager injects its default projectId into queries. The
+        // tradeoff is that untagged files from other projects sharing the
+        // same workspace leak into results. Set strictProjectFilter: true
+        // in DokoroConfig for exact-match project isolation.
+        results = results.filter(item => !item.projectId || item.projectId === query.projectId);
+      }
     }
     if (query.userId) {
       results = results.filter(item => !item.userId || item.userId === query.userId);
