@@ -20,13 +20,21 @@ export interface Mem0Config {
 }
 
 /**
- * Dokoro integration configuration
+ * Dokoro integration configuration.
+ * dokoro is file-backed: connectionString is a path override for the
+ * workspace folder (defaults to DOKORO_PATH env or {cwd}/dokoro).
  */
 export interface DokoroConfig {
   connectionString?: string;
   workspace?: string;
   projectId?: string;
   enableSync?: boolean;
+  /**
+   * When true, project-scoped queries match item.projectId exactly,
+   * excluding files without a projectId (e.g. dokoro daily/ plans).
+   * Default false: untagged files stay visible to project queries.
+   */
+  strictProjectFilter?: boolean;
 }
 
 /**
@@ -279,9 +287,8 @@ export function validateMemoryConfig(config: MemoryConfig): { valid: boolean; er
     errors.push('Mem0 provider requires API key (MEM0_API_KEY or config.mem0.apiKey)');
   }
   
-  if (config.provider === 'dokoro' && !config.dokoro?.connectionString && !process.env.DOKORO_CONNECTION) {
-    errors.push('Dokoro provider requires connection string');
-  }
+  // Dokoro is file-backed: connectionString is optional (falls back to
+  // DOKORO_PATH env or {cwd}/dokoro), so no validation needed here.
   
   if (config.provider === 'local' && !config.local?.path) {
     errors.push('Local provider requires storage path');
