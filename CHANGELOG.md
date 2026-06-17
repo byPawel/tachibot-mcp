@@ -5,6 +5,11 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.3] - 2026-06-17
+
+### Changed
+- **GLM-5.1 → GLM-5.2** (`z-ai/glm-5.2`, released Jun 13 on OpenRouter, verified via grok_search + web): Zhipu's open-weights flagship for long-horizon tasks — usable 1M-token context (up from agentic-tier 5.1), two thinking-effort levels (High/Max). SWE-Bench Pro 62.1 (up from 58.4), Terminal-Bench 2.1 81.0 (up from 62.0); beats GPT-5.5 on several long-horizon coding benchmarks at ~1/6 the cost. List price $1.40/$4.40 per M (262K max output). Powers `glm_reason` and the `glm` juror. GLM-5.1 kept as quota fallback via `MODEL_FALLBACKS` (GLM-5.2 → GLM-5.1 → GLM-5); the `glm` substring already routes 5.2 to the 600s reasoning timeout.
+
 ## [2.23.2] - 2026-06-15
 
 ### Changed

@@ -47,8 +47,9 @@ export enum OpenRouterModel {
   DEEPSEEK_V4_FLASH = "deepseek/deepseek-v4-flash",     // Cheaper/faster V4 (fallback)
   DEEPSEEK_R1_0528 = "deepseek/deepseek-r1-0528",       // Reasoning-focused math variant (fallback)
 
-  // Zhipu GLM models - agentic / SWE-Bench Pro leader
-  GLM_5_1 = "z-ai/glm-5.1",                            // SWE-Bench Pro leader, agentic tool-use (early 2026)
+  // Zhipu GLM models - agentic / long-horizon coding (open-weights)
+  GLM_5_2 = "z-ai/glm-5.2",                            // CURRENT (Jun 2026): 1M ctx, SWE-Bench Pro 62.1, Terminal-Bench 2.1 81.0, $1.40/$4.40
+  GLM_5_1 = "z-ai/glm-5.1",                            // SWE-Bench Pro 58.4, agentic tool-use (fallback)
   GLM_5 = "z-ai/glm-5",                                // GLM-5 base (fallback)
 
   // StepFun models - efficient reasoning (196B, high AIME/SWE-Verified)
@@ -66,6 +67,7 @@ const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.KIMI_K2_7_CODE]: OpenRouterModel.KIMI_K2_6,   // Fall back to K2.6 if K2.7-Code fails
   [OpenRouterModel.KIMI_K2_6]: OpenRouterModel.KIMI_K2_THINKING,  // Fall back to k2-thinking if K2.6 fails (k2.5 retired from OpenRouter)
   [OpenRouterModel.DEEPSEEK_V4_PRO]: OpenRouterModel.DEEPSEEK_V4_FLASH, // Fall back to V4 Flash if Pro is rate-limited
+  [OpenRouterModel.GLM_5_2]: OpenRouterModel.GLM_5_1,           // Fall back to GLM-5.1 if 5.2 fails
   [OpenRouterModel.GLM_5_1]: OpenRouterModel.GLM_5,              // Fall back to GLM-5 base if 5.1 fails
   [OpenRouterModel.STEPFUN_3_7]: OpenRouterModel.STEPFUN_3_5, // Fall back to 3.5 flash if 3.7 fails
   [OpenRouterModel.MINIMAX_M3]: OpenRouterModel.MINIMAX_M2_7, // Fall back to M2.7 if M3 fails
@@ -1380,12 +1382,12 @@ ${FORMAT_INSTRUCTION}`;
 
 /**
  * GLM Reason Tool
- * Agentic reasoning & tool-use planning with Zhipu GLM-5.1 (SWE-Bench Pro leader).
+ * Agentic reasoning & tool-use planning with Zhipu GLM-5.2 (1M ctx, long-horizon coding leader).
  * Best for: agentic task planning, tool-use strategy, software-engineering reasoning.
  */
 export const glmReasonTool = {
   name: "glm_reason",
-  description: "Agentic reasoning & tool-use planning with Zhipu GLM-5.1 (SWE-Bench Pro leader). Put your PROBLEM in the 'problem' parameter.",
+  description: "Agentic reasoning & tool-use planning with Zhipu GLM-5.2 (1M ctx, top open-weights for long-horizon coding). Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
@@ -1415,7 +1417,7 @@ export const glmReasonTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Zhipu GLM-5.1, a frontier agentic model and SWE-Bench Pro leader, strong at tool-use planning and software-engineering reasoning.
+        content: `You are Zhipu GLM-5.2, a frontier open-weights agentic model with a 1M-token context, strong at long-horizon coding, tool-use planning and software-engineering reasoning.
 ${approachPrompts[args.approach || 'agentic']}.
 State your plan, reason through it, then give a decisive conclusion. Flag assumptions and risks explicitly.
 ${args.context ? `Context: ${args.context}` : ''}
@@ -1429,7 +1431,7 @@ ${FORMAT_INSTRUCTION}`
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.GLM_5_1, 0.3, 8000),
+      () => callOpenRouter(messages, OpenRouterModel.GLM_5_2, 0.3, 8000),
       reportFn
     );
   }
@@ -1569,7 +1571,7 @@ export function getAllOpenRouterTools() {
     // NEW tools (Jun 2026)
     deepseekReasonTool,  // DeepSeek V4 Pro - frontier reasoning/math (open-weight)
     deepseekAlgoTool,    // DeepSeek V4 Pro - algorithmic code review (top AIME/CodeElo)
-    glmReasonTool,       // Zhipu GLM-5.1 - agentic reasoning (SWE-Bench Pro leader)
+    glmReasonTool,       // Zhipu GLM-5.2 - agentic reasoning (1M ctx, long-horizon coding)
     stepfunReasonTool,   // StepFun Step 3.7 Flash - efficient reasoning
     ernieReasonTool,     // Baidu ERNIE 4.5 VL - broad-knowledge reasoning
   ];

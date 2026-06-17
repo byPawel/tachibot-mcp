@@ -92,12 +92,12 @@ export const JUROR_REGISTRY: Record<string, {
     ], OpenRouterModel.DEEPSEEK_V4_PRO, 0.3, 4000),
   },
   glm: {
-    label: "GLM-5.1 (Agentic)",
+    label: "GLM-5.2 (Agentic)",
     role: "Reason as an agent: plan, anticipate failure modes, decide. Strong on tool-use and SWE.",
     call: async (q) => callOpenRouter([
-      { role: "system", content: `You are Zhipu GLM-5.1, a SWE-Bench Pro leader. Plan, reason through tool-use/steps, then give a decisive verdict. ${FORMAT_INSTRUCTION}` },
+      { role: "system", content: `You are Zhipu GLM-5.2, a frontier open-weights agentic model (1M ctx, top long-horizon coding). Plan, reason through tool-use/steps, then give a decisive verdict. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.GLM_5_1, 0.3, 4000),
+    ], OpenRouterModel.GLM_5_2, 0.3, 4000),
   },
   stepfun: {
     label: "StepFun 3.7 (Efficient Reasoning)",

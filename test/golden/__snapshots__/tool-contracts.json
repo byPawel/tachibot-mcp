@@ -509,7 +509,7 @@
     "name": "gemini_search"
   },
   {
-    "description": "Agentic reasoning & tool-use planning with Zhipu GLM-5.1 (SWE-Bench Pro leader). Put your PROBLEM in the 'problem' parameter.",
+    "description": "Agentic reasoning & tool-use planning with Zhipu GLM-5.2 (1M ctx, top open-weights for long-horizon coding). Put your PROBLEM in the 'problem' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
