@@ -5,6 +5,14 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.2] - 2026-06-15
+
+### Changed
+- **Kimi K2.6 → K2.7-Code** (`moonshotai/kimi-k2.7-code`, released Jun 12 on OpenRouter, verified via grok_search): coding-specialized variant built on K2.6 — +21.8% on Kimi Code Bench v2 with lower token use, 262K context, native multimodal, always-thinking mode. List price $0.75/$3.50 per M. Now powers all Kimi tools — `kimi_thinking`, `kimi_code`, `kimi_decompose`, `kimi_long_context` (`openrouter-tools.ts`) and the `kimi` juror (`jury-tool.ts`). K2.6 kept as quota fallback via `MODEL_FALLBACKS` (K2.7-Code → K2.6 → K2-Thinking); the `kimi` substring already routes K2.7-Code to the 600s reasoning timeout (regression test added).
+
+### Notes
+- No general-purpose Kimi K2.7 exists yet — K2.7-Code is the only post-K2.6 release. The coding-tuned model now also serves the reasoning/long-context tools and the kimi juror.
+
 ## [2.23.1] - 2026-06-11
 
 ### Changed

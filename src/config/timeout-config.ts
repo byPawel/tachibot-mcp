@@ -58,8 +58,8 @@ export function getTimeoutConfig(): TimeoutConfig {
  * Thinking/reasoning/swarm models get extended timeout (600s default).
  * Standard models get 180s default.
  *
- * NOTE: All Kimi K2 variants (incl. 'moonshotai/kimi-k2.6') run the Agent Swarm
- * and need the extended timeout — but their model IDs don't contain 'thinking',
+ * NOTE: All Kimi K2 variants (incl. 'moonshotai/kimi-k2.7-code', which is always in
+ * thinking mode) need the extended timeout — but their model IDs don't contain 'thinking',
  * so we match 'kimi' explicitly. Same applies to DeepSeek V4 and Zhipu GLM, whose
  * reasoning passes are slow but whose IDs lack the 'thinking'/'reasoning' marker.
  * This keeps primary and fallback consistent and lets these tools inherit 600s

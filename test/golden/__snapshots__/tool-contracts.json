@@ -857,7 +857,7 @@
       "readOnlyHint": true,
       "title": "Kimi Code Analysis"
     },
-    "description": "SWE-focused code generation/fixing with Kimi K2.6 (SWE-Bench 76.8%). Put your REQUEST in the 'query' parameter.",
+    "description": "SWE-focused code generation/fixing with Kimi K2.7-Code (coding-specialized). Put your REQUEST in the 'query' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -908,7 +908,7 @@
       "readOnlyHint": true,
       "title": "Kimi Problem Decomposition"
     },
-    "description": "Structured task decomposition with Kimi K2.6 Agent Swarm reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.",
+    "description": "Structured task decomposition with Kimi K2.7-Code extended reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -959,7 +959,7 @@
       "readOnlyHint": true,
       "title": "Kimi Long Context"
     },
-    "description": "Long-context analysis with Kimi K2.6 (256K context window). Put CONTENT in the 'content' parameter.",
+    "description": "Long-context analysis with Kimi K2.7-Code (262K context window). Put CONTENT in the 'content' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -1015,7 +1015,7 @@
       "readOnlyHint": true,
       "title": "Kimi Deep Thinking"
     },
-    "description": "Kimi K2.6 multimodal reasoning with Agent Swarm. Put your PROBLEM in the 'problem' parameter.",
+    "description": "Kimi K2.7-Code multimodal reasoning (always-thinking). Put your PROBLEM in the 'problem' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,

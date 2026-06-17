@@ -42,7 +42,7 @@ const MODELS = {
   // OpenRouter
   QWEN: QWEN_MODELS.CODER_NEXT,                 // qwen/qwen3-coder-next (80B/3B MoE, 262K ctx)
   QWEN_REASON: QWEN_MODELS.MAX_THINKING,        // qwen/qwen3-235b-a22b-thinking (235B MoE)
-  KIMI: KIMI_MODELS.K2_6,                       // moonshotai/kimi-k2.6 (Apr 2026 - SWE-bench Pro leader)
+  KIMI: KIMI_MODELS.K2_7_CODE,                  // moonshotai/kimi-k2.7-code (Jun 2026 - coding-specialized, built on K2.6)
   MINIMAX: MINIMAX_MODELS.M3,                   // minimax/minimax-m3 (May 2026 - 1M ctx, MSA sparse attention)
 } as const;
 

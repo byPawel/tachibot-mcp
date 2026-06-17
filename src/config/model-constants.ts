@@ -101,12 +101,14 @@ export const GROK_MODELS = {
 } as const;
 
 // Kimi Models (Moonshot AI via OpenRouter)
-// K2.6 released Apr 20, 2026 - 1T MoE, leads SWE-bench Pro for long-horizon coding
-// K2.5 released Jan 27, 2026 - kept as fallback
+// K2.7-Code released Jun 12, 2026 - coding-specialized (built on K2.6), +21.8% on Kimi Code Bench v2, lower token use, 262K ctx, multimodal, always-thinking
+// K2.6 released Apr 20, 2026 - 1T MoE, leads SWE-bench Pro for long-horizon coding (fallback)
+// K2.5 released Jan 27, 2026 - kept as legacy
 export const KIMI_MODELS = {
   K2_THINKING: "moonshotai/kimi-k2-thinking",   // 1T MoE, 32B active - agentic reasoning (256k context)
-  K2_6: "moonshotai/kimi-k2.6",                 // CURRENT: 1T MoE, SWE-Pro leader, ~$0.74/$4.65
-  K2_5: "moonshotai/kimi-k2.5",                 // Previous: multimodal + agent swarm (fallback)
+  K2_7_CODE: "moonshotai/kimi-k2.7-code",       // CURRENT (Jun 12, 2026): coding-specialized, +21.8% Code Bench v2, 262K ctx, $0.75/$3.50
+  K2_6: "moonshotai/kimi-k2.6",                 // Previous (Apr 2026): 1T MoE, SWE-Pro leader (fallback)
+  K2_5: "moonshotai/kimi-k2.5",                 // Legacy: multimodal + agent swarm
 } as const;
 
 // MiniMax Models (MiniMax via OpenRouter)
@@ -210,7 +212,7 @@ export const CURRENT_MODELS = {
     reason: PERPLEXITY_MODELS.SONAR_REASONING, // sonar-reasoning-pro $2/$8 per M
   },
   openrouter: {
-    kimi: KIMI_MODELS.K2_6,                // K2.6 (Apr 2026): 1T MoE, SWE-bench Pro leader
+    kimi: KIMI_MODELS.K2_7_CODE,           // K2.7-Code (Jun 2026): coding-specialized, built on K2.6
     qwen: QWEN_MODELS.CODER_NEXT,          // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70% (no 3.6-coder yet)
     qwen_reason: QWEN_MODELS.MAX_THINKING, // 235B MoE thinking mode (HMMT 98%) — still best for reasoning
     minimax: MINIMAX_MODELS.M3,            // M3: 1M ctx, MSA sparse attention, agentic/coding
@@ -333,7 +335,7 @@ export const TOOL_DEFAULTS = {
     temperature: 0.3,                      // Lower for precise reasoning
   },
   kimi_thinking: {
-    model: KIMI_MODELS.K2_6,              // K2.6 (Apr 2026): 1T MoE, SWE-bench Pro leader
+    model: KIMI_MODELS.K2_7_CODE,         // K2.7-Code (Jun 2026): coding-specialized, built on K2.6
     maxTokens: 16000,
     temperature: 0.7,
   },
@@ -406,6 +408,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
 
   // Kimi (Moonshot)
   "moonshotai/kimi-k2-thinking": "kimi-k2",
+  "moonshotai/kimi-k2.7-code": "kimi-k2.7-code",
   "moonshotai/kimi-k2.6": "kimi-k2.6",
   "moonshotai/kimi-k2.5": "kimi-k2.5",
   "moonshotai/kimi-k2.5-thinking": "kimi-k2.5",
@@ -468,6 +471,7 @@ export const MODEL_PRICING: Record<string, number> = {
 
   // OpenRouter models - Kimi
   "moonshotai/kimi-k2-thinking": 0.002,
+  "moonshotai/kimi-k2.7-code": 0.002125, // ($0.75 + $3.50) / 2 / 1000 (Jun 12, 2026)
   "moonshotai/kimi-k2.6": 0.0027,      // ($0.74 + $4.65) / 2 / 1000 (Apr 2026)
   "moonshotai/kimi-k2.5": 0.003,
   "moonshotai/kimi-k2.5-thinking": 0.003,

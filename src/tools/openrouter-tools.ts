@@ -32,7 +32,8 @@ export enum OpenRouterModel {
 
   // Moonshot AI models (Kimi)
   KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking",     // 1T MoE, 32B active - agentic reasoning
-  KIMI_K2_6 = "moonshotai/kimi-k2.6",                   // CURRENT (Apr 20, 2026): SWE-bench Pro leader
+  KIMI_K2_7_CODE = "moonshotai/kimi-k2.7-code",         // CURRENT (Jun 12, 2026): coding-specialized (built on K2.6), +21.8% Code Bench v2, 262K ctx, multimodal
+  KIMI_K2_6 = "moonshotai/kimi-k2.6",                   // Previous (Apr 20, 2026): SWE-bench Pro leader (fallback)
   KIMI_K2_5 = "moonshotai/kimi-k2.5",                   // RETIRED from OpenRouter — kept for back-compat only, do NOT call
 
   // MiniMax models - VERY CHEAP, #1 AI Intelligence Index
@@ -62,6 +63,7 @@ export enum OpenRouterModel {
 const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.QWEN3_CODER_NEXT]: OpenRouterModel.QWEN3_CODER, // Fall back to 480B if Coder-Next fails
   [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
+  [OpenRouterModel.KIMI_K2_7_CODE]: OpenRouterModel.KIMI_K2_6,   // Fall back to K2.6 if K2.7-Code fails
   [OpenRouterModel.KIMI_K2_6]: OpenRouterModel.KIMI_K2_THINKING,  // Fall back to k2-thinking if K2.6 fails (k2.5 retired from OpenRouter)
   [OpenRouterModel.DEEPSEEK_V4_PRO]: OpenRouterModel.DEEPSEEK_V4_FLASH, // Fall back to V4 Flash if Pro is rate-limited
   [OpenRouterModel.GLM_5_1]: OpenRouterModel.GLM_5,              // Fall back to GLM-5 base if 5.1 fails
@@ -637,13 +639,13 @@ ${FORMAT_INSTRUCTION}`
 });
 
 /**
- * Kimi K2.6 Thinking Tool
- * Multimodal model with Agent Swarm (100 sub-agents) and built-in reasoning
- * $0.60/$3.00 per M tokens, 262K context
+ * Kimi K2.7-Code Thinking Tool
+ * Coding-specialized multimodal model (built on K2.6), always-thinking mode
+ * $0.75/$3.50 per M tokens, 262K context
  */
 export const kimiThinkingTool = defineModelTool({
   name: "kimi_thinking",
-  description: "Kimi K2.6 multimodal reasoning with Agent Swarm. Put your PROBLEM in the 'problem' parameter.",
+  description: "Kimi K2.7-Code multimodal reasoning (always-thinking). Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     ...reasoningContextField,
@@ -675,7 +677,7 @@ export const kimiThinkingTool = defineModelTool({
     const messages = [
       {
         role: "system",
-        content: `You are Kimi K2, an expert reasoning model. Be concise and direct.
+        content: `You are Kimi K2.7-Code, an expert reasoning model. Be concise and direct.
 ${approachPrompts[args.approach as keyof typeof approachPrompts || 'step-by-step']}.
 Use ${args.maxSteps} reasoning steps max. ${args.context ? `Context: ${args.context}` : ''}
 ${FORMAT_INSTRUCTION}`
@@ -691,7 +693,7 @@ ${FORMAT_INSTRUCTION}`
     // needs the headroom; 180s/240s previously caused timeouts).
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_6, 0.4, 3000, {
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_7_CODE, 0.4, 3000, {
         top_p: 0.9,
         presence_penalty: 0.1,
         frequency_penalty: 0.2
@@ -703,12 +705,12 @@ ${FORMAT_INSTRUCTION}`
 
 /**
  * Kimi Code Tool
- * SWE-focused code generation/fixing with Kimi K2.6 (SWE-Bench 76.8%)
+ * SWE-focused code generation/fixing with Kimi K2.7-Code (+21.8% on Kimi Code Bench v2 over K2.6)
  * Best for: code generation, bug fixing, refactoring, repo-level understanding
  */
 export const kimiCodeTool = defineModelTool({
   name: "kimi_code",
-  description: "SWE-focused code generation/fixing with Kimi K2.6 (SWE-Bench 76.8%). Put your REQUEST in the 'query' parameter.",
+  description: "SWE-focused code generation/fixing with Kimi K2.7-Code (coding-specialized). Put your REQUEST in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("Your request or question (REQUIRED - put your main request here)"),
     task: z.enum(["generate", "fix", "review", "optimize", "debug", "refactor"])
@@ -735,7 +737,7 @@ export const kimiCodeTool = defineModelTool({
       refactor: "Refactor for better structure and maintainability"
     };
 
-    const systemPrompt = `You are Kimi K2.6, an expert SWE model (SWE-Bench 76.8%). You excel at repo-level code understanding and changes.
+    const systemPrompt = `You are Kimi K2.7-Code, a coding-specialized SWE model. You excel at repo-level code understanding and changes.
 Task: ${taskPrompts[args.task || "review"]}
 ${args.language ? `Language: ${args.language}` : ''}
 Focus: Clean code, correct solutions, minimal changes for fixes. Understand the full repo context when reviewing.
@@ -756,7 +758,7 @@ ${FORMAT_INSTRUCTION}`;
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_6, 0.3, 4000),
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_7_CODE, 0.3, 4000),
       reportFn,
       240000
     );
@@ -770,12 +772,12 @@ const DECOMPOSE_MAX_TOKENS = 4500;
 
 /**
  * Kimi Decompose Tool
- * Structured task decomposition using Kimi K2.6's Agent Swarm reasoning
+ * Structured task decomposition using Kimi K2.7-Code's extended reasoning
  * Best for: breaking complex tasks into subtasks with dependencies and acceptance criteria
  */
 export const kimiDecomposeTool = defineModelTool({
   name: "kimi_decompose",
-  description: "Structured task decomposition with Kimi K2.6 Agent Swarm reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.",
+  description: "Structured task decomposition with Kimi K2.7-Code extended reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.",
   parameters: z.object({
     task: z.string().describe("The task to decompose (REQUIRED - describe the complex task)"),
     context: z.string().optional().describe("Additional context about the project, codebase, or constraints"),
@@ -893,7 +895,7 @@ RISKS
 - [risk] > Mitigation: [approach]`
     };
 
-    const systemPrompt = `You are Kimi K2.6, expert at structured task decomposition using Agent Swarm reasoning.
+    const systemPrompt = `You are Kimi K2.7-Code, expert at structured task decomposition using extended reasoning.
 
 Your job is to produce SMART decompositions — not mechanical ID/deps lists, but context-aware plans that a developer can act on immediately.
 
@@ -935,7 +937,7 @@ Wrap your final output in <output> tags. Everything outside <output> is discarde
 
     const reportFn = reportProgress ?? (async () => {});
     const raw = await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_6, DECOMPOSE_TEMPERATURE, DECOMPOSE_MAX_TOKENS, {}),
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_7_CODE, DECOMPOSE_TEMPERATURE, DECOMPOSE_MAX_TOKENS, {}),
       reportFn
     );
 
@@ -954,12 +956,12 @@ Wrap your final output in <output> tags. Everything outside <output> is discarde
 
 /**
  * Kimi Long Context Tool
- * Long-context analysis leveraging Kimi K2.6's 256K context window
+ * Long-context analysis leveraging Kimi K2.7-Code's 262K context window
  * Best for: analyzing large documents, codebases, or text bodies
  */
 export const kimiLongContextTool = defineModelTool({
   name: "kimi_long_context",
-  description: "Long-context analysis with Kimi K2.6 (256K context window). Put CONTENT in the 'content' parameter.",
+  description: "Long-context analysis with Kimi K2.7-Code (262K context window). Put CONTENT in the 'content' parameter.",
   parameters: z.object({
     content: z.string().describe("The long text/document to analyze (REQUIRED - put your content here)"),
     task: z.enum(["summarize", "extract", "analyze", "compare", "find"])
@@ -992,7 +994,7 @@ export const kimiLongContextTool = defineModelTool({
       structured: "Use clear sections with headers, bullet points, and structured formatting"
     };
 
-    const systemPrompt = `You are Kimi K2.6, expert at processing and analyzing large documents (best-effort 256K context window).
+    const systemPrompt = `You are Kimi K2.7-Code, expert at processing and analyzing large documents (best-effort 262K context window).
 Task: ${taskPrompts[args.task || "analyze"]}
 Format: ${formatPrompts[args.outputFormat || "detailed"]}
 ${args.query ? `Specific query: ${args.query}` : ''}
@@ -1011,7 +1013,7 @@ ${FORMAT_INSTRUCTION}`;
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_6, 0.2, 8000),
+      () => callOpenRouter(messages, OpenRouterModel.KIMI_K2_7_CODE, 0.2, 8000),
       reportFn,
       300000
     );

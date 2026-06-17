@@ -8,6 +8,7 @@ describe("getOpenRouterModelTimeout", () => {
     // be classified as slow reasoning models, else they fall back to 180s.
     expect(getOpenRouterModelTimeout("moonshotai/kimi-k2.5")).toBe(openrouterThinking);
     expect(getOpenRouterModelTimeout("moonshotai/kimi-k2.6")).toBe(openrouterThinking);
+    expect(getOpenRouterModelTimeout("moonshotai/kimi-k2.7-code")).toBe(openrouterThinking);
   });
 
   it("still gives explicit thinking/reasoning models the extended timeout", () => {
