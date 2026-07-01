@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const balancedProfile: ProfileConfig = {
-  description: "Balanced set for general use (46 tools)",
+  description: "Balanced set for general use (47 tools)",
   tools: {
     think: true,
     focus: true,
@@ -62,5 +62,8 @@ export const balancedProfile: ProfileConfig = {
     planner_maker: true,
     planner_runner: true,
     list_plans: true,
+
+    // Test generation
+    testgen: true,
   }
 };

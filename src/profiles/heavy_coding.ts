@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const heavyCodingProfile: ProfileConfig = {
-  description: "Heavy coding with all reasoning & code tools (50 tools)",
+  description: "Heavy coding with all reasoning & code tools (51 tools)",
   tools: {
     // Core reasoning - all enabled
     think: true,
@@ -75,5 +75,8 @@ export const heavyCodingProfile: ProfileConfig = {
     planner_maker: true,
     planner_runner: true,
     list_plans: true,
+
+    // Test generation
+    testgen: true,
   }
 };

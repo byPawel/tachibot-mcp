@@ -83,4 +83,7 @@ export interface ToolsConfig {
   planner_maker: boolean;
   planner_runner: boolean;
   list_plans: boolean;
+
+  // Test generation
+  testgen: boolean;  // Routed test generation via Qwen3-Coder-Next
 }

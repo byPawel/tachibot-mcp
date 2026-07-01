@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const fullProfile: ProfileConfig = {
-  description: "Default profile — all tools enabled for maximum capability (57 tools)",
+  description: "Default profile — all tools enabled for maximum capability (58 tools)",
   tools: {
     think: true,
     focus: true,
@@ -62,5 +62,8 @@ export const fullProfile: ProfileConfig = {
     planner_maker: true,
     planner_runner: true,
     list_plans: true,
+
+    // Test generation
+    testgen: true,
   }
 };

@@ -2211,6 +2211,47 @@
     "name": "tachi"
   },
   {
+    "description": "Generate runnable tests with a coding-specialized model (Qwen3-Coder-Next). Enumerates edge cases first, then emits test code. Provide 'code' or 'files'.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "The code to generate tests for (or use 'files')",
+          "type": "string"
+        },
+        "coverage": {
+          "default": "all",
+          "description": "Coverage focus",
+          "enum": [
+            "edge",
+            "happy",
+            "regression",
+            "all"
+          ],
+          "type": "string"
+        },
+        "existingTests": {
+          "description": "Paste existing tests so generated ones match conventions",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read as code-under-test. Supports line ranges: 'src/foo.ts:100-200'.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "framework": {
+          "description": "Test framework (e.g. jest, vitest, pytest). Omit to infer.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "testgen"
+  },
+  {
     "annotations": {
       "openWorldHint": false,
       "readOnlyHint": true,

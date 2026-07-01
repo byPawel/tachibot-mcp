@@ -62,5 +62,8 @@ export const researchPowerProfile: ProfileConfig = {
     planner_maker: true,
     planner_runner: true,
     list_plans: true,
+
+    // Test generation
+    testgen: false,
   }
 };

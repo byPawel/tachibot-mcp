@@ -57,6 +57,7 @@
     "execute_prompt_technique": false,
     "planner_maker": false,
     "planner_runner": false,
-    "list_plans": false
+    "list_plans": false,
+    "testgen": false
   }
 }

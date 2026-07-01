@@ -107,6 +107,7 @@ export const PROVIDER_GROUPS: ProviderGroup[] = [
       "planner_maker",
       "planner_runner",
       "list_plans",
+      "testgen",
     ],
   },
   {

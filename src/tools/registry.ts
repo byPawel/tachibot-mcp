@@ -180,6 +180,10 @@ export async function getAllTools(
     tools.push(
       ...([plannerMakerTool, plannerRunnerTool, listPlansTool] as unknown as RegistryTool[]),
     );
+
+    // testgen — routed test generation (Qwen3-Coder-Next) — gated on OpenRouter.
+    const { testgenTool } = await import("./testgen-tool.js");
+    tools.push(testgenTool as unknown as RegistryTool);
   }
 
   // 6) Local-model tools (Ollama / LM Studio / llama.cpp / vLLM). Registered

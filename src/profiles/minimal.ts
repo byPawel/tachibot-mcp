@@ -62,5 +62,8 @@ export const minimalProfile: ProfileConfig = {
     planner_maker: false,
     planner_runner: false,
     list_plans: false,
+
+    // Test generation
+    testgen: false,
   }
 };
