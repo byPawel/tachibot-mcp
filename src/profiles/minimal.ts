@@ -1,16 +1,16 @@
 import { ProfileConfig } from './types.js';
 
 export const minimalProfile: ProfileConfig = {
-  description: "Minimal essential tools for basic tasks (~Xk tokens, 8 tools)",
+  description: "Minimal essential tools for basic tasks (13 tools)",
   tools: {
     think: true,
     focus: true,
     tachi: true,
+    doctor: true,
     nextThought: true,
     usage_stats: true,
     perplexity_ask: true,
     perplexity_reason: false,
-    perplexity_research: false,
     grok_reason: true,
     grok_code: false,
     grok_debug: false,

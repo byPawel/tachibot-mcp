@@ -1,14 +1,14 @@
 {
-  "description": "Default profile — heavy coding with all reasoning & code tools (50 tools)",
+  "description": "Heavy coding with all reasoning & code tools (50 tools)",
   "tools": {
     "think": true,
     "focus": true,
     "tachi": true,
+    "doctor": true,
     "nextThought": true,
     "usage_stats": true,
     "perplexity_ask": true,
     "perplexity_reason": true,
-    "perplexity_research": true,
     "grok_reason": true,
     "grok_code": true,
     "grok_debug": true,

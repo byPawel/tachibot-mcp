@@ -13,13 +13,13 @@ export interface ToolsConfig {
   think: boolean;
   focus: boolean;
   tachi: boolean;
+  doctor: boolean;         // Setup diagnostic — zero-cost, no API key
   nextThought: boolean;
   usage_stats: boolean;
 
   // Perplexity tools
   perplexity_ask: boolean;
   perplexity_reason: boolean;
-  perplexity_research: boolean;
 
   // Grok tools
   grok_reason: boolean;

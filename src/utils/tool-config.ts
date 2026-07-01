@@ -39,6 +39,10 @@ interface CustomProfileConfig {
 let toolConfig: ToolConfig = { tools: {} };
 let activeTools: Record<string, boolean> = {};
 let profileSource: string = 'default';
+// Human-readable origin of the active profile (WHERE it was resolved from), as
+// distinct from profileSource (WHICH profile). Surfaced by getProfileSource()
+// for the doctor tool. Set in each resolution branch below.
+let profileOrigin: string = 'default (no config found — all tools enabled)';
 
 /**
  * Load a profile from the profiles/ directory
@@ -69,6 +73,7 @@ try {
     if (toolConfig.customProfile?.enabled) {
       activeTools = toolConfig.customProfile.tools;
       profileSource = 'custom';
+      profileOrigin = 'customProfile in tools.config.json';
       console.error(`📋 Using custom profile from tools.config.json`);
     }
     // Priority 2: TACHIBOT_PROFILE environment variable
@@ -78,6 +83,7 @@ try {
       if (profile) {
         activeTools = profile.tools;
         profileSource = envProfile;
+        profileOrigin = 'TACHIBOT_PROFILE environment variable';
         console.error(`📋 Using profile '${envProfile}' from TACHIBOT_PROFILE env var`);
         console.error(`   ${profile.description}`);
       } else {
@@ -94,6 +100,7 @@ try {
         if (profile) {
           activeTools = profile.tools;
           profileSource = toolConfig.activeProfile;
+          profileOrigin = 'activeProfile in tools.config.json';
           console.error(`📋 Using profile '${toolConfig.activeProfile}': ${profile.description}`);
         }
         // Fall back to embedded profile in tools.config.json (legacy)
@@ -101,6 +108,7 @@ try {
           const profile = toolConfig.profiles[toolConfig.activeProfile];
           activeTools = profile.tools;
           profileSource = toolConfig.activeProfile;
+          profileOrigin = 'activeProfile (embedded) in tools.config.json';
           console.error(`📋 Using profile '${toolConfig.activeProfile}' from tools.config.json (legacy)`);
           console.error(`   ${profile.description}`);
         }
@@ -108,6 +116,7 @@ try {
         // Fallback to legacy flat tools config
         activeTools = toolConfig.tools;
         profileSource = 'legacy';
+        profileOrigin = 'legacy flat "tools" map in tools.config.json';
         console.error(`📋 Using legacy flat configuration from tools.config.json`);
       }
     }
@@ -180,6 +189,15 @@ export function getEnabledTools(): string[] {
   return Object.entries(activeTools)
     .filter(([_, enabled]) => enabled)
     .map(([name]) => name);
+}
+
+/**
+ * Get where the active profile was resolved from (env var vs tools.config.json
+ * vs custom vs default). Distinct from getActiveProfile().name, which is WHICH
+ * profile. Used by the doctor tool.
+ */
+export function getProfileSource(): string {
+  return profileOrigin;
 }
 
 /**

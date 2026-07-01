@@ -4,10 +4,10 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.23.2-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.23.3-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-57_active-brightgreen.svg)](#-tool-ecosystem-57-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
 **57 AI tools. 12 providers. One protocol.**
@@ -111,12 +111,12 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ### Tool Profiles
 | Profile | Tools | Best For |
 |---------|-------|----------|
-| **Minimal** | 12 | Quick tasks, low token budget |
+| **Minimal** | 13 | Quick tasks, low token budget |
 | **Research Power** | 35 | Deep investigation, multi-source |
-| **Code Focus** | 34 | Software development, SWE tasks |
-| **Balanced** | 45 | General-purpose, mixed workflows |
-| **Heavy Coding** (default) | 50 | Max code tools + agentic workflows |
-| **Full** | 57 | Everything enabled |
+| **Code Focus** | 35 | Software development, SWE tasks |
+| **Balanced** | 46 | General-purpose, mixed workflows |
+| **Heavy Coding** | 50 | Max code tools + agentic workflows |
+| **Full** (default) | 57 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support
@@ -134,7 +134,15 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 npm install -g tachibot-mcp
 ```
 
-### Setup
+### Claude Code (one-liner)
+
+```bash
+claude mcp add tachibot -- npx -y -p tachibot-mcp tachibot
+```
+
+Then verify with `/mcp`. Add API keys with `--env`, e.g. `--env OPENROUTER_API_KEY=sk-or-xxx --env PERPLEXITY_API_KEY=pplx-xxx`.
+
+### Setup (Claude Desktop)
 
 **Gateway Mode (Recommended)** &mdash; 2 keys, all providers:
 

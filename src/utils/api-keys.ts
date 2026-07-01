@@ -17,8 +17,12 @@ export const hasOpenAIApiKey = (): boolean => !!process.env.OPENAI_API_KEY;
 export const getPerplexityApiKey = (): string | undefined => process.env.PERPLEXITY_API_KEY;
 export const hasPerplexityApiKey = (): boolean => !!process.env.PERPLEXITY_API_KEY;
 
-export const getGeminiApiKey = (): string | undefined => process.env.GOOGLE_API_KEY;
-export const hasGeminiApiKey = (): boolean => !!process.env.GOOGLE_API_KEY;
+// Gemini/Google - supports both GOOGLE_API_KEY (preferred) and GEMINI_API_KEY (fallback),
+// matching the precedence in src/tools/gemini-tools.ts
+export const getGeminiApiKey = (): string | undefined =>
+  process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+export const hasGeminiApiKey = (): boolean =>
+  !!(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY);
 
 export const getOpenRouterApiKey = (): string | undefined => process.env.OPENROUTER_API_KEY;
 export const hasOpenRouterApiKey = (): boolean => !!process.env.OPENROUTER_API_KEY;

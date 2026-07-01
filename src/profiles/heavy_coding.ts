@@ -1,19 +1,19 @@
 import { ProfileConfig } from './types.js';
 
 export const heavyCodingProfile: ProfileConfig = {
-  description: "Default profile — heavy coding with all reasoning & code tools (40 tools)",
+  description: "Heavy coding with all reasoning & code tools (50 tools)",
   tools: {
     // Core reasoning - all enabled
     think: true,
     focus: true,
     tachi: true,
+    doctor: true,
     nextThought: true,
     usage_stats: true,
 
     // Perplexity - all enabled for research
     perplexity_ask: true,
     perplexity_reason: true,
-    perplexity_research: true,
 
     // Grok - all enabled for heavy coding
     grok_reason: true,

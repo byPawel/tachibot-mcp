@@ -25,6 +25,7 @@ import { callOpenAI, isOpenAIAvailable } from "./openai-tools.js";
 import { OPENAI_MODELS } from "../config/model-constants.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
+import { PROVIDER_GROUPS, ALWAYS_ON_TOOLS, SKILLS } from "./provider-catalog.js";
 
 // ============================================================================
 // TYPES
@@ -503,6 +504,47 @@ async function executeMode(mode: Mode, query: string): Promise<string> {
 }
 
 // ============================================================================
+// CATALOG (no-query mode)
+// ============================================================================
+
+/**
+ * Browsable catalog shown when tachi is called with no query: tools grouped by
+ * provider (✓/✗ per group by key check) + the bundled skills. Uses the shared
+ * provider-catalog so it stays in sync with the doctor tool and the registry.
+ */
+function renderCatalog(): string {
+  const rule = "─".repeat(48);
+  const lines: string[] = [];
+
+  lines.push("TACHIBOT CATALOG");
+  lines.push("═".repeat(48));
+  lines.push('Call  tachi query="<your question>"  to auto-route, or use any');
+  lines.push("tool below directly. Run  doctor  for a full setup diagnostic.");
+  lines.push("");
+  lines.push("TOOLS BY PROVIDER  (✓ key set · ✗ tools hidden until key added)");
+  lines.push(rule);
+
+  for (const g of PROVIDER_GROUPS) {
+    const mark = g.available() ? "✓" : "✗";
+    const hint = g.available() ? g.envHint : `set ${g.envHint}`;
+    const note = g.note ? ` — ${g.note}` : "";
+    lines.push(`${mark} ${g.label} (${hint})${note}`);
+    lines.push(`    ${g.tools.join(", ")}`);
+  }
+
+  lines.push("✓ Always on (no key needed)");
+  lines.push(`    ${ALWAYS_ON_TOOLS.join(", ")}`);
+  lines.push("");
+  lines.push(`SKILLS (${SKILLS.length})`);
+  lines.push(rule);
+  for (const s of SKILLS) {
+    lines.push(`  /${s.name.padEnd(10)} ${s.desc}`);
+  }
+
+  return lines.join("\n");
+}
+
+// ============================================================================
 // TOOL DEFINITION
 // ============================================================================
 
@@ -518,13 +560,20 @@ Auto-routes to the best mode based on your query:
 • Architect: "design...", "which should I use...", "tradeoffs..."
 • Judge: "which is best...", "evaluate...", "compare..."
 
+Call with NO query to browse the full tool + skill catalog (grouped by provider,
+with ✓/✗ per key). Run 'doctor' for a full setup diagnostic.
+
 Examples:
   tachi "debug this null pointer error"
   tachi "how does React useEffect work"
   tachi "microservices vs monolith for 10M users"
-  tachi "judge: React vs Vue vs Svelte"`,
+  tachi "judge: React vs Vue vs Svelte"
+  tachi            (no query → catalog of every tool + skill)`,
   parameters: z.object({
-    query: z.string().describe("What you need help with (REQUIRED - put your question here)"),
+    query: z
+      .string()
+      .optional()
+      .describe("What you need help with. Leave empty to browse the full tool + skill catalog."),
     mode: z
       .enum(["auto", "research", "solve", "verify", "creative", "architect", "judge"])
       .default("auto")
@@ -532,10 +581,16 @@ Examples:
       .describe("Force specific mode - must be one of: auto, research, solve, verify, creative, architect, judge"),
   }),
   execute: async (
-    { query, mode = "auto" }: { query: string; mode?: string },
+    { query, mode = "auto" }: { query?: string; mode?: string },
     context: any
   ): Promise<string> => {
     const { log } = context;
+
+    // No query → browsable catalog (tools grouped by provider + skills).
+    if (!query || !query.trim()) {
+      return renderCatalog();
+    }
+
     // Route query to mode
     let resolvedMode: Mode;
     let routeInfo = "";

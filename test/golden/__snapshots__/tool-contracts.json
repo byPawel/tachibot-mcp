@@ -141,6 +141,16 @@
     "name": "deepseek_reason"
   },
   {
+    "description": "Diagnose your TachiBot setup: which API keys are detected, which tools are available vs hidden (and why), the active profile, and a suggested first step. Zero-cost, needs no API key. Call it when tools seem missing.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
+    "name": "doctor"
+  },
+  {
     "description": "Broad-knowledge reasoning with Baidu ERNIE 4.5 VL (424B MoE — human-preference/arena strength). Put your PROBLEM in the 'problem' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2172,7 +2182,7 @@
       "readOnlyHint": true,
       "title": "Tachi Smart Router"
     },
-    "description": "Smart AI assistant - just describe what you need. Put your QUERY in the 'query' parameter.\n\nAuto-routes to the best mode based on your query:\n• Research: \"what is...\", \"how does...\", \"explain...\"\n• Solve: \"fix...\", \"debug...\", \"implement...\", \"error...\"\n• Verify: \"check...\", \"is this correct...\", \"review...\"\n• Creative: \"brainstorm...\", \"ideas for...\", \"name...\"\n• Architect: \"design...\", \"which should I use...\", \"tradeoffs...\"\n• Judge: \"which is best...\", \"evaluate...\", \"compare...\"\n\nExamples:\n  tachi \"debug this null pointer error\"\n  tachi \"how does React useEffect work\"\n  tachi \"microservices vs monolith for 10M users\"\n  tachi \"judge: React vs Vue vs Svelte\"",
+    "description": "Smart AI assistant - just describe what you need. Put your QUERY in the 'query' parameter.\n\nAuto-routes to the best mode based on your query:\n• Research: \"what is...\", \"how does...\", \"explain...\"\n• Solve: \"fix...\", \"debug...\", \"implement...\", \"error...\"\n• Verify: \"check...\", \"is this correct...\", \"review...\"\n• Creative: \"brainstorm...\", \"ideas for...\", \"name...\"\n• Architect: \"design...\", \"which should I use...\", \"tradeoffs...\"\n• Judge: \"which is best...\", \"evaluate...\", \"compare...\"\n\nCall with NO query to browse the full tool + skill catalog (grouped by provider,\nwith ✓/✗ per key). Run 'doctor' for a full setup diagnostic.\n\nExamples:\n  tachi \"debug this null pointer error\"\n  tachi \"how does React useEffect work\"\n  tachi \"microservices vs monolith for 10M users\"\n  tachi \"judge: React vs Vue vs Svelte\"\n  tachi            (no query → catalog of every tool + skill)",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -2192,13 +2202,10 @@
           "type": "string"
         },
         "query": {
-          "description": "What you need help with (REQUIRED - put your question here)",
+          "description": "What you need help with. Leave empty to browse the full tool + skill catalog.",
           "type": "string"
         }
       },
-      "required": [
-        "query"
-      ],
       "type": "object"
     },
     "name": "tachi"

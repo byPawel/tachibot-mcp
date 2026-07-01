@@ -14,6 +14,7 @@ fi
 mkdir -p "$SKILLS_TARGET"
 
 installed=0
+skill_list=""
 for skill_dir in "$SKILLS_SOURCE"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")
@@ -22,9 +23,15 @@ for skill_dir in "$SKILLS_SOURCE"/*/; do
     mkdir -p "$target_dir"
     cp "$skill_dir"SKILL.md "$target_dir/SKILL.md"
     installed=$((installed + 1))
+    # Derive the advertised list from what actually installed, so it can't go stale.
+    if [ -z "$skill_list" ]; then
+        skill_list="/$skill_name"
+    else
+        skill_list="$skill_list, /$skill_name"
+    fi
 done
 
 if [ "$installed" -gt 0 ]; then
     echo "TachiBot: $installed skills installed to $SKILLS_TARGET"
-    echo "  Available: /judge, /think, /focus, /breakdown, /decompose, /prompt, /tachi"
+    echo "  Available: $skill_list"
 fi

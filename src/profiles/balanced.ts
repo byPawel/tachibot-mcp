@@ -1,16 +1,16 @@
 import { ProfileConfig } from './types.js';
 
 export const balancedProfile: ProfileConfig = {
-  description: "Balanced set for general use (~Xk tokens, 18 tools)",
+  description: "Balanced set for general use (46 tools)",
   tools: {
     think: true,
     focus: true,
     tachi: true,
+    doctor: true,
     nextThought: true,
     usage_stats: true,
     perplexity_ask: true,
     perplexity_reason: true,
-    perplexity_research: false,
     grok_reason: true,
     grok_code: true,
     grok_debug: false,

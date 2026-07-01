@@ -50,6 +50,7 @@ import {
 import { isOpenRouterAvailable } from "./openrouter-tools.js";
 import { getAllAdvancedTools, areAdvancedModesAvailable } from "./advanced-modes.js";
 import { getTachiTools } from "./tachi-tool.js";
+import { getDoctorTools } from "./doctor-tool.js";
 import { getPromptTechniqueTools } from "./prompt-technique-tools.js";
 import { validateWorkflowTool, validateWorkflowFileTool } from "./workflow-validator-tool.js";
 
@@ -205,6 +206,9 @@ export async function getAllTools(
 
   // 9) Tachi tools (smart auto-routing AI assistant) — unconditional.
   tools.push(...(getTachiTools() as unknown as RegistryTool[]));
+
+  // 9b) Doctor tool (setup diagnostic) — unconditional, zero-cost, no API key.
+  tools.push(...(getDoctorTools() as unknown as RegistryTool[]));
 
   // 10) Prompt-technique tools (transparent prompt engineering) — unconditional.
   tools.push(...(getPromptTechniqueTools() as unknown as RegistryTool[]));

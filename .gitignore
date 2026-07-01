@@ -86,3 +86,6 @@ docs/plans/
 # Local artifacts
 .plan-cache/
 evals/
+
+# Dokoro workspace (personal notes/assets)
+dokoro/

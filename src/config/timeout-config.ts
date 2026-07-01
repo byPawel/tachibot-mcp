@@ -187,7 +187,9 @@ export const SMART_TIMEOUT_DEFAULTS: SmartTimeoutConfig = {
     },
     openai: {
       base: 60000,    // 60 seconds - GPT-5.4 reasoning needs more time
-      max: 180000     // 3 minutes - high/xhigh reasoning effort
+      max: 600000     // 10 minutes - GPT-5.5 high/xhigh effort can exceed the
+                      // OpenAI SDK's 900s default; 180s was cutting off real
+                      // reasoning runs (verified 2026-07 deep-research)
     },
     anthropic: {
       base: 20000,    // 20 seconds

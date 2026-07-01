@@ -15,8 +15,8 @@ console.log('🔍 TachiBot MCP Installation Verifier\n');
 // Check Node version
 const nodeVersion = process.version;
 const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
-if (majorVersion < 18) {
-    console.error(`❌ Node.js version ${nodeVersion} is too old. Required: >=18.0.0`);
+if (majorVersion < 22) {
+    console.error(`❌ Node.js version ${nodeVersion} is too old. Required: >=22.0.0`);
     process.exit(1);
 } else {
     console.log(`✅ Node.js version: ${nodeVersion}`);
@@ -64,12 +64,21 @@ if (fs.existsSync(configPath)) {
             // Check API keys (without showing values)
             if (tachiConfig.env) {
                 console.log('\n🔑 API Keys configured:');
-                const keys = ['PERPLEXITY_API_KEY', 'GROK_API_KEY', 'OPENAI_API_KEY', 'GOOGLE_API_KEY'];
-                keys.forEach(key => {
-                    if (tachiConfig.env[key]) {
-                        console.log(`  ✅ ${key}: Configured`);
+                // Each entry may list alternative env var names (any one satisfies it).
+                // OPENROUTER_API_KEY gates ~30 tools (DeepSeek, GLM, Kimi, Qwen, MiniMax, StepFun, ERNIE).
+                const keys = [
+                    ['PERPLEXITY_API_KEY'],
+                    ['GROK_API_KEY', 'XAI_API_KEY'],
+                    ['OPENAI_API_KEY'],
+                    ['GOOGLE_API_KEY', 'GEMINI_API_KEY'],
+                    ['OPENROUTER_API_KEY'],
+                ];
+                keys.forEach(names => {
+                    const label = names.join(' / ');
+                    if (names.some(name => tachiConfig.env[name])) {
+                        console.log(`  ✅ ${label}: Configured`);
                     } else {
-                        console.log(`  ⚠️  ${key}: Not configured`);
+                        console.log(`  ⚠️  ${label}: Not configured`);
                     }
                 });
 
@@ -79,7 +88,10 @@ if (fs.existsSync(configPath)) {
             }
         } else {
             console.log('⚠️  TachiBot is NOT configured in Claude Desktop');
-            console.log('\nTo configure, add this to your claude_desktop_config.json:');
+            console.log('   (This is normal for Claude Code users — this script only inspects the');
+            console.log('    Claude Desktop config. Check your Claude Code setup with "claude mcp list"');
+            console.log('    or look for a .mcp.json in your project instead.)');
+            console.log('\nTo configure Claude Desktop, add this to your claude_desktop_config.json:');
             console.log(JSON.stringify({
                 mcpServers: {
                     tachibot: {
@@ -100,6 +112,8 @@ if (fs.existsSync(configPath)) {
     }
 } else {
     console.log('⚠️  Config file not found. Claude Desktop may not be installed.');
+    console.log('   If you use Claude Code instead, this is expected — verify with');
+    console.log('   "claude mcp list" or a project .mcp.json rather than this Desktop config.');
 }
 
 // Test server startup

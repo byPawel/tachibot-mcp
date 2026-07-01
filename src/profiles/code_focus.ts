@@ -1,16 +1,16 @@
 import { ProfileConfig } from './types.js';
 
 export const codeFocusProfile: ProfileConfig = {
-  description: "Code-heavy work with debugging and analysis (~Xk tokens, 15 tools)",
+  description: "Code-heavy work with debugging and analysis (35 tools)",
   tools: {
     think: true,
     focus: true,
     tachi: true,
+    doctor: true,
     nextThought: true,
     usage_stats: true,
     perplexity_ask: true,
     perplexity_reason: false,
-    perplexity_research: false,
     grok_reason: true,
     grok_code: true,
     grok_debug: true,
