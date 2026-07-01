@@ -18,6 +18,12 @@ import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 
+// Per-juror output budget. Reasoning-heavy jurors (GLM, Kimi, DeepSeek,
+// GPT-5.5 high-effort) spend much of their token budget on internal reasoning
+// BEFORE the visible answer, so a tight cap truncates the verdict mid-sentence
+// (finish_reason: "length"). 8000 leaves room for reasoning + a complete take.
+const JUROR_MAX_TOKENS = 8000;
+
 // Available juror models and how to call them
 export const JUROR_REGISTRY: Record<string, {
   label: string;
@@ -30,7 +36,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callGrok([
       { role: "system", content: `You are a first-principles analyst. Be direct, pragmatic, and opinionated. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], undefined, 0.7, 4000),
+    ], undefined, 0.7, JUROR_MAX_TOKENS),
   },
   openai: {
     label: "GPT (Analytical)",
@@ -38,7 +44,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenAI([
       { role: "system", content: `You are an analytical reasoner. Consider tradeoffs, edge cases, and nuance. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], undefined, 0.7, 4000, "high"),
+    ], undefined, 0.7, JUROR_MAX_TOKENS, "high"),
   },
   qwen: {
     label: "Qwen (Code & Logic)",
@@ -46,7 +52,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenRouter([
       { role: "system", content: `You are Qwen3-Coder-Next, an expert coder. Focus on implementation, code quality, and practical details. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.QWEN3_CODER_NEXT, 0.3, 4000),
+    ], OpenRouterModel.QWEN3_CODER_NEXT, 0.3, JUROR_MAX_TOKENS),
   },
   qwen_reason: {
     label: "Qwen Reason (Mathematical)",
@@ -54,7 +60,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenRouter([
       { role: "system", content: `You are Qwen3-Max-Thinking, a flagship reasoning model. Apply rigorous formal reasoning. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.QWEN3_MAX_THINKING, 0.3, 4000),
+    ], OpenRouterModel.QWEN3_MAX_THINKING, 0.3, JUROR_MAX_TOKENS),
   },
   kimi: {
     label: "Kimi (Step-by-Step)",
@@ -62,7 +68,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenRouter([
       { role: "system", content: `You are Kimi K2.7-Code. Think step-by-step. Decompose problems. Find edge cases. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.KIMI_K2_7_CODE, 0.4, 3000, { top_p: 0.9 }, 240000),
+    ], OpenRouterModel.KIMI_K2_7_CODE, 0.4, JUROR_MAX_TOKENS, { top_p: 0.9 }, 240000),
   },
   perplexity: {
     label: "Perplexity (Research)",
@@ -81,7 +87,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenRouter([
       { role: "system", content: `You are MiniMax M3, an agentic model built for long-horizon multi-step work (1M context, MSA sparse attention). Focus on practical execution and step-by-step plans. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.MINIMAX_M3, 0.5, 3000),
+    ], OpenRouterModel.MINIMAX_M3, 0.5, JUROR_MAX_TOKENS),
   },
   deepseek: {
     label: "DeepSeek V4 Pro (Frontier Reasoning)",
@@ -89,7 +95,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenRouter([
       { role: "system", content: `You are DeepSeek V4 Pro, an open-weight frontier reasoning model (top AIME/GPQA). Reason rigorously, show the chain, then conclude. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.DEEPSEEK_V4_PRO, 0.3, 4000),
+    ], OpenRouterModel.DEEPSEEK_V4_PRO, 0.3, JUROR_MAX_TOKENS),
   },
   glm: {
     label: "GLM-5.2 (Agentic)",
@@ -97,7 +103,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenRouter([
       { role: "system", content: `You are Zhipu GLM-5.2, a frontier open-weights agentic model (1M ctx, top long-horizon coding). Plan, reason through tool-use/steps, then give a decisive verdict. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.GLM_5_2, 0.3, 4000),
+    ], OpenRouterModel.GLM_5_2, 0.3, JUROR_MAX_TOKENS),
   },
   stepfun: {
     label: "StepFun 3.7 (Efficient Reasoning)",
@@ -105,7 +111,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenRouter([
       { role: "system", content: `You are StepFun Step 3.7 Flash, an efficient reasoning model. Reason tightly, then conclude. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.STEPFUN_3_7, 0.3, 3000),
+    ], OpenRouterModel.STEPFUN_3_7, 0.3, JUROR_MAX_TOKENS),
   },
   ernie: {
     label: "ERNIE 4.5 VL (Broad Knowledge)",
@@ -113,7 +119,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenRouter([
       { role: "system", content: `You are Baidu ERNIE 4.5 VL, a broad-knowledge MoE with strong human-preference alignment. Give a well-rounded, decisive judgment. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.ERNIE_4_5_VL, 0.4, 3000),
+    ], OpenRouterModel.ERNIE_4_5_VL, 0.4, JUROR_MAX_TOKENS),
   },
   // Local open-weights juror — free, offline, ZERO token cost. Its judgment is
   // uncorrelated with the frontier vendors above, which is exactly what reduces
@@ -199,7 +205,9 @@ export const juryTool = defineModelTool({
         }
       });
       return Promise.all(promises);
-    }, reportFn, 300000);
+      // Heartbeat every 10s (the 3rd arg is the INTERVAL, not a timeout) so the
+      // MCP client keeps the connection alive through long parallel juror calls.
+    }, reportFn, 10000);
 
     // Phase 2: Format perspectives for the judge
     const liveJurors = jurorResults.filter(

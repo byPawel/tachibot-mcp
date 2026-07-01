@@ -168,7 +168,7 @@ function generateToken(): string {
 
 /**
  * Tool 1: list_prompt_techniques
- * Discovery tool - shows all 21 techniques organized by category
+ * Discovery tool - shows all 31 techniques organized by category
  */
 export const listPromptTechniquesTool = defineModelTool({
   name: "list_prompt_techniques",
