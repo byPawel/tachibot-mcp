@@ -26,10 +26,10 @@ Counts below are generated from `src/profiles/*.ts` via `npm run build:profiles`
 |---------|-------|-------------|
 | `minimal` | 13 | Minimal essential tools for basic tasks |
 | `research_power` | 35 | Research-focused with Grok search + all Perplexity + brainstorming |
-| `code_focus` | 39 | Code-heavy work with debugging and analysis |
-| `balanced` | 50 | Balanced set for general use |
-| `heavy_coding` | 54 | Heavy coding with all reasoning & code tools |
-| `full` | 61 | **Default profile** — every tool enabled |
+| `code_focus` | 41 | Code-heavy work with debugging and analysis |
+| `balanced` | 52 | Balanced set for general use |
+| `heavy_coding` | 56 | Heavy coding with all reasoning & code tools |
+| `full` | 63 | **Default profile** — every tool enabled |
 
 ---
 
@@ -74,7 +74,7 @@ Research-focused with Grok search + all Perplexity + brainstorming + the full re
 
 ---
 
-### 3. `code_focus` (39 tools)
+### 3. `code_focus` (41 tools)
 
 Code-heavy work with debugging and analysis.
 
@@ -82,10 +82,10 @@ Code-heavy work with debugging and analysis.
 - Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
 - Research: `perplexity_ask`
 - Reasoning: `grok_reason`, `qwq_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`
-- Code: `grok_code`, `grok_debug`, `openai_code_review`, `gemini_analyze_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `deepseek_algo`
+- Code: `grok_code`, `grok_debug`, `openai_code_review`, `gemini_analyze_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `deepseek_algo`, `debug_triage`
 - Creative: `gemini_brainstorm`
 - Local: `local_query`
-- Planning: `planner_maker`, `planner_runner`, `list_plans`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`, `spec_writer`
 - Workflow: `workflow`, `list_workflows`, `validate_workflow`
 - Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`
 - Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
@@ -94,7 +94,7 @@ Code-heavy work with debugging and analysis.
 
 ---
 
-### 4. `balanced` (50 tools)
+### 4. `balanced` (52 tools)
 
 Balanced set for general use — nearly everything except the deepest niche reasoning/creative extras.
 
@@ -102,12 +102,12 @@ Balanced set for general use — nearly everything except the deepest niche reas
 - Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
 - Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `openai_search`, `gemini_search`
 - Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`
-- Code: `grok_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`
+- Code: `grok_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`, `debug_triage`
 - Judgment: `gemini_judge`, `jury`
 - Creative: `openai_brainstorm`, `gemini_brainstorm`
 - Analysis: `gemini_analyze_code`, `gemini_analyze_text`
 - Local: `local_query`
-- Planning: `planner_maker`, `planner_runner`, `list_plans`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`, `spec_writer`
 - Workflow: `workflow`, `list_workflows`, `create_workflow`, `visualize_workflow`
 - Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`
 - Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
@@ -117,7 +117,7 @@ Balanced set for general use — nearly everything except the deepest niche reas
 
 ---
 
-### 5. `heavy_coding` (54 tools)
+### 5. `heavy_coding` (56 tools)
 
 Heavy coding with the full reasoning & code toolset, minus the general workflow-management tools.
 
@@ -125,12 +125,12 @@ Heavy coding with the full reasoning & code toolset, minus the general workflow-
 - Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
 - Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `openai_search`, `gemini_search`
 - Reasoning: `grok_reason`, `openai_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`
-- Code: `grok_code`, `grok_debug`, `grok_architect`, `openai_code_review`, `openai_explain`, `gemini_analyze_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`
+- Code: `grok_code`, `grok_debug`, `grok_architect`, `openai_code_review`, `openai_explain`, `gemini_analyze_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`, `debug_triage`
 - Judgment: `gemini_judge`, `jury`
 - Creative: `grok_brainstorm`, `openai_brainstorm`, `gemini_brainstorm`
 - Analysis: `gemini_analyze_text`
 - Local: `local_query`
-- Planning: `planner_maker`, `planner_runner`, `list_plans`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`, `spec_writer`
 - Workflow: `workflow`, `list_workflows`, `workflow_start`, `continue_workflow`
 - Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`
 - Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
@@ -141,7 +141,7 @@ Heavy coding with the full reasoning & code toolset, minus the general workflow-
 
 ---
 
-### 6. `full` (61 tools) — default
+### 6. `full` (63 tools) — default
 
 All tools enabled for maximum capability. This is the profile set in `tools.config.json`'s `activeProfile` by default.
 
@@ -149,7 +149,7 @@ All tools enabled for maximum capability. This is the profile set in `tools.conf
 
 **Best for:** Maximum flexibility, specialized tasks, demonstrations.
 
-**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools won't register even under `full`. Run `doctor` to see exactly what's active. `continue_focus` is always registered regardless of profile (see [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md#continue_focus)) and isn't counted in the 61.
+**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools won't register even under `full`. Run `doctor` to see exactly what's active. `continue_focus` is always registered regardless of profile (see [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md#continue_focus)) and isn't counted in the 63.
 
 ---
 
