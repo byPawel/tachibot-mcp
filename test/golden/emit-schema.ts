@@ -15,7 +15,7 @@
  *   We do NOT reimplement that. We:
  *     1. Patch FastMCP.prototype.start → no-op that resolves a
  *        `registrationComplete` promise (start() is the LAST call in
- *        server.ts:initializeServer(), so resolving there means every sync AND
+ *        server-main.ts:initializeServer(), so resolving there means every sync AND
  *        async registration has run). This also avoids booting a real stdio
  *        server.
  *     2. Spy FastMCP.prototype.addTool / addTools to capture every wrapped tool
@@ -71,7 +71,7 @@ export interface EmittedTool {
  *   test.)
  *
  * Provider AVAILABILITY (src/tools/*-tools.ts read env into module-level consts
- * AT IMPORT TIME, so these MUST be set BEFORE server.ts is imported):
+ * AT IMPORT TIME, so these MUST be set BEFORE server-main.ts is imported):
  *   - OPENAI_API_KEY      → isOpenAIAvailable()      (openai-tools.ts)
  *   - PERPLEXITY_API_KEY  → isPerplexityAvailable()  (perplexity-tools.ts)
  *   - XAI_API_KEY         → isGrokAvailable()        (api-keys.ts: XAI||GROK)
@@ -182,7 +182,7 @@ let cachedEmitted: EmittedTool[] | null = null;
 
 /**
  * Returns the normalized emitted `tools/list` payload for the current server.
- * Result is cached for the process (importing server.ts is a one-time, global
+ * Result is cached for the process (importing server-main.ts is a one-time, global
  * side effect). Idempotent and deterministic.
  */
 export async function getEmittedTools(): Promise<EmittedTool[]> {
@@ -192,7 +192,7 @@ export async function getEmittedTools(): Promise<EmittedTool[]> {
 
   const captured: CapturedTool[] = [];
 
-  // --- 1. Patch FastMCP so importing server.ts captures tools WITHOUT booting.
+  // --- 1. Patch FastMCP so importing server-main.ts captures tools WITHOUT booting.
   const proto = FastMCP.prototype as unknown as {
     start: (...a: unknown[]) => unknown;
     addTool: (tool: CapturedTool) => unknown;
@@ -225,7 +225,7 @@ export async function getEmittedTools(): Promise<EmittedTool[]> {
     return undefined;
   };
 
-  // server.ts creates a heartbeat setInterval AFTER server.start(). Neutralize
+  // server-main.ts creates a heartbeat setInterval AFTER server.start(). Neutralize
   // it so it can't keep the Jest process alive; restore immediately after.
   const realSetInterval = globalThis.setInterval;
   globalThis.setInterval = ((...args: Parameters<typeof setInterval>) => {
@@ -236,14 +236,14 @@ export async function getEmittedTools(): Promise<EmittedTool[]> {
     return handle;
   }) as typeof setInterval;
 
-  // server.ts's initializeServer() catch (server.ts:881-883) and the top-level
+  // server-main.ts's initializeServer() catch and the top-level
   // `initializeServer().catch(...)` both call process.exit(1) on ANY thrown
   // error during init. Today that path is never hit (the throw, if any, lands
   // strictly AFTER all registrations + the no-op start() — see helper docs), but
   // an unguarded process.exit() in the import path is a latent way for the whole
   // golden suite to die confusingly once Phase 3 changes provider modules.
   // Stub it to a recorder no-op so a stray exit can NEVER terminate the jest
-  // worker; restore in finally. We do NOT swallow the underlying error — server.ts
+  // worker; restore in finally. We do NOT swallow the underlying error — server-main.ts
   // has already logged it before calling exit, and we surface it via stderr filter.
   const realProcessExit = process.exit.bind(process);
   let exitWasIntercepted: { code: number | undefined } | null = null;
@@ -253,7 +253,7 @@ export async function getEmittedTools(): Promise<EmittedTool[]> {
     return undefined as never;
   }) as typeof process.exit;
 
-  // Silence the expected, voluminous server STARTUP chatter that server.ts emits
+  // Silence the expected, voluminous server STARTUP chatter that server-main.ts emits
   // to stderr during import (provider availability, profile warnings, workflow
   // engine banners, heartbeat/startup logs). This is NOT swallowing unrelated
   // errors: it is scoped strictly to the import window and restored in finally;
@@ -266,7 +266,7 @@ export async function getEmittedTools(): Promise<EmittedTool[]> {
   try {
     // --- 2. Import the server (AFTER patching + env). Dynamic so patches apply.
     //     `.js` specifier is rewritten to the .ts source by jest moduleNameMapper.
-    await import("../../src/server.js");
+    await import("../../src/server-main.js");
 
     // Wait for async initializeServer() to reach start(), then flush microtasks
     // so any trailing synchronous-after-await registrations are captured.
@@ -284,7 +284,7 @@ export async function getEmittedTools(): Promise<EmittedTool[]> {
   }
 
   if (exitWasIntercepted) {
-    // Diagnostic only: surfaces if server.ts ever exits during import. Does not
+    // Diagnostic only: surfaces if server-main.ts ever exits during import. Does not
     // fail the harness (registrations + start() complete before any exit path);
     // the gate test's count/deep-equal assertions are the real safety net.
     // eslint-disable-next-line no-console
