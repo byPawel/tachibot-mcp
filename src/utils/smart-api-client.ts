@@ -78,16 +78,19 @@ export class SmartAPIClient {
         controller.abort();
       }, timeoutMs);
 
+      const raceTimeout = this.createTimeoutPromise<T>(timeoutMs, fullConfig.provider);
+
       try {
         const attemptStart = Date.now();
 
         // Execute API call
         const result = await Promise.race([
           apiCall(),
-          this.createTimeoutPromise<T>(timeoutMs, fullConfig.provider)
+          raceTimeout.promise
         ]);
 
         clearTimeout(timeoutId);
+        raceTimeout.cancel();
 
         const latency = Date.now() - attemptStart;
 
@@ -100,6 +103,7 @@ export class SmartAPIClient {
 
       } catch (error: any) {
         clearTimeout(timeoutId);
+        raceTimeout.cancel();
         lastError = error;
 
         console.error(
@@ -210,14 +214,20 @@ export class SmartAPIClient {
   }
 
   /**
-   * Create a timeout promise for Promise.race
+   * Create a timeout promise for Promise.race, plus a cancel handle.
+   * The race's loser (whichever branch didn't settle) leaves its timer
+   * scheduled unless the caller cancels it — without this, a fast
+   * `apiCall()` still leaves this setTimeout alive for the full
+   * `timeoutMs`, holding the event loop open.
    */
-  private createTimeoutPromise<T>(timeoutMs: number, provider: string): Promise<T> {
-    return new Promise((_, reject) => {
-      setTimeout(() => {
+  private createTimeoutPromise<T>(timeoutMs: number, provider: string): { promise: Promise<T>; cancel: () => void } {
+    let timer!: ReturnType<typeof setTimeout>;
+    const promise = new Promise<T>((_, reject) => {
+      timer = setTimeout(() => {
         reject(new Error(`Timeout after ${timeoutMs}ms for ${provider}`));
       }, timeoutMs);
     });
+    return { promise, cancel: () => clearTimeout(timer) };
   }
 }
 

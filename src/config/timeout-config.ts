@@ -105,14 +105,19 @@ export function formatTimeout(ms: number): string {
 }
 
 /**
- * Create timeout promise for use with Promise.race()
+ * Create timeout promise for use with Promise.race(), plus a cancel handle.
+ * The race's loser leaves its timer scheduled unless the caller cancels it —
+ * without that, a fast-resolving `promise` still leaves this setTimeout alive
+ * for the full `ms`, holding the event loop open.
  */
-export function createTimeoutPromise<T = never>(ms: number, message?: string): Promise<T> {
-  return new Promise((_, reject) => {
-    setTimeout(() => {
+export function createTimeoutPromise<T = never>(ms: number, message?: string): { promise: Promise<T>; cancel: () => void } {
+  let timer!: ReturnType<typeof setTimeout>;
+  const promise = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => {
       reject(new Error(message || `Operation timed out after ${formatTimeout(ms)}`));
     }, ms);
   });
+  return { promise, cancel: () => clearTimeout(timer) };
 }
 
 /**
@@ -127,10 +132,12 @@ export async function withTimeout<T>(
     ? `${toolName} operation timed out after ${formatTimeout(timeoutMs)}`
     : `Operation timed out after ${formatTimeout(timeoutMs)}`;
 
-  return Promise.race([
-    promise,
-    createTimeoutPromise<T>(timeoutMs, timeoutMessage)
-  ]);
+  const raceTimeout = createTimeoutPromise<T>(timeoutMs, timeoutMessage);
+  try {
+    return await Promise.race([promise, raceTimeout.promise]);
+  } finally {
+    raceTimeout.cancel();
+  }
 }
 
 /**

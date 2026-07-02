@@ -771,12 +771,17 @@ async function initializeServer() {
 
     // Keep the process alive with a heartbeat
     // This ensures the server doesn't exit prematurely
+    // .unref() so this timer is never itself the reason the process stays up —
+    // real MCP runs already stay alive via process.stdin.resume() and the
+    // active transport; this only logs a liveness ping while that's true.
+    // Without unref, importing this module (e.g. test/golden/emit-schema.ts
+    // reading tool schemas) leaks the interval past test teardown.
     setInterval(() => {
       // Heartbeat to keep process alive
       // Log every 30 seconds to show we're still alive
       const now = new Date().toISOString();
       console.error(`💓 Heartbeat: Server still alive at ${now}`);
-    }, 30000); // Every 30 seconds
+    }, 30000).unref(); // Every 30 seconds
 
     console.error("✅ Heartbeat interval established");
     console.error("✅ Server started successfully and listening for MCP commands");

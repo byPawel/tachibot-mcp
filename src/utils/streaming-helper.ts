@@ -46,7 +46,7 @@ export function createHeartbeat(options: HeartbeatOptions): Heartbeat {
       stopped = true;
       clearInterval(interval);
     }
-  }, intervalMs);
+  }, intervalMs).unref(); // never the sole reason the process stays alive
 
   return {
     stop: () => {
