@@ -1,499 +1,170 @@
 # Tool Parameters Documentation
 
-This document provides comprehensive information about all available parameters for the refactored tools: **Challenger**, **Verifier**, and **Scout**.
+Cross-cutting parameter conventions shared across TachiBot's 61 tools. For the full parameter schema of a specific tool, see [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md) — this document covers patterns that repeat across many tools so you don't have to re-learn them per tool.
+
+Generated against the wire contract (`test/golden/__snapshots__/tool-contracts.json`).
 
 ## Table of Contents
 
-- [Challenger](#challenger)
-- [Verifier](#verifier)
-- [Scout](#scout)
+- [The `files` Parameter](#the-files-parameter)
+- [Model-Reasoning Tools: `problem` + `approach` + `context`](#model-reasoning-tools-problem--approach--context)
+- [Code Tools: `task` + `code`/`query`](#code-tools-task--codequery)
+- [Analysis Tools: `focus`](#analysis-tools-focus)
+- [Coordinator-Pattern Tools](#coordinator-pattern-tools)
 - [API Requirements](#api-requirements)
+- [Error Handling](#error-handling)
+- [Testing](#testing)
 
 ---
 
-## Challenger
+## The `files` Parameter
 
-The Challenger tool provides critical thinking and echo chamber prevention by generating counter-arguments and alternative perspectives.
-
-### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `context` | `string \| object \| array` | ✅ Yes | - | The claims, statements, or context to challenge. Can be a string, object with `query`/`text`/`content`, or array of contexts |
-| `model` | `string` | No | `'gpt-5.1-codex-mini'` | AI model to use for generating challenges. See [Supported Models](#supported-models) section |
-| `maxTokens` | `number` | No | `2000` | Maximum tokens per API call |
-| `temperature` | `number` | No | `0.9` | Temperature for response generation (0-1). Higher = more creative challenges |
-
-### Example Usage
+37 of the 61 tools accept a `files: string[]` parameter that reads real source code server-side rather than relying on you to paste it into the prompt. Any reasoning, code, brainstorming, or review tool that takes a `problem`/`code`/`query` string also accepts `files`.
 
 ```typescript
-import { Challenger } from './modes/challenger.js';
-
-const challenger = new Challenger();
-
-// Basic usage
-const result1 = await challenger.challenge(
-  'AI will solve all of humanity\'s problems.'
-);
-
-// With custom parameters
-const result2 = await challenger.challenge(
-  'Social media has only positive effects.',
-  {
-    model: 'gemini-3.1-pro-preview',
-    temperature: 0.7,
-    maxTokens: 1500
-  }
-);
-
-// With object context
-const result3 = await challenger.challenge({
-  query: 'Climate change is not real',
-  text: 'Scientists are all wrong about global warming'
-});
-
-// With array context (detects groupthink)
-const result4 = await challenger.challenge([
-  'Everyone agrees this is the best solution',
-  'There is unanimous consensus on this',
-  'All experts say the same thing'
-]);
-```
-
-### Return Structure
-
-```typescript
-interface ChallengeResult {
-  claims: Claim[];              // Extracted claims with metadata
-  challenges: Challenge[];      // Generated challenges for each claim
-  groupthinkDetected: boolean;  // Whether echo chamber behavior detected
-  alternativePerspectives: string[]; // Alternative viewpoints
-  synthesis: string;            // Comprehensive analysis markdown
-}
-
-interface Claim {
-  id: string;
-  text: string;
-  confidence: number;           // 0-1
-  type: 'fact' | 'opinion' | 'assumption' | 'conclusion';
-}
-
-interface Challenge {
-  claimId: string;
-  challenge: string;
-  evidence?: string;
-  severity: 'low' | 'medium' | 'high';
-  alternativeView?: string;
+{
+  files: string[];   // File paths, optionally with line ranges
 }
 ```
 
-### Supported Models
+**Supports line ranges** so you can scope to exactly the lines under discussion instead of sending a whole file:
 
-| Provider | Models | Notes |
-|----------|--------|-------|
-| **Google Gemini** | `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview-lite` | Gemini 3 Pro is latest (Nov 2025) |
-| **OpenAI** | `gpt-5.1`, `gpt-5.1-codex-mini`, `gpt-5.1-codex`, `gpt-5-pro` | Codex models use /v1/responses endpoint |
-| **xAI (Grok)** | `grok-4.20-0309-reasoning`, `grok-4.20-0309-non-reasoning`, `grok-4.20-multi-agent-0309`, `grok-4-1-fast-reasoning`, `grok-4-1-fast-non-reasoning` | Grok 4.20 flagship (Mar 2026); 4.1-fast for code/debug |
-| **Perplexity** | `sonar-pro`, `sonar-reasoning-pro` | Web search enabled |
-| **OpenRouter** | `qwen/qwen3-coder-plus`, `moonshotai/kimi-k2-thinking` | Requires OPENROUTER_API_KEY |
+```typescript
+deepseek_algo({
+  problem: "Review this Dijkstra implementation for correctness and Big-O",
+  files: ["src/lib/shortest-path.ts:40-120"]
+})
+```
 
-### Notes
+Tools with `files`: `deepseek_algo`, `deepseek_reason`, `diff_review`, `ernie_reason`, `gemini_analyze_code`, `gemini_analyze_text`, `gemini_brainstorm`, `gemini_judge`, `glm_reason`, `grok_architect`, `grok_brainstorm`, `grok_code`, `grok_debug`, `grok_reason`, `kimi_code`, `kimi_decompose`, `kimi_long_context`, `kimi_thinking`, `minimax_agent`, `minimax_code`, `openai_brainstorm`, `openai_code_review`, `openai_explain`, `openai_reason`, `perplexity_ask`, `perplexity_reason`, `plan_critique`, `planner_maker`, `planner_runner`, `qwen_algo`, `qwen_coder`, `qwen_competitive`, `qwen_reason`, `qwq_reason`, `security_review`, `stepfun_reason`, `testgen`.
 
-- Higher `temperature` values produce more diverse and creative challenges
-- The tool automatically detects claim types (fact, opinion, assumption, conclusion)
-- Groupthink detection works best with array contexts containing multiple similar statements
-- Default model (`gpt-5.1-codex-mini`) balances cost and quality
+**Why prefer `files` over pasting code:** the model sees the actual current file content, not a snapshot you may have summarized or mis-copied. For diff-scoped review use `diff_review` or `security_review`'s `diff` parameter instead — those take `git diff` output directly.
 
 ---
 
-## Verifier
+## Model-Reasoning Tools: `problem` + `approach` + `context`
 
-The Verifier tool provides multi-model parallel verification with consensus analysis, querying multiple AI models simultaneously to reach a consensus.
-
-### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `query` | `string` | ✅ Yes | - | The statement or question to verify |
-| `variant` | `string` | No | `'quick_verify'` | Verification strategy. Options: `quick_verify`, `deep_verify`, `fact_check`, `code_verify`, `security_verify` |
-| `model` | `string \| string[]` | No | Variant-specific | Custom model(s) to use instead of variant defaults. Can be single model or array |
-| `maxTokens` | `number` | No | Variant-specific | Maximum tokens per model call |
-| `timeout` | `number` | No | Variant-specific | Timeout in milliseconds for each model query |
-| `includeSources` | `boolean` | No | `false` | Whether to include source citations (recommended for `fact_check`) |
-
-### Variants
-
-Each variant uses different models and settings optimized for specific use cases:
-
-#### `quick_verify` (Default)
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
-- **Tokens**: 2000
-- **Timeout**: 10000ms
-- **Use case**: Fast verification of simple statements
-
-#### `deep_verify`
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1`
-- **Tokens**: 6000
-- **Timeout**: 30000ms
-- **Use case**: Complex reasoning and analysis
-
-#### `fact_check`
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
-- **Tokens**: 3000
-- **Timeout**: 15000ms
-- **Include Sources**: Yes (default)
-- **Use case**: Factual verification with citations
-
-#### `code_verify`
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
-- **Tokens**: 4000
-- **Timeout**: 20000ms
-- **Use case**: Code correctness verification
-
-#### `security_verify`
-- **Models**: `qwen/qwen3-coder-plus`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
-- **Tokens**: 4000
-- **Timeout**: 20000ms
-- **Use case**: Security vulnerability detection
-
-### Example Usage
+The single-model reasoning tools (`grok_reason`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`, `qwen_reason`, `qwq_reason`, `kimi_thinking`, `perplexity_reason`) share a common shape:
 
 ```typescript
-import { Verifier } from './modes/verifier.js';
-
-const verifier = new Verifier();
-
-// Basic usage (quick_verify)
-const result1 = await verifier.verify(
-  'Is Python a statically typed language?'
-);
-
-// Use specific variant
-const result2 = await verifier.verify(
-  'What is the speed of light?',
-  { variant: 'fact_check', includeSources: true }
-);
-
-// Custom models
-const result3 = await verifier.verify(
-  'Is this code safe?',
-  {
-    model: ['gpt-5.1', 'gemini-3.1-pro-preview'],
-    maxTokens: 3000
-  }
-);
-
-// Code verification
-const result4 = await verifier.verify(
-  'function add(a, b) { return a + b; }',
-  { variant: 'code_verify' }
-);
-
-// Security check
-const result5 = await verifier.verify(
-  'SELECT * FROM users WHERE id = ${userId}',
-  { variant: 'security_verify' }
-);
-```
-
-### Return Structure
-
-```typescript
-interface VerifierResult {
-  consensus: number;            // 0-1, agreement level among models
-  majority: any;                // The majority conclusion
-  outliers: ModelResponse[];    // Models that disagreed
-  responses: ModelResponse[];   // All model responses
-  synthesis: string;            // Comprehensive analysis
-  confidence: number;           // 0-1, overall confidence score
-  shouldTerminate?: boolean;    // True if consensus >= 0.8
-}
-
-interface ModelResponse {
-  model: string;
-  response: any;
-  conclusion?: string;          // Extracted conclusion (true/false/uncertain/needs-context)
-  evidence?: string[];          // Supporting evidence
-  confidence?: number;          // Model's confidence (0-1)
-  tokens?: number;             // Tokens used
+{
+  problem: string;      // REQUIRED — the question or problem
+  approach?: string;    // Free-text hint, e.g. "analytical", "first-principles", "step-by-step"
+  context?: string;     // Additional background
+  files?: string[];     // Optional code context (see above)
 }
 ```
 
-### Notes
+`approach` is **not a fixed enum** for most of these tools — it's a free-text steering hint with a per-tool default (`grok_reason` has no default; `deepseek_reason`/`ernie_reason`/`stepfun_reason` default to `"analytical"`; `qwen_reason` defaults to `"mathematical"`; `kimi_thinking` defaults to `"step-by-step"`; `qwq_reason` defaults to `"multi-perspective"` and is closer to an enum in practice: `multi-perspective | mathematical | logical | creative`). Check the specific tool's entry in TOOLS_REFERENCE.md for its default.
 
-- Models are queried in parallel for speed
-- Timeouts prevent slow models from blocking results
-- At least one model must succeed for valid result
-- Consensus >= 80% sets `shouldTerminate = true`
-- Use `includeSources: true` with `fact_check` for citations
+Model-specific extras: `grok_reason` has `useHeavy: boolean` (Grok 4 Heavy, $3/$15, for hard problems); `kimi_thinking` has `maxSteps: integer (1-10, default 3)`.
+
+**Choosing among the reasoning tools** — see CLAUDE.md's Model Configuration table for current model IDs/pricing. As a rule of thumb: `deepseek_reason` for open-weight frontier math/reasoning, `qwen_reason` for the heaviest math (HMMT-grade), `qwq_reason` when you want 4-perspective debate instead of a single answer, `kimi_thinking`/`glm_reason` for agentic/tool-use planning, `stepfun_reason` for cheaper-but-strong AIME/SWE reasoning, `ernie_reason` for broad-knowledge/arena-style answers.
 
 ---
 
-## Scout
+## Code Tools: `task` + `code`/`query`
 
-The Scout tool provides conditional hybrid intelligence gathering, using Perplexity for facts and optionally Grok-4 with live search.
+The code-manipulation tools share a `task` enum plus either a `code` or `query` field:
 
-### Parameters
+| Tool | `task` enum | Primary input | Default task |
+|------|-------------|----------------|--------------|
+| `qwen_coder` | `generate \| review \| optimize \| debug \| refactor \| explain \| analyze` | `query` (required) + `code` | `analyze` |
+| `kimi_code` | `generate \| fix \| review \| optimize \| debug \| refactor` | `query` (required) + `code` | `review` |
+| `minimax_code` | `generate \| fix \| review \| optimize \| debug \| refactor` | `query` (required) + `code` | `review` |
+| `grok_code` | free-text (e.g. analyze/optimize/debug/review/refactor) | `code` (required) + `task` (required) | — |
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `query` | `string` | ✅ Yes | - | The topic or question to research |
-| `variant` | `string` | No | `'research_scout'` | Research strategy. Options: `research_scout`, `code_scout`, `fact_scout`, `quick_scout` |
-| `searchProvider` | `string` | No | `'perplexity'` | Search provider: `perplexity`, `grok`, or `both` |
-| `maxTokens` | `number` | No | Variant-specific | Maximum tokens per API call |
-| `timeout` | `number` | No | Variant-specific | Timeout in milliseconds |
-| `enableGrokLiveSearch` | `boolean` | No | `true` (if using grok) | Enable Grok-4 live web search (costs extra) |
-| `maxSearchSources` | `number` | No | Variant-specific | Maximum search sources for Grok (costs per 1k sources) |
-| `searchDomains` | `string[]` | No | - | Restrict search to specific domains |
+**Important convention:** for `grok_code`, `gemini_analyze_code`, and `openai_code_review`, the actual source goes in the `code` parameter — NOT in `task`/`focus`/`focusAreas`. Several tool descriptions explicitly warn about this because it's an easy mistake (`"Put the CODE in the 'code' parameter, NOT in 'task'"`).
 
-### Variants
+`minimax_agent` and `planner_maker`/`planner_runner` use `task`/`plan` differently — they're multi-step orchestrators, not single-pass code tools (see [Coordinator-Pattern Tools](#coordinator-pattern-tools)).
 
-#### `research_scout` (Default)
-- **Flow**: `perplexity-first-always`
-- **Perplexity Timeout**: 500ms
-- **Parallel Models**: `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
-- **Tokens**: 2500
-- **Max Sources**: 100
-- **Use case**: Comprehensive research with current facts
+---
 
-#### `code_scout`
-- **Flow**: `conditional-hybrid`
-- **Perplexity For**: Latest API docs only
-- **Primary**: `gemini-3.1-pro-preview`
-- **Tokens**: 2000
-- **Max Sources**: 100
-- **Use case**: Technical documentation and code information
+## Analysis Tools: `focus`
 
-#### `fact_scout`
-- **Flow**: `waterfall`
-- **Perplexity Timeout**: 1000ms
-- **Tokens**: 1500
-- **Max Sources**: 150
-- **Use case**: Fact verification with high reliability
+Four tools use a `focus` parameter to steer the angle of analysis:
 
-#### `quick_scout`
-- **Flow**: `conditional-hybrid`
-- **Perplexity Timeout**: 250ms
-- **Parallel Models**: `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
-- **Tokens**: 1000
-- **Max Sources**: 50
-- **Use case**: Fast information gathering
+| Tool | `focus` options | Default |
+|------|------------------|---------|
+| `deepseek_algo` | `correctness, complexity, optimize, data-structure, edge-cases, general` | `general` |
+| `qwen_algo` | `optimize, complexity, data-structure, memory, correctness, competitive, cache, general` | `general` |
+| `gemini_analyze_code` | free-text (e.g. `quality, security, performance, bugs, general`) | `general` |
+| `diff_review` | `security \| perf \| correctness \| style \| all` | `all` |
 
-### Example Usage
+For algorithmic/correctness/Big-O/edge-case/competitive-programming review, `deepseek_algo` is the strongest pick (see CLAUDE.md); `qwen_algo` and `qwq_reason` are the runners-up.
+
+---
+
+## Coordinator-Pattern Tools
+
+`planner_maker` and `planner_runner` don't return a final answer in one call — they return the **next tool to execute**, and you call back in with the result. This lets a multi-model council run without the orchestrating model needing to hold every intermediate result in its own context.
 
 ```typescript
-import { Scout } from './modes/scout.js';
+planner_maker({ task: "Add auth", mode: "start" })
+// → { nextTool: { tool: "grok_search", params: {...} }, step: 1 }
 
-const scout = new Scout();
+// [Execute grok_search yourself]
 
-// Basic usage (research_scout)
-const result1 = await scout.scout(
-  'Latest developments in quantum computing 2025'
-);
-
-// Use specific variant
-const result2 = await scout.scout(
-  'TypeScript 5.0 new features',
-  { variant: 'code_scout' }
-);
-
-// Use Grok live search
-const result3 = await scout.scout(
-  'Current space exploration missions',
-  {
-    searchProvider: 'grok',
-    enableGrokLiveSearch: true,
-    maxSearchSources: 50
-  }
-);
-
-// Use both providers
-const result4 = await scout.scout(
-  'Comprehensive renewable energy research',
-  {
-    searchProvider: 'both',
-    maxSearchSources: 100
-  }
-);
-
-// Domain filtering
-const result5 = await scout.scout(
-  'Python documentation',
-  {
-    searchDomains: ['python.org', 'docs.python.org']
-  }
-);
-
-// Quick lookup
-const result6 = await scout.scout(
-  'Node.js version 20 features',
-  {
-    variant: 'quick_scout',
-    maxTokens: 500
-  }
-);
+planner_maker({ task: "Add auth", mode: "continue", step: 2, prior: { search: "..." } })
+// → { nextTool: { tool: "qwen_coder", params: {...} }, step: 2 }
+// ... continue until isComplete: true
 ```
 
-### Return Structure
+`planner_runner` follows the same `start` → `step` → `verify` pattern, with `verify` checkpoints at `step1`, `10%`, `25%`, `50%`, `80%`, `100%` — each checkpoint uses a different model so no two adjacent checks share a model. Feed it real evidence (`diff`, `testResults`, `modifiedFiles`) rather than letting it verify blind; the tool description explicitly frames these as parameters that "unblind" the checkpoints.
 
-```typescript
-interface ScoutResult {
-  probe?: ProbeResult;          // Initial probe results
-  facts?: FactResult;           // Gathered facts
-  analyses?: AnalysisResult[];  // Multi-model analyses
-  synthesis: string;            // Comprehensive synthesis
-  warning?: string;             // Warnings (e.g., outdated info)
-  executionTime: number;        // Time in milliseconds
-  tokensUsed: number;          // Total tokens consumed
-}
-
-interface FactResult {
-  facts: string[];
-  sources?: string[];
-  timestamp: string;
-  reliability: number;          // 0-1
-}
-
-interface AnalysisResult {
-  model: string;
-  analysis: string;
-  insights: string[];
-}
-```
-
-### Cost Control
-
-Scout includes built-in cost controls:
-
-- **Source Limits**: Controls how many sources Grok searches (costs per 1k)
-  - `quick_scout`: 50 sources
-  - `research_scout`: 100 sources (configurable via `GROK_SEARCH_SOURCES_LIMIT` env)
-  - `fact_scout`: 150 sources
-
-- **Search Provider**: Default is Perplexity (cheaper), Grok is optional
-- **Timeouts**: Prevent long-running expensive calls
-- **Token Limits**: Per-variant limits prevent runaway costs
-
-### Notes
-
-- Requires `PERPLEXITY_API_KEY` for Perplexity search
-- Requires `GROK_API_KEY` or `XAI_API_KEY` for Grok search
-- `searchProvider: 'both'` combines results from both providers
-- Domain filtering restricts searches to specified websites
-- Grok live search costs are based on sources searched (per 1000)
+`focus` has a lighter version of the same idea: pass `saveSession: true`, then resume with `continue_focus({ sessionId })`.
 
 ---
 
 ## API Requirements
 
-### Required API Keys
-
-Configure these in your `.env` file:
+Configure these in your `.env` file (full setup guide: [API_KEYS.md](API_KEYS.md)):
 
 ```bash
-# Required for most tools
-OPENAI_API_KEY=sk-...
-
-# Optional but recommended
-GOOGLE_API_KEY=...           # For Gemini models
-PERPLEXITY_API_KEY=...       # For Perplexity search
-GROK_API_KEY=...             # For Grok models and live search
-# or
-XAI_API_KEY=...              # Alternative to GROK_API_KEY
-
-# Optional configuration
-DEFAULT_SEARCH_PROVIDER=perplexity  # perplexity|grok|both
-GROK_SEARCH_SOURCES_LIMIT=100       # Max sources for Grok
+PERPLEXITY_API_KEY=...       # perplexity_ask, perplexity_reason
+GROK_API_KEY=...             # or XAI_API_KEY — grok_* tools
+OPENAI_API_KEY=...           # openai_* tools
+GEMINI_API_KEY=...           # gemini_* tools, jury synthesis
+OPENROUTER_API_KEY=...       # qwen_*, kimi_*, minimax_*, deepseek_*, glm_*, stepfun_*, ernie_* tools
 ```
+
+`local_query` and the `jury` tool's `local` juror need no API key — they call any OpenAI-compatible local server (Ollama, LM Studio, llama.cpp, vLLM). See CLAUDE.md's "Connecting Local Models" section.
+
+Tools whose provider key is missing simply don't register — call `doctor` to see exactly which keys are detected and which tools that unlocks or hides.
 
 ### Model Routing
 
-Tools automatically route to the appropriate API based on model name:
+- `perplexity*`, `sonar*` → Perplexity API
+- `grok*` → xAI API
+- `openai*`, `gpt*` → OpenAI API
+- `gemini*` → Google API
+- `qwen*`, `qwq*`, `kimi*`, `minimax*`, `deepseek*`, `glm*`, `stepfun*`, `ernie*` → OpenRouter
 
-- **`gpt*`, `qwen*`, `qwq*`** → OpenAI API
-- **`gemini*`** → Google API
-- **`grok*`** → xAI API
-- **`perplexity*`, `sonar*`** → Perplexity API
+---
 
-### Error Handling
+## Error Handling
 
-All tools handle API failures gracefully:
-
-- Timeouts return partial results
-- Failed models are excluded from consensus
-- Fallback mechanisms ensure results even with partial failures
+- Tools that call multiple models in parallel (`jury`, `diff_review`, `planner_runner` checkpoints) exclude failed models from synthesis rather than failing the whole call.
+- `local_query` and the jury's `local` juror throw a typed `LocalLLMError` on failure so the jury silently drops that juror instead of leaking an error blob into the synthesized verdict.
+- Quota/rate-limit failures on OpenRouter models fall back automatically per `MODEL_FALLBACKS` in `src/tools/openrouter-tools.ts` (e.g. GLM-5.2 → GLM-5.1 → GLM-5).
 
 ---
 
 ## Testing
 
-Comprehensive tests are available in `src/modes/__tests__/`:
-
 ```bash
-# Run all tests
-npm test
-
-# Run specific tool tests
-npm test challenger
-npm test verifier
-npm test scout
-
-# Run with coverage
-npm test -- --coverage
+npm test                    # All tests
+npm test -- --watch         # Watch mode
+npm test -- jury            # Single test file, e.g. jury, planner, workflow
 ```
 
-See test files for more usage examples:
-- `src/modes/__tests__/challenger.test.ts`
-- `src/modes/__tests__/verifier.test.ts`
-- `src/modes/__tests__/scout.test.ts`
+The wire contract used to generate this documentation and TOOLS_REFERENCE.md is itself a golden snapshot test — `test/golden/__snapshots__/tool-contracts.json` — regenerated whenever a tool's schema changes, so it stays the authoritative source of truth for what's actually registered.
 
 ---
 
-## Performance Tips
+## See Also
 
-1. **Use appropriate variants**: Don't use `deep_verify` when `quick_verify` suffices
-2. **Set token limits**: Lower `maxTokens` for simple queries
-3. **Control timeouts**: Shorter timeouts for time-sensitive operations
-4. **Choose models wisely**: `gpt-5.1-codex-mini` and `gemini-3.1-pro-preview` are fast and cheap
-5. **Limit Grok sources**: Keep `maxSearchSources` low unless needed
-6. **Use `quick_scout`**: For simple lookups instead of full research
-
----
-
-## Migration Guide
-
-If migrating from old tool structure:
-
-### Challenger (formerly separate tools)
-```typescript
-// Old
-await thinkTool.challenge(context);
-
-// New
-await challenger.challenge(context, { model: 'gpt-5.1-codex-mini' });
-```
-
-### Verifier (formerly consensus tools)
-```typescript
-// Old
-await multiModelTool.verify(query);
-
-// New
-await verifier.verify(query, { variant: 'quick_verify' });
-```
-
-### Scout (formerly search + research tools)
-```typescript
-// Old
-await researchTool.search(query);
-
-// New
-await scout.scout(query, { variant: 'research_scout' });
-```
-
----
-
-## Support
-
-For issues or questions:
-- GitHub: https://github.com/byPawel/tachibot-mcp
+- [Tools Reference](TOOLS_REFERENCE.md) - Full per-tool schemas and examples
+- [Tool Profiles](TOOL_PROFILES.md) - Pre-configured tool sets
+- [API Keys Guide](API_KEYS.md) - Where to get API keys
+- [Configuration Guide](CONFIGURATION.md) - Complete configuration reference

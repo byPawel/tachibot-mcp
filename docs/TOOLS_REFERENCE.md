@@ -1,450 +1,46 @@
 # TachiBot MCP - Complete Tools Reference
 
-**Complete parameter schemas, advanced usage, and examples for all 51 tools**
+**Complete parameter schemas and example calls for all 61 tools** (62 registered — `continue_focus` is an always-on companion to `focus` outside the profile system; see [Meta & Orchestration](#meta--orchestration)).
+
+Schemas below are generated from the wire contract (`test/golden/__snapshots__/tool-contracts.json`) — the exact JSON Schema the MCP server publishes for each tool.
 
 ---
 
 ## Table of Contents
 
-- [Core Reasoning Tools](#core-reasoning-tools)
-  - [think](#think)
-  - [focus](#focus)
-  - [nextThought](#nextthought)
-- [Perplexity Suite](#perplexity-suite)
-  - [perplexity_ask](#perplexity_ask)
-  - [perplexity_research](#perplexity_research)
-  - [perplexity_reason](#perplexity_reason)
-- [Grok Suite](#grok-suite)
-  - [grok_search](#grok_search)
-  - [grok_reason](#grok_reason)
-  - [grok_code](#grok_code)
-  - [grok_debug](#grok_debug)
-  - [grok_architect](#grok_architect)
-  - [grok_brainstorm](#grok_brainstorm)
-- [OpenAI Suite](#openai-suite)
-  - [openai_reason](#openai_reason)
-  - [openai_brainstorm](#openai_brainstorm)
-  - [openai_code_review](#openai_code_review)
-  - [openai_explain](#openai_explain)
-- [Gemini Suite](#gemini-suite)
-  - [gemini_brainstorm](#gemini_brainstorm)
-  - [gemini_analyze_code](#gemini_analyze_code)
-  - [gemini_analyze_text](#gemini_analyze_text)
-- [OpenRouter Suite](#openrouter-suite)
-  - [qwen_coder](#qwen_coder)
-  - [kimi_thinking](#kimi_thinking)
-  - [qwen_competitive](#qwen_competitive) (conditional)
-- [Workflow Tools](#workflow-tools)
-  - [workflow](#workflow)
-  - [list_workflows](#list_workflows)
-  - [create_workflow](#create_workflow)
-  - [visualize_workflow](#visualize_workflow)
-  - [workflow_start](#workflow_start)
-  - [continue_workflow](#continue_workflow)
-  - [workflow_status](#workflow_status)
-  - [validate_workflow](#validate_workflow)
-  - [validate_workflow_file](#validate_workflow_file)
-- [Workflows (YAML-based)](#workflows-yaml-based)
-  - Note: verifier, scout, challenger, and pingpong are now YAML workflows, not MCP tools
+- [Research & Search](#research--search) (5): [perplexity_ask](#perplexity_ask) &#183; [perplexity_reason](#perplexity_reason) &#183; [grok_search](#grok_search) &#183; [openai_search](#openai_search) &#183; [gemini_search](#gemini_search)
+- [Reasoning & Planning](#reasoning--planning) (13): [grok_reason](#grok_reason) &#183; [openai_reason](#openai_reason) &#183; [qwen_reason](#qwen_reason) &#183; [qwq_reason](#qwq_reason) &#183; [kimi_thinking](#kimi_thinking) &#183; [kimi_decompose](#kimi_decompose) &#183; [deepseek_reason](#deepseek_reason) &#183; [glm_reason](#glm_reason) &#183; [stepfun_reason](#stepfun_reason) &#183; [ernie_reason](#ernie_reason) &#183; [planner_maker](#planner_maker) &#183; [planner_runner](#planner_runner) &#183; [list_plans](#list_plans)
+- [Code Intelligence](#code-intelligence) (10): [kimi_code](#kimi_code) &#183; [grok_code](#grok_code) &#183; [grok_debug](#grok_debug) &#183; [qwen_coder](#qwen_coder) &#183; [qwen_algo](#qwen_algo) &#183; [qwen_competitive](#qwen_competitive) &#183; [deepseek_algo](#deepseek_algo) &#183; [minimax_code](#minimax_code) &#183; [minimax_agent](#minimax_agent) &#183; [testgen](#testgen)
+- [Analysis & Judgment](#analysis--judgment) (14): [gemini_analyze_text](#gemini_analyze_text) &#183; [gemini_analyze_code](#gemini_analyze_code) &#183; [gemini_judge](#gemini_judge) &#183; [jury](#jury) &#183; [diff_review](#diff_review) &#183; [plan_critique](#plan_critique) &#183; [gemini_brainstorm](#gemini_brainstorm) &#183; [openai_brainstorm](#openai_brainstorm) &#183; [openai_code_review](#openai_code_review) &#183; [openai_explain](#openai_explain) &#183; [grok_brainstorm](#grok_brainstorm) &#183; [grok_architect](#grok_architect) &#183; [security_review](#security_review) &#183; [kimi_long_context](#kimi_long_context)
+- [Meta & Orchestration](#meta--orchestration) (7): [think](#think) &#183; [nextThought](#nextthought) &#183; [focus](#focus) &#183; [continue_focus](#continue_focus) &#183; [tachi](#tachi) &#183; [doctor](#doctor) &#183; [usage_stats](#usage_stats)
+- [Workflows](#workflows) (9): [workflow](#workflow) &#183; [workflow_start](#workflow_start) &#183; [continue_workflow](#continue_workflow) &#183; [list_workflows](#list_workflows) &#183; [create_workflow](#create_workflow) &#183; [visualize_workflow](#visualize_workflow) &#183; [workflow_status](#workflow_status) &#183; [validate_workflow](#validate_workflow) &#183; [validate_workflow_file](#validate_workflow_file)
+- [Prompt Engineering](#prompt-engineering) (3): [list_prompt_techniques](#list_prompt_techniques) &#183; [preview_prompt_technique](#preview_prompt_technique) &#183; [execute_prompt_technique](#execute_prompt_technique)
+- [Local Models](#local-models) (1): [local_query](#local_query)
 
 ---
 
-## Core Reasoning Tools
-
-### think
-
-Anthropic's official "think" tool for structured reasoning. Provides a dedicated scratchpad for step-by-step problem solving.
-
-#### Schema
-
-```typescript
-{
-  thought: string;  // REQUIRED - Your reasoning step
-}
-```
-
-#### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `thought` | `string` | ✅ Yes | - | The reasoning thought or analysis step |
-
-#### Example Calls
-
-**Basic reasoning:**
-```typescript
-think({
-  thought: "Let me break down this problem step by step..."
-})
-```
-
-**Complex analysis:**
-```typescript
-think({
-  thought: `Analyzing the architecture trade-offs:
-  1. Microservices offer scalability but add complexity
-  2. Monolith is simpler but may become bottleneck
-  3. For MVP with 2-person team, monolith makes sense
-  4. Can migrate to microservices later if needed`
-})
-```
-
-#### Best Practices
-
-- Use for complex reasoning chains
-- Break down problems into logical steps
-- Explicitly state assumptions
-- Document decision rationale
-
----
-
-### focus
-
-Multi-model collaborative reasoning with 10+ specialized modes. Coordinate different AI models to solve problems together.
-
-#### Schema
-
-```typescript
-{
-  query: string;                    // REQUIRED
-  mode?: string;                    // Default: "simple"
-  domain?: string;
-  models?: string[];
-  rounds?: number;                  // Default: 5
-  temperature?: number;             // 0-1, Default: 0.7
-  maxTokensPerRound?: number;       // Default: 2000
-  pingPongStyle?: string;           // Default: "collaborative"
-  tokenEfficient?: boolean;         // Default: false
-  saveSession?: boolean;            // Default: true
-  executeNow?: boolean;             // Default: true
-  context?: string;
-}
-```
-
-#### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `query` | `string` | ✅ Yes | - | The problem or question to solve |
-| `mode` | `string` | No | `"simple"` | Reasoning mode (see modes below) |
-| `domain` | `string` | No | - | Problem domain (see domains below) |
-| `models` | `string[]` | No | Mode-specific | Custom list of models to use |
-| `rounds` | `number` | No | `5` | Number of reasoning rounds |
-| `temperature` | `number` | No | `0.7` | Temperature for responses (0-1) |
-| `maxTokensPerRound` | `number` | No | `2000` | Max tokens per model per round |
-| `pingPongStyle` | `string` | No | `"collaborative"` | Interaction style |
-| `tokenEfficient` | `boolean` | No | `false` | Enable token optimization |
-| `saveSession` | `boolean` | No | `true` | Save session for later retrieval |
-| `executeNow` | `boolean` | No | `true` | Execute immediately vs queue |
-| `context` | `string` | No | - | Additional context |
-
-#### Available Modes
-
-| Mode | Description | Best For |
-|------|-------------|----------|
-| `simple` | Basic single-model reasoning | Quick questions |
-| `debug` | Debug-focused analysis | Finding bugs |
-| `deep-reasoning` | Multi-model collaboration with critique | Complex problems |
-| `code-brainstorm` | Technical brainstorming | Coding solutions |
-| `architecture-debate` | Models debate architecture approaches | System design |
-| `brainstorm` | Creative ideation | New ideas |
-| `research` | Deep investigation with evidence | Research projects |
-| `analyze` | Systematic analysis | Data/code analysis |
-| `focus-deep` | Extended deep reasoning | Very complex problems |
-| `status` | Check session status | Monitoring |
-
-#### Available Domains
-
-| Domain | Focus Area |
-|--------|-----------|
-| `architecture` | System architecture and design |
-| `algorithms` | Algorithm design and optimization |
-| `debugging` | Finding and fixing bugs |
-| `security` | Security analysis and hardening |
-| `performance` | Performance optimization |
-| `api_design` | API design patterns |
-| `database` | Database design and queries |
-| `frontend` | Frontend development |
-| `backend` | Backend development |
-| `devops` | DevOps and infrastructure |
-| `testing` | Testing strategies |
-
-#### PingPong Styles
-
-| Style | Behavior |
-|-------|----------|
-| `collaborative` | Models build on each other's ideas |
-| `competitive` | Models try to find better solutions |
-| `debate` | Models argue different perspectives |
-| `build-upon` | Each model extends previous thoughts |
-
-#### Example Calls
-
-**Basic usage:**
-```typescript
-focus({
-  query: "Design a scalable real-time chat system"
-})
-```
-
-**Deep collaborative reasoning:**
-```typescript
-focus({
-  query: "Should we use microservices or monolith?",
-  mode: "deep-reasoning",
-  domain: "architecture",
-  rounds: 8
-})
-```
-
-**Multi-model brainstorming:**
-```typescript
-focus({
-  query: "Revolutionary social media features",
-  mode: "brainstorm",
-  models: ["grok", "claude-code", "qwen", "openai"],
-  rounds: 10,
-  temperature: 0.9,
-  pingPongStyle: "build-upon"
-})
-```
-
-**Architectural debate:**
-```typescript
-focus({
-  query: "TypeScript vs JavaScript for large codebases",
-  mode: "architecture-debate",
-  domain: "frontend",
-  temperature: 0.8
-})
-```
-
-**Code-focused collaboration:**
-```typescript
-focus({
-  query: "Optimize this database query performance",
-  mode: "code-brainstorm",
-  domain: "database",
-  context: "PostgreSQL with 10M rows, high read volume"
-})
-```
-
----
-
-### nextThought
-
-Sequential thinking with branching and revision support. Break complex problems into numbered steps.
-
-#### Schema
-
-```typescript
-{
-  thought: string;                  // REQUIRED
-  nextThoughtNeeded: boolean;       // REQUIRED
-  thoughtNumber?: number;
-  totalThoughts?: number;
-  model?: string;
-  isRevision?: boolean;
-  revisesThought?: number;
-  branchFromThought?: number;
-}
-```
-
-#### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `thought` | `string` | ✅ Yes | - | The current thinking step |
-| `nextThoughtNeeded` | `boolean` | ✅ Yes | - | Whether another thought is needed |
-| `thoughtNumber` | `number` | No | - | Current thought number (1-indexed) |
-| `totalThoughts` | `number` | No | - | Estimated total thoughts needed |
-| `model` | `string` | No | - | Model handling this thought |
-| `isRevision` | `boolean` | No | `false` | Is this revising previous thinking? |
-| `revisesThought` | `number` | No | - | Which thought number is being revised |
-| `branchFromThought` | `number` | No | - | Branch from this thought number |
-
-#### Example Calls
-
-**Linear thinking sequence:**
-```typescript
-// Thought 1
-nextThought({
-  thought: "First, let's identify the core requirements...",
-  thoughtNumber: 1,
-  totalThoughts: 5,
-  nextThoughtNeeded: true
-})
-
-// Thought 2
-nextThought({
-  thought: "Now let's consider the technical constraints...",
-  thoughtNumber: 2,
-  totalThoughts: 5,
-  nextThoughtNeeded: true
-})
-
-// Final thought
-nextThought({
-  thought: "Based on analysis, recommend approach X because...",
-  thoughtNumber: 5,
-  totalThoughts: 5,
-  nextThoughtNeeded: false
-})
-```
-
-**Branching thinking:**
-```typescript
-nextThought({
-  thought: "Let's explore an alternative approach...",
-  thoughtNumber: 4,
-  branchFromThought: 2,  // Branch from thought #2
-  nextThoughtNeeded: true
-})
-```
-
-**Revising previous thought:**
-```typescript
-nextThought({
-  thought: "Actually, I need to revise my earlier assumption...",
-  isRevision: true,
-  revisesThought: 3,
-  nextThoughtNeeded: true
-})
-```
-
----
-
-## Perplexity Suite
+## Research & Search
 
 ### perplexity_ask
 
-Web search with up-to-date information using Perplexity Sonar Pro.
-
-#### Schema
-
-```typescript
-{
-  query: string;                                        // REQUIRED
-  searchDomain?: "general" | "academic" | "news" | "social";
-  searchRecency?: "hour" | "day" | "week" | "month" | "year";
-}
-```
+Web search. Put your QUERY in the `query` parameter.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `query` | `string` | ✅ Yes | - | Search query |
-| `searchDomain` | `string` | No | `"general"` | Search domain filter |
-| `searchRecency` | `string` | No | - | Recency filter |
+| `query` | `string` | ✅ Yes | - | The search query or question |
+| `searchDomain` | `"general" \| "academic" \| "news" \| "social"` | No | - | Search domain filter |
+| `searchRecency` | `"hour" \| "day" \| "week" \| "month" \| "year"` | No | - | Recency filter |
+| `files` | `string[]` | No | - | File paths to read as code context. Supports line ranges: `src/foo.ts:100-200` |
 
-#### Search Domains
+#### Example
 
-- `general` - General web search
-- `academic` - Academic papers and research
-- `news` - News articles
-- `social` - Social media content
-
-#### Search Recency Options
-
-- `hour` - Last hour
-- `day` - Last 24 hours
-- `week` - Last 7 days
-- `month` - Last 30 days
-- `year` - Last 365 days
-
-#### Example Calls
-
-**Basic search:**
 ```typescript
 perplexity_ask({
-  query: "latest AI developments"
-})
-```
-
-**Academic search:**
-```typescript
-perplexity_ask({
-  query: "quantum computing error correction",
-  searchDomain: "academic"
-})
-```
-
-**Recent news:**
-```typescript
-perplexity_ask({
-  query: "OpenAI announcements",
-  searchDomain: "news",
-  searchRecency: "week"
-})
-```
-
-**Time-sensitive query:**
-```typescript
-perplexity_ask({
-  query: "stock market trends",
-  searchRecency: "day"
-})
-```
-
----
-
-### perplexity_research
-
-Deep research with multiple queries, evidence gathering, and synthesis.
-
-#### Schema
-
-```typescript
-{
-  topic: string;                    // REQUIRED
-  questions?: string[];             // Sub-questions to explore
-  depth?: "quick" | "standard" | "deep";  // Default: "standard"
-}
-```
-
-#### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `topic` | `string` | ✅ Yes | - | Research topic |
-| `questions` | `string[]` | No | Auto-generated | Specific sub-questions to investigate |
-| `depth` | `string` | No | `"standard"` | Research depth |
-
-#### Depth Levels
-
-- `quick` - Fast overview (2-3 queries, ~1min)
-- `standard` - Balanced research (4-6 queries, ~2-3min)
-- `deep` - Comprehensive investigation (8-12 queries, ~5-10min)
-
-#### Example Calls
-
-**Basic research:**
-```typescript
-perplexity_research({
-  topic: "Latest AI reasoning techniques"
-})
-```
-
-**With specific questions:**
-```typescript
-perplexity_research({
-  topic: "Quantum computing practical applications",
-  questions: [
-    "What are the current quantum computing use cases?",
-    "Which companies are leading quantum computing?",
-    "What are the main technical challenges?",
-    "When will quantum computers be commercially viable?"
-  ],
-  depth: "deep"
-})
-```
-
-**Quick overview:**
-```typescript
-perplexity_research({
-  topic: "Rust programming language trends",
-  depth: "quick"
+  query: "latest AI reasoning benchmarks",
+  searchDomain: "academic",
+  searchRecency: "month"
 })
 ```
 
@@ -452,36 +48,19 @@ perplexity_research({
 
 ### perplexity_reason
 
-Complex reasoning using Perplexity Sonar Reasoning Pro.
-
-#### Schema
-
-```typescript
-{
-  problem: string;                  // REQUIRED
-  context?: string;
-  approach?: "analytical" | "creative" | "systematic" | "comparative";
-}
-```
+Reasoning with search. Put your PROBLEM in the `problem` parameter.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `problem` | `string` | ✅ Yes | - | Problem to reason about |
-| `context` | `string` | No | - | Additional context |
-| `approach` | `string` | No | `"analytical"` | Reasoning approach |
+| `problem` | `string` | ✅ Yes | - | The problem to reason about |
+| `approach` | `string` | No | - | Reasoning approach (e.g. analytical, creative, systematic, comparative) |
+| `context` | `string` | No | - | Additional context for the reasoning task |
+| `files` | `string[]` | No | - | File paths to read as code context |
 
-#### Reasoning Approaches
+#### Example
 
-- `analytical` - Break down into components
-- `creative` - Explore innovative solutions
-- `systematic` - Methodical step-by-step
-- `comparative` - Compare alternatives
-
-#### Example Calls
-
-**Analytical reasoning:**
 ```typescript
 perplexity_reason({
   problem: "Why is Python slower than C++ for numerical computing?",
@@ -489,195 +68,453 @@ perplexity_reason({
 })
 ```
 
-**Creative problem-solving:**
-```typescript
-perplexity_reason({
-  problem: "How to reduce cloud infrastructure costs by 50%",
-  approach: "creative",
-  context: "E-commerce platform with 1M daily users"
-})
-```
-
-**Systematic analysis:**
-```typescript
-perplexity_reason({
-  problem: "Design a zero-downtime database migration strategy",
-  approach: "systematic",
-  context: "PostgreSQL 200GB production database"
-})
-```
-
 ---
-
-## Grok Suite
 
 ### grok_search
 
-Cost-optimized web search using Grok-4.1's live search with advanced filtering and enhanced reasoning.
-
-#### Schema
-
-```typescript
-{
-  query: string;                    // REQUIRED
-  max_search_results?: number;      // Default: 20
-  recency?: "all" | "day" | "week" | "month" | "year";
-  sources?: Array<{
-    type: "web" | "news" | "x" | "rss";
-    allowed_websites?: string[];    // Domain whitelist
-    country?: string;                // ISO country code (e.g., "US", "PL")
-  }>;
-}
-```
+Web search.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `query` | `string` | ✅ Yes | - | Search query |
-| `max_search_results` | `number` | No | `20` | Maximum search results (costs per 1k sources) |
-| `recency` | `string` | No | `"all"` | Time filter |
-| `sources` | `array` | No | `[{type: "web"}]` | Search source configuration |
+| `max_search_results` | `number` | No | - | Max sources searched (costs per 1k) |
+| `recency` | `"all" \| "day" \| "week" \| "month" \| "year"` | No | - | Time filter |
+| `sources` | `Array<{type: "web"\|"news"\|"x"\|"rss", allowed_websites?: string[], country?: string}>` | No | - | Source configuration |
 
-#### Source Types
+#### Example
 
-- `web` - General web search
-- `news` - News articles
-- `x` - X (Twitter) posts
-- `rss` - RSS feeds
-
-#### Example Calls
-
-**Basic search:**
 ```typescript
 grok_search({
-  query: "latest AI developments"
-})
-```
-
-**Domain-restricted search:**
-```typescript
-grok_search({
-  query: "Python async best practices",
-  sources: [{
-    type: "web",
-    allowed_websites: ["python.org", "docs.python.org", "peps.python.org"]
-  }],
+  query: "Next.js app router documentation",
+  sources: [{ type: "web", allowed_websites: ["nextjs.org"] }],
   recency: "year"
 })
 ```
 
-**News search with recency:**
-```typescript
-grok_search({
-  query: "quantum computing breakthroughs",
-  sources: [{ type: "news" }],
-  recency: "week",
-  max_search_results: 50
-})
-```
-
-**Multi-source search:**
-```typescript
-grok_search({
-  query: "React 19 features",
-  sources: [
-    {
-      type: "web",
-      allowed_websites: ["react.dev", "github.com/facebook/react"]
-    },
-    { type: "news" }
-  ],
-  max_search_results: 30
-})
-```
-
-**Country-specific search:**
-```typescript
-grok_search({
-  query: "local tech startups",
-  sources: [{
-    type: "news",
-    country: "PL"  // Poland
-  }],
-  recency: "month"
-})
-```
-
-**X (Twitter) search:**
-```typescript
-grok_search({
-  query: "@anthropic announcements",
-  sources: [{ type: "x" }],
-  recency: "week",
-  max_search_results: 100
-})
-```
-
-**GitHub documentation search:**
-```typescript
-grok_search({
-  query: "Next.js app router documentation",
-  sources: [{
-    type: "web",
-    allowed_websites: [
-      "nextjs.org",
-      "github.com/vercel/next.js"
-    ]
-  }]
-})
-```
-
-#### Cost Considerations
-
-- Grok search is charged per 1000 sources searched
-- `max_search_results` controls cost
-- Default limit: 20 results (configurable via `GROK_SEARCH_SOURCES_LIMIT` env var)
-- Use domain filtering to reduce unnecessary searches
-
 ---
 
-### grok_reason
+### openai_search
 
-Deep logical reasoning with Grok-4.1 using first principles and enhanced emotional intelligence.
-
-#### Schema
-
-```typescript
-{
-  problem: string;                  // REQUIRED
-  context?: string;
-  approach?: "analytical" | "creative" | "systematic" | "first-principles";
-  useHeavy?: boolean;               // Use Grok-4-heavy model
-}
-```
+Web search using GPT-5.4 with real-time web access. Put your QUERY in the `query` parameter.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `problem` | `string` | ✅ Yes | - | Problem to reason about |
-| `context` | `string` | No | - | Additional context |
-| `approach` | `string` | No | `"first-principles"` | Reasoning approach |
-| `useHeavy` | `boolean` | No | `false` | Use Grok-4-heavy for complex problems |
+| `query` | `string` | ✅ Yes | - | The search query |
+| `searchContextSize` | `"low" \| "medium" \| "high"` | No | `"medium"` | Search depth |
+| `city` | `string` | No | - | City for location-aware results |
+| `country` | `string` | No | - | Country for location-aware results (e.g. `US`, `UK`) |
 
-#### Example Calls
+#### Example
 
-**First principles reasoning:**
 ```typescript
-grok_reason({
-  problem: "Why do rockets need stages?",
-  approach: "first-principles"
+openai_search({
+  query: "current mortgage rates",
+  searchContextSize: "high",
+  country: "US"
 })
 ```
 
-**Complex problem with heavy model:**
+---
+
+### gemini_search
+
+Web search via Gemini with Google Search grounding.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | ✅ Yes | - | Search query |
+| `mode` | `"dynamic" \| "on" \| "off"` | No | `"on"` | `on` always searches, `dynamic` lets the model decide, `off` disables |
+| `dynamicThreshold` | `number` (0-1) | No | `0.7` | Confidence threshold for dynamic mode |
+| `recency` | `"hour" \| "day" \| "week" \| "month" \| "year" \| "any"` | No | `"any"` | Prefer results from this time range (enforced via prompt) |
+
+#### Example
+
+```typescript
+gemini_search({
+  query: "2026 EV tax credit changes",
+  recency: "month"
+})
+```
+
+---
+
+## Reasoning & Planning
+
+### grok_reason
+
+Deep reasoning. Put your PROBLEM or QUESTION in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The problem or question to reason about |
+| `approach` | `string` | No | - | Reasoning approach (e.g. analytical, creative, systematic, first-principles) |
+| `context` | `string` | No | - | Additional context |
+| `useHeavy` | `boolean` | No | - | Use expensive Grok 4 Heavy model ($3/$15) for complex tasks |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
 ```typescript
 grok_reason({
   problem: "Design a consensus algorithm for distributed systems",
-  approach: "systematic",
-  useHeavy: true,
-  context: "Byzantine fault tolerance required"
+  approach: "first-principles",
+  useHeavy: true
+})
+```
+
+---
+
+### openai_reason
+
+Mathematical reasoning using GPT-5.2-thinking. Put your QUERY in the `query` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | ✅ Yes | - | The question or problem to reason about |
+| `mode` | `string` | No | `"analytical"` | Reasoning mode (e.g. mathematical, scientific, logical, analytical) |
+| `context` | `string` | No | - | Additional context |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+openai_reason({
+  query: "Prove that the halting problem is undecidable",
+  mode: "mathematical"
+})
+```
+
+---
+
+### qwen_reason
+
+Heavy mathematical reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT). Put your PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The problem to reason about |
+| `approach` | `string` | No | `"mathematical"` | Reasoning approach (e.g. mathematical, logical, proof, step-by-step) |
+| `context` | `string` | No | - | Additional context |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+qwen_reason({
+  problem: "Prove the AM-GM inequality for n=3",
+  approach: "proof"
+})
+```
+
+---
+
+### qwq_reason
+
+Multi-perspective deliberation: simulate 4 opposing viewpoints (optimist/pessimist/domain-expert/contrarian) then synthesize a balanced verdict. Use when a problem needs debate, not just analysis. Put your PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The problem to reason about |
+| `approach` | `string` | No | `"multi-perspective"` | `multi-perspective` (default), `mathematical`, `logical`, `creative` |
+| `context` | `string` | No | - | Additional context |
+| `useFree` | `boolean` | No | `true` | Use free tier model |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+qwq_reason({
+  problem: "Should we adopt a 4-day work week?",
+  approach: "multi-perspective"
+})
+```
+
+---
+
+### kimi_thinking
+
+Kimi K2.7-Code multimodal reasoning (always-thinking). Put your PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The problem to reason about |
+| `approach` | `string` | No | `"step-by-step"` | Reasoning approach (e.g. step-by-step, analytical, creative, systematic) |
+| `maxSteps` | `integer` (1-10) | No | `3` | Maximum reasoning steps |
+| `context` | `string` | No | - | Additional context |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+kimi_thinking({
+  problem: "Design a rate limiter for a multi-tenant API",
+  maxSteps: 5
+})
+```
+
+---
+
+### kimi_decompose
+
+Structured task decomposition with Kimi K2.7-Code extended reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `task` | `string` | ✅ Yes | - | The task to decompose |
+| `depth` | `integer` (1-5) | No | `3` | Maximum decomposition depth levels |
+| `outputFormat` | `"tree" \| "flat" \| "dependencies"` | No | `"tree"` | Output structure |
+| `context` | `string` | No | - | Additional context about the project, codebase, or constraints |
+| `files` | `string[]` | No | - | File paths to read and include as context |
+
+#### Example
+
+```typescript
+kimi_decompose({
+  task: "Migrate monolith to microservices",
+  depth: 3,
+  outputFormat: "dependencies"
+})
+```
+
+---
+
+### deepseek_reason
+
+Deep reasoning with DeepSeek V4 Pro (open-weight frontier — MLA/GRPO, top AIME/GPQA/math). Put your PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The problem to reason about |
+| `approach` | `string` | No | `"analytical"` | Reasoning approach (e.g. analytical, mathematical, first-principles, step-by-step) |
+| `context` | `string` | No | - | Additional context |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+deepseek_reason({
+  problem: "Optimal strategy for the multi-armed bandit problem",
+  approach: "mathematical"
+})
+```
+
+---
+
+### glm_reason
+
+Agentic reasoning & tool-use planning with Zhipu GLM-5.2 (1M ctx, top open-weights for long-horizon coding). Put your PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The problem to reason about |
+| `approach` | `string` | No | `"agentic"` | Reasoning approach (e.g. agentic, systematic, analytical, step-by-step) |
+| `context` | `string` | No | - | Additional context |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+glm_reason({
+  problem: "Plan a multi-step tool-use sequence to migrate a database schema",
+  approach: "agentic"
+})
+```
+
+---
+
+### stepfun_reason
+
+Efficient deep reasoning with StepFun Step 3.7 Flash (196B — high AIME/SWE-Verified at lower cost). Put your PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The problem to reason about |
+| `approach` | `string` | No | `"analytical"` | Reasoning approach (e.g. analytical, mathematical, step-by-step) |
+| `context` | `string` | No | - | Additional context |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+stepfun_reason({
+  problem: "Fastest way to detect cycles in a large directed graph",
+  approach: "analytical"
+})
+```
+
+---
+
+### ernie_reason
+
+Broad-knowledge reasoning with Baidu ERNIE 4.5 VL (424B MoE — human-preference/arena strength). Put your PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The problem to reason about |
+| `approach` | `string` | No | `"analytical"` | Reasoning approach (e.g. analytical, systematic, step-by-step) |
+| `context` | `string` | No | - | Additional context |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+ernie_reason({
+  problem: "Compare the tradeoffs of REST vs GraphQL for a public API",
+  approach: "systematic"
+})
+```
+
+---
+
+### planner_maker
+
+Multi-model council for creating implementation plans. **Coordinator pattern** — returns one tool to execute at a time.
+
+1. Call with `mode: "start"` to begin.
+2. Execute the returned tool.
+3. Call with `mode: "continue"` and prior results.
+4. Repeat until `isComplete: true`.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `task` | `string` | ✅ Yes | - | The task/goal to create a plan for |
+| `mode` | `"start" \| "continue"` | No | `"start"` | `start`: begin new plan, `continue`: next step |
+| `goal` | `string` | No | - | Success criteria for this plan — checked at every checkpoint |
+| `step` | `number` | No | - | Current step number (for `continue` mode) |
+| `prior` | `Record<string, string>` | No | - | Results from previous steps: `{ search: '...', analyze_qwen: '...' }` |
+| `answers` | `string` | No | - | Answers to clarifying questions |
+| `codeContext` | `string` | No | - | Actual code from relevant files for analysis |
+| `context` | `string` | No | - | Additional context |
+| `files` | `string[]` | No | - | File paths to read as code context |
+| `issueFile` | `string` | No | - | Path to an issue/spec markdown file, merged into context |
+| `debate` | `boolean` | No | `false` | Enable lightweight pro/con debate between Analysis and Critique |
+| `responsive` | `boolean` | No | `false` | Enable responsive design review (auto-detected from keywords) |
+| `ux` | `boolean` | No | `false` | Enable UX/accessibility review steps (auto-detected from keywords) |
+| `dokoro` | `boolean` | No | `true` | Include dokoro hints for sync |
+
+#### Example
+
+```typescript
+planner_maker({ task: "Add auth", mode: "start" })
+// → { nextTool: { tool: "grok_search", params: {...} }, step: 1 }
+
+// [Execute grok_search]
+
+planner_maker({ task: "Add auth", mode: "continue", step: 2, prior: { search: "..." } })
+// → { nextTool: { tool: "qwen_coder", params: {...} }, step: 2 }
+// ... continue until isComplete: true
+```
+
+---
+
+### planner_runner
+
+Execute implementation plans step-by-step with goal-oriented verification. **Coordinator pattern** — tracks actual plan steps.
+
+1. Call with `mode: "start"` to parse the plan and begin.
+2. Call with `mode: "step"` and `stepNum` to work on a specific step.
+3. Call with `mode: "verify"` at 50%, 80%, and 100% for checkpoints.
+
+Checkpoints verify goal alignment with 5 different models (no repeats adjacent): step1 Gemini Sherlock gate, 10% Grok early-drift catch, 25% GPT strategy validation, 50% Qwen reason, 80% Kimi decompose remaining work, 100% GPT first judge → Gemini final judge + Reflexion Lite.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `plan` | `string` | ✅ Yes | - | The implementation plan from `planner_maker` |
+| `mode` | `"start" \| "step" \| "verify"` | No | `"start"` | `start`: parse plan, `step`: work on step N, `verify`: checkpoint |
+| `checkpoint` | `"step1" \| "10%" \| "25%" \| "50%" \| "80%" \| "100%"` | No | - | Checkpoint for `mode=verify` |
+| `stepNum` | `number` | No | - | Step number (1-indexed) for `mode=step` |
+| `goal` | `string` | No | - | Success criteria — extracted from plan frontmatter or provided manually |
+| `completed` | `number[]` | No | - | List of completed step numbers |
+| `diff` | `string` | No | - | Git diff output showing what changed (`git diff`) — most important drift evidence |
+| `modifiedFiles` | `string[]` | No | - | Modified files (`git diff --name-only`) — detects scope creep |
+| `testResults` | `string` | No | - | Test output (`npm test`) — proof implementation works |
+| `code` | `string` | No | - | Current code snapshot for verification |
+| `files` | `string[]` | No | - | File paths to read as code context |
+| `responsive` | `boolean` | No | `false` | Add responsiveness verification at checkpoints |
+| `ux` | `boolean` | No | `false` | Add UX verification at checkpoints |
+| `dokoro` | `boolean` | No | `true` | Include dokoro hints for sync |
+
+#### Example
+
+```typescript
+planner_runner({ plan: planContent, mode: "step", stepNum: 1 })
+planner_runner({ plan: planContent, mode: "verify", checkpoint: "50%", diff: gitDiffOutput })
+```
+
+---
+
+### list_plans
+
+List recently created plans from `planner_maker`. Shows plans from the last N days (default 7) with filename, task, and status.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `days` | `number` | No | `7` | Show plans from last N days |
+
+#### Example
+
+```typescript
+list_plans({ days: 14 })
+```
+
+---
+
+## Code Intelligence
+
+### kimi_code
+
+SWE-focused code generation/fixing with Kimi K2.7-Code (coding-specialized). Put your REQUEST in the `query` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | ✅ Yes | - | Your request or question |
+| `task` | `"generate" \| "fix" \| "review" \| "optimize" \| "debug" \| "refactor"` | No | `"review"` | Code task type |
+| `code` | `string` | No | - | Source code to work with (for fix/review/optimize/debug/refactor) |
+| `language` | `string` | No | - | Programming language (e.g. `typescript`, `python`) |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+kimi_code({
+  task: "review",
+  query: "Check for race conditions",
+  code: "function processPayment(amount, card) { ... }",
+  language: "typescript"
 })
 ```
 
@@ -685,51 +522,26 @@ grok_reason({
 
 ### grok_code
 
-Code analysis and optimization with Grok-4.1 Fast (tool-calling optimized).
-
-#### Schema
-
-```typescript
-{
-  code: string;                     // REQUIRED
-  task: "analyze" | "optimize" | "explain" | "review";  // REQUIRED
-  language?: string;
-  context?: string;
-}
-```
+Code analysis. Put the CODE in the `code` parameter, NOT in `task`.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `code` | `string` | ✅ Yes | - | Code to analyze |
-| `task` | `string` | ✅ Yes | - | Analysis task |
-| `language` | `string` | No | Auto-detect | Programming language |
-| `context` | `string` | No | - | Additional context |
+| `task` | `string` | ✅ Yes | - | Code task (e.g. analyze, optimize, debug, review, refactor) |
+| `code` | `string` | ✅ Yes | - | The actual source code to analyze |
+| `language` | `string` | No | - | Programming language |
+| `requirements` | `string` | No | - | Specific requirements or focus areas |
+| `files` | `string[]` | No | - | File paths to read as code context |
 
-#### Example Calls
+#### Example
 
-**Code analysis:**
 ```typescript
 grok_code({
-  code: `
-    function fibonacci(n) {
-      if (n <= 1) return n;
-      return fibonacci(n-1) + fibonacci(n-2);
-    }
-  `,
-  task: "analyze",
-  language: "javascript"
-})
-```
-
-**Optimization:**
-```typescript
-grok_code({
-  code: "SELECT * FROM users WHERE status = 'active'",
   task: "optimize",
+  code: "SELECT * FROM users WHERE status = 'active'",
   language: "sql",
-  context: "Users table has 10M rows, queried frequently"
+  requirements: "Table has 10M rows, queried frequently"
 })
 ```
 
@@ -737,31 +549,23 @@ grok_code({
 
 ### grok_debug
 
-Deep debugging assistance with Grok-4.1 Fast.
+Debug assistance. Describe the ISSUE in the `issue` parameter.
 
-#### Schema
+#### Parameters
 
-```typescript
-{
-  code: string;                     // REQUIRED
-  error?: string;
-  expectedBehavior?: string;
-  actualBehavior?: string;
-  context?: string;
-}
-```
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `issue` | `string` | ✅ Yes | - | Description of the issue or bug |
+| `code` | `string` | No | - | Relevant code that has the issue |
+| `error` | `string` | No | - | Error message or stack trace |
+| `context` | `string` | No | - | Additional context about the environment or conditions |
+| `files` | `string[]` | No | - | File paths to read as code context |
 
-#### Example Calls
+#### Example
 
-**Debug with error:**
 ```typescript
 grok_debug({
-  code: `
-    async function fetchData() {
-      const data = await fetch('/api/data');
-      return data.json();
-    }
-  `,
+  issue: "fetch response has no .json() method",
   error: "TypeError: data.json is not a function",
   context: "Using Node.js fetch API"
 })
@@ -769,195 +573,212 @@ grok_debug({
 
 ---
 
-### grok_architect
+### qwen_coder
 
-System architecture and design with Grok-4.1.
-
-#### Schema
-
-```typescript
-{
-  requirements: string;             // REQUIRED
-  constraints?: string;
-  scale?: string;
-  context?: string;
-}
-```
-
-#### Example Calls
-
-**Architecture design:**
-```typescript
-grok_architect({
-  requirements: "Real-time chat application with 100k concurrent users",
-  constraints: "Must use AWS, budget $5k/month",
-  scale: "100k concurrent, 1M daily active users"
-})
-```
-
----
-
-### grok_brainstorm
-
-Creative brainstorming using Grok-4.1 with enhanced creativity and emotional intelligence.
-
-#### Schema
-
-```typescript
-{
-  problem: string;                  // REQUIRED
-  quantity?: number;                // Default: 10
-  style?: "innovative" | "practical" | "wild" | "systematic";
-  constraints?: string;
-}
-```
-
-#### Example Calls
-
-**Creative ideation:**
-```typescript
-grok_brainstorm({
-  problem: "Revolutionary social media features",
-  quantity: 15,
-  style: "wild"
-})
-```
-
----
-
-## OpenAI Suite
-
-### openai_brainstorm
-
-Creative brainstorming using GPT-5 suite with advanced controls.
-
-#### Schema
-
-```typescript
-{
-  problem: string;                  // REQUIRED
-  model?: "gpt-5.1" | "gpt-5.1-codex-mini" | "gpt-5.1-codex";  // Default: "gpt-5.1-codex-mini"
-  quantity?: number;                // Default: 5
-  style?: "innovative" | "practical" | "wild" | "systematic";
-  constraints?: string;
-  reasoning_effort?: "minimal" | "low" | "medium" | "high";
-  verbosity?: "silent" | "minimal" | "concise" | "balanced" | "detailed" | "exhaustive";
-  max_tokens?: number;              // Default: 4000
-}
-```
+Code generation and analysis with Qwen3-Coder-Next. Put your REQUEST in the `query` parameter.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `problem` | `string` | ✅ Yes | - | Problem to brainstorm |
-| `model` | `string` | No | `"gpt-5.1-codex-mini"` | GPT-5 model variant |
-| `quantity` | `number` | No | `5` | Number of ideas to generate |
-| `style` | `string` | No | `"innovative"` | Brainstorming style |
-| `constraints` | `string` | No | - | Additional constraints |
-| `reasoning_effort` | `string` | No | `"low"` | Reasoning depth (GPT-5 only) |
-| `verbosity` | `string` | No | `"balanced"` | Output verbosity (GPT-5 only) |
-| `max_tokens` | `number` | No | `4000` | Maximum tokens |
+| `query` | `string` | ✅ Yes | - | Your request or question |
+| `task` | `"generate" \| "review" \| "optimize" \| "debug" \| "refactor" \| "explain" \| "analyze"` | No | `"analyze"` | Code task type |
+| `code` | `string` | No | - | Source code to work with |
+| `language` | `string` | No | - | Programming language |
+| `useFree` | `boolean` | No | `false` | Use free tier model instead of premium |
+| `files` | `string[]` | No | - | File paths to read as code context |
 
-#### Model Comparison
+#### Example
 
-| Model | Speed | Cost | Best For |
-|-------|-------|------|----------|
-| `gpt-5.1-codex-mini` | Fast | $$ | Most tasks (default) |
-| `gpt-5.1-codex` | Medium | $$$ | Complex code tasks |
-| `gpt-5.1` | Slow | $$$$ | Deep reasoning problems |
-
-#### Reasoning Effort (GPT-5 only)
-
-- `minimal` - Quick responses
-- `low` - Light reasoning
-- `medium` - Balanced reasoning
-- `high` - Deep, thorough reasoning
-
-#### Verbosity Levels (GPT-5 only)
-
-- `silent` - Minimal output
-- `minimal` - Brief responses
-- `concise` - Compact but complete
-- `balanced` - Standard detail (default)
-- `detailed` - Comprehensive
-- `exhaustive` - Maximum detail
-
-#### Example Calls
-
-**Basic brainstorming:**
 ```typescript
-openai_brainstorm({
-  problem: "New features for a productivity app"
-})
-```
-
-**With GPT-5 and high reasoning:**
-```typescript
-openai_brainstorm({
-  problem: "Solve climate change with technology",
-  model: "gpt-5",
-  quantity: 10,
-  style: "innovative",
-  reasoning_effort: "high",
-  verbosity: "detailed"
-})
-```
-
-**Quick practical ideas:**
-```typescript
-openai_brainstorm({
-  problem: "Reduce app cold start time",
-  model: "gpt-5.1-codex-mini",
-  quantity: 5,
-  style: "practical",
-  constraints: "Must work on mobile devices"
-})
-```
-
-**Wild ideation:**
-```typescript
-openai_brainstorm({
-  problem: "Future of transportation",
-  style: "wild",
-  quantity: 20,
-  verbosity: "exhaustive"
+qwen_coder({
+  task: "generate",
+  query: "Binary search tree with insert, delete, and search",
+  language: "python"
 })
 ```
 
 ---
 
-## Gemini Suite
+### qwen_algo
 
-### gemini_brainstorm
+Expert algorithm analysis: complexity profiling, optimization tiers, constraint-driven recommendations, competitive programming patterns. Put PROBLEM/CODE in `problem` parameter.
 
-Collaborative ideation and brainstorming with Gemini.
+#### Parameters
 
-#### Schema
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The algorithm problem or code to analyze |
+| `focus` | `string` | No | `"general"` | `optimize`, `complexity`, `data-structure`, `memory`, `correctness`, `competitive`, `cache`, `general` |
+| `constraints` | `string` | No | - | Input constraints: N size, time/memory limit (e.g. `N≤10^5, 1s, 256MB`) |
+| `context` | `string` | No | - | Additional context: current performance, environment, language |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
 
 ```typescript
-{
-  prompt: string;                   // REQUIRED
-  claudeThoughts?: string;          // Your initial thoughts
-  maxRounds?: number;               // Default: 1
-}
-```
-
-#### Example Calls
-
-**Basic brainstorming:**
-```typescript
-gemini_brainstorm({
-  prompt: "Innovative features for a fitness app"
+qwen_algo({
+  problem: "Find the k-th smallest element in a BST",
+  focus: "complexity",
+  constraints: "N≤10^6, 1s"
 })
 ```
 
-**Collaborative brainstorming:**
+---
+
+### qwen_competitive
+
+Competitive programming. Put the PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The competitive programming problem |
+| `language` | `"python" \| "cpp" \| "java" \| "javascript" \| "rust"` | No | `"python"` | Target language |
+| `constraints` | `string` | No | - | Problem constraints (e.g. `n <= 10^5`) |
+| `optimize` | `boolean` | No | `true` | Optimize for time and space complexity |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+**Note:** this tool is only enabled in the `full` profile (off by default in `minimal`/`research_power`/`code_focus`/`balanced`/`heavy_coding`).
+
+#### Example
+
 ```typescript
-gemini_brainstorm({
-  prompt: "Improve code review process",
-  claudeThoughts: "I think automated linting and AI suggestions could help",
-  maxRounds: 3
+qwen_competitive({
+  problem: "Given an array, find the longest increasing subsequence",
+  language: "cpp",
+  constraints: "n <= 10^5"
+})
+```
+
+---
+
+### deepseek_algo
+
+Algorithmic code review with DeepSeek V4 Pro (top AIME/CodeElo): correctness, complexity/Big-O, edge cases, data-structure choice, optimization. Put PROBLEM/CODE in `problem`.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The algorithm problem or code to review |
+| `focus` | `string` | No | `"general"` | `correctness`, `complexity`, `optimize`, `data-structure`, `edge-cases`, `general` |
+| `constraints` | `string` | No | - | Input constraints: N size, time/memory limit |
+| `context` | `string` | No | - | Additional context: current performance, language, environment |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+**Recommended pick** for algorithmic/correctness/Big-O/edge-case/CP-style review; `qwen_algo` and `qwq_reason` are the runners-up.
+
+#### Example
+
+```typescript
+deepseek_algo({
+  problem: "Review this Dijkstra implementation for correctness and Big-O",
+  files: ["src/lib/shortest-path.ts"]
+})
+```
+
+---
+
+### minimax_code
+
+Single-pass code operations with MiniMax M3 (1M ctx, strong agentic/coding). Put your REQUEST in the `query` parameter. For multi-step tasks, use `minimax_agent` instead.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | ✅ Yes | - | Your request or question |
+| `task` | `"generate" \| "fix" \| "review" \| "optimize" \| "debug" \| "refactor"` | No | `"review"` | Code task type |
+| `code` | `string` | No | - | Source code to work with |
+| `language` | `string` | No | - | Programming language |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+minimax_code({
+  task: "refactor",
+  query: "Extract this into smaller functions",
+  code: "function handleRequest(req, res) { ... }"
+})
+```
+
+---
+
+### minimax_agent
+
+Multi-step task decomposition and execution with MiniMax M3: plan, analyze, research, decide. Use when a task needs breakdown into steps before execution. For single-pass code tasks, use `minimax_code` instead. Put TASK in `task` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `task` | `string` | ✅ Yes | - | The task to execute |
+| `steps` | `integer` (1-20) | No | `5` | Maximum steps to plan |
+| `outputFormat` | `"plan" \| "execute" \| "both"` | No | `"both"` | `plan` (just steps), `execute` (just results), `both` |
+| `context` | `string` | No | - | Additional context about the environment or constraints |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+minimax_agent({
+  task: "Add rate limiting to the public API",
+  steps: 6,
+  outputFormat: "both"
+})
+```
+
+---
+
+### testgen
+
+Generate runnable tests with a coding-specialized model (Qwen3-Coder-Next). Enumerates edge cases first, then emits test code. Provide `code` or `files`.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `code` | `string` | No* | - | The code to generate tests for (*or use `files`) |
+| `files` | `string[]` | No* | - | File paths to read as code-under-test |
+| `coverage` | `"edge" \| "happy" \| "regression" \| "all"` | No | `"all"` | Coverage focus |
+| `framework` | `string` | No | - | Test framework (e.g. jest, vitest, pytest). Omit to infer |
+| `existingTests` | `string` | No | - | Paste existing tests so generated ones match conventions |
+
+#### Example
+
+```typescript
+testgen({
+  files: ["src/utils/api-keys.ts"],
+  coverage: "edge",
+  framework: "vitest"
+})
+```
+
+---
+
+## Analysis & Judgment
+
+### gemini_analyze_text
+
+Rhetorical analysis: dissect arguments for bias, logical fallacies, and persuasion tactics. Use for evaluating claims, detecting manipulation, or understanding argument structure. Put the TEXT in the `text` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text` | `string` | ✅ Yes | - | The text to analyze |
+| `type` | `string` | No | `"rhetoric"` | `rhetoric` (bias/fallacies/persuasion), `sentiment`, `summary`, `entities`, `key-points` |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+gemini_analyze_text({
+  text: "The new iPhone is amazing! Best camera ever, but battery life could be better.",
+  type: "sentiment"
 })
 ```
 
@@ -965,461 +786,587 @@ gemini_brainstorm({
 
 ### gemini_analyze_code
 
-Code quality and security analysis with Gemini.
+Analyze code for bugs, quality, security, or performance issues. Put the CODE in the `code` parameter, NOT in `focus`.
 
-#### Schema
+#### Parameters
 
-```typescript
-{
-  code: string;                     // REQUIRED
-  focus?: "general" | "security" | "performance" | "quality";
-  language?: string;
-}
-```
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `code` | `string` | ✅ Yes | - | The actual source code to analyze |
+| `focus` | `string` | No | `"general"` | Analysis focus (e.g. quality, security, performance, bugs, general) |
+| `language` | `string` | No | - | Programming language |
+| `files` | `string[]` | No | - | File paths to read as code context |
 
-#### Example Calls
+#### Example
 
-**General code analysis:**
 ```typescript
 gemini_analyze_code({
-  code: `
-    function processPayment(userId, amount) {
-      const user = db.query('SELECT * FROM users WHERE id = ' + userId);
-      charge(user.card, amount);
-    }
-  `,
+  code: "const user = db.query('SELECT * FROM users WHERE id = ' + userId);",
   focus: "security"
 })
 ```
 
 ---
 
-### gemini_analyze_text
+### gemini_judge
 
-Text sentiment, entity extraction, and summarization.
-
-#### Schema
-
-```typescript
-{
-  text: string;                     // REQUIRED
-  task: "sentiment" | "entities" | "summary" | "key-points";
-}
-```
-
-#### Example Calls
-
-**Sentiment analysis:**
-```typescript
-gemini_analyze_text({
-  text: "The new iPhone is amazing! Best camera ever, but battery life could be better.",
-  task: "sentiment"
-})
-```
-
----
-
-## Qwen Suite
-
-### qwen_coder
-
-Advanced code generation with Qwen3-Coder (480B MoE model).
-
-#### Schema
-
-```typescript
-{
-  task: "generate" | "review" | "optimize" | "debug" | "refactor" | "explain";  // REQUIRED
-  requirements: string;             // REQUIRED
-  code?: string;                    // For non-generate tasks
-  language?: string;
-  useFree?: boolean;                // Use free tier model
-}
-```
+Evaluate and synthesize multiple AI perspectives into a unified verdict. Put CONTENT in the `perspectives` parameter.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `task` | `string` | ✅ Yes | - | Task type |
-| `requirements` | `string` | ✅ Yes | - | What you need |
-| `code` | `string` | No | - | Existing code (for review/optimize/debug/refactor/explain) |
-| `language` | `string` | No | Auto-detect | Programming language |
-| `useFree` | `boolean` | No | `false` | Use free tier model (lower quality) |
+| `perspectives` | `string` | ✅ Yes | - | The multiple AI perspectives/analyses to evaluate and synthesize |
+| `mode` | `"synthesize" \| "evaluate" \| "rank" \| "resolve"` | No | `"synthesize"` | `synthesize` (merge best), `evaluate` (score each), `rank` (order by quality), `resolve` (settle conflicts) |
+| `question` | `string` | No | - | The original question being judged |
+| `query` / `text` | `string` | No | - | Fallback content to judge (use `perspectives` instead) |
+| `files` | `string[]` | No | - | File paths to read as code context |
 
-#### Example Calls
+#### Example
 
-**Generate code:**
 ```typescript
-qwen_coder({
-  task: "generate",
-  requirements: "Binary search tree implementation in Python with insert, delete, and search methods",
-  language: "python"
-})
-```
-
-**Review code:**
-```typescript
-qwen_coder({
-  task: "review",
-  requirements: "Check for bugs, performance issues, and best practices",
-  code: `
-    def fibonacci(n):
-        if n <= 1:
-            return n
-        return fibonacci(n-1) + fibonacci(n-2)
-  `,
-  language: "python"
-})
-```
-
-**Optimize code:**
-```typescript
-qwen_coder({
-  task: "optimize",
-  requirements: "Improve performance for large datasets",
-  code: "const result = array.filter(x => x > 0).map(x => x * 2).reduce((a, b) => a + b)",
-  language: "javascript"
+gemini_judge({
+  perspectives: "Model A says X because... Model B says Y because...",
+  question: "Which caching strategy should we use?",
+  mode: "resolve"
 })
 ```
 
 ---
 
-## Advanced Modes
+### jury
 
-### verifier
-
-Multi-model parallel verification with consensus analysis.
-
-#### Schema
-
-```typescript
-{
-  query: string;                    // REQUIRED
-  variant?: "quick_verify" | "deep_verify" | "fact_check" |
-            "code_verify" | "security_verify";  // Default: "quick_verify"
-  model?: string | string[];        // Override variant models
-  maxTokens?: number;
-  timeout?: number;                 // Milliseconds
-  includeSources?: boolean;         // Default: false (true for fact_check)
-}
-```
+Multi-model jury: runs question through configurable panel of AI jurors in parallel, then Gemini synthesizes a unified verdict. Put QUESTION in `question` parameter.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `query` | `string` | ✅ Yes | - | Statement or question to verify |
-| `variant` | `string` | No | `"quick_verify"` | Verification strategy |
-| `model` | `string \| string[]` | No | Variant-specific | Custom model(s) |
-| `maxTokens` | `number` | No | Variant-specific | Max tokens per model |
-| `timeout` | `number` | No | Variant-specific | Timeout in ms |
-| `includeSources` | `boolean` | No | Variant-specific | Include source citations |
+| `question` | `string` | ✅ Yes | - | The question or problem for the jury to evaluate |
+| `jurors` | `string` | No | `"grok,deepseek,kimi,openai"` | Comma-separated juror models. Available: `grok`, `openai`, `qwen`, `qwen_reason`, `kimi`, `perplexity`, `minimax`, `deepseek`, `glm`, `stepfun`, `ernie`, `local` (free offline via `LOCAL_LLM_MODEL`; `hermes` accepted as legacy alias) |
+| `mode` | `"synthesize" \| "evaluate" \| "rank" \| "resolve"` | No | `"synthesize"` | Judge mode |
+| `context` | `string` | No | - | Additional context for all jurors |
 
-#### Variants
+#### Example
 
-**quick_verify** (Default)
-- Models: `gpt-5.1-codex-mini`, `gemini-3.1-pro-preview`, `gpt-5`
-- Tokens: 2000
-- Timeout: 10s
-- Use: Fast verification
-
-**deep_verify**
-- Models: `gpt-5`, `qwq-32b`, `gemini-3.1-pro-preview`, `qwen/qwen3-coder`
-- Tokens: 6000
-- Timeout: 30s
-- Use: Complex reasoning
-
-**fact_check**
-- Models: `gpt-5`, `gemini-3.1-pro-preview`, `gpt-5.1-codex-mini`
-- Tokens: 3000
-- Timeout: 15s
-- Sources: Enabled by default
-- Use: Factual verification
-
-**code_verify**
-- Models: `gpt-5`, `gemini-3.1-pro-preview`, `qwen/qwen3-coder`
-- Tokens: 4000
-- Timeout: 20s
-- Use: Code correctness
-
-**security_verify**
-- Models: `gpt-5`, `gemini-3.1-pro-preview`, `qwen/qwen3-coder`
-- Tokens: 4000
-- Timeout: 20s
-- Use: Security analysis
-
-#### Example Calls
-
-**Basic verification:**
 ```typescript
-verifier({
-  query: "Is Python a statically typed language?"
-})
-```
-
-**Fact check with sources:**
-```typescript
-verifier({
-  query: "What is the speed of light?",
-  variant: "fact_check",
-  includeSources: true
-})
-```
-
-**Code verification:**
-```typescript
-verifier({
-  query: "Is this SQL query safe from injection?",
-  variant: "security_verify"
-})
-```
-
-**Custom models:**
-```typescript
-verifier({
-  query: "Complex mathematical proof",
-  variant: "deep_verify",
-  model: ["gpt-5", "qwq-32b", "gemini-3.1-pro-preview"],
-  maxTokens: 8000
+jury({
+  question: "Should this service be REST or GraphQL?",
+  jurors: "grok,deepseek,kimi,openai",
+  mode: "synthesize"
 })
 ```
 
 ---
 
-### scout
+### diff_review
 
-Conditional hybrid intelligence gathering with Perplexity and/or Grok.
-
-#### Schema
-
-```typescript
-{
-  query: string;                    // REQUIRED
-  variant?: "research_scout" | "code_scout" | "fact_scout" | "quick_scout";
-  searchProvider?: "perplexity" | "grok" | "both";  // Default: "perplexity"
-  maxTokens?: number;
-  timeout?: number;
-  enableGrokLiveSearch?: boolean;   // Default: true (if using grok)
-  maxSearchSources?: number;        // Grok source limit
-  searchDomains?: string[];         // Domain whitelist
-}
-```
+Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K2.7-Code, DeepSeek V4 Pro, GPT-5.5) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in `diff`.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `query` | `string` | ✅ Yes | - | Research topic or question |
-| `variant` | `string` | No | `"research_scout"` | Research strategy |
-| `searchProvider` | `string` | No | `"perplexity"` | Search provider(s) |
-| `maxTokens` | `number` | No | Variant-specific | Max tokens per call |
-| `timeout` | `number` | No | Variant-specific | Timeout in ms |
-| `enableGrokLiveSearch` | `boolean` | No | `true` | Enable Grok live search |
-| `maxSearchSources` | `number` | No | Variant-specific | Max Grok sources (costs per 1k) |
-| `searchDomains` | `string[]` | No | - | Restrict to specific domains |
+| `diff` | `string` | ✅ Yes | - | Unified diff to review (`git diff` output) |
+| `focus` | `"security" \| "perf" \| "correctness" \| "style" \| "all"` | No | `"all"` | Review focus |
+| `severityFloor` | `"blocker" \| "major" \| "minor" \| "nit"` | No | `"nit"` | Omit findings below this severity |
+| `intent` | `string` | No | - | What the change is SUPPOSED to do (enables intent-mismatch detection) |
+| `files` | `string[]` | No | - | File paths for surrounding context |
 
-#### Variants
+#### Example
 
-**research_scout** (Default)
-- Flow: Perplexity-first-always
-- Tokens: 2500
-- Max Sources: 100
-- Use: Comprehensive research
-
-**code_scout**
-- Flow: Conditional hybrid
-- Tokens: 2000
-- Max Sources: 100
-- Use: Technical documentation
-
-**fact_scout**
-- Flow: Waterfall
-- Tokens: 1500
-- Max Sources: 150
-- Use: Fact verification
-
-**quick_scout**
-- Flow: Conditional hybrid
-- Tokens: 1000
-- Max Sources: 50
-- Use: Fast lookups
-
-#### Example Calls
-
-**Basic research:**
 ```typescript
-scout({
-  query: "Latest quantum computing developments 2025"
-})
-```
-
-**Code documentation search:**
-```typescript
-scout({
-  query: "TypeScript 5.0 new features",
-  variant: "code_scout",
-  searchDomains: ["typescriptlang.org", "github.com/microsoft/TypeScript"]
-})
-```
-
-**Use Grok live search:**
-```typescript
-scout({
-  query: "Current space missions",
-  searchProvider: "grok",
-  enableGrokLiveSearch: true,
-  maxSearchSources: 50
-})
-```
-
-**Use both providers:**
-```typescript
-scout({
-  query: "Comprehensive climate change research",
-  searchProvider: "both",
-  variant: "research_scout",
-  maxSearchSources: 100
-})
-```
-
-**Domain-restricted:**
-```typescript
-scout({
-  query: "Python async/await best practices",
-  searchDomains: ["python.org", "docs.python.org"],
-  variant: "code_scout"
+diff_review({
+  diff: gitDiffOutput,
+  focus: "security",
+  severityFloor: "minor",
+  intent: "Add rate limiting to the login endpoint"
 })
 ```
 
 ---
 
-### challenger
+### plan_critique
 
-Critical thinking and echo chamber prevention by generating counter-arguments.
-
-#### Schema
-
-```typescript
-{
-  context: string | object | array;  // REQUIRED
-  model?: string;                    // Default: "gpt-5.1-codex-mini"
-  maxTokens?: number;                // Default: 2000
-  temperature?: number;              // 0-1, Default: 0.9
-}
-```
+Adversarial red-team of an existing plan (from any source): multi-model pre-mortem, hidden-assumption audit, ranked risks with mitigations, concrete plan edits, verdict. Complements `planner_maker` (builds) and `planner_runner` (executes).
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `context` | `string \| object \| array` | ✅ Yes | - | Claims to challenge |
-| `model` | `string` | No | `"gpt-5.1-codex-mini"` | AI model to use |
-| `maxTokens` | `number` | No | `2000` | Max tokens per call |
-| `temperature` | `number` | No | `0.9` | Creativity (0-1) |
+| `plan` | `string` | ✅ Yes | - | The plan to critique (paste it) |
+| `goal` | `string` | No | - | The goal the plan is supposed to achieve (enables scope-creep/gap detection) |
+| `constraints` | `string` | No | - | Hard constraints (deadline, budget, compliance, team size) |
+| `files` | `string[]` | No | - | Relevant code/doc paths for grounding |
 
-#### Supported Models
+#### Example
 
-- `gpt-5.1-codex-mini`, `gpt-5`, `qwq-32b`, `qwen3-30b`, `qwen3-coder-480b`
-- `gemini-3.1-pro-preview`, `gemini-3.1-pro-preview`
-- `grok-4`, `grok-4-0709`
-- `sonar-pro`, `perplexity-sonar-pro`
-
-#### Context Types
-
-**String:**
 ```typescript
-challenger({
-  context: "AI will solve all of humanity's problems"
-})
-```
-
-**Object:**
-```typescript
-challenger({
-  context: {
-    query: "Social media is only beneficial",
-    text: "Everyone should use social media daily"
-  }
-})
-```
-
-**Array (detects groupthink):**
-```typescript
-challenger({
-  context: [
-    "Everyone agrees this is the best approach",
-    "There is unanimous consensus",
-    "All experts say the same thing"
-  ]
-})
-```
-
-#### Example Calls
-
-**Basic challenge:**
-```typescript
-challenger({
-  context: "Remote work is always better than office work"
-})
-```
-
-**With custom model:**
-```typescript
-challenger({
-  context: "Cryptocurrency will replace traditional banking",
-  model: "gemini-3.1-pro-preview",
-  temperature: 0.7
-})
-```
-
-**Groupthink detection:**
-```typescript
-challenger({
-  context: [
-    "This architecture is the only correct solution",
-    "No other approach makes sense",
-    "Everyone on the team agrees"
-  ],
-  maxTokens: 3000
+plan_critique({
+  plan: planMarkdown,
+  goal: "Ship GDPR-compliant data export by end of quarter",
+  constraints: "2 engineers, 3 weeks"
 })
 ```
 
 ---
 
-## Workflow Tools
+### gemini_brainstorm
+
+Convergent synthesis: cluster, refine, and prioritize raw ideas into structured hierarchies. Use AFTER divergent ideation to organize and rank ideas by impact/feasibility. Put your PROMPT in the `prompt` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `prompt` | `string` | ✅ Yes | - | The ideas or topic to organize and refine |
+| `claudeThoughts` | `string` | No | - | Claude's initial thoughts or raw ideas to cluster and refine |
+| `maxClusters` | `number` | No | `5` | Number of idea clusters to create |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+gemini_brainstorm({
+  prompt: "Improve code review process",
+  claudeThoughts: "I think automated linting and AI suggestions could help",
+  maxClusters: 3
+})
+```
+
+---
+
+### openai_brainstorm
+
+Find alternative approaches: when stuck on a programming problem, reveals 3rd/4th/5th options you haven't considered, with cost of each. Use when you think there's only 1-2 ways to do something. Put your PROBLEM in the `problem` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `problem` | `string` | ✅ Yes | - | The engineering problem or design tradeoff to brainstorm about |
+| `model` | `"gpt-5.4" \| "gpt-5.4-mini" \| "gpt-5.4-pro"` | No | `"gpt-5.4"` | Model variant |
+| `quantity` | `number` | No | `5` | Number of approaches to generate |
+| `constraints` | `string` | No | - | Technical constraints: language, framework, performance requirements, team size |
+| `reasoning_effort` | `"none" \| "low" \| "medium" \| "high" \| "xhigh"` | No | - | Reasoning effort level |
+| `max_tokens` | `number` | No | - | Maximum tokens for response |
+
+#### Example
+
+```typescript
+openai_brainstorm({
+  problem: "Reduce app cold start time",
+  model: "gpt-5.4-mini",
+  quantity: 5,
+  constraints: "Must work on mobile devices"
+})
+```
+
+---
+
+### openai_code_review
+
+Code review. Put the CODE in the `code` parameter, NOT in `focusAreas`.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `code` | `string` | ✅ Yes | - | The actual source code to review |
+| `focusAreas` | `Array<"security"\|"performance"\|"readability"\|"bugs"\|"best-practices">` | No | - | Focus areas |
+| `language` | `string` | No | - | Programming language |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+openai_code_review({
+  code: "function processPayment(userId, amount) { ... }",
+  focusAreas: ["security", "bugs"]
+})
+```
+
+---
+
+### openai_explain
+
+Explain concepts. Put the TOPIC in the `topic` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `topic` | `string` | ✅ Yes | - | The topic or concept to explain |
+| `level` | `"beginner" \| "intermediate" \| "expert"` | No | `"intermediate"` | Explanation level |
+| `style` | `"technical" \| "simple" \| "analogy" \| "visual"` | No | `"simple"` | Explanation style |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+openai_explain({
+  topic: "How does TCP congestion control work?",
+  level: "beginner",
+  style: "analogy"
+})
+```
+
+---
+
+### grok_brainstorm
+
+Contrarian first-principles brainstorming: deconstruct a topic to atomic truths, challenge every assumption, then rebuild radical alternatives. Use when conventional thinking has stalled. Put your TOPIC in the `topic` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `topic` | `string` | ✅ Yes | - | The topic to brainstorm about |
+| `numIdeas` | `number` | No | `5` | Number of radical rebuilds to generate |
+| `constraints` | `string` | No | - | Any constraints or requirements to consider |
+| `forceHeavy` | `boolean` | No | - | Use expensive Grok 4 Heavy model ($3/$15) for deeper creativity |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+grok_brainstorm({
+  topic: "Revolutionary social media features",
+  numIdeas: 8
+})
+```
+
+---
+
+### grok_architect
+
+Architecture design. Put your REQUIREMENTS in the `requirements` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `requirements` | `string` | ✅ Yes | - | The architecture requirements or design question |
+| `constraints` | `string` | No | - | Technical or business constraints to consider |
+| `scale` | `string` | No | - | Expected scale (e.g. small, medium, large, enterprise) |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+grok_architect({
+  requirements: "Real-time chat application with 100k concurrent users",
+  constraints: "Must use AWS, budget $5k/month",
+  scale: "enterprise"
+})
+```
+
+---
+
+### security_review
+
+Dedicated security audit (DeepSeek V4 Pro): taint/data-flow analysis, OWASP/CWE-mapped findings with severity, exploitability sketch, and concrete fixes. For code you are authorized to review. Provide `code`, `diff`, or `files`.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `code` | `string` | No* | - | Code to audit (*or use `diff`/`files`) |
+| `diff` | `string` | No* | - | Unified diff to audit (scopes the review to the change) |
+| `files` | `string[]` | No* | - | File paths to read server-side |
+| `standard` | `"owasp" \| "cwe" \| "both"` | No | `"both"` | Finding-mapping standard |
+| `language` | `string` | No | - | Language/framework hint (e.g. `TypeScript/Express`) |
+| `context` | `string` | No | - | Trust boundaries & deployment context (e.g. `internal-only service behind VPN`) |
+
+#### Example
+
+```typescript
+security_review({
+  diff: gitDiffOutput,
+  standard: "owasp",
+  context: "Public-facing API, no auth on this endpoint yet"
+})
+```
+
+---
+
+### kimi_long_context
+
+Long-context analysis with Kimi K2.7-Code (262K context window). Put CONTENT in the `content` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `content` | `string` | ✅ Yes | - | The long text/document to analyze |
+| `task` | `"summarize" \| "extract" \| "analyze" \| "compare" \| "find"` | No | `"analyze"` | Analysis task type |
+| `outputFormat` | `"brief" \| "detailed" \| "structured"` | No | `"detailed"` | Output format |
+| `query` | `string` | No | - | Specific question about the content (for extract/find tasks) |
+| `files` | `string[]` | No | - | File paths to read as code context |
+
+#### Example
+
+```typescript
+kimi_long_context({
+  content: entireDesignDoc,
+  task: "find",
+  query: "What does this doc say about data retention?"
+})
+```
+
+---
+
+## Meta & Orchestration
+
+### think
+
+Anthropic's official "think" tool for structured reasoning. Provides a dedicated scratchpad for step-by-step problem solving.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `thought` | `string` | ✅ Yes | - | The reasoning thought or analysis step |
+
+#### Example
+
+```typescript
+think({
+  thought: "Let me break down this problem step by step..."
+})
+```
+
+---
+
+### nextThought
+
+Sequential thinking with optional multi-model execution. Auto-creates a session if needed.
+
+- **Basic** (thought logging): `nextThought({ thought: "Analyze X", nextThoughtNeeded: true })`
+- **With execution**: `nextThought({ thought: "...", model: "gemini", executeModel: true, nextThoughtNeeded: true })`
+- **Light distillation**: `nextThought({ thought: "...", model: "gemini", executeModel: true, distillContext: "light" })`
+- **Judge step**: `nextThought({ thought: "Final verdict", model: "gemini", executeModel: true, contextWindow: "all", nextThoughtNeeded: false })`
+- **Auto final judge**: `nextThought({ thought: "...", model: "kimi", executeModel: true, finalJudge: "gemini", nextThoughtNeeded: false })`
+- **With memory save**: `nextThought({ ..., memoryProvider: { provider: "dokoro", saveToMemory: true } })`
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `thought` | `string` | ✅ Yes | - | The thought content or prompt for the model |
+| `nextThoughtNeeded` | `boolean` | ✅ Yes | - | Whether more thoughts are needed in the chain |
+| `model` | `string` | No | - | Model to use: `grok`, `gemini`, `openai`, `perplexity`, `kimi`, `qwen`, `think` |
+| `executeModel` | `boolean` | No | `false` | Actually execute the model's tool and return response |
+| `contextWindow` | `number \| "none" \| "recent" \| "all"` | No | - | `none` (fresh), `recent` (last 3), `all` (full history). Prefer string names over numbers |
+| `distillContext` | `"off" \| "light"` | No | `"off"` | `off` auto-distills at 8000+ tokens, `light` preserves detail |
+| `finalJudge` | `string` | No | - | Model to use as final judge when session completes (e.g. `gemini`). Called automatically when `nextThoughtNeeded=false` |
+| `memoryProvider` | `{ provider: string; saveToMemory?: boolean; loadFromMemory?: boolean }` | No | - | Pluggable memory MCP: `{ provider: 'dokoro'|'mem0', saveToMemory: true }` |
+| `objective` | `string` | No | - | Session objective (for auto-session creation) |
+| `thoughtNumber` | `number` | No | - | Override the thought number |
+| `totalThoughts` | `number` | No | - | Update estimated total thoughts |
+| `isRevision` | `boolean` | No | - | Mark this as a revision of an earlier thought |
+| `revisesThought` | `number` | No | - | Which thought number this revises |
+| `branchFromThought` | `number` | No | - | Branch from this thought number |
+
+#### Example
+
+```typescript
+nextThought({
+  thought: "Analyze the tradeoffs between microservices and monolith",
+  model: "gemini",
+  executeModel: true,
+  contextWindow: "recent",
+  nextThoughtNeeded: true
+})
+```
+
+---
+
+### focus
+
+Multi-model reasoning. Coordinates different AI models across 9 modes and 11 domains.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | ✅ Yes | - | The problem or question to solve |
+| `mode` | `"simple" \| "debug" \| "deep-reasoning" \| "code-brainstorm" \| "architecture-debate" \| "research" \| "analyze" \| "focus-deep" \| "tachibot-status"` | No | - | Reasoning mode |
+| `domain` | `"architecture" \| "algorithms" \| "debugging" \| "security" \| "performance" \| "api_design" \| "database" \| "frontend" \| "backend" \| "devops" \| "testing"` | No | - | Problem domain |
+| `models` | `string[]` | No | - | Custom list of models to use |
+| `rounds` | `number` | No | - | Number of reasoning rounds |
+| `temperature` | `number` | No | - | Temperature for responses |
+| `maxTokensPerRound` | `number` | No | - | Max tokens per model per round |
+| `pingPongStyle` | `"competitive" \| "collaborative" \| "debate" \| "build-upon"` | No | - | Interaction style |
+| `tokenEfficient` | `boolean` | No | - | Enable token optimization |
+| `saveSession` | `boolean` | No | - | Save session for later retrieval with `continue_focus` |
+| `executeNow` | `boolean` | No | - | Execute immediately vs queue |
+| `context` | `string` | No | - | Additional context |
+
+#### Example
+
+```typescript
+focus({
+  query: "Should we use microservices or monolith?",
+  mode: "deep-reasoning",
+  domain: "architecture",
+  rounds: 5
+})
+```
+
+---
+
+### continue_focus
+
+Continue a focus session started with `focus({ saveSession: true })`.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `sessionId` | `string` | ✅ Yes | - | The session ID returned from a previous `focus` call |
+
+**Note:** always registered alongside `think`/`focus`/`nextThought`/`usage_stats`, independent of the active tool profile.
+
+#### Example
+
+```typescript
+continue_focus({ sessionId: "focus_abc123" })
+```
+
+---
+
+### tachi
+
+Smart AI assistant router — just describe what you need. Put your QUERY in the `query` parameter.
+
+Auto-routes to the best mode: Research (`what is...`, `how does...`), Solve (`fix...`, `debug...`, `implement...`), Verify (`check...`, `is this correct...`), Creative (`brainstorm...`, `ideas for...`), Architect (`design...`, `which should I use...`), Judge (`which is best...`, `evaluate...`, `compare...`).
+
+Call with no query to browse the full tool + skill catalog (grouped by provider, with per-key availability).
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | No | - | What you need help with. Leave empty to browse the full tool + skill catalog |
+| `mode` | `"auto" \| "research" \| "solve" \| "verify" \| "creative" \| "architect" \| "judge"` | No | `"auto"` | Force a specific mode |
+
+#### Example
+
+```typescript
+tachi({ query: "judge: React vs Vue vs Svelte" })
+tachi({})  // no query → catalog of every tool + skill
+```
+
+---
+
+### doctor
+
+Diagnose your TachiBot setup: which API keys are detected, which tools are available vs hidden (and why), the active profile, and a suggested first step. Zero-cost, needs no API key. Call it when tools seem missing.
+
+#### Parameters
+
+None.
+
+#### Example
+
+```typescript
+doctor({})
+```
+
+---
+
+### usage_stats
+
+View or reset tool usage statistics. Put your REQUEST in the `query` parameter.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | No | `"view"` | What to do: `view` (default), `reset`, or any question about usage |
+| `action` | `"view" \| "reset"` | No | `"view"` | Action |
+| `format` | `"table" \| "json"` | No | `"table"` | Output format |
+| `scope` | `"current" \| "all"` | No | `"current"` | Current repo or all repos |
+
+#### Example
+
+```typescript
+usage_stats({ action: "view", scope: "all", format: "json" })
+```
+
+---
+
+## Workflows
 
 ### workflow
 
-Execute multi-step AI workflows from YAML/JSON files.
+Execute workflows with Ink rendering, comparison table, and optional AI judge.
 
-#### Schema
+#### Parameters
 
-```typescript
-{
-  name: string;                     // REQUIRED - Workflow name
-  query: string;                    // REQUIRED - Input for workflow
-  projectPath?: string;             // For custom workflows
-}
-```
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | ✅ Yes | - | Input query for the workflow |
+| `name` | `string` | No | - | Workflow name to execute |
+| `file` | `string` | No | - | Workflow YAML file path |
+| `projectPath` | `string` | No | - | Project path for custom workflows |
+| `compare` | `boolean` | No | `true` | Show comparison summary table |
+| `judge` | `boolean` | No | - | Enable AI judge to evaluate all steps at the end |
+| `judgeTool` | `string` | No | `"gemini_analyze_text"` | Tool used for judging |
+| `maxStepTokens` | `number` | No | `2500` | Max tokens per step |
+| `truncateSteps` | `boolean` | No | `true` | Truncate step outputs |
 
-#### Example Calls
+#### Example
 
-**Execute workflow:**
 ```typescript
 workflow({
   name: "comprehensive-code-review",
-  query: codeToReview
+  query: codeToReview,
+  judge: true
 })
 ```
 
-**Custom workflow:**
+---
+
+### workflow_start
+
+Start a workflow session.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | `string` | ✅ Yes | - | Workflow name |
+| `query` | `string` | ✅ Yes | - | Input query |
+| `variables` | `Record<string, string \| number \| boolean>` | No | - | Workflow variables |
+
+#### Example
+
 ```typescript
-workflow({
-  name: "my-custom-workflow",
-  query: "input data",
-  projectPath: "/path/to/project"
+workflow_start({
+  name: "research-report",
+  query: "Impact of quantum computing on cryptography",
+  variables: { depth: "deep" }
 })
+```
+
+---
+
+### continue_workflow
+
+Continue a running workflow session. Use `continue_focus` instead for focus sessions.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `sessionId` | `string` | ✅ Yes | - | The workflow session ID |
+
+#### Example
+
+```typescript
+continue_workflow({ sessionId: "wf_abc123" })
 ```
 
 ---
@@ -1428,15 +1375,13 @@ workflow({
 
 List available workflows.
 
-#### Schema
+#### Parameters
 
-```typescript
-{
-  projectPath?: string;             // For custom workflows
-}
-```
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `projectPath` | `string` | No | - | For custom workflows |
 
-#### Example Calls
+#### Example
 
 ```typescript
 list_workflows({})
@@ -1446,21 +1391,18 @@ list_workflows({})
 
 ### create_workflow
 
-Create custom workflow from template.
+Create a new workflow. Put the WORKFLOW NAME in the `name` parameter.
 
-#### Schema
+#### Parameters
 
-```typescript
-{
-  name: string;                     // REQUIRED - Workflow name
-  type: "code-review" | "brainstorm" | "debug" | "research" | "custom";  // REQUIRED
-  steps?: string;                   // Custom YAML/JSON steps
-}
-```
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | `string` | ✅ Yes | - | Workflow name |
+| `type` | `"code-review" \| "brainstorm" \| "debug" \| "research" \| "custom"` | No | `"custom"` | Workflow type |
+| `steps` | `string` | No | - | Workflow steps definition (YAML/JSON) |
 
-#### Example Calls
+#### Example
 
-**Create from template:**
 ```typescript
 create_workflow({
   name: "my-code-review",
@@ -1468,88 +1410,170 @@ create_workflow({
 })
 ```
 
-**Custom workflow:**
-```typescript
-create_workflow({
-  name: "custom-research",
-  type: "custom",
-  steps: `
-steps:
-  - name: gather-facts
-    tool: perplexity_research
-    input:
-      topic: "\${input}"
-  - name: analyze
-    tool: gemini_analyze_text
-    input:
-      text: "\${gather-facts}"
-  `
-})
-```
-
 ---
 
 ### visualize_workflow
 
-Show workflow structure.
+Visualize workflow structure.
 
-#### Schema
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | `string` | ✅ Yes | - | Workflow name |
+
+#### Example
 
 ```typescript
-{
-  name: string;                     // REQUIRED
-}
+visualize_workflow({ name: "comprehensive-code-review" })
 ```
 
-#### Example Calls
+---
+
+### workflow_status
+
+Get workflow status.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `sessionId` | `string` | ✅ Yes | - | The workflow session ID |
+
+#### Example
 
 ```typescript
-visualize_workflow({
-  name: "comprehensive-code-review"
+workflow_status({ sessionId: "wf_abc123" })
+```
+
+---
+
+### validate_workflow
+
+Validates workflow YAML/JSON content for correctness: syntax, interpolation references (`${step.output}`, `${variable}`), tool names exist and are enabled in `tools.config.json`, no circular dependencies, variable naming convention. Returns detailed error messages with suggestions.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `workflowContent` | `string` | ✅ Yes | - | The YAML or JSON content of the workflow to validate |
+| `isJson` | `boolean` | No | `false` | Set to true if the content is JSON instead of YAML |
+| `format` | `"text" \| "json"` | No | `"text"` | Output format |
+
+#### Example
+
+```typescript
+validate_workflow({ workflowContent: yamlString })
+```
+
+---
+
+### validate_workflow_file
+
+Validates a workflow file from the filesystem (same checks as `validate_workflow`).
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `filePath` | `string` | ✅ Yes | - | Path to the workflow file (YAML or JSON) |
+| `format` | `"text" \| "json"` | No | `"text"` | Output format |
+
+#### Example
+
+```typescript
+validate_workflow_file({ filePath: "workflows/my-workflow.yaml" })
+```
+
+---
+
+## Prompt Engineering
+
+### list_prompt_techniques
+
+Discover available prompt engineering techniques. Shows all 31 techniques organized by category.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `filter` | `string` | No | `"all"` | Filter by category: `all`, `creative`, `research`, `analytical`, `reflective`, `reasoning`, `verification`, `meta`, `debate`, `judgment`, `engineering`, `research_advanced`, `decision`, `structured_coding` |
+
+#### Example
+
+```typescript
+list_prompt_techniques({ filter: "reasoning" })
+```
+
+---
+
+### preview_prompt_technique
+
+Preview how a technique enhances your prompt WITHOUT executing. Returns an `execution_token` for later use.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `technique` | `string` | ✅ Yes | - | Technique name (e.g. `first_principles`, `tree_of_thoughts`) |
+| `tool` | `string` | ✅ Yes | - | Target tool (e.g. `grok_reason`, `gemini_brainstorm`) |
+| `query` | `string` | ✅ Yes | - | Your query or problem |
+
+#### Example
+
+```typescript
+preview_prompt_technique({
+  technique: "first_principles",
+  tool: "grok_reason",
+  query: "Should we build or buy our auth system?"
 })
 ```
 
 ---
 
-## Collaborative Tools
+### execute_prompt_technique
 
-### pingpong
+Execute a prompt technique. Use `execution_token` from preview, OR provide full params (`technique`, `tool`, `query`). Use `"last"` as the token to execute the most recent preview.
 
-Standalone multi-model conversation tool.
+#### Parameters
 
-#### Schema
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `execution_token` | `string` | No | - | Token from preview, or `"last"` for most recent preview |
+| `technique` | `string` | No | - | Technique name (if not using a token) |
+| `tool` | `string` | No | - | Target tool name (if not using a token) |
+| `query` | `string` | No | - | Your query or problem (if not using a token) |
+
+#### Example
 
 ```typescript
-{
-  problem: string;                  // REQUIRED
-  domain?: string;
-  rounds?: number;                  // Default: 8
-  models?: string[];                // Default: ["grok", "claude-code", "qwen", "openai"]
-  temperature?: number;             // 0-1, Default: 0.8
-  style?: "collaborative" | "competitive" | "debate" | "build-upon";  // Default: "collaborative"
-}
+execute_prompt_technique({ execution_token: "last" })
 ```
 
-#### Example Calls
+---
 
-**Collaborative problem-solving:**
-```typescript
-pingpong({
-  problem: "Design a distributed caching system",
-  domain: "architecture",
-  rounds: 8,
-  style: "collaborative"
-})
-```
+## Local Models
 
-**Competitive debate:**
+### local_query
+
+Query a local open-weight model (Ollama / LM Studio / llama.cpp / vLLM) — zero-cost, offline, private. Set `LOCAL_LLM_BASE_URL` / `LOCAL_LLM_MODEL`; `LOCAL_LLM_NUM_CTX` for long prompts (Ollama).
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `prompt` | `string` | ✅ Yes | - | The prompt to send to the local model |
+| `model` | `string` | No | - | Model tag, e.g. `hermes3`, `qwen2.5` |
+| `temperature` | `number` | No | `0.4` | Sampling temperature |
+
+Also available as the `local` juror in [`jury`](#jury) (`hermes` accepted as a legacy alias, deduped after mapping).
+
+#### Example
+
 ```typescript
-pingpong({
-  problem: "Best approach to microservices architecture",
-  models: ["grok", "openai", "gemini"],
-  rounds: 10,
-  style: "debate",
-  temperature: 0.9
+local_query({
+  prompt: "Summarize this changelog in 3 bullets",
+  model: "hermes3"
 })
 ```
 
@@ -1560,27 +1584,36 @@ pingpong({
 Configure tool behavior via environment variables:
 
 ```bash
-# Search providers
+# API keys (see docs/API_KEYS.md)
+PERPLEXITY_API_KEY=...
+GROK_API_KEY=...            # or XAI_API_KEY
+OPENAI_API_KEY=...
+GEMINI_API_KEY=...
+OPENROUTER_API_KEY=...      # gates Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools
+
+# Search
 DEFAULT_SEARCH_PROVIDER=perplexity
 GROK_SEARCH_SOURCES_LIMIT=100
 
-# Tool overrides
-ENABLE_TOOL_HUNTER=false
-DISABLE_TOOL_GROK_SEARCH=false
+# Profile / tool overrides
+TACHIBOT_PROFILE=full
+ENABLE_TOOL_<NAME>=true
+DISABLE_TOOL_<NAME>=true
 DISABLE_ALL_TOOLS=false
 
-# Performance
-TACHI_ENABLE_CACHE=true
-TACHI_ENABLE_BATCHING=true
-MAX_PINGPONG_ROUNDS=30
+# Local models (local_query, jury's `local` juror)
+LOCAL_LLM_BASE_URL=http://localhost:11434/v1
+LOCAL_LLM_MODEL=hermes3
+LOCAL_LLM_API_KEY=local
+LOCAL_LLM_NUM_CTX=8192
 ```
 
 ---
 
 ## See Also
 
-- [Tool Profiles](TOOL_PROFILES.md) - Pre-configured tool sets
-- [Tool Parameters](TOOL_PARAMETERS.md) - Detailed parameter docs for advanced modes
+- [Tool Profiles](TOOL_PROFILES.md) - Pre-configured tool sets and counts
+- [Tool Parameters](TOOL_PARAMETERS.md) - Cross-cutting parameter conventions (files, focus, approach, etc.)
 - [Configuration Guide](CONFIGURATION.md) - Complete configuration reference
 - [API Keys Guide](API_KEYS.md) - Where to get API keys
 - [Workflows](WORKFLOWS.md) - Custom workflow creation

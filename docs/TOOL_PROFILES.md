@@ -6,98 +6,156 @@ Switch between tool profiles by editing `tools.config.json`:
 
 ```json
 {
-  "activeProfile": "research_power"
+  "activeProfile": "full"
 }
+```
+
+Or via environment variable:
+
+```bash
+TACHIBOT_PROFILE=research_power npm start
 ```
 
 Restart the server for changes to take effect.
 
 ## Available Profiles
 
-### 1. **minimal** (~4-5k tokens, 8 tools)
-Minimal tool set for basic tasks.
+Counts below are generated from `src/profiles/*.ts` via `npm run build:profiles` — see `profiles/*.json` for the exact tool lists.
 
-**Tools:**
-- Core: think, focus, nextThought
-- Research: perplexity_ask
-- Reasoning: grok_reason
-- Creative: gemini_brainstorm
-- Code: qwen_coder
-- Workflow: workflow
-
-**Best for:** Quick tasks, token budget constraints, learning TachiBot
+| Profile | Tools | Description |
+|---------|-------|-------------|
+| `minimal` | 13 | Minimal essential tools for basic tasks |
+| `research_power` | 35 | Research-focused with Grok search + all Perplexity + brainstorming |
+| `code_focus` | 39 | Code-heavy work with debugging and analysis |
+| `balanced` | 50 | Balanced set for general use |
+| `heavy_coding` | 54 | Heavy coding with all reasoning & code tools |
+| `full` | 61 | **Default profile** — every tool enabled |
 
 ---
 
-### 2. **research_power** (~9-10k tokens, 15 tools) ⭐ YOUR PROFILE
-Research-focused with Grok search + all Perplexity + brainstorming.
+### 1. `minimal` (13 tools)
+
+Minimal essential tools for basic tasks.
 
 **Tools:**
-- Core: think, focus, nextThought
-- Perplexity: perplexity_ask, perplexity_reason, perplexity_research
-- Grok: grok_search, grok_reason
-- Creative: openai_brainstorm, gemini_brainstorm
-- Advanced: scout, verifier
-- Code: qwen_coder
-- Workflow: workflow, list_workflows
+- Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
+- Research: `perplexity_ask`
+- Reasoning: `grok_reason`
+- Creative: `gemini_brainstorm`
+- Code: `qwen_coder`, `minimax_code`
+- Workflow: `workflow`
+- Prompt engineering: `list_prompt_techniques`
 
-**Best for:** Deep research, fact-checking, multi-source verification, brainstorming sessions
-
-**Key differences from perplexity_ask:**
-- **scout**: Hybrid orchestrator (can use Perplexity + Grok-4 live search, multiple strategies)
-- **grok_search**: Grok-4 with live web search (costs extra, but very powerful)
-- **verifier**: Multi-model consensus (runs same query on multiple models, synthesizes)
+**Best for:** Quick tasks, token budget constraints, learning TachiBot.
 
 ---
 
-### 3. **code_focus** (~8-9k tokens, 13 tools)
+### 2. `research_power` (35 tools)
+
+Research-focused with Grok search + all Perplexity + brainstorming + the full reasoning/planning suite.
+
+**Tools:**
+- Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
+- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `openai_search`, `gemini_search`
+- Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`
+- Judgment: `gemini_judge`, `jury`
+- Creative: `openai_brainstorm`, `gemini_brainstorm`
+- Code: `qwen_coder`, `kimi_code`, `kimi_long_context`, `minimax_agent`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`
+- Workflow: `workflow`
+- Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`
+
+**Best for:** Deep research, fact-checking, multi-source verification, brainstorming sessions.
+
+**Key tools for research:**
+- `grok_search` / `openai_search` / `gemini_search` — live web search, three different engines
+- `jury` — multi-model consensus (parallel jurors + Gemini synthesis)
+- `gemini_judge` — evaluate/synthesize/rank/resolve multiple perspectives into one verdict
+
+---
+
+### 3. `code_focus` (39 tools)
+
 Code-heavy work with debugging and analysis.
 
 **Tools:**
-- Core: think, focus, nextThought
-- Research: perplexity_ask
-- Grok: grok_reason, grok_code, grok_debug
-- Gemini: gemini_analyze_code, gemini_brainstorm
-- Code: qwen_coder
-- Advanced: verifier
-- Workflow: workflow, list_workflows
+- Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
+- Research: `perplexity_ask`
+- Reasoning: `grok_reason`, `qwq_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`
+- Code: `grok_code`, `grok_debug`, `openai_code_review`, `gemini_analyze_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `deepseek_algo`
+- Creative: `gemini_brainstorm`
+- Local: `local_query`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`
+- Workflow: `workflow`, `list_workflows`, `validate_workflow`
+- Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`
+- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
 
-**Best for:** Software development, debugging, code review, refactoring
+**Best for:** Software development, debugging, code review, refactoring, security-conscious changes.
 
 ---
 
-### 4. **balanced** (~10-11k tokens, 17 tools)
-Balanced set for general use.
+### 4. `balanced` (50 tools)
+
+Balanced set for general use — nearly everything except the deepest niche reasoning/creative extras.
 
 **Tools:**
-- Core: think, focus, nextThought
-- Perplexity: perplexity_ask, perplexity_reason
-- Grok: grok_reason, grok_code
-- OpenAI: openai_brainstorm
-- Gemini: gemini_brainstorm, gemini_analyze_code
-- Code: qwen_coder
-- Advanced: verifier, scout
-- Workflow: workflow, list_workflows
-- Collaborative: pingpong
+- Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
+- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `openai_search`, `gemini_search`
+- Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`
+- Code: `grok_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`
+- Judgment: `gemini_judge`, `jury`
+- Creative: `openai_brainstorm`, `gemini_brainstorm`
+- Analysis: `gemini_analyze_code`, `gemini_analyze_text`
+- Local: `local_query`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`
+- Workflow: `workflow`, `list_workflows`, `create_workflow`, `visualize_workflow`
+- Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`
+- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
+- Reasoning (OpenAI): `openai_reason`
 
-**Best for:** General-purpose work, daily tasks, mixed research + code
+**Best for:** General-purpose work, daily tasks, mixed research + code.
 
 ---
 
-### 5. **full** (~18-19k tokens, 26 tools)
-All tools enabled for maximum capability.
+### 5. `heavy_coding` (54 tools)
 
-**Tools:** All 26 tools (except hunter, qwen_competitive)
+Heavy coding with the full reasoning & code toolset, minus the general workflow-management tools.
 
-**Best for:** Maximum flexibility, specialized tasks, demonstrations
+**Tools:**
+- Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
+- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `openai_search`, `gemini_search`
+- Reasoning: `grok_reason`, `openai_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`
+- Code: `grok_code`, `grok_debug`, `grok_architect`, `openai_code_review`, `openai_explain`, `gemini_analyze_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`
+- Judgment: `gemini_judge`, `jury`
+- Creative: `grok_brainstorm`, `openai_brainstorm`, `gemini_brainstorm`
+- Analysis: `gemini_analyze_text`
+- Local: `local_query`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`
+- Workflow: `workflow`, `list_workflows`, `workflow_start`, `continue_workflow`
+- Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`
+- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
 
-**Warning:** High token usage, may impact Claude Code performance
+**Best for:** Coding marathons, large refactors, when you want every code-intelligence tool available but don't need custom workflow authoring.
+
+**Not included** (present only in `full`): `ernie_reason`, `qwen_competitive`, `create_workflow`, `visualize_workflow`, `workflow_status`, `validate_workflow`, `validate_workflow_file`.
+
+---
+
+### 6. `full` (61 tools) — default
+
+All tools enabled for maximum capability. This is the profile set in `tools.config.json`'s `activeProfile` by default.
+
+**Tools:** every tool listed in [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md), including the niche/conditional ones not in any other profile: `ernie_reason`, `qwen_competitive`, `create_workflow`, `visualize_workflow`, `workflow_status`, `validate_workflow`, `validate_workflow_file`.
+
+**Best for:** Maximum flexibility, specialized tasks, demonstrations.
+
+**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools won't register even under `full`. Run `doctor` to see exactly what's active. `continue_focus` is always registered regardless of profile (see [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md#continue_focus)) and isn't counted in the 61.
 
 ---
 
 ## Custom Profile
 
-Create your own profile:
+Create your own subset:
 
 ```json
 {
@@ -109,53 +167,33 @@ Create your own profile:
       "focus": true,
       "perplexity_ask": true,
       "grok_search": true,
-      "scout": true
+      "jury": true
     }
   }
 }
 ```
 
-When `customProfile.enabled` is `true`, it overrides `activeProfile`.
-
----
-
-## Tool Comparison: Research Tools
-
-| Tool | Purpose | Tokens | Speed | Cost |
-|------|---------|--------|-------|------|
-| **perplexity_ask** | Single web search | ~300 | Fast | $ |
-| **perplexity_research** | Deep multi-query research | ~700 | Slow | $$$ |
-| **grok_search** | Grok-4 live web search | ~500 | Medium | $$ |
-| **scout** | Hybrid orchestrator (Perplexity + Grok) | ~600 | Medium | $$-$$$ |
-| **verifier** | Multi-model consensus | ~500 | Medium | $$ |
-
-### When to use each:
-
-- **Quick fact check**: `perplexity_ask`
-- **Deep research report**: `perplexity_research`
-- **Real-time data**: `grok_search` (Grok-4 with live web)
-- **Comprehensive research**: `scout` (uses both Perplexity + Grok)
-- **Verify conflicting info**: `verifier` (runs multiple models, finds consensus)
+When `customProfile.enabled` is `true`, it overrides `activeProfile`. Every tool in `src/profiles/types.ts`'s `ToolsConfig` interface must be present (as `true`/`false`) for the profile to be valid — copy the `full` profile's tool list from `profiles/full.json` as a starting template and flip the ones you don't want.
 
 ---
 
 ## Profile Switching Tips
 
-1. **Start with balanced** if unsure
-2. **Use research_power** for heavy research sessions
-3. **Use code_focus** for coding marathons
-4. **Use minimal** when hitting token limits
-5. **Use full** only when you need everything
+1. **Start with `balanced`** if unsure.
+2. **Use `research_power`** for heavy research sessions.
+3. **Use `code_focus`** or **`heavy_coding`** for coding marathons (the latter adds architecture/debug/explain/brainstorm on top).
+4. **Use `minimal`** when hitting token limits.
+5. **Use `full`** (the default) when you want everything and don't mind the token overhead.
 
 ---
 
 ## Environment Variable Overrides
 
-Force-enable/disable tools regardless of profile:
+Force-enable/disable individual tools regardless of profile:
 
 ```bash
 # Enable a specific tool
-ENABLE_TOOL_HUNTER=true npm start
+ENABLE_TOOL_QWEN_COMPETITIVE=true npm start
 
 # Disable a specific tool
 DISABLE_TOOL_GROK_SEARCH=true npm start
@@ -164,73 +202,34 @@ DISABLE_TOOL_GROK_SEARCH=true npm start
 DISABLE_ALL_TOOLS=true npm start
 ```
 
-Priority: `ENV vars` > `customProfile` > `activeProfile` > `Default (enabled)`
-
----
-
-## Monitoring
-
-On startup, you'll see:
-
-```
-🎯 Active profile: research_power
-   Research-focused with Grok search + all Perplexity + brainstorming (~9-10k tokens, 15 tools)
-🚀 TachiBot MCP Server v5.0
-Tools registered: 15 active
-```
+Priority: `ENV vars` > `customProfile` > `activeProfile` > default (enabled).
 
 ---
 
 ## Troubleshooting
 
 ### Profile not loading
-1. Check JSON syntax in `tools.config.json`
-2. Restart the server
-3. Check startup logs for profile name
+1. Check JSON syntax in `tools.config.json`.
+2. Restart the server.
+3. Run `doctor` — it reports the active profile and why any tool is hidden.
 
-### Tool still appears
-1. Make sure tool is set to `false` in active profile
-2. Check for environment variable overrides
-3. Verify profile name matches exactly
+### Tool still appears / still hidden
+1. Confirm the tool is `true`/`false` in the active profile (`profiles/<name>.json` after a build, or `src/profiles/<name>.ts` in source).
+2. Check for an `ENABLE_TOOL_*` / `DISABLE_TOOL_*` environment override.
+3. Confirm the tool's provider API key is set — some tools (Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE) need `OPENROUTER_API_KEY` regardless of profile.
 
 ### Custom profile not working
-1. Set `"enabled": true` in `customProfile`
-2. Restart server
-3. Check logs show "Using custom profile"
+1. Set `"enabled": true` in `customProfile`.
+2. Restart the server.
+3. Run `doctor` to confirm it reports "custom profile" as active.
+
+### Profiles out of sync with this document
+After editing `src/profiles/*.ts`, run `npm run build` to regenerate the JSON in `profiles/` — this document's counts and tool lists are generated from that build output.
 
 ---
 
-## Your Research Power Profile
+## See Also
 
-**Recommended for:**
-- Academic research
-- Fact-checking and verification
-- Multi-source investigations
-- Creative brainstorming with research backing
-- Competitive intelligence
-
-**Additional tools you might want:**
-
-1. **pingpong** - Multi-model conversations for complex debates
-   - Add if you want models to argue/collaborate on topics
-
-2. **challenger** - Critical thinking and echo chamber prevention
-   - Add if you want counter-arguments to your research
-
-3. **gemini_analyze_text** - Text analysis (sentiment, entities)
-   - Add if you're analyzing documents/articles
-
-**To add these**, update your profile:
-
-```json
-"research_power": {
-  "tools": {
-    // ... existing tools ...
-    "pingpong": true,
-    "challenger": true,
-    "gemini_analyze_text": true
-  }
-}
-```
-
-This would bring you to **18 tools, ~11-12k tokens** - still well under your target!
+- [Tools Reference](TOOLS_REFERENCE.md) - Full per-tool schemas and examples
+- [Tool Parameters](TOOL_PARAMETERS.md) - Cross-cutting parameter conventions
+- [Configuration Guide](CONFIGURATION.md) - Complete configuration reference
