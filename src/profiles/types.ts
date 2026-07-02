@@ -89,4 +89,7 @@ export interface ToolsConfig {
 
   // Security audit
   security_review: boolean;  // Dedicated security audit (taint/data-flow analysis) via DeepSeek V4 Pro
+
+  // Diff-aware code review
+  diff_review: boolean;  // Multi-model diff review (Kimi/DeepSeek/GPT-5.5) with Gemini judge
 }

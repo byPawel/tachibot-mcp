@@ -1,5 +1,5 @@
 {
-  "description": "Default profile — all tools enabled for maximum capability (59 tools)",
+  "description": "Default profile — all tools enabled for maximum capability (60 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -59,6 +59,7 @@
     "planner_runner": true,
     "list_plans": true,
     "testgen": true,
-    "security_review": true
+    "security_review": true,
+    "diff_review": true
   }
 }

@@ -68,5 +68,8 @@ export const balancedProfile: ProfileConfig = {
 
     // Security audit
     security_review: true,
+
+    // Diff-aware code review
+    diff_review: true,
   }
 };

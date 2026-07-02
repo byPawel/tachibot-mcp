@@ -80,6 +80,7 @@ export const PROVIDER_GROUPS: ProviderGroup[] = [
       "gemini_judge",
       "gemini_search",
       "jury",
+      "diff_review",
     ],
   },
   {

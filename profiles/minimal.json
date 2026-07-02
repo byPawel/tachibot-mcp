@@ -59,6 +59,7 @@
     "planner_runner": false,
     "list_plans": false,
     "testgen": false,
-    "security_review": false
+    "security_review": false,
+    "diff_review": false
   }
 }

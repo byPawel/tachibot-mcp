@@ -141,6 +141,58 @@
     "name": "deepseek_reason"
   },
   {
+    "description": "Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K2.7-Code, DeepSeek V4 Pro, GPT-5.5) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in 'diff'.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "diff": {
+          "description": "Unified diff to review (git diff output) — REQUIRED",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths for surrounding context. Supports line ranges: 'src/foo.ts:100-200'.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "focus": {
+          "default": "all",
+          "description": "Review focus",
+          "enum": [
+            "security",
+            "perf",
+            "correctness",
+            "style",
+            "all"
+          ],
+          "type": "string"
+        },
+        "intent": {
+          "description": "What the change is SUPPOSED to do (enables intent-mismatch detection)",
+          "type": "string"
+        },
+        "severityFloor": {
+          "default": "nit",
+          "description": "Omit findings below this severity",
+          "enum": [
+            "blocker",
+            "major",
+            "minor",
+            "nit"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "diff"
+      ],
+      "type": "object"
+    },
+    "name": "diff_review"
+  },
+  {
     "description": "Diagnose your TachiBot setup: which API keys are detected, which tools are available vs hidden (and why), the active profile, and a suggested first step. Zero-cost, needs no API key. Call it when tools seem missing.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",

@@ -68,5 +68,8 @@ export const minimalProfile: ProfileConfig = {
 
     // Security audit
     security_review: false,
+
+    // Diff-aware code review
+    diff_review: false,
   }
 };

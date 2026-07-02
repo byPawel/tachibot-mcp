@@ -127,6 +127,11 @@ export async function getAllTools(
     // Jury tool (multi-model panel with Gemini judge) — gated on Gemini, as before.
     const { juryTool } = await import("./jury-tool.js");
     tools.push(juryTool as unknown as RegistryTool);
+
+    // diff_review — multi-model diff review with Gemini judge — gated on Gemini
+    // (panelists self-drop when OpenRouter/OpenAI keys are missing).
+    const { diffReviewTool } = await import("./diff-review-tool.js");
+    tools.push(diffReviewTool as unknown as RegistryTool);
   }
 
   // 5) OpenRouter (Qwen/QwQ/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE) + planner

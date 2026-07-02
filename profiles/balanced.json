@@ -1,5 +1,5 @@
 {
-  "description": "Balanced set for general use (48 tools)",
+  "description": "Balanced set for general use (49 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -59,6 +59,7 @@
     "planner_runner": true,
     "list_plans": true,
     "testgen": true,
-    "security_review": true
+    "security_review": true,
+    "diff_review": true
   }
 }

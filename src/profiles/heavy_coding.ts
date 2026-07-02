@@ -81,5 +81,8 @@ export const heavyCodingProfile: ProfileConfig = {
 
     // Security audit
     security_review: true,
+
+    // Diff-aware code review
+    diff_review: true,
   }
 };
