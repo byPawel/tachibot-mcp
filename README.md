@@ -146,6 +146,8 @@ Then verify with `/mcp`. Add API keys with `--env`, e.g. `--env OPENROUTER_API_K
 
 ### Setup (Claude Desktop)
 
+**One-click (easiest):** download [`tachibot-mcp.mcpb`](https://github.com/byPawel/tachibot-mcp/releases/latest) from the latest release and double-click it — Claude Desktop installs the extension with no JSON editing. Add your API keys when prompted (or later via the extension settings).
+
 **Gateway Mode (Recommended)** &mdash; 2 keys, all providers:
 
 ```json
