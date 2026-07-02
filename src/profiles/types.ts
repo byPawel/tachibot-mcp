@@ -25,6 +25,7 @@ export interface ToolsConfig {
   grok_reason: boolean;
   grok_code: boolean;
   grok_debug: boolean;
+  debug_triage: boolean;
   grok_architect: boolean;
   grok_brainstorm: boolean;
   grok_search: boolean;

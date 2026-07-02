@@ -14,6 +14,7 @@ export const minimalProfile: ProfileConfig = {
     grok_reason: true,
     grok_code: false,
     grok_debug: false,
+    debug_triage: false,
     grok_architect: false,
     grok_brainstorm: false,
     grok_search: false,

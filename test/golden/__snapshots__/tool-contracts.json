@@ -69,6 +69,43 @@
     "name": "create_workflow"
   },
   {
+    "description": "Systematic bug triage (Grok 4.3): RANKED root-cause hypotheses with likelihoods, the cheapest discriminating check for each, and the minimal fix for the top candidate. Provide the error/stack trace in 'error'.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Relevant code (or use 'files')",
+          "type": "string"
+        },
+        "context": {
+          "description": "Repro steps, recent changes, frequency (always/intermittent)",
+          "type": "string"
+        },
+        "error": {
+          "description": "The error message or stack trace — REQUIRED",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read server-side. Supports line ranges: 'src/foo.ts:100-200'.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "runtime": {
+          "description": "Runtime/environment (e.g. 'node 22', 'python 3.12/django', browser)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "type": "object"
+    },
+    "name": "debug_triage"
+  },
+  {
     "description": "Algorithmic code review with DeepSeek V4 Pro (top AIME/CodeElo): correctness, complexity/Big-O, edge cases, data-structure choice, optimization. Put PROBLEM/CODE in 'problem'.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",

@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const codeFocusProfile: ProfileConfig = {
-  description: "Code-heavy work with debugging and analysis (39 tools)",
+  description: "Code-heavy work with debugging and analysis (40 tools)",
   tools: {
     think: true,
     focus: true,
@@ -14,6 +14,7 @@ export const codeFocusProfile: ProfileConfig = {
     grok_reason: true,
     grok_code: true,
     grok_debug: true,
+    debug_triage: true,
     grok_architect: false,
     grok_brainstorm: false,
     grok_search: false,

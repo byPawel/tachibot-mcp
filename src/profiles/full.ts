@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const fullProfile: ProfileConfig = {
-  description: "Default profile — all tools enabled for maximum capability (61 tools)",
+  description: "Default profile — all tools enabled for maximum capability (62 tools)",
   tools: {
     think: true,
     focus: true,
@@ -14,6 +14,7 @@ export const fullProfile: ProfileConfig = {
     grok_reason: true,
     grok_code: true,
     grok_debug: true,
+    debug_triage: true,
     grok_architect: true,
     grok_brainstorm: true,
     grok_search: true,

@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const heavyCodingProfile: ProfileConfig = {
-  description: "Heavy coding with all reasoning & code tools (54 tools)",
+  description: "Heavy coding with all reasoning & code tools (55 tools)",
   tools: {
     // Core reasoning - all enabled
     think: true,
@@ -19,6 +19,7 @@ export const heavyCodingProfile: ProfileConfig = {
     grok_reason: true,
     grok_code: true,
     grok_debug: true,
+    debug_triage: true,
     grok_architect: true,
     grok_brainstorm: true,
     grok_search: true,
