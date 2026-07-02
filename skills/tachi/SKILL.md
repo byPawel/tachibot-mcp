@@ -1,6 +1,6 @@
 ---
 name: tachi
-description: TachiBot help - see available skills, tools, and configured API keys
+description: Use when the user asks what TachiBot can do, which tools/skills exist, or which API keys are configured — help and discovery entry point
 user-invocable: true
 ---
 

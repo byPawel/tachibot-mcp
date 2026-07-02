@@ -1,6 +1,6 @@
 ---
 name: judge
-description: Multi-model council with parallel analysis and synthesis - adapts to your available API keys
+description: Use for any quick A-vs-B decision or "is this right?" judgment worth a second opinion — parallel lab-diverse jurors + Gemini synthesis in one call, <15s
 user-invocable: true
 ---
 

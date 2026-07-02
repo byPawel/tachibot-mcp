@@ -1,6 +1,6 @@
 ---
 name: redteam
-description: Adversarial plan red-team — multi-model pre-mortem, hidden-assumption audit, ranked risks with mitigations, and concrete edits for any plan you paste or point at
+description: Use when the user shares or finishes a plan and wants it stress-tested before execution — adversarial multi-model pre-mortem with ranked risks, mitigations, and concrete plan edits
 user-invocable: true
 ---
 

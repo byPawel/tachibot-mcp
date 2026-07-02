@@ -1,6 +1,6 @@
 ---
 name: review
-description: Multi-model diff review — panel of lab-diverse reviewers (Kimi K2.7-Code, DeepSeek V4 Pro, GPT-5.5) scoped to your changed lines, deduplicated and severity-ranked by a Gemini judge
+description: Use when code changes are ready for review — a diff exists, the user says "review my changes/PR", or a commit is about to happen. Multi-model diff review (Kimi, DeepSeek, GPT-5.5 panel + Gemini judge) with a MERGEABLE verdict
 user-invocable: true
 ---
 
