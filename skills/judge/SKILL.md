@@ -1,6 +1,6 @@
 ---
 name: judge
-description: Use for any quick A-vs-B decision or "is this right?" judgment worth a second opinion — parallel lab-diverse jurors + Gemini synthesis in one call, <15s
+description: Use for decisions or judgments worth multiple independent perspectives — multi-model council with parallel analysis, search grounding, and synthesis (30-60s); for a quick single-call verdict use the jury tool directly
 user-invocable: true
 ---
 
