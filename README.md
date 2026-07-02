@@ -5,17 +5,17 @@
 ### Multi-Model AI Orchestration Platform
 
 [![Version](https://img.shields.io/badge/version-2.23.3-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
-[![Tools](https://img.shields.io/badge/tools-57_active-brightgreen.svg)](#-tool-ecosystem-57-tools)
+[![Tools](https://img.shields.io/badge/tools-61_active-brightgreen.svg)](#-tool-ecosystem-61-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**57 AI tools. 12 providers. One protocol.**
+**61 AI tools. 12 providers. One protocol.**
 
 Orchestrate Perplexity, Grok, GPT-5.5, Gemini, Qwen, Kimi K2.7-Code, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
-[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-57-tools) &#183; [Documentation](https://tachibot.com/docs)
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-61-tools) &#183; [Documentation](https://tachibot.com/docs)
 
 <br>
 
@@ -96,7 +96,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ## Key Features
 
 ### Multi-Model Intelligence
-- **57 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
+- **61 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
 - **Gemini 3.5 Flash** (`gemini-3.5-flash`, GA May 19 2026) &mdash; Flash/search tier; reasoning default stays `gemini-3.1-pro-preview`
 - **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
 - **Smart Routing** &mdash; Automatic model selection for optimal results
@@ -113,10 +113,10 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 |---------|-------|----------|
 | **Minimal** | 13 | Quick tasks, low token budget |
 | **Research Power** | 35 | Deep investigation, multi-source |
-| **Code Focus** | 35 | Software development, SWE tasks |
-| **Balanced** | 46 | General-purpose, mixed workflows |
-| **Heavy Coding** | 50 | Max code tools + agentic workflows |
-| **Full** (default) | 57 | Everything enabled |
+| **Code Focus** | 39 | Software development, SWE tasks |
+| **Balanced** | 50 | General-purpose, mixed workflows |
+| **Heavy Coding** | 54 | Max code tools + agentic workflows |
+| **Full** (default) | 61 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support
@@ -186,7 +186,7 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## Tool Ecosystem (57 Tools)
+## Tool Ecosystem (61 Tools)
 
 ### Research & Search (6)
 `perplexity_ask` &#183; `perplexity_research` &#183; `perplexity_reason` &#183; `grok_search` &#183; `openai_search` &#183; `gemini_search`
@@ -194,11 +194,11 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 ### Reasoning & Planning (13)
 `grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans`
 
-### Code Intelligence (9)
-`kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `deepseek_algo` &#183; `minimax_code` &#183; `minimax_agent`
+### Code Intelligence (10)
+`kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `deepseek_algo` &#183; `minimax_code` &#183; `minimax_agent` &#183; `testgen`
 
-### Analysis & Judgment (11)
-`gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_judge` &#183; `jury` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `kimi_long_context`
+### Analysis & Judgment (14)
+`gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_judge` &#183; `jury` &#183; `diff_review` &#183; `plan_critique` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `security_review` &#183; `kimi_long_context`
 
 ### Meta & Orchestration (5)
 `think` &#183; `nextThought` &#183; `focus` &#183; `tachi` &#183; `usage_stats`
