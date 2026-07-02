@@ -132,6 +132,10 @@ export async function getAllTools(
     // (panelists self-drop when OpenRouter/OpenAI keys are missing).
     const { diffReviewTool } = await import("./diff-review-tool.js");
     tools.push(diffReviewTool as unknown as RegistryTool);
+
+    // plan_critique — adversarial plan red-team with Gemini judge — gated on Gemini.
+    const { planCritiqueTool } = await import("./plan-critique-tool.js");
+    tools.push(planCritiqueTool as unknown as RegistryTool);
   }
 
   // 5) OpenRouter (Qwen/QwQ/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE) + planner

@@ -92,4 +92,7 @@ export interface ToolsConfig {
 
   // Diff-aware code review
   diff_review: boolean;  // Multi-model diff review (Kimi/DeepSeek/GPT-5.5) with Gemini judge
+
+  // Adversarial plan red-team
+  plan_critique: boolean;  // Multi-model plan red-team (DeepSeek/Grok/GPT-5.5) with Gemini judge
 }

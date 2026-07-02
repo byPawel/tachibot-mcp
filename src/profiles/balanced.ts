@@ -71,5 +71,8 @@ export const balancedProfile: ProfileConfig = {
 
     // Diff-aware code review
     diff_review: true,
+
+    // Adversarial plan red-team
+    plan_critique: true,
   }
 };

@@ -1748,6 +1748,39 @@
     "name": "perplexity_reason"
   },
   {
+    "description": "Adversarial red-team of an existing plan (from any source): multi-model pre-mortem, hidden-assumption audit, ranked risks with mitigations, concrete plan edits, verdict. Complements planner_maker (builds) and planner_runner (executes).",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "constraints": {
+          "description": "Hard constraints (deadline, budget, compliance, team size)",
+          "type": "string"
+        },
+        "files": {
+          "description": "Relevant code/doc paths for grounding. Supports line ranges: 'src/foo.ts:100-200'.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "goal": {
+          "description": "The goal the plan is supposed to achieve (enables scope-creep and gap detection)",
+          "type": "string"
+        },
+        "plan": {
+          "description": "The plan to critique (paste it) — REQUIRED",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plan"
+      ],
+      "type": "object"
+    },
+    "name": "plan_critique"
+  },
+  {
     "annotations": {
       "openWorldHint": true,
       "readOnlyHint": false,

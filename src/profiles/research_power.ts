@@ -71,5 +71,8 @@ export const researchPowerProfile: ProfileConfig = {
 
     // Diff-aware code review
     diff_review: false,
+
+    // Adversarial plan red-team
+    plan_critique: false,
   }
 };

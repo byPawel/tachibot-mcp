@@ -60,6 +60,7 @@
     "list_plans": true,
     "testgen": false,
     "security_review": false,
-    "diff_review": false
+    "diff_review": false,
+    "plan_critique": false
   }
 }
