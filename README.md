@@ -70,7 +70,7 @@ Techniques are embedded directly in tool system prompts for automatic applicatio
 
 ## Skills (Claude Code)
 
-TachiBot ships with 12 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
+TachiBot ships with 14 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
 
 | Skill | What it does | Example |
 |-------|-------------|---------|
@@ -85,6 +85,8 @@ TachiBot ships with 12 slash commands for Claude Code. These orchestrate the too
 | `/lens` | Long-context analysis over Kimi's 256K window | `/lens find inconsistencies in this spec` |
 | `/reflect` | Grounded reflexion loop — critique vs external evidence | `/reflect harden this auth middleware` |
 | `/tot` | Tree-of-Thought: branch → jury-prune → synthesize | `/tot design a rate limiter` |
+| `/review` | Multi-model diff review — panel + Gemini judge verdict | `/review` (or paste a diff) |
+| `/redteam` | Adversarial plan red-team — pre-mortem, risks, plan edits | `/redteam <paste plan>` |
 | `/tachi` | Help - see available skills, tools, key status | `/tachi` |
 
 Skills automatically adapt to your configured API keys. Even with just 1-2 providers, all skills work.

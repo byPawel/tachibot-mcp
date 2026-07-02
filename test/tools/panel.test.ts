@@ -21,4 +21,13 @@ describe("runPanel", () => {
     await runPanel(panel, "the-prompt");
     expect(seen).toEqual(["the-prompt", "the-prompt"]);
   });
+
+  test("drops a panelist that returns an empty string", async () => {
+    const panel: Panelist[] = [
+      { key: "a", label: "A", call: async () => "alpha says yes" },
+      { key: "b", label: "B", call: async () => "" },
+    ];
+    const out = await runPanel(panel, "question");
+    expect(out.map((r) => r.label)).toEqual(["A"]);
+  });
 });

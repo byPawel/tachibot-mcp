@@ -19,8 +19,14 @@ export async function runPanel(
   const settled = await Promise.all(
     panelists.map(async (p) => {
       try {
-        return { label: p.label, text: stripFormatting(await p.call(prompt)) };
-      } catch {
+        const text = stripFormatting(await p.call(prompt));
+        if (text.length === 0) {
+          console.error(`[panel] Dropping panelist ${p.label}: empty output`);
+          return null;
+        }
+        return { label: p.label, text };
+      } catch (e) {
+        console.error(`[panel] Dropping panelist ${p.label}: ${e instanceof Error ? e.message : String(e)}`);
         return null;
       }
     }),
