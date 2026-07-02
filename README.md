@@ -70,10 +70,12 @@ Techniques are embedded directly in tool system prompts for automatic applicatio
 
 ## Skills (Claude Code)
 
-TachiBot ships with 14 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
+TachiBot ships with 17 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
 
 | Skill | What it does | Example |
 |-------|-------------|---------|
+| `/setup` | Guided configuration — runs doctor, walks through keys/profiles | `/setup` |
+| `/spec` | Request → reviewable spec before planning | `/spec add OAuth somehow` |
 | `/blueprint` | Multi-model planning → bite-sized TDD steps | `/blueprint add OAuth with refresh tokens` |
 | `/judge` | Multi-model council - parallel analysis with synthesis | `/judge how to implement rate limiting` |
 | `/think` | Sequential reasoning chain with any model | `/think grok,gemini design a cache layer` |
@@ -87,6 +89,7 @@ TachiBot ships with 14 slash commands for Claude Code. These orchestrate the too
 | `/tot` | Tree-of-Thought: branch → jury-prune → synthesize | `/tot design a rate limiter` |
 | `/review` | Multi-model diff review — panel + Gemini judge verdict | `/review` (or paste a diff) |
 | `/redteam` | Adversarial plan red-team — pre-mortem, risks, plan edits | `/redteam <paste plan>` |
+| `/triage` | Ranked root-cause bug triage | `/triage <paste stack trace>` |
 | `/tachi` | Help - see available skills, tools, key status | `/tachi` |
 
 Skills automatically adapt to your configured API keys. Even with just 1-2 providers, all skills work.
@@ -135,6 +138,14 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ```bash
 npm install -g tachibot-mcp
 ```
+
+### Setup wizard
+
+```bash
+npx -y -p tachibot-mcp tachibot init
+```
+
+Detects your keys and clients, then prints the exact config for Claude Code and Claude Desktop.
 
 ### Claude Code (one-liner)
 
