@@ -23,6 +23,7 @@ export const fullProfile: ProfileConfig = {
     openai_code_review: true,
     openai_explain: true,
     openai_search: true,
+    spec_writer: true,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: true,

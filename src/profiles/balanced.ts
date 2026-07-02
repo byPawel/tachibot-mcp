@@ -23,6 +23,7 @@ export const balancedProfile: ProfileConfig = {
     openai_code_review: false,
     openai_explain: false,
     openai_search: true,
+    spec_writer: true,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: true,

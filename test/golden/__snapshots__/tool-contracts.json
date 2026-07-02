@@ -2309,6 +2309,45 @@
     "name": "security_review"
   },
   {
+    "description": "Turn a loose feature request into a reviewable spec (GPT-5.5): user stories, Given/When/Then acceptance criteria, non-functional requirements, explicit out-of-scope, open questions. For sign-off BEFORE planning — feed the approved spec to planner_maker.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "description": "System context (existing behavior, constraints, user base)",
+          "type": "string"
+        },
+        "files": {
+          "description": "Relevant code/doc paths for grounding. Supports line ranges: 'src/foo.ts:100-200'.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "format": {
+          "default": "both",
+          "description": "Acceptance-criteria format",
+          "enum": [
+            "user_story",
+            "gherkin",
+            "both"
+          ],
+          "type": "string"
+        },
+        "request": {
+          "description": "The feature request, as loose as it comes — REQUIRED",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request"
+      ],
+      "type": "object"
+    },
+    "name": "spec_writer"
+  },
+  {
     "description": "Efficient deep reasoning with StepFun Step 3.7 Flash (196B — high AIME/SWE-Verified at lower cost). Put your PROBLEM in the 'problem' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",

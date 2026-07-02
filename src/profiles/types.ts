@@ -36,6 +36,7 @@ export interface ToolsConfig {
   openai_code_review: boolean;
   openai_explain: boolean;
   openai_search: boolean;
+  spec_writer: boolean;
 
   // Gemini tools
   gemini_brainstorm: boolean;

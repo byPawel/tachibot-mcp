@@ -23,6 +23,7 @@ export const codeFocusProfile: ProfileConfig = {
     openai_code_review: true,
     openai_explain: false,
     openai_search: false,
+    spec_writer: true,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: false,

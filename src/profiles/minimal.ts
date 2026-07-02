@@ -23,6 +23,7 @@ export const minimalProfile: ProfileConfig = {
     openai_code_review: false,
     openai_explain: false,
     openai_search: false,
+    spec_writer: false,
     gemini_brainstorm: true,
     gemini_analyze_code: false,
     gemini_analyze_text: false,

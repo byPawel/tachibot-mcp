@@ -30,6 +30,7 @@ export const heavyCodingProfile: ProfileConfig = {
     openai_code_review: true,
     openai_explain: true,
     openai_search: true,
+    spec_writer: true,
 
     // Gemini - all enabled
     gemini_brainstorm: true,
