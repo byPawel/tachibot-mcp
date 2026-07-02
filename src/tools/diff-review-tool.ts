@@ -11,6 +11,7 @@ import { callOpenRouter, OpenRouterModel } from "./openrouter-tools.js";
 import { callOpenAI } from "./openai-tools.js";
 import { callGemini } from "./gemini-tools.js";
 import { hasOpenAIApiKey, hasOpenRouterApiKey } from "../utils/api-keys.js";
+import { OPENAI_MODELS } from "../config/model-constants.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
@@ -106,7 +107,7 @@ function buildPanel(): Panelist[] {
             { role: "system", content: `You review diffs for intent mismatches and API-contract breaks (types, error paths, backward compatibility). ${FORMAT_INSTRUCTION}` },
             { role: "user", content: q },
           ],
-          undefined,
+          OPENAI_MODELS.DEFAULT, // explicit: undefined falls back to INSTANT (gpt-5.4-mini), contradicting the GPT-5.5 label
           0.3,
           PANELIST_MAX_TOKENS,
           "high",
