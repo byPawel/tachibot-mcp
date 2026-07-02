@@ -188,8 +188,8 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ## Tool Ecosystem (61 Tools)
 
-### Research & Search (6)
-`perplexity_ask` &#183; `perplexity_research` &#183; `perplexity_reason` &#183; `grok_search` &#183; `openai_search` &#183; `gemini_search`
+### Research & Search (5)
+`perplexity_ask` &#183; `perplexity_reason` &#183; `grok_search` &#183; `openai_search` &#183; `gemini_search`
 
 ### Reasoning & Planning (13)
 `grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans`
@@ -200,8 +200,8 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 ### Analysis & Judgment (14)
 `gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_judge` &#183; `jury` &#183; `diff_review` &#183; `plan_critique` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `security_review` &#183; `kimi_long_context`
 
-### Meta & Orchestration (5)
-`think` &#183; `nextThought` &#183; `focus` &#183; `tachi` &#183; `usage_stats`
+### Meta & Orchestration (6)
+`think` &#183; `nextThought` &#183; `focus` &#183; `tachi` &#183; `doctor` &#183; `usage_stats`
 
 ### Workflows (9)
 `workflow` &#183; `workflow_start` &#183; `continue_workflow` &#183; `list_workflows` &#183; `create_workflow` &#183; `visualize_workflow` &#183; `workflow_status` &#183; `validate_workflow` &#183; `validate_workflow_file`
