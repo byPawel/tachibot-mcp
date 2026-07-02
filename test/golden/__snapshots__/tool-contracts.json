@@ -2143,6 +2143,50 @@
     "name": "qwq_reason"
   },
   {
+    "description": "Dedicated security audit (DeepSeek V4 Pro): taint/data-flow analysis, OWASP/CWE-mapped findings with severity, exploitability sketch, and concrete fixes. For code you are authorized to review. Provide 'code', 'diff', or 'files'.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Code to audit (or use 'diff'/'files')",
+          "type": "string"
+        },
+        "context": {
+          "description": "Trust boundaries & deployment context (e.g. 'internal-only service behind VPN')",
+          "type": "string"
+        },
+        "diff": {
+          "description": "Unified diff to audit (scopes the review to the change)",
+          "type": "string"
+        },
+        "files": {
+          "description": "File paths to read server-side. Supports line ranges: 'src/foo.ts:100-200'.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "language": {
+          "description": "Language/framework hint (e.g. 'TypeScript/Express')",
+          "type": "string"
+        },
+        "standard": {
+          "default": "both",
+          "description": "Finding-mapping standard",
+          "enum": [
+            "owasp",
+            "cwe",
+            "both"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "security_review"
+  },
+  {
     "description": "Efficient deep reasoning with StepFun Step 3.7 Flash (196B — high AIME/SWE-Verified at lower cost). Put your PROBLEM in the 'problem' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",

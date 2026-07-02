@@ -58,6 +58,7 @@
     "planner_maker": false,
     "planner_runner": false,
     "list_plans": false,
-    "testgen": false
+    "testgen": false,
+    "security_review": false
   }
 }

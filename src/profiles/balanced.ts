@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const balancedProfile: ProfileConfig = {
-  description: "Balanced set for general use (47 tools)",
+  description: "Balanced set for general use (48 tools)",
   tools: {
     think: true,
     focus: true,
@@ -65,5 +65,8 @@ export const balancedProfile: ProfileConfig = {
 
     // Test generation
     testgen: true,
+
+    // Security audit
+    security_review: true,
   }
 };

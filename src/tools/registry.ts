@@ -184,6 +184,10 @@ export async function getAllTools(
     // testgen — routed test generation (Qwen3-Coder-Next) — gated on OpenRouter.
     const { testgenTool } = await import("./testgen-tool.js");
     tools.push(testgenTool as unknown as RegistryTool);
+
+    // security_review — dedicated security audit (DeepSeek V4 Pro) — gated on OpenRouter.
+    const { securityReviewTool } = await import("./security-review-tool.js");
+    tools.push(securityReviewTool as unknown as RegistryTool);
   }
 
   // 6) Local-model tools (Ollama / LM Studio / llama.cpp / vLLM). Registered

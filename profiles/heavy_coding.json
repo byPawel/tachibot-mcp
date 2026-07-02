@@ -1,5 +1,5 @@
 {
-  "description": "Heavy coding with all reasoning & code tools (51 tools)",
+  "description": "Heavy coding with all reasoning & code tools (52 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -58,6 +58,7 @@
     "planner_maker": true,
     "planner_runner": true,
     "list_plans": true,
-    "testgen": true
+    "testgen": true,
+    "security_review": true
   }
 }

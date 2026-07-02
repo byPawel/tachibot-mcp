@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const codeFocusProfile: ProfileConfig = {
-  description: "Code-heavy work with debugging and analysis (36 tools)",
+  description: "Code-heavy work with debugging and analysis (37 tools)",
   tools: {
     think: true,
     focus: true,
@@ -65,5 +65,8 @@ export const codeFocusProfile: ProfileConfig = {
 
     // Test generation
     testgen: true,
+
+    // Security audit
+    security_review: true,
   }
 };

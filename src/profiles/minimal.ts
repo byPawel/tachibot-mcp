@@ -65,5 +65,8 @@ export const minimalProfile: ProfileConfig = {
 
     // Test generation
     testgen: false,
+
+    // Security audit
+    security_review: false,
   }
 };

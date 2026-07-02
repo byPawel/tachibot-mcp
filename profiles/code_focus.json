@@ -1,5 +1,5 @@
 {
-  "description": "Code-heavy work with debugging and analysis (36 tools)",
+  "description": "Code-heavy work with debugging and analysis (37 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -58,6 +58,7 @@
     "planner_maker": true,
     "planner_runner": true,
     "list_plans": true,
-    "testgen": true
+    "testgen": true,
+    "security_review": true
   }
 }
