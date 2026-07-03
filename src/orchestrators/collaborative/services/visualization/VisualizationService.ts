@@ -1,6 +1,6 @@
 import { IExtendedVisualizationRenderer } from "../../interfaces/IVisualizationRenderer.js";
 import { CollaborationSession } from "../../types/session-types.js";
-import { ReasoningMode, REASONING_TEMPLATES, MODEL_PERSONAS } from "../../../../reasoning-chain.js";
+import { ReasoningMode, REASONING_TEMPLATES } from "../../../../reasoning-chain.js";
 // import {
 //   renderWorkflowCascade,
 //   renderProgressReel,
@@ -14,27 +14,7 @@ import { ReasoningMode, REASONING_TEMPLATES, MODEL_PERSONAS } from "../../../../
 //   WorkflowStep,
 //   ProgressPhase,
 // } from "../../../../utils/ink-renderer.js";
-// Ink disabled - using plain text functions
-interface WorkflowStep {
-  name: string;
-  model: string;
-  status: 'completed' | 'running' | 'pending';
-  duration?: number;
-}
-interface ProgressPhase {
-  name: string;
-  status: 'completed' | 'active' | 'pending';
-}
-const renderWorkflowCascade = (steps: WorkflowStep[], title: string): string => {
-  const lines = [`## ${title}`];
-  steps.forEach((s, i) => lines.push(`${i + 1}. [${s.status}] ${s.name} (${s.model})`));
-  return lines.join('\n');
-};
-const renderProgressReel = (phases: ProgressPhase[], title: string): string => {
-  const lines = [`## ${title}`];
-  phases.forEach(p => lines.push(`- [${p.status}] ${p.name}`));
-  return lines.join('\n');
-};
+// Ink disabled — MCP clients render markdown, so these emit plain markdown.
 const renderThinkingChainArbor = (thoughts: { thought: string; model: string; isRevision?: boolean; isBranch?: boolean }[], title: string): string => {
   const lines = [`## ${title}`];
   thoughts.forEach((t, i) => lines.push(`${i + 1}. (${t.model}) ${t.thought}`));
@@ -54,9 +34,6 @@ const renderTable = (data: Record<string, string>[]): string => {
 };
 const renderKeyValueTable = (data: Record<string, string | number>): string => {
   return Object.entries(data).map(([k, v]) => `${k}: ${v}`).join('\n');
-};
-const renderQuickFlow = (steps: string[], title: string): string => {
-  return `## ${title}\n${steps.join(' -> ')}`;
 };
 const icons = {
   brain: '*',
@@ -85,65 +62,30 @@ export class VisualizationService implements IExtendedVisualizationRenderer {
    */
   generateOrchestrationPlan(session: CollaborationSession): string {
     const steps = session.chain.steps;
+    const done = session.currentStep;
+
+    // One clean header line + a per-step table. The old layout rendered the
+    // same step list four times (cascade, flow, progress reel, table) plus a
+    // metadata block and faux "gradient" boxes — a wall of duplicated scaffold.
+    // MCP clients render markdown, so a single table IS the visualization.
     const lines: string[] = [];
-
-    // Header with gradient border box
-    lines.push(renderGradientBorderBox(
-      `${icons.brain} Collaborative Reasoning\n\n${session.objective}\n\nDomain: ${session.domain} | Session: ${session.id.slice(0, 8)}`,
-      { width: 60, gradient: 'cristal' }
-    ));
+    lines.push(`**Collaborative Reasoning** · ${session.objective}`);
+    lines.push(
+      `${session.domain} · ${this.modelTurnTaking ? 'sequential' : 'parallel'} · ` +
+      `step ${Math.min(done + 1, steps.length)}/${steps.length} · \`${session.id.slice(0, 8)}\``,
+    );
     lines.push('');
 
-    // Workflow cascade showing model flow
-    const cascadeSteps: WorkflowStep[] = steps.map((step, idx) => ({
-      name: `${this.getModeIcon(step.mode)} ${step.mode}`,
-      model: step.model,
-      status: idx < session.currentStep ? 'completed' :
-              idx === session.currentStep ? 'running' : 'pending',
-      duration: idx < session.currentStep ? 1000 + Math.random() * 2000 : undefined,
+    // One table: status · mode · model, in order. The mode already conveys each
+    // step's job, so no "Role" column (its half-filled "AI" fallback is the bit
+    // that read as generic). Status marks done (✓) / current (▸) / pending (·).
+    const tableData = steps.map((step, idx) => ({
+      '#': String(idx + 1),
+      '': idx < done ? '✓' : idx === done ? '▸' : '·',
+      Step: `${this.getModeIcon(step.mode)} ${step.mode}`,
+      Model: step.model,
     }));
-
-    lines.push(renderWorkflowCascade(cascadeSteps, 'Reasoning Chain'));
-    lines.push('');
-
-    // Quick flow diagram
-    const flowSteps = steps.map(s => `${s.model}: ${s.mode}`);
-    lines.push(renderQuickFlow(flowSteps, 'Execution Flow'));
-    lines.push('');
-
-    // Progress reel
-    const progressSteps: ProgressPhase[] = steps.map((step, idx) => ({
-      name: `${step.model} - ${step.mode}`,
-      status: idx < session.currentStep ? 'completed' :
-              idx === session.currentStep ? 'active' : 'pending',
-    }));
-    lines.push(renderProgressReel(progressSteps, 'Step Progress'));
-    lines.push('');
-
-    // Detailed steps table
-    const tableData = steps.map((step, idx) => {
-      const persona = Object.values(MODEL_PERSONAS).find(p => p.model === step.model);
-      return {
-        '#': String(idx + 1),
-        Mode: `${this.getModeIcon(step.mode)} ${step.mode}`,
-        Model: step.model,
-        Role: persona?.role || 'AI',
-        Status: idx < session.currentStep ? '✓' : idx === session.currentStep ? '⟳' : '○',
-      };
-    });
     lines.push(renderTable(tableData));
-    lines.push('');
-
-    // Session info
-    lines.push(renderKeyValueTable({
-      'Session ID': session.id,
-      'Total Steps': String(steps.length),
-      'Current Step': String(session.currentStep + 1),
-      'Turn Taking': this.modelTurnTaking ? 'Sequential' : 'Parallel',
-    }));
-    lines.push('');
-
-    lines.push(renderGradientDivider(60, 'rainbow'));
 
     return lines.join('\n');
   }
@@ -160,7 +102,7 @@ export class VisualizationService implements IExtendedVisualizationRenderer {
     const lines: string[] = [];
 
     // Thinking chain visualization
-    const thoughts = session.chain.steps.slice(0, stage + 1).map((step, idx) => ({
+    const thoughts = session.chain.steps.slice(0, stage + 1).map((step) => ({
       thought: `${step.mode}: ${step.prompt.slice(0, 50)}...`,
       model: step.model,
       isRevision: step.mode === ReasoningMode.CRITIQUE,
