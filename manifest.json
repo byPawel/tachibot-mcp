@@ -22,11 +22,11 @@
   },
   "server": {
     "type": "node",
-    "entry_point": "dist/src/server-cjs.cjs",
+    "entry_point": "dist/src/server.js",
     "mcp_config": {
       "command": "node",
       "args": [
-        "${__dirname}/dist/src/server-cjs.cjs"
+        "${__dirname}/dist/src/server.js"
       ],
       "env": {
         "NODE_ENV": "production"
