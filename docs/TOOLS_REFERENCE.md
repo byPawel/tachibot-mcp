@@ -1,6 +1,6 @@
 # TachiBot MCP - Complete Tools Reference
 
-**Complete parameter schemas and example calls for all 63 tools** (64 registered — `continue_focus` is an always-on companion to `focus` outside the profile system; see [Meta & Orchestration](#meta--orchestration)).
+**Complete parameter schemas and example calls for all 64 tools** (65 registered — `continue_focus` is an always-on companion to `focus` outside the profile system; see [Meta & Orchestration](#meta--orchestration)).
 
 Schemas below are generated from the wire contract (`test/golden/__snapshots__/tool-contracts.json`) — the exact JSON Schema the MCP server publishes for each tool.
 
@@ -14,7 +14,7 @@ Schemas below are generated from the wire contract (`test/golden/__snapshots__/t
 - [Analysis & Judgment](#analysis--judgment) (14): [gemini_analyze_text](#gemini_analyze_text) &#183; [gemini_analyze_code](#gemini_analyze_code) &#183; [gemini_judge](#gemini_judge) &#183; [jury](#jury) &#183; [diff_review](#diff_review) &#183; [plan_critique](#plan_critique) &#183; [gemini_brainstorm](#gemini_brainstorm) &#183; [openai_brainstorm](#openai_brainstorm) &#183; [openai_code_review](#openai_code_review) &#183; [openai_explain](#openai_explain) &#183; [grok_brainstorm](#grok_brainstorm) &#183; [grok_architect](#grok_architect) &#183; [security_review](#security_review) &#183; [kimi_long_context](#kimi_long_context)
 - [Meta & Orchestration](#meta--orchestration) (7): [think](#think) &#183; [nextThought](#nextthought) &#183; [focus](#focus) &#183; [continue_focus](#continue_focus) &#183; [tachi](#tachi) &#183; [doctor](#doctor) &#183; [usage_stats](#usage_stats)
 - [Workflows](#workflows) (9): [workflow](#workflow) &#183; [workflow_start](#workflow_start) &#183; [continue_workflow](#continue_workflow) &#183; [list_workflows](#list_workflows) &#183; [create_workflow](#create_workflow) &#183; [visualize_workflow](#visualize_workflow) &#183; [workflow_status](#workflow_status) &#183; [validate_workflow](#validate_workflow) &#183; [validate_workflow_file](#validate_workflow_file)
-- [Prompt Engineering](#prompt-engineering) (3): [list_prompt_techniques](#list_prompt_techniques) &#183; [preview_prompt_technique](#preview_prompt_technique) &#183; [execute_prompt_technique](#execute_prompt_technique)
+- [Prompt Engineering](#prompt-engineering) (4): [list_prompt_techniques](#list_prompt_techniques) &#183; [preview_prompt_technique](#preview_prompt_technique) &#183; [execute_prompt_technique](#execute_prompt_technique) &#183; [refine_prompt](#refine_prompt)
 - [Local Models](#local-models) (1): [local_query](#local_query)
 
 ---
@@ -1600,6 +1600,30 @@ Execute a prompt technique. Use `execution_token` from preview, OR provide full 
 
 ```typescript
 execute_prompt_technique({ execution_token: "last" })
+```
+
+---
+
+### refine_prompt
+
+Opt-in prompt improver (cheap/fast model): restructures a raw query into a goal-first brief and SHOWS ITS WORK — REFINED PROMPT + WHAT CHANGED + OPEN QUESTIONS. Never executes anything; you review, then feed the brief to any tool. Not for injecting reasoning instructions. Gated on OpenAI, runs on `gpt-5.4-mini` (cheap tier on purpose — refining the ask, not solving it).
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | `string` | ✅ Yes | - | The raw query/prompt to refine — REQUIRED |
+| `goal` | `string` | No | - | What the answer is ultimately for (sharpens the brief) |
+| `context` | `string` | No | - | Relevant background/constraints the refiner should honor |
+
+#### Example
+
+```typescript
+refine_prompt({
+  query: "make the auth thing better",
+  goal: "reduce login support tickets",
+  context: "Existing auth uses JWT + refresh tokens, Node/Express backend"
+})
 ```
 
 ---

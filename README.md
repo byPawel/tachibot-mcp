@@ -5,17 +5,17 @@
 ### Multi-Model AI Orchestration Platform
 
 [![Version](https://img.shields.io/badge/version-2.25.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
-[![Tools](https://img.shields.io/badge/tools-63_active-brightgreen.svg)](#-tool-ecosystem-63-tools)
+[![Tools](https://img.shields.io/badge/tools-64_active-brightgreen.svg)](#-tool-ecosystem-64-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**63 AI tools. 12 providers. One protocol.**
+**64 AI tools. 12 providers. One protocol.**
 
 Orchestrate Perplexity, Grok, GPT-5.5, Gemini, Qwen, Kimi K2.7-Code, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
-[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-63-tools) &#183; [Documentation](https://tachibot.com/docs)
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-64-tools) &#183; [Documentation](https://tachibot.com/docs)
 
 <br>
 
@@ -101,7 +101,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ## Key Features
 
 ### Multi-Model Intelligence
-- **63 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
+- **64 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
 - **Gemini 3.5 Flash** (`gemini-3.5-flash`, GA May 19 2026) &mdash; Flash/search tier; reasoning default stays `gemini-3.1-pro-preview`
 - **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
 - **Smart Routing** &mdash; Automatic model selection for optimal results
@@ -118,10 +118,10 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 |---------|-------|----------|
 | **Minimal** | 13 | Quick tasks, low token budget |
 | **Research Power** | 35 | Deep investigation, multi-source |
-| **Code Focus** | 41 | Software development, SWE tasks |
-| **Balanced** | 52 | General-purpose, mixed workflows |
-| **Heavy Coding** | 56 | Max code tools + agentic workflows |
-| **Full** (default) | 63 | Everything enabled |
+| **Code Focus** | 42 | Software development, SWE tasks |
+| **Balanced** | 53 | General-purpose, mixed workflows |
+| **Heavy Coding** | 57 | Max code tools + agentic workflows |
+| **Full** (default) | 64 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support
@@ -201,7 +201,7 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## Tool Ecosystem (63 Tools)
+## Tool Ecosystem (64 Tools)
 
 ### Research & Search (5)
 `perplexity_ask` &#183; `perplexity_reason` &#183; `grok_search` &#183; `openai_search` &#183; `gemini_search`
@@ -221,8 +221,8 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 ### Workflows (9)
 `workflow` &#183; `workflow_start` &#183; `continue_workflow` &#183; `list_workflows` &#183; `create_workflow` &#183; `visualize_workflow` &#183; `workflow_status` &#183; `validate_workflow` &#183; `validate_workflow_file`
 
-### Prompt Engineering (3)
-`list_prompt_techniques` &#183; `preview_prompt_technique` &#183; `execute_prompt_technique`
+### Prompt Engineering (4)
+`list_prompt_techniques` &#183; `preview_prompt_technique` &#183; `execute_prompt_technique` &#183; `refine_prompt`
 
 ### Local Models (1)
 `local_query` &mdash; any OpenAI-compatible local server (Ollama / LM Studio / llama.cpp / vLLM). Zero-cost, offline, private; also available as the `local` jury juror (`hermes` is accepted as a legacy alias). Runs whatever `LOCAL_LLM_MODEL` points at &mdash; e.g. a Nous Hermes build (`ollama pull hermes3`). Note the [Hermes agent](https://hermes-agent.nousresearch.com) itself is model-agnostic &mdash; it runs on 300+ backends (GPT, Claude, Gemini, DeepSeek, or self-hosted Ollama/vLLM) &mdash; so "Hermes" was never a guarantee of distinct weights.
