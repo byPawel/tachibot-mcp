@@ -2,8 +2,8 @@
   "manifest_version": "0.2",
   "dxt_version": "1.1.1",
   "name": "tachibot-mcp",
-  "version": "2.0.0",
-  "description": "Multi-model AI orchestration platform with 26 tools across Perplexity, Grok, OpenAI GPT-5, Gemini, and Qwen",
+  "version": "2.26.0",
+  "description": "Multi-model AI orchestration platform with 64 tools across Perplexity, Grok, OpenAI GPT-5.5, Gemini, DeepSeek, GLM, Kimi, Qwen, MiniMax, and local models",
   "author": {
     "name": "Pawel Pawlowski",
     "email": "pawel@example.com",
@@ -25,7 +25,9 @@
     "entry_point": "dist/src/server-cjs.cjs",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/dist/src/server-cjs.cjs"],
+      "args": [
+        "${__dirname}/dist/src/server-cjs.cjs"
+      ],
       "env": {
         "NODE_ENV": "production"
       }

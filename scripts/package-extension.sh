@@ -17,6 +17,11 @@ if [ ! -d "dist" ]; then
     npm run build
 fi
 
+# Sync the extension manifest version to package.json so the .mcpb never
+# ships a stale version (they drifted historically: manifest stuck at 2.0.0).
+echo "🔖 Syncing manifest.json version to package.json..."
+node -e "const fs=require('fs');const pkg=require('./package.json');const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version=pkg.version;fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');console.log('   manifest.json version -> '+pkg.version)"
+
 # Install production dependencies
 echo "📦 Installing production dependencies..."
 npm install --production --no-optional
@@ -56,7 +61,7 @@ if [ -f "$OUTPUT_PATH" ]; then
     echo "2. Double-click to open in Claude Desktop"
     echo "3. Click 'Install' and configure your API keys"
     echo ""
-    echo "📝 Skills included: /judge, /think, /focus, /breakdown, /decompose, /prompt, /tachi"
+    echo "📝 17 skills included (/judge, /prompt, /review, /redteam, /spec, /triage, /setup, ...)"
     echo "   Copy skills/ to ~/.claude/skills/ for Claude Code slash commands"
     echo ""
     echo "💡 Or drag and drop the file into Claude Desktop Extensions settings"
