@@ -32,8 +32,8 @@ truth for recommendations — don't maintain a parallel list here.
 1. Ask the tool, don't guess: `preview_prompt_technique({ technique: "auto", query: "[query]" })`. It returns the top techniques for the intent with a reason and a kind tag (contract = imposes output structure, safe on reasoning models; scaffold = mainly helps weaker/routed models).
 2. Write a goal-first brief IN CONTEXT (free — you're already a frontier model; do NOT add a paid rewrite step). Turn the raw query into: goal, constraints, deliverable, and how you'll know it's right. Preserve the user's ambiguity — surface it as an open question rather than resolving it silently. If the query is long/messy or the user explicitly asks to improve their prompt, offer the opt-in tool instead: `refine_prompt({ query, goal?, context? })` — relay its REFINED PROMPT + WHAT CHANGED + OPEN QUESTIONS and get approval before using the brief. Never call it automatically.
 3. Preview the top recommended technique against a sensible tool (see mapping below): `preview_prompt_technique({ technique: "[top pick]", tool: "[tool]", query: "[the brief]" })`.
-4. Show the user the original query vs the enhanced prompt, name the technique + why, and list the runner-up techniques the auto step returned in case they prefer a different angle.
-5. On approval: `execute_prompt_technique({ execution_token: "last" })`.
+4. Show the user the original query vs the enhanced prompt, name the technique + why. Offer the choice through your option-choosing interface (in Claude Code: the multiple-choice UI) — the previewed technique first marked "(Recommended)", then the runner-ups from the auto step, each with its one-line why. In clients without that UI, list them inline.
+5. On approval: `execute_prompt_technique({ execution_token: "last" })` (re-preview first if they picked a runner-up).
 
 ### `/prompt [technique] [query]` — apply a named technique
 1. `preview_prompt_technique({ technique: "[technique]", tool: "[tool]", query: "[query]" })` — show original vs enhanced.
@@ -41,7 +41,9 @@ truth for recommendations — don't maintain a parallel list here.
 3. `execute_prompt_technique({ execution_token: "last" })` (tokens expire after a few minutes — re-preview if stale).
 
 ### `/prompt refine [query]` — opt-in prompt rewrite
-Calls `refine_prompt({ query })` directly (add `goal`/`context` if the user gave them) and relays its three sections verbatim: REFINED PROMPT, WHAT CHANGED, OPEN QUESTIONS. This is the explicit, user-requested path — unlike step 2 above, it always calls the tool since the user asked for it by name.
+1. Call `refine_prompt({ query })` directly (add `goal`/`context` if the user gave them) and relay REFINED PROMPT and WHAT CHANGED verbatim. This is the explicit, user-requested path — unlike step 2 above, it always calls the tool since the user asked for it by name.
+2. If OPEN QUESTIONS is not "none", DON'T just print them — present them through your option-choosing interface (in Claude Code: the multiple-choice question UI, one question per open question with the tool's listed options plus your best-guess default marked "(Recommended)"; batch up to 4 per round). In clients without that UI, ask them inline as a numbered list.
+3. Merge the answers into the refined prompt and show the FINAL BRIEF. Offer the next step: feed it to `preview_prompt_technique({ technique: "auto", query: "<final brief>" })` or straight to the tool/model of choice.
 
 ## Tool selection for preview
 
