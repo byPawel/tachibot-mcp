@@ -162,5 +162,10 @@ export const SKILLS: { name: string; desc: string }[] = [
   { name: "lens", desc: "Long-context analysis via active retrieval (256K)" },
   { name: "reflect", desc: "Grounded reflexion loop vs external evidence" },
   { name: "tot", desc: "Tree-of-Thought: branch, prune via jury, synthesize" },
+  { name: "review", desc: "Multi-model diff review + Gemini judge verdict" },
+  { name: "redteam", desc: "Adversarial plan red-team (pre-mortem, risks, edits)" },
+  { name: "spec", desc: "Loose request to reviewable spec before planning" },
+  { name: "triage", desc: "Ranked root-cause bug triage from an error/trace" },
+  { name: "setup", desc: "Guided configuration — runs doctor, walks keys/profiles" },
   { name: "tachi", desc: "Help & discovery" },
 ];
