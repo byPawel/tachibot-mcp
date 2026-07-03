@@ -1543,17 +1543,20 @@ validate_workflow_file({ filePath: "workflows/my-workflow.yaml" })
 
 ### list_prompt_techniques
 
-Discover available prompt engineering techniques. Shows all 31 techniques organized by category.
+Discover prompt engineering techniques. By default shows the ~9 **core** techniques that still help 2026 reasoning models (output-structure contracts like `scot`, `pre_mortem`, `bdd_spec`); pass `all: true` for the full set of 31, or a category filter.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `filter` | `string` | No | `"all"` | Filter by category: `all`, `creative`, `research`, `analytical`, `reflective`, `reasoning`, `verification`, `meta`, `debate`, `judgment`, `engineering`, `research_advanced`, `decision`, `structured_coding` |
+| `all` | `boolean` | No | `false` | Show all 31 techniques (default shows core only) |
+| `filter` | `string` | No | - | Show one category in full: `creative`, `research`, `analytical`, `reflective`, `reasoning`, `verification`, `meta`, `debate`, `judgment`, `engineering`, `research_advanced`, `decision`, `structured_coding` |
 
 #### Example
 
 ```typescript
+list_prompt_techniques({})              // core techniques
+list_prompt_techniques({ all: true })   // everything
 list_prompt_techniques({ filter: "reasoning" })
 ```
 
@@ -1561,21 +1564,24 @@ list_prompt_techniques({ filter: "reasoning" })
 
 ### preview_prompt_technique
 
-Preview how a technique enhances your prompt WITHOUT executing. Returns an `execution_token` for later use.
+Preview how a technique enhances your prompt WITHOUT executing (returns an `execution_token`). Or pass `technique: "auto"` with just a query to get the top techniques **recommended** for that task, each with a reason and a contract/scaffold tag.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `technique` | `string` | ✅ Yes | - | Technique name (e.g. `first_principles`, `tree_of_thoughts`) |
-| `tool` | `string` | ✅ Yes | - | Target tool (e.g. `grok_reason`, `gemini_brainstorm`) |
-| `query` | `string` | ✅ Yes | - | Your query or problem |
+| `technique` | `string` | ✅ Yes | - | Technique name (e.g. `scot`, `pre_mortem`), or `"auto"` to recommend techniques for the query |
+| `tool` | `string` | No | - | Target tool (e.g. `grok_reason`). Not needed when `technique: "auto"` |
+| `query` | `string` | ✅ Yes | - | Your query, problem, or task |
 
 #### Example
 
 ```typescript
+preview_prompt_technique({ technique: "auto", query: "refactor the payment module safely" })
+// → recommends pre_post, scot, test_driven with reasons
+
 preview_prompt_technique({
-  technique: "first_principles",
+  technique: "pre_mortem",
   tool: "grok_reason",
   query: "Should we build or buy our auth system?"
 })
