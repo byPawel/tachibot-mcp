@@ -44,6 +44,7 @@ import { getAllGrokTools, isGrokAvailable } from "./grok-tools.js";
 import { debugTriageTool } from "./debug-triage-tool.js";
 import { isOpenAIAvailable, getAllOpenAITools } from "./openai-tools.js";
 import { specWriterTool } from "./spec-writer-tool.js";
+import { refinePromptTool } from "./refine-prompt-tool.js";
 import {
   isGeminiAvailable,
   geminiBrainstormTool,
@@ -111,6 +112,8 @@ export async function getAllTools(
     tools.push(...(getAllOpenAITools() as unknown as RegistryTool[]));
     // spec_writer — request → reviewable spec artifact (GPT-5.5) — gated on OpenAI.
     tools.push(specWriterTool as unknown as RegistryTool);
+    // refine_prompt — opt-in prompt improver (gpt-5.4-mini) — gated on OpenAI.
+    tools.push(refinePromptTool as unknown as RegistryTool);
   }
 
   // --- Async-import provider blocks (mirrors initializeServer() order) -------

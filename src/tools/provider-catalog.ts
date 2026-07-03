@@ -68,6 +68,7 @@ export const PROVIDER_GROUPS: ProviderGroup[] = [
       "openai_explain",
       "openai_search",
       "spec_writer",
+      "refine_prompt",
     ],
   },
   {

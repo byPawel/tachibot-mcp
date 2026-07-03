@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const balancedProfile: ProfileConfig = {
-  description: "Balanced set for general use (51 tools)",
+  description: "Balanced set for general use (53 tools)",
   tools: {
     think: true,
     focus: true,
@@ -24,6 +24,7 @@ export const balancedProfile: ProfileConfig = {
     openai_explain: false,
     openai_search: true,
     spec_writer: true,
+    refine_prompt: true,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: true,

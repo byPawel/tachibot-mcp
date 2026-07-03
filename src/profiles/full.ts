@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const fullProfile: ProfileConfig = {
-  description: "Default profile — all tools enabled for maximum capability (62 tools)",
+  description: "Default profile — all tools enabled for maximum capability (64 tools)",
   tools: {
     think: true,
     focus: true,
@@ -24,6 +24,7 @@ export const fullProfile: ProfileConfig = {
     openai_explain: true,
     openai_search: true,
     spec_writer: true,
+    refine_prompt: true,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: true,

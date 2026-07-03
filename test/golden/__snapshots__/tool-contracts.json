@@ -2268,6 +2268,32 @@
     "name": "qwq_reason"
   },
   {
+    "description": "Opt-in prompt improver (cheap/fast model): restructures a raw query into a goal-first brief and SHOWS ITS WORK — refined prompt + what changed + open questions. Never executes anything; you review, then feed the brief to any tool. Not for injecting reasoning instructions.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "description": "Relevant background/constraints the refiner should honor",
+          "type": "string"
+        },
+        "goal": {
+          "description": "What the answer is ultimately for (sharpens the brief)",
+          "type": "string"
+        },
+        "query": {
+          "description": "The raw query/prompt to refine — REQUIRED",
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "refine_prompt"
+  },
+  {
     "description": "Dedicated security audit (DeepSeek V4 Pro): taint/data-flow analysis, OWASP/CWE-mapped findings with severity, exploitability sketch, and concrete fixes. For code you are authorized to review. Provide 'code', 'diff', or 'files'.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",

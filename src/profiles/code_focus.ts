@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const codeFocusProfile: ProfileConfig = {
-  description: "Code-heavy work with debugging and analysis (40 tools)",
+  description: "Code-heavy work with debugging and analysis (42 tools)",
   tools: {
     think: true,
     focus: true,
@@ -24,6 +24,7 @@ export const codeFocusProfile: ProfileConfig = {
     openai_explain: false,
     openai_search: false,
     spec_writer: true,
+    refine_prompt: true,
     gemini_brainstorm: true,
     gemini_analyze_code: true,
     gemini_analyze_text: false,

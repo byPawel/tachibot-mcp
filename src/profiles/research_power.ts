@@ -24,6 +24,7 @@ export const researchPowerProfile: ProfileConfig = {
     openai_explain: false,
     openai_search: true,
     spec_writer: false,
+    refine_prompt: false,
     gemini_brainstorm: true,
     gemini_analyze_code: false,
     gemini_analyze_text: false,

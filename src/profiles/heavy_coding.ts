@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const heavyCodingProfile: ProfileConfig = {
-  description: "Heavy coding with all reasoning & code tools (55 tools)",
+  description: "Heavy coding with all reasoning & code tools (57 tools)",
   tools: {
     // Core reasoning - all enabled
     think: true,
@@ -31,6 +31,7 @@ export const heavyCodingProfile: ProfileConfig = {
     openai_explain: true,
     openai_search: true,
     spec_writer: true,
+    refine_prompt: true,
 
     // Gemini - all enabled
     gemini_brainstorm: true,
