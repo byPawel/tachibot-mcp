@@ -1181,14 +1181,18 @@
       "readOnlyHint": true,
       "title": "List Prompt Techniques"
     },
-    "description": "Discover available prompt engineering techniques. Shows all 31 techniques organized by category.",
+    "description": "Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 31, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
+        "all": {
+          "default": false,
+          "description": "Show all 31 techniques (default false = core only)",
+          "type": "boolean"
+        },
         "filter": {
-          "default": "all",
-          "description": "Filter by category (default: all)",
+          "description": "Show one category in full (implies all techniques in it)",
           "enum": [
             "all",
             "creative",
@@ -2013,27 +2017,26 @@
       "readOnlyHint": true,
       "title": "Preview Prompt Technique"
     },
-    "description": "Preview how a technique enhances your prompt WITHOUT executing. Returns an execution_token for later use.",
+    "description": "Preview how a technique enhances your prompt WITHOUT executing (returns an execution_token). Or pass technique=\"auto\" with just a query to get the top techniques recommended for that task.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
         "query": {
-          "description": "Your query or problem",
+          "description": "Your query, problem, or task",
           "type": "string"
         },
         "technique": {
-          "description": "Technique name (e.g., first_principles, tree_of_thoughts)",
+          "description": "Technique name (e.g. scot, pre_mortem), or \"auto\" to recommend techniques for the query",
           "type": "string"
         },
         "tool": {
-          "description": "Target tool (e.g., grok_reason, gemini_brainstorm)",
+          "description": "Target tool (e.g. grok_reason). Not needed when technique=\"auto\"",
           "type": "string"
         }
       },
       "required": [
         "technique",
-        "tool",
         "query"
       ],
       "type": "object"

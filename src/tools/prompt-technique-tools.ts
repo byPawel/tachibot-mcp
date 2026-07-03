@@ -83,11 +83,18 @@ function deleteToken(key: string): void {
   saveTokenCache(cache);
 }
 
-// Technique type definition
+// Technique type definition.
+// `tier` curates the default list: 'core' techniques still earn their keep on
+// 2026 reasoning models (they impose an OUTPUT CONTRACT — the visible sections
+// they force — which native reasoning does not); everything else is 'advanced'
+// (a reasoning SCAFFOLD that mainly helps weaker/routed models, or a framing
+// lens). `kind` explains why a technique survives. Untagged ⇒ advanced/lens.
 interface Technique {
   name: string;
   alias: string | null;
   description: string;
+  tier?: 'core' | 'advanced';
+  kind?: 'contract' | 'scaffold' | 'lens';
 }
 
 // Technique definitions organized by category
@@ -126,28 +133,28 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "meta_prompting", alias: "improve_prompt", description: "Write better prompt for this, then solve using it" },
   ],
   debate: [
-    { name: "adversarial", alias: "critic", description: "Argue FOR then AGAINST, find counterarguments, synthesize" },
+    { name: "adversarial", alias: "critic", description: "Argue FOR then AGAINST, find counterarguments, synthesize", tier: 'core', kind: 'contract' },
     { name: "persona_simulation", alias: "debate", description: "Simulate experts debating (single prompt, not real multi-agent)" },
   ],
   judgment: [
     { name: "council_of_experts", alias: "judge", description: "Multi-model council: gather diverse perspectives, extract best elements, synthesize final verdict" },
   ],
   engineering: [
-    { name: "reflexion", alias: "iterate", description: "Generate→Critique→Revise loop (2-3 rounds, score each criterion 1-10)" },
-    { name: "react", alias: "thought_action", description: "Thought→Action→Observation loops for multi-step coding tasks" },
-    { name: "rubber_duck", alias: "explain_code", description: "Explain code line-by-line to a novice, flag bugs/assumptions" },
-    { name: "test_driven", alias: "tdd", description: "List edge cases→Write tests→Minimal code→Refactor. Tests before code." },
+    { name: "reflexion", alias: "iterate", description: "Generate→Critique→Revise loop (2-3 rounds, score each criterion 1-10)", tier: 'core', kind: 'contract' },
+    { name: "react", alias: "thought_action", description: "Thought→Action→Observation loops for multi-step coding tasks", tier: 'core', kind: 'contract' },
+    { name: "rubber_duck", alias: "explain_code", description: "Explain code line-by-line to a novice, flag bugs/assumptions", tier: 'core', kind: 'contract' },
+    { name: "test_driven", alias: "tdd", description: "List edge cases→Write tests→Minimal code→Refactor. Tests before code.", tier: 'core', kind: 'contract' },
   ],
   research_advanced: [
     { name: "least_to_most", alias: "build_up", description: "Decompose to atomic sub-problems, solve simplest first, build up to hardest" },
   ],
   decision: [
-    { name: "pre_mortem", alias: "failure_analysis", description: "Assume project failed → brainstorm 7-10 causes → rank → mitigate top 5" },
+    { name: "pre_mortem", alias: "failure_analysis", description: "Assume project failed → brainstorm 7-10 causes → rank → mitigate top 5", tier: 'core', kind: 'contract' },
   ],
   structured_coding: [
-    { name: "scot", alias: "structured_cot", description: "Structured CoT: reason in code structures (sequence/branch/loop) before writing code (Li et al. 2025, +13.79%)" },
-    { name: "pre_post", alias: "contracts", description: "Design by contract: state preconditions + postconditions before implementing" },
-    { name: "bdd_spec", alias: "given_when_then", description: "Behavioral specs: Given/When/Then scenarios before code. Each scenario = a test." },
+    { name: "scot", alias: "structured_cot", description: "Structured CoT: reason in code structures (sequence/branch/loop) before writing code (Li et al. 2025, +13.79%)", tier: 'core', kind: 'contract' },
+    { name: "pre_post", alias: "contracts", description: "Design by contract: state preconditions + postconditions before implementing", tier: 'core', kind: 'contract' },
+    { name: "bdd_spec", alias: "given_when_then", description: "Behavioral specs: Given/When/Then scenarios before code. Each scenario = a test.", tier: 'core', kind: 'contract' },
   ],
 };
 
@@ -155,6 +162,63 @@ const TECHNIQUES: Record<string, Technique[]> = {
 const ALL_TECHNIQUE_NAMES = Object.values(TECHNIQUES)
   .flat()
   .flatMap(t => [t.name, t.alias].filter(Boolean)) as string[];
+
+// Flat view with category attached — the single lookup surface.
+const FLAT_TECHNIQUES: (Technique & { category: string })[] = Object.entries(TECHNIQUES)
+  .flatMap(([category, techs]) => techs.map(t => ({ ...t, category })));
+
+const CORE_TECHNIQUES = FLAT_TECHNIQUES.filter(t => t.tier === 'core');
+
+function findTechnique(nameOrAlias: string): (Technique & { category: string }) | null {
+  const n = nameOrAlias.toLowerCase().replace(/-/g, '_');
+  return FLAT_TECHNIQUES.find(t => t.name === n || t.alias === n) || null;
+}
+
+// Deterministic intent → technique recommender (zero model calls). Rules are
+// scanned against the task; each hit contributes its techniques with a reason.
+// This is what powers preview_prompt_technique(technique="auto").
+const RECOMMEND_RULES: { match: RegExp; techniques: string[]; why: string }[] = [
+  { match: /\b(bug|error|crash|exception|stack ?trace|failing|broken|throws?|undefined|null)\b/i,
+    techniques: ["rubber_duck", "react"], why: "isolate the fault by explaining the code and looping thought→action→observation" },
+  { match: /\b(test|spec|acceptance|requirement|behav|scenario)\b/i,
+    techniques: ["bdd_spec", "test_driven"], why: "pin behavior as Given/When/Then scenarios, then tests-before-code" },
+  { match: /\b(refactor|restructure|clean ?up|migrate|rewrite|port)\b/i,
+    techniques: ["pre_post", "scot", "test_driven"], why: "lock behavior with contracts + structure the change, tests guard the move" },
+  { match: /\b(should we|vs\.?|versus|trade[- ]?off|choose|decide|decision|which (one|approach|option))\b/i,
+    techniques: ["adversarial", "pre_mortem"], why: "argue both sides, then assume the choice failed to surface hidden risk" },
+  { match: /\b(risk|ship|launch|deploy|release|rollout|what could go wrong|fail)\b/i,
+    techniques: ["pre_mortem"], why: "assume it already failed and work backward to the causes" },
+  { match: /\b(design|architect|structure|algorithm|implement|build|data ?structure)\b/i,
+    techniques: ["scot", "pre_post"], why: "reason in code structures and state pre/postconditions before writing" },
+  { match: /\b(review|critique|harden|secure|audit|red[- ]?team|attack)\b/i,
+    techniques: ["adversarial", "constitutional"], why: "steelman then attack, and critique against explicit principles" },
+  { match: /\b(idea|brainstorm|creative|novel|alternative|possibilit)\b/i,
+    techniques: ["innovate", "what_if", "alt_view"], why: "generate unconventional options and view from several angles" },
+];
+
+interface Recommendation { technique: string; kind: string; tier: string; category: string; why: string; }
+
+function recommendTechniques(task: string): Recommendation[] {
+  const seen = new Set<string>();
+  const recs: Recommendation[] = [];
+  for (const rule of RECOMMEND_RULES) {
+    if (!rule.match.test(task)) continue;
+    for (const name of rule.techniques) {
+      if (seen.has(name)) continue;
+      const t = findTechnique(name);
+      if (!t) continue;
+      seen.add(name);
+      recs.push({ technique: t.name, kind: t.kind || 'lens', tier: t.tier || 'advanced', category: t.category, why: rule.why });
+    }
+  }
+  // No rule matched → fall back to the core contracts (always safe on frontier models).
+  if (recs.length === 0) {
+    for (const t of CORE_TECHNIQUES.slice(0, 3)) {
+      recs.push({ technique: t.name, kind: t.kind || 'contract', tier: 'core', category: t.category, why: "safe default output-structure contract for frontier models" });
+    }
+  }
+  return recs.slice(0, 4);
+}
 
 // Initialize prompt engineer
 const promptEngineer = new PromptEngineerLite();
@@ -172,40 +236,60 @@ function generateToken(): string {
  */
 export const listPromptTechniquesTool = defineModelTool({
   name: "list_prompt_techniques",
-  description: "Discover available prompt engineering techniques. Shows all 31 techniques organized by category.",
+  description: "Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 31, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
   parameters: z.object({
+    all: z.boolean().optional().default(false).describe("Show all 31 techniques (default false = core only)"),
     filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding"])
       .optional()
-      .default("all")
-      .describe("Filter by category (default: all)")
+      .describe("Show one category in full (implies all techniques in it)")
   }),
-  execute: async (args: { filter?: string }): Promise<string> => {
-    const { filter = "all" } = args;
+  execute: async (args: { all?: boolean; filter?: string }): Promise<string> => {
+    const { all = false, filter } = args;
 
-    const categories: [string, Technique[]][] = filter === "all"
-      ? Object.entries(TECHNIQUES)
-      : [[filter, TECHNIQUES[filter] || []]];
+    // Curated by default; a category filter or all=true opens the full set.
+    const showAll = all || (filter !== undefined && filter !== "all");
 
-    let output = `PROMPT TECHNIQUES\n${'='.repeat(50)}\n\n`;
+    let output: string;
+    let shown = 0;
 
-    let totalCount = 0;
-    for (const [category, techniques] of categories) {
-      if (!techniques || techniques.length === 0) continue;
-
-      output += `${category.toUpperCase()}\n${'-'.repeat(category.length)}\n`;
-
-      for (const tech of techniques) {
-        const aliasStr = tech.alias ? ` (alias: ${tech.alias})` : '';
-        output += `  ${tech.name}${aliasStr}\n`;
-        output += `    ${tech.description}\n\n`;
-        totalCount++;
+    if (filter && filter !== "all") {
+      const techs = TECHNIQUES[filter] || [];
+      output = `PROMPT TECHNIQUES · ${filter}\n${'='.repeat(50)}\n\n`;
+      for (const t of techs) {
+        const aliasStr = t.alias ? ` (alias: ${t.alias})` : '';
+        const badge = t.tier === 'core' ? ' [core]' : '';
+        output += `  ${t.name}${aliasStr}${badge}\n    ${t.description}\n\n`;
+        shown++;
+      }
+    } else if (showAll) {
+      output = `PROMPT TECHNIQUES · all\n${'='.repeat(50)}\n\n`;
+      for (const [category, techs] of Object.entries(TECHNIQUES)) {
+        output += `${category.toUpperCase()}\n${'-'.repeat(category.length)}\n`;
+        for (const t of techs) {
+          const aliasStr = t.alias ? ` (alias: ${t.alias})` : '';
+          const badge = t.tier === 'core' ? ' [core]' : '';
+          output += `  ${t.name}${aliasStr}${badge}\n    ${t.description}\n\n`;
+          shown++;
+        }
+      }
+    } else {
+      // Default: core only, with the "why these" framing.
+      output = `CORE PROMPT TECHNIQUES\n${'='.repeat(50)}\n`;
+      output += `The techniques that still help 2026 reasoning models — each imposes an\noutput CONTRACT (the sections it forces), which native reasoning doesn't.\n\n`;
+      for (const t of CORE_TECHNIQUES) {
+        const aliasStr = t.alias ? ` (alias: ${t.alias})` : '';
+        output += `  ${t.name}${aliasStr}\n    ${t.description}\n\n`;
+        shown++;
       }
     }
 
     output += `${'-'.repeat(50)}\n`;
-    output += `Total: ${totalCount} techniques\n\n`;
+    output += showAll
+      ? `Shown: ${shown} techniques\n\n`
+      : `Shown: ${shown} core (of ${FLAT_TECHNIQUES.length} total — list_prompt_techniques all=true for the rest)\n\n`;
     output += `Usage:\n`;
-    output += `  preview_prompt_technique --technique first_principles --tool grok_reason --query "your question"\n`;
+    output += `  preview_prompt_technique --technique "auto" --query "your task"   (recommends techniques)\n`;
+    output += `  preview_prompt_technique --technique scot --tool grok_reason --query "your question"\n`;
     output += `  execute_prompt_technique --execution_token "pt_..." (from preview)\n`;
 
     return stripFormatting(output);
@@ -218,14 +302,35 @@ export const listPromptTechniquesTool = defineModelTool({
  */
 export const previewPromptTechniqueTool = defineModelTool({
   name: "preview_prompt_technique",
-  description: "Preview how a technique enhances your prompt WITHOUT executing. Returns an execution_token for later use.",
+  description: "Preview how a technique enhances your prompt WITHOUT executing (returns an execution_token). Or pass technique=\"auto\" with just a query to get the top techniques recommended for that task.",
   parameters: z.object({
-    technique: z.string().describe("Technique name (e.g., first_principles, tree_of_thoughts)"),
-    tool: z.string().describe("Target tool (e.g., grok_reason, gemini_brainstorm)"),
-    query: z.string().describe("Your query or problem")
+    technique: z.string().describe("Technique name (e.g. scot, pre_mortem), or \"auto\" to recommend techniques for the query"),
+    tool: z.string().optional().describe("Target tool (e.g. grok_reason). Not needed when technique=\"auto\""),
+    query: z.string().describe("Your query, problem, or task")
   }),
-  execute: async (args: { technique: string; tool: string; query: string }): Promise<string> => {
+  execute: async (args: { technique: string; tool?: string; query: string }): Promise<string> => {
     const { technique, tool, query } = args;
+
+    // Auto mode: recommend techniques for the task instead of applying one.
+    if (technique.toLowerCase() === "auto") {
+      const recs = recommendTechniques(query);
+      let out = `RECOMMENDED TECHNIQUES\n${'='.repeat(50)}\n`;
+      out += `For: ${query}\n\n`;
+      recs.forEach((r, i) => {
+        out += `${i + 1}. ${r.technique}  [${r.kind}${r.tier === 'core' ? ', core' : ''}]\n`;
+        out += `   why: ${r.why}\n`;
+        out += `   preview: preview_prompt_technique --technique ${r.technique} --tool <tool> --query "..."\n\n`;
+      });
+      out += `${'-'.repeat(50)}\n`;
+      out += `Contracts (core) impose visible output structure and are safe on reasoning models;\n`;
+      out += `scaffolds mainly help weaker/routed models. Pick one, then preview it with a target tool.\n`;
+      return stripFormatting(out);
+    }
+
+    if (!tool) {
+      return stripFormatting(`ERROR: 'tool' is required to preview a specific technique.\n\n` +
+        `Provide a target tool (e.g. grok_reason), or use technique="auto" to get recommendations first.`);
+    }
 
     // Validate technique exists
     const normalizedTechnique = technique.toLowerCase().replace(/-/g, '_');
