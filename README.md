@@ -4,7 +4,7 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.25.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.26.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-64_active-brightgreen.svg)](#-tool-ecosystem-64-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
@@ -28,43 +28,28 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ---
 
-## What's New in v2.15.0
+## What's New in v2.26.0
 
-### `/blueprint` Skill &mdash; Multi-Model Implementation Planning
-New skill that creates bite-sized TDD implementation plans using a 7-step multi-model council:
-```
-/blueprint add OAuth with refresh tokens
-```
-Pipeline: Grok search → Qwen+Kimi analysis → Kimi decompose → GPT pre-mortem critique → Gemini final judgment → **bite-sized TDD output** (exact files, test-first steps, commit points).
+### Prompt stack, modernized
+- **`refine_prompt`** (new tool) &mdash; opt-in prompt improver on a cheap/fast model: raw query → goal-first brief + **what changed** + **open questions**. Never auto-fires, never executes anything — you review, then use the brief. In Claude Code, `/prompt refine` presents the open questions as clickable choices and merges your answers into a final brief.
+- **Curated technique list** &mdash; `list_prompt_techniques` now defaults to the ~9 core techniques that still help 2026 reasoning models (output contracts like `scot`, `pre_mortem`, `bdd_spec`); `all=true` for the full 31.
+- **`technique="auto"`** &mdash; `preview_prompt_technique` recommends the right technique for your task, with reasons. Ask `tachi` "improve my prompt" for the symptom-based menu.
 
-Bridges `planner_maker`'s multi-model intelligence with the `writing-plans` execution format.
+### Setup, de-mystified
+- **`tachibot init`** (new CLI wizard) &mdash; detects your API keys and clients, prints the exact config for Claude Code and Claude Desktop. Never writes or echoes keys.
+- **One-click Claude Desktop install** &mdash; download the `.mcpb` from the latest release and double-click. No JSON editing.
+- **`doctor`** &mdash; shows which keys are set, which tools are visible vs hidden and why, and what to try first.
 
-### 31 Prompt Engineering Techniques (was 22)
-Added 9 research-backed techniques for coding and decision-making:
+### New tools & skills (64 tools · 17 skills)
+- `debug_triage` &mdash; ranked root-cause hypotheses with the cheapest discriminating check for each (Grok 4.3)
+- `spec_writer` &mdash; loose request → reviewable spec: user stories, Given/When/Then, out-of-scope, open questions (GPT-5.5)
+- `diff_review` / `plan_critique` / `testgen` / `security_review` &mdash; multi-model diff review, adversarial plan red-team, test generation, OWASP/CWE audit
+- Skills: `/review`, `/redteam`, `/spec`, `/triage`, `/setup`
 
-| Technique | Source | Category |
-|-----------|--------|----------|
-| `reflexion` | Shinn et al. 2023 | Engineering |
-| `react` (ReAct) | Yao et al. 2022 | Engineering |
-| `rubber_duck` | Hunt & Thomas 2008 | Engineering |
-| `test_driven` | Beck 2003 | Engineering |
-| `scot` (Structured CoT) | Li et al. 2025 (+13.79% HumanEval) | Structured Coding |
-| `pre_post` (Contracts) | Empirical SE 2025 | Structured Coding |
-| `bdd_spec` (Given/When/Then) | BDD 2025 | Structured Coding |
-| `least_to_most` | Zhou et al. 2022 | Research |
-| `pre_mortem` | Klein 2007 | Decision |
-
-Techniques are embedded directly in tool system prompts for automatic application.
-
-### MiniMax M2.5 Upgrade
-- `minimax_code` &mdash; SWE-Bench **80.2%**, per-task TECHNIQUE tags (SCoT, reflexion, rubber_duck), per-task temperatures
-- `minimax_agent` &mdash; ReAct + least-to-most decomposition protocol, HALT criteria
-
-### Enhanced Skills
-- `/breakdown` &mdash; now uses `least_to_most` ordering + `pre_mortem` failure analysis
-- `/judge` &mdash; first judge now runs pre-mortem ("assume this FAILED")
-- `/decompose` &mdash; deep-dives include pre/post contracts per sub-problem
-- `/prompt` &mdash; auto-recommend flow with 30-intent matching guide, 13 categories
+### Fixes
+- `focus` orchestration screen: 37 lines of repeated scaffolding → 10 focused lines
+- `npm test` exits 0 again (uncancelled race timers leaked past Jest teardown)
+- GPT-5.5 high-effort reasoning no longer cut off at 3 minutes (timeout 180s → 600s)
 
 ---
 
