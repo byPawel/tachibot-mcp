@@ -591,6 +591,31 @@ Examples:
       return renderCatalog();
     }
 
+    // Prompt-improvement intent → present the two improvement paths instead of
+    // routing to a model. TachiBot has two DIFFERENT prompt improvers and the
+    // right one depends on what's actually wrong with the prompt; this menu is
+    // the disambiguation, not another model call.
+    if (/\bprompts?\b/i.test(query) &&
+        /\b(improve|refine|rewrite|better|fix|update|optimi[sz]e|enhance|technique)\b/i.test(query)) {
+      return stripFormatting(
+        `IMPROVE A PROMPT — two different fixes, pick by symptom\n${'='.repeat(60)}\n\n` +
+        `1. The ASK is messy (vague, rambling, buried constraints)\n` +
+        `   → refine_prompt({ query: "<your prompt>", goal?, context? })\n` +
+        `   Rewrites it into a goal-first brief and SHOWS ITS WORK:\n` +
+        `   refined prompt + what changed + open questions. Cheap model,\n` +
+        `   never executes anything — you review, then use the brief.\n\n` +
+        `2. The ask is clear but the ANSWER needs structure\n` +
+        `   → preview_prompt_technique({ technique: "auto", query: "<your task>" })\n` +
+        `   Recommends the right thinking technique (contracts like scot,\n` +
+        `   pre_mortem, bdd_spec) with reasons — then preview + execute it.\n\n` +
+        `Both, for a messy ask AND structured output:\n` +
+        `   refine_prompt first, approve the brief, then feed the brief to\n` +
+        `   preview_prompt_technique → execute_prompt_technique.\n\n` +
+        `Browse techniques: list_prompt_techniques (core) · all=true (all 31)\n` +
+        `In Claude Code: /prompt refine <query> · /prompt <query>`
+      );
+    }
+
     // Route query to mode
     let resolvedMode: Mode;
     let routeInfo = "";
