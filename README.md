@@ -4,7 +4,7 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.26.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.26.1-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-64_active-brightgreen.svg)](#-tool-ecosystem-64-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
@@ -28,25 +28,32 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ---
 
-## What's New in v2.26.0
+## What's New
 
-### Prompt stack, modernized
+### v2.26.1
+- **`/test` and `/audit` skills** (19 skills total) — `/test` generates runnable tests via `testgen`; `/audit` runs an OWASP/CWE security review via `security_review`.
+- **Skill install in the wizard** — `tachibot init` now offers to install Claude Code skills with a per-skill skip choice (`[Enter]`=all · `[s]`=choose which to skip · `[n]`=none). Skills are opt-in — `postinstall` no longer writes to `~/.claude` silently (`npm run install-skills` still installs all non-interactively).
+- **Fixes** — the one-click `.mcpb` extension now points at a valid entry point (was broken) and tracks the package version; `tachibot init` exits cleanly on non-interactive/CI stdin instead of hanging.
+
+### v2.26.0
+
+#### Prompt stack, modernized
 - **`refine_prompt`** (new tool) &mdash; opt-in prompt improver on a cheap/fast model: raw query → goal-first brief + **what changed** + **open questions**. Never auto-fires, never executes anything — you review, then use the brief. In Claude Code, `/prompt refine` presents the open questions as clickable choices and merges your answers into a final brief.
 - **Curated technique list** &mdash; `list_prompt_techniques` now defaults to the ~9 core techniques that still help 2026 reasoning models (output contracts like `scot`, `pre_mortem`, `bdd_spec`); `all=true` for the full 31.
 - **`technique="auto"`** &mdash; `preview_prompt_technique` recommends the right technique for your task, with reasons. Ask `tachi` "improve my prompt" for the symptom-based menu.
 
-### Setup, de-mystified
+#### Setup, de-mystified
 - **`tachibot init`** (new CLI wizard) &mdash; detects your API keys and clients, prints the exact config for Claude Code and Claude Desktop. Never writes or echoes keys.
 - **One-click Claude Desktop install** &mdash; download the `.mcpb` from the latest release and double-click. No JSON editing.
 - **`doctor`** &mdash; shows which keys are set, which tools are visible vs hidden and why, and what to try first.
 
-### New tools & skills (64 tools · 19 skills)
+#### New tools & skills (64 tools · 19 skills)
 - `debug_triage` &mdash; ranked root-cause hypotheses with the cheapest discriminating check for each (Grok 4.3)
 - `spec_writer` &mdash; loose request → reviewable spec: user stories, Given/When/Then, out-of-scope, open questions (GPT-5.5)
 - `diff_review` / `plan_critique` / `testgen` / `security_review` &mdash; multi-model diff review, adversarial plan red-team, test generation, OWASP/CWE audit
 - Skills: `/review`, `/redteam`, `/spec`, `/triage`, `/setup`
 
-### Fixes
+#### Fixes
 - `focus` orchestration screen: 37 lines of repeated scaffolding → 10 focused lines
 - `npm test` exits 0 again (uncancelled race timers leaked past Jest teardown)
 - GPT-5.5 high-effort reasoning no longer cut off at 3 minutes (timeout 180s → 600s)
