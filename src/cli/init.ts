@@ -170,6 +170,22 @@ export async function runInitWizard(): Promise<void> {
   out(`  ${setup.clients.claudeCode ? "✓" : "✗"} Claude Code (claude on PATH)`);
   out(`  ${setup.clients.claudeDesktop ? "✓" : "✗"} Claude Desktop${setup.clients.desktopConfigPath ? ` (${setup.clients.desktopConfigPath})` : ""}`);
 
+  // Non-interactive (piped stdin / CI): prompting would hang on EOF with an
+  // "unsettled top-level await". Print the config for both clients with sane
+  // defaults and how to install skills, then exit cleanly.
+  if (!process.stdin.isTTY) {
+    out("\n(non-interactive: printing full config — run in a terminal to choose options)\n");
+    out("— Claude Code —\n");
+    out(buildClaudeCodeCommand(setup));
+    out("\n— Claude Desktop — double-click the .mcpb from GitHub releases, or merge into");
+    out((setup.clients.desktopConfigPath ?? desktopConfigPath()) + ":\n");
+    out(buildDesktopSnippet(setup, "full"));
+    const n = listAvailableSkills(resolveSkillsDir()).length;
+    out(`\nClaude Code skills (${n}): install with  npm run install-skills  (or re-run this wizard in a terminal to choose which).`);
+    out("\nOnce connected, run the `doctor` tool to see which tools your keys unlock.");
+    return;
+  }
+
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   try {
     const choice = (await rl.question("\nSet up for: [1] Claude Code  [2] Claude Desktop  [3] both  [q] quit > ")).trim();
