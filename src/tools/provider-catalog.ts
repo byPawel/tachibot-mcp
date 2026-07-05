@@ -167,6 +167,8 @@ export const SKILLS: { name: string; desc: string }[] = [
   { name: "redteam", desc: "Adversarial plan red-team (pre-mortem, risks, edits)" },
   { name: "spec", desc: "Loose request to reviewable spec before planning" },
   { name: "triage", desc: "Ranked root-cause bug triage from an error/trace" },
+  { name: "test", desc: "Generate runnable tests (edge cases first) via testgen" },
+  { name: "audit", desc: "Security review: OWASP/CWE findings + fixes via security_review" },
   { name: "setup", desc: "Guided configuration — runs doctor, walks keys/profiles" },
   { name: "tachi", desc: "Help & discovery" },
 ];

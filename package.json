@@ -47,7 +47,8 @@
     "package:extension": "npm run build && ./scripts/package-extension.sh",
     "build:mcpb": "npm run package:extension",
     "verify": "node scripts/verify-installation.js",
-    "postinstall": "bash scripts/install-skills.sh 2>/dev/null || true",
+    "postinstall": "node scripts/postinstall-hint.js || true",
+    "install-skills": "bash scripts/install-skills.sh",
     "add-tool": "plop tool",
     "test:golden": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/golden",
     "test:smoke": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/smoke"

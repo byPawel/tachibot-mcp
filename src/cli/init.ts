@@ -8,6 +8,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as readline from "node:readline/promises";
+import { fileURLToPath } from "node:url";
 
 const KEYS = [
   { name: "OpenRouter", envVar: "OPENROUTER_API_KEY", unlocks: "DeepSeek/GLM/Kimi/Qwen/MiniMax/StepFun/ERNIE + planner (~30 tools)" },
@@ -96,6 +97,62 @@ export function buildDesktopSnippet(setup: DetectedSetup, profile: string): stri
 
 const mask = (v: string | undefined) => (v ? `${v.slice(0, 6)}…` : "");
 
+// ---- Skills -----------------------------------------------------------------
+// The wizard is the opt-in install path for Claude Code skills (postinstall no
+// longer writes to ~/.claude silently). All fs logic is pure/testable; the
+// readline glue in runInitWizard is the only untested part.
+
+export interface AvailableSkill { name: string; description: string; }
+
+/** The package's bundled skills dir. dist/src/cli/init.js → up 3 → pkg root. */
+export function resolveSkillsDir(): string {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  return path.resolve(here, "..", "..", "..", "skills");
+}
+
+/** Read `skills/<name>/SKILL.md`, pulling the frontmatter `description`. */
+export function listAvailableSkills(skillsDir: string): AvailableSkill[] {
+  let entries: string[];
+  try { entries = fs.readdirSync(skillsDir).sort(); } catch { return []; }
+  const skills: AvailableSkill[] = [];
+  for (const name of entries) {
+    let text: string;
+    try { text = fs.readFileSync(path.join(skillsDir, name, "SKILL.md"), "utf8"); }
+    catch { continue; } // not a skill dir
+    const m = text.match(/^description:\s*(.+)$/m);
+    skills.push({ name, description: m ? m[1].trim() : "" });
+  }
+  return skills;
+}
+
+/**
+ * Parse a "skip which" answer ("1,3, 5") into a set of 0-based indices over a
+ * list of `count`. Blanks, non-numbers, and out-of-range tokens are ignored so
+ * a fat-fingered entry never throws or skips the wrong skill.
+ */
+export function parseSkipSelection(input: string, count: number): Set<number> {
+  const skip = new Set<number>();
+  for (const tok of input.split(/[\s,]+/).filter(Boolean)) {
+    const n = Number(tok);
+    if (Number.isInteger(n) && n >= 1 && n <= count) skip.add(n - 1);
+  }
+  return skip;
+}
+
+/** Copy the chosen skills' SKILL.md into `targetDir/<name>/`. Returns installed names. */
+export function installSkills(names: string[], skillsDir: string, targetDir: string): string[] {
+  const installed: string[] = [];
+  for (const name of names) {
+    const src = path.join(skillsDir, name, "SKILL.md");
+    if (!fs.existsSync(src)) continue;
+    const dest = path.join(targetDir, name);
+    fs.mkdirSync(dest, { recursive: true });
+    fs.copyFileSync(src, path.join(dest, "SKILL.md"));
+    installed.push(name);
+  }
+  return installed;
+}
+
 export async function runInitWizard(): Promise<void> {
   const setup = detectSetup();
   const out = (s: string) => process.stdout.write(s + "\n");
@@ -117,7 +174,7 @@ export async function runInitWizard(): Promise<void> {
   try {
     const choice = (await rl.question("\nSet up for: [1] Claude Code  [2] Claude Desktop  [3] both  [q] quit > ")).trim();
     if (choice === "q") return;
-    const profile = (await rl.question("Profile [full=all 63 tools | balanced | code_focus] (default: full) > ")).trim() || "full";
+    const profile = (await rl.question("Profile [full=all 64 tools | balanced | code_focus] (default: full) > ")).trim() || "full";
 
     if (choice === "1" || choice === "3") {
       out("\n— Claude Code — run this (fill in your real keys):\n");
@@ -130,6 +187,32 @@ export async function runInitWizard(): Promise<void> {
       out(buildDesktopSnippet(setup, profile));
       out("\nThen restart Claude Desktop.");
     }
+    // Skills — Claude Code slash commands, opt-in with per-skill skip.
+    const skillsDir = resolveSkillsDir();
+    const available = listAvailableSkills(skillsDir);
+    if (available.length > 0 && choice !== "2") {
+      const target = path.join(os.homedir(), ".claude", "skills");
+      const ans = (await rl.question(
+        `\nInstall ${available.length} Claude Code skills to ${target}? [Enter]=all · [s]=choose which to skip · [n]=none > `
+      )).trim().toLowerCase();
+      if (ans !== "n") {
+        let chosen = available.map((s) => s.name);
+        if (ans === "s") {
+          out("");
+          available.forEach((s, i) => out(`  ${String(i + 1).padStart(2)}. /${s.name} — ${s.description}`));
+          const skip = parseSkipSelection(
+            (await rl.question("\nSkip which? (comma-separated numbers, blank = skip none) > ")).trim(),
+            available.length,
+          );
+          chosen = available.filter((_, i) => !skip.has(i)).map((s) => s.name);
+        }
+        const installed = installSkills(chosen, skillsDir, target);
+        out(`\n✓ Installed ${installed.length} skill${installed.length === 1 ? "" : "s"}: ${installed.map((n) => "/" + n).join(", ")}`);
+        const skipped = available.filter((s) => !installed.includes(s.name));
+        if (skipped.length) out(`  Skipped: ${skipped.map((s) => "/" + s.name).join(", ")}`);
+      }
+    }
+
     out("\nFirst thing to run once connected: the `doctor` tool — it shows which tools your keys unlock.");
   } finally {
     rl.close();

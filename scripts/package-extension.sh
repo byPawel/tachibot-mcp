@@ -61,7 +61,7 @@ if [ -f "$OUTPUT_PATH" ]; then
     echo "2. Double-click to open in Claude Desktop"
     echo "3. Click 'Install' and configure your API keys"
     echo ""
-    echo "📝 17 skills included (/judge, /prompt, /review, /redteam, /spec, /triage, /setup, ...)"
+    echo "📝 19 skills included (/judge, /prompt, /review, /redteam, /spec, /triage, /setup, ...)"
     echo "   Copy skills/ to ~/.claude/skills/ for Claude Code slash commands"
     echo ""
     echo "💡 Or drag and drop the file into Claude Desktop Extensions settings"

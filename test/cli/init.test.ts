@@ -1,4 +1,7 @@
-import { detectSetup, buildClaudeCodeCommand, buildDesktopSnippet } from "../../src/cli/init.js";
+import { detectSetup, buildClaudeCodeCommand, buildDesktopSnippet, listAvailableSkills, parseSkipSelection, installSkills } from "../../src/cli/init.js";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 
 const probe = (haveClaude: boolean, haveDesktop: boolean) => ({
   which: (bin: string) => bin === "claude" && haveClaude,
@@ -41,5 +44,61 @@ describe("tachibot init — detection and emission", () => {
     expect(parsed.mcpServers.tachibot.command).toBe("tachibot");
     expect(parsed.mcpServers.tachibot.env.TACHIBOT_PROFILE).toBe("full");
     expect(Object.keys(parsed.mcpServers.tachibot.env)).toContain("OPENROUTER_API_KEY");
+  });
+});
+
+describe("tachibot init — skills install", () => {
+  // Build a fixture skills dir with three fake skills.
+  function fixture(): { skillsDir: string; targetDir: string } {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "tachi-skills-"));
+    const skillsDir = path.join(root, "skills");
+    for (const [name, desc] of [["alpha", "first skill"], ["beta", "second skill"], ["gamma", "third skill"]]) {
+      const d = path.join(skillsDir, name);
+      fs.mkdirSync(d, { recursive: true });
+      fs.writeFileSync(path.join(d, "SKILL.md"), `---\nname: ${name}\ndescription: ${desc}\nuser-invocable: true\n---\n# ${name}\n`);
+    }
+    // a non-skill dir with no SKILL.md must be ignored
+    fs.mkdirSync(path.join(skillsDir, "not-a-skill"), { recursive: true });
+    return { skillsDir, targetDir: path.join(root, "target") };
+  }
+
+  test("listAvailableSkills reads name + description, ignores non-skill dirs", () => {
+    const { skillsDir } = fixture();
+    const skills = listAvailableSkills(skillsDir);
+    expect(skills.map((s) => s.name)).toEqual(["alpha", "beta", "gamma"]); // sorted, no 'not-a-skill'
+    expect(skills[1].description).toBe("second skill");
+  });
+
+  test("listAvailableSkills returns [] for a missing dir", () => {
+    expect(listAvailableSkills("/no/such/dir")).toEqual([]);
+  });
+
+  test("parseSkipSelection turns 1-based input into 0-based indices, ignoring junk/out-of-range", () => {
+    expect([...parseSkipSelection("1,3", 3)].sort()).toEqual([0, 2]);
+    expect([...parseSkipSelection(" 2 ,, x, 9 ", 3)]).toEqual([1]); // 'x' and 9 dropped
+    expect(parseSkipSelection("", 3).size).toBe(0);
+  });
+
+  test("installSkills copies only chosen skills into target/<name>/SKILL.md", () => {
+    const { skillsDir, targetDir } = fixture();
+    const installed = installSkills(["alpha", "gamma"], skillsDir, targetDir);
+    expect(installed).toEqual(["alpha", "gamma"]);
+    expect(fs.existsSync(path.join(targetDir, "alpha", "SKILL.md"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "gamma", "SKILL.md"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "beta", "SKILL.md"))).toBe(false);
+  });
+
+  test("installSkills skips names with no source file", () => {
+    const { skillsDir, targetDir } = fixture();
+    const installed = installSkills(["alpha", "ghost"], skillsDir, targetDir);
+    expect(installed).toEqual(["alpha"]);
+  });
+
+  test("skip-then-install round trip: skipping #2 installs alpha + gamma", () => {
+    const { skillsDir, targetDir } = fixture();
+    const all = listAvailableSkills(skillsDir);
+    const skip = parseSkipSelection("2", all.length);
+    const chosen = all.filter((_, i) => !skip.has(i)).map((s) => s.name);
+    expect(installSkills(chosen, skillsDir, targetDir)).toEqual(["alpha", "gamma"]);
   });
 });

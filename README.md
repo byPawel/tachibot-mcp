@@ -40,7 +40,7 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 - **One-click Claude Desktop install** &mdash; download the `.mcpb` from the latest release and double-click. No JSON editing.
 - **`doctor`** &mdash; shows which keys are set, which tools are visible vs hidden and why, and what to try first.
 
-### New tools & skills (64 tools · 17 skills)
+### New tools & skills (64 tools · 19 skills)
 - `debug_triage` &mdash; ranked root-cause hypotheses with the cheapest discriminating check for each (Grok 4.3)
 - `spec_writer` &mdash; loose request → reviewable spec: user stories, Given/When/Then, out-of-scope, open questions (GPT-5.5)
 - `diff_review` / `plan_critique` / `testgen` / `security_review` &mdash; multi-model diff review, adversarial plan red-team, test generation, OWASP/CWE audit
@@ -55,7 +55,7 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ## Skills (Claude Code)
 
-TachiBot ships with 17 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
+TachiBot ships with 19 slash commands for Claude Code. These orchestrate the tools into powerful workflows:
 
 | Skill | What it does | Example |
 |-------|-------------|---------|
@@ -75,6 +75,8 @@ TachiBot ships with 17 slash commands for Claude Code. These orchestrate the too
 | `/review` | Multi-model diff review — panel + Gemini judge verdict | `/review` (or paste a diff) |
 | `/redteam` | Adversarial plan red-team — pre-mortem, risks, plan edits | `/redteam <paste plan>` |
 | `/triage` | Ranked root-cause bug triage | `/triage <paste stack trace>` |
+| `/test` | Generate runnable tests (edge cases first) | `/test src/auth.ts` |
+| `/audit` | Security review — OWASP/CWE findings + fixes | `/audit the login handler` |
 | `/tachi` | Help - see available skills, tools, key status | `/tachi` |
 
 Skills automatically adapt to your configured API keys. Even with just 1-2 providers, all skills work.
