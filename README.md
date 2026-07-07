@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/bypawel-tachibot-mcp-badge.png)](https://mseep.ai/app/bypawel-tachibot-mcp)
+
 <div align="center">
 
 # TachiBot MCP
