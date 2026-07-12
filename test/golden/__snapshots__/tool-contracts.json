@@ -914,6 +914,66 @@
     "name": "grok_search"
   },
   {
+    "description": "Cheap web search (grok-4-1-fast, ~10x cheaper than grok_search). Put your QUERY in the 'query' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "max_search_results": {
+          "type": "number"
+        },
+        "query": {
+          "type": "string"
+        },
+        "recency": {
+          "enum": [
+            "all",
+            "day",
+            "week",
+            "month",
+            "year"
+          ],
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "allowed_websites": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "country": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "web",
+                  "news",
+                  "x",
+                  "rss"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "grok_search_lite"
+  },
+  {
     "description": "Multi-model jury: runs question through configurable panel of AI jurors in parallel, then Gemini synthesizes a unified verdict. Put QUESTION in 'question' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",

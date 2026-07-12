@@ -27,18 +27,21 @@ config({ path: path.resolve(__dirname, '../../../.env') });
 const GROK_API_KEY = getGrokApiKey();
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
-// Available Grok models - Updated 2026-06-01 with Grok 4.3 (Apr 30, 2026 flagship)
+// Available Grok models - Updated 2026-07-11 with Grok 4.5 (Jul 8, 2026 flagship)
 export enum GrokModel {
-  // Grok 4.3 (Apr 30, 2026) - CURRENT FLAGSHIP
-  // Single model ID with configurable reasoning effort; 1M ctx, $1.25/$2.50 (cheaper than 4.20).
-  GROK_4_3 = "grok-4.3",                                      // Flagship: 1M ctx, reasoning.effort low|high
+  // Grok 4.5 (Jul 8, 2026) - CURRENT FLAGSHIP ("Opus-class")
+  // 500K ctx (smaller than 4.3's 1M), $2/$6, configurable reasoning effort.
+  GROK_4_5 = "grok-4.5",                                      // Flagship: 500K ctx, reasoning.effort low|high
+
+  // Grok 4.3 (Apr 30, 2026) - previous flagship, kept as FALLBACK
+  GROK_4_3 = "grok-4.3",                                      // Fallback: 1M ctx, $1.25/$2.50, lowest verified hallucination
   GROK_4_3_LATEST = "grok-4.3-latest",                        // Rolling alias for newest snapshot
   GROK_BUILD = "grok-build-0.1",                              // Coding specialist (May 29, 2026): 256k ctx
 
-  // Grok 4.20 keys (Mar 2026) - DEPRECATED, retained for back-compat → now resolve to grok-4.3
-  GROK_4_20_REASONING = "grok-4.3",           // [deprecated] → grok-4.3
-  GROK_4_20_NON_REASONING = "grok-4.3",       // [deprecated] → grok-4.3
-  GROK_4_20_MULTI_AGENT = "grok-4.3",         // [deprecated] → grok-4.3 (architect passes high reasoning.effort)
+  // Grok 4.20 keys (Mar 2026) - DEPRECATED, retained for back-compat → now resolve to the current flagship
+  GROK_4_20_REASONING = "grok-4.5",           // [deprecated] → grok-4.5
+  GROK_4_20_NON_REASONING = "grok-4.5",       // [deprecated] → grok-4.5
+  GROK_4_20_MULTI_AGENT = "grok-4.5",         // [deprecated] → grok-4.5 (architect passes high reasoning.effort)
 
   // Grok 4.1 fast models (Nov 2025) - BEST VALUE (10x cheaper)
   GROK_4_1_FAST_REASONING = "grok-4-1-fast-reasoning",     // Fast reasoning: 2M context, $0.20/$0.50
@@ -63,7 +66,7 @@ export enum GrokModel {
  */
 export async function callGrok(
   messages: Array<{ role: string; content: string }>,
-  model: GrokModel = GrokModel.GROK_4_3,
+  model: GrokModel = GrokModel.GROK_4_5,
   temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased default for comprehensive responses
   forceVisibleOutput: boolean = true,
@@ -96,9 +99,9 @@ export async function callGrok(
     return { ...msg, content: validation.sanitized };
   });
 
-  // Grok 4.x reasoning can take 60-90s; 4.20/4.3 flagship and multi-agent can take longer
+  // Grok 4.x reasoning can take 60-90s; 4.3/4.5 flagship and multi-agent can take longer
   const isReasoning = model.includes('reasoning') || model.includes('multi-agent');
-  const isFlagship = model.includes('4.20') || model.startsWith('grok-4.3');
+  const isFlagship = model.includes('4.20') || model.startsWith('grok-4.3') || model.startsWith('grok-4.5');
   const timeoutMs = isFlagship ? 180000 : (isReasoning ? 120000 : 60000);
 
   try {
@@ -115,8 +118,8 @@ export async function callGrok(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    // grok-4.3 (single flagship) and 4.20 multi-agent both accept reasoning.effort
-    const supportsReasoningEffort = model.includes('multi-agent') || model.startsWith('grok-4.3');
+    // grok-4.3/4.5 flagships and 4.20 multi-agent all accept reasoning.effort
+    const supportsReasoningEffort = model.includes('multi-agent') || model.startsWith('grok-4.3') || model.startsWith('grok-4.5');
     const requestBody: any = {
       model,
       messages: validatedMessages,
@@ -164,7 +167,13 @@ export async function callGrok(
     if (error instanceof Error && error.name === 'AbortError') {
       return `[Grok timeout: ${model} exceeded ${isReasoning ? '120' : '60'}s limit]`;
     }
-    return `[Grok error: ${error instanceof Error ? error.message : String(error)}]`;
+    const errMsg = error instanceof Error ? error.message : String(error);
+    // grok-4.5's rollout is region-staged (EU lands mid-July 2026) — fall back to grok-4.3
+    if (model.startsWith('grok-4.5') && errMsg.includes('not available in your region')) {
+      console.error(`[Grok] grok-4.5 region-blocked, falling back to grok-4.3`);
+      return callGrok(validatedMessages, GrokModel.GROK_4_3, temperature, maxTokens, forceVisibleOutput, validationContext, reasoningEffort);
+    }
+    return `[Grok error: ${errMsg}]`;
   }
 }
 
@@ -200,7 +209,7 @@ export const grokReasonTool = defineModelTool({
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.3, an expert at logical reasoning and problem-solving.
+        content: `You are Grok 4.5, an expert at logical reasoning and problem-solving.
 ${approachPrompts[approach as keyof typeof approachPrompts]}.
 ${context ? `Context: ${context}` : ''}
 ${FORMAT_INSTRUCTION}`
@@ -258,7 +267,7 @@ export const grokCodeTool = defineModelTool({
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.3, expert programmer and code analyst.
+        content: `You are Grok 4.5, expert programmer and code analyst.
 Task: ${taskPrompts[task as keyof typeof taskPrompts]}
 ${language ? `Language: ${language}` : ''}
 ${requirements ? `Requirements: ${requirements}` : ''}

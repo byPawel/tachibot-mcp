@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const balancedProfile: ProfileConfig = {
-  description: "Balanced set for general use (53 tools)",
+  description: "Balanced set for general use (54 tools)",
   tools: {
     think: true,
     focus: true,
@@ -18,6 +18,7 @@ export const balancedProfile: ProfileConfig = {
     grok_architect: false,
     grok_brainstorm: false,
     grok_search: true,
+    grok_search_lite: true,
     openai_reason: true,
     openai_brainstorm: true,
     openai_code_review: false,

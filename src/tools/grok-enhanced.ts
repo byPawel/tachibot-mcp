@@ -66,9 +66,11 @@ export async function callGrokEnhanced(
     // Use different endpoint and format for search vs non-search
     if (enableLiveSearch) {
       // NEW Agent Tools API (Jan 2025) - uses /v1/responses endpoint
-      // with 'input' instead of 'messages' and tools array
+      // with 'input' instead of 'messages' and tools array.
+      // Respects options.model so grok_search (flagship) and grok_search_lite
+      // (grok-4-1-fast, 10x cheaper) share this path.
       const searchRequestBody = {
-        model: GrokModel.GROK_4_20_NON_REASONING, // 4.20 standard is better for tool-calling search
+        model,
         input: messages.map(m => ({ role: m.role, content: m.content })),
         tools: [
           { type: "web_search" },
@@ -174,8 +176,14 @@ export async function callGrokEnhanced(
       usage: data.usage
     };
   } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    // grok-4.5's rollout is region-staged (EU lands mid-July 2026) — fall back to grok-4.3
+    if (model.startsWith('grok-4.5') && errMsg.includes('not available in your region')) {
+      console.error(`[Grok] grok-4.5 region-blocked, falling back to grok-4.3`);
+      return callGrokEnhanced(messages, { ...options, model: GrokModel.GROK_4_3 });
+    }
     return {
-      content: `[Grok error: ${error instanceof Error ? error.message : String(error)}]`
+      content: `[Grok error: ${errMsg}]`
     };
   }
 }
@@ -425,7 +433,7 @@ export const grokSearchTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.3 with live search. Search for: "${query}".
+        content: `You are Grok 4.5 with live search. Search for: "${query}".
 ${recencyPrompt}
 Provide concise, factual results with sources.
 Limit search to ${max_search_results} sources for cost control.
@@ -437,7 +445,7 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    log?.info(`Grok Search: ${max_search_results} sources, recency: ${recency} (using grok-4.20 reasoning)`);
+    log?.info(`Grok Search: ${max_search_results} sources, recency: ${recency} (using grok-4.5 flagship)`);
 
     // Extract domains from sources if specified
     const domains = sources
@@ -445,7 +453,7 @@ ${FORMAT_INSTRUCTION}`
       ?.flatMap((s: any) => s.allowed_websites) || [];
 
     const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_20_REASONING,  // Low hallucination is CRITICAL for search accuracy
+      model: GrokModel.GROK_4_20_REASONING,  // → grok-4.5 flagship (grok_search_lite is the cheap tier)
       enableLiveSearch: true,
       searchSources: max_search_results,
       searchDomains: domains,
@@ -492,11 +500,11 @@ export function getGrokStatus(): {
 } {
   return {
     available: isGrokAvailable(),
-    model: "grok-4.3",
+    model: "grok-4.5",
     features: [
-      'Grok 4.3 (grok-4.3): Flagship, lowest hallucination, 1M context, configurable reasoning effort ($1.25/$2.50)',
+      'Grok 4.5 (grok-4.5): Flagship ("Opus-class", Jul 2026), 500K context, configurable reasoning effort ($2/$6)',
+      'Grok 4.3 (grok-4.3): Previous flagship, kept as fallback — 1M context, lowest verified hallucination ($1.25/$2.50)',
       'Grok Build (grok-build-0.1): Fast agentic coding specialist, 256k context',
-      'Grok 4.20 (grok-4.20-0309-*): Legacy flagship, still available as fallback (2M context)',
       'Live web search with citations',
       'Function calling',
       'Structured outputs',

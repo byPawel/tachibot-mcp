@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const researchPowerProfile: ProfileConfig = {
-  description: "Research-focused with Grok search + all Perplexity + brainstorming (35 tools)",
+  description: "Research-focused with Grok search + all Perplexity + brainstorming (36 tools)",
   tools: {
     think: true,
     focus: true,
@@ -18,6 +18,7 @@ export const researchPowerProfile: ProfileConfig = {
     grok_architect: false,
     grok_brainstorm: false,
     grok_search: true,
+    grok_search_lite: true,
     openai_reason: false,
     openai_brainstorm: true,
     openai_code_review: false,

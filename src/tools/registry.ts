@@ -42,6 +42,7 @@ import type { z } from "zod";
 import { getAllPerplexityTools, isPerplexityAvailable } from "./perplexity-tools.js";
 import { getAllGrokTools, isGrokAvailable } from "./grok-tools.js";
 import { debugTriageTool } from "./debug-triage-tool.js";
+import { grokSearchLiteTool } from "./grok-search-lite-tool.js";
 import { isOpenAIAvailable, getAllOpenAITools } from "./openai-tools.js";
 import { specWriterTool } from "./spec-writer-tool.js";
 import { refinePromptTool } from "./refine-prompt-tool.js";
@@ -102,8 +103,10 @@ export async function getAllTools(
   // 2) Grok (custom API).
   if (isGrokAvailable()) {
     tools.push(...(getAllGrokTools() as unknown as RegistryTool[]));
-    // debug_triage — ranked-hypothesis bug triage (Grok 4.3) — gated on Grok.
+    // debug_triage — ranked-hypothesis bug triage (Grok flagship) — gated on Grok.
     tools.push(debugTriageTool as unknown as RegistryTool);
+    // grok_search_lite — cheap live search (grok-4-1-fast, ~10x cheaper) — gated on Grok.
+    tools.push(grokSearchLiteTool as unknown as RegistryTool);
   }
 
   // 3) OpenAI (GPT-5 suite). NB: getAllOpenAITools() ALSO self-guards (returns

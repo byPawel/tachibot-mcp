@@ -190,8 +190,13 @@ export async function callOpenAI(
     return { ...msg, content: validation.sanitized };
   });
 
-  // Model fallback chain - no fallbacks to test actual availability
+  // Model fallback chain
   const modelFallbacks: Record<string, string[]> = {
+    // gpt-5.6-sol is org-verification gated (403 "insufficient permissions" until verified);
+    // terra matches gpt-5.5 quality at half price, so it's the safe runtime fallback.
+    "gpt-5.6-sol": ["gpt-5.6-terra", "gpt-5.5"],
+    "gpt-5.6-terra": ["gpt-5.5"],
+    "gpt-5.6-luna": ["gpt-5.6-terra"],
     "gpt-5.4": [],           // No fallback - test actual gpt-5.4
     "gpt-5.4-mini": ["gpt-5.4"],  // Mini falls back to flagship
     "gpt-5.4-pro": []        // No fallback - test actual gpt-5.4-pro
@@ -261,8 +266,9 @@ export async function callOpenAI(
         lastError = `${currentModel}: ${response.statusText} - ${error}`;
         console.error(`🔍 TRACE: ${currentModel} failed - Status: ${response.status}, Error: ${error}`);
 
-        // Check if it's a model not found error
-        if (response.status === 404 || error.includes('model') || error.includes('not found')) {
+        // Check if it's a model not found / not-yet-unlocked error
+        // (403 "insufficient permissions" = org-verification-gated tier, e.g. gpt-5.6-sol)
+        if (response.status === 404 || response.status === 403 || error.includes('model') || error.includes('not found') || error.includes('insufficient permissions')) {
           console.error(`🔍 TRACE: Model ${currentModel} not available, trying fallback...`);
           continue; // Try next model
         }

@@ -4,18 +4,18 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.26.1-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
-[![Tools](https://img.shields.io/badge/tools-64_active-brightgreen.svg)](#-tool-ecosystem-64-tools)
+[![Version](https://img.shields.io/badge/version-2.27.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Tools](https://img.shields.io/badge/tools-65_active-brightgreen.svg)](#-tool-ecosystem-65-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**64 AI tools. 12 providers. One protocol.**
+**65 AI tools. 12 providers. One protocol.**
 
 Orchestrate Perplexity, Grok, GPT-5.5, Gemini, Qwen, Kimi K2.7-Code, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
-[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-64-tools) &#183; [Documentation](https://tachibot.com/docs)
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-65-tools) &#183; [Documentation](https://tachibot.com/docs)
 
 <br>
 
@@ -29,6 +29,11 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 ---
 
 ## What's New
+
+### v2.27.0
+- **Grok 4.5** (Jul 8 flagship, "Opus-class") now powers all Grok tools, with automatic fallback to `grok-4.3` while xAI's region-staged rollout completes (EU mid-July) — tools keep working everywhere, and 4.5 activates by itself.
+- **`grok_search_lite`** (new tool, 65 total) — the same Grok live search on `grok-4-1-fast` ($0.20/$0.50, 2M ctx), ~10x cheaper than `grok_search`. Use it for high-volume lookups and jury/council fan-outs.
+- **GPT-5.6 tiers** — `openai_*` tools move to `gpt-5.6-sol` (flagship, same $5/$30 as 5.5 but stronger), `terra` for code (5.5-level at half price), `luna` for explanations ($1/$6). The $30/$180 `gpt-5.5-pro` tier is replaced by sol + reasoning effort; a permission fallback (sol → terra → 5.5) covers org-gated accounts.
 
 ### v2.26.1
 - **`/test` and `/audit` skills** (19 skills total) — `/test` generates runnable tests via `testgen`; `/audit` runs an OWASP/CWE security review via `security_review`.
@@ -47,7 +52,7 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 - **One-click Claude Desktop install** &mdash; download the `.mcpb` from the latest release and double-click. No JSON editing.
 - **`doctor`** &mdash; shows which keys are set, which tools are visible vs hidden and why, and what to try first.
 
-#### New tools & skills (64 tools · 19 skills)
+#### New tools & skills (65 tools · 19 skills)
 - `debug_triage` &mdash; ranked root-cause hypotheses with the cheapest discriminating check for each (Grok 4.3)
 - `spec_writer` &mdash; loose request → reviewable spec: user stories, Given/When/Then, out-of-scope, open questions (GPT-5.5)
 - `diff_review` / `plan_critique` / `testgen` / `security_review` &mdash; multi-model diff review, adversarial plan red-team, test generation, OWASP/CWE audit
@@ -95,7 +100,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ## Key Features
 
 ### Multi-Model Intelligence
-- **64 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
+- **65 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
 - **Gemini 3.5 Flash** (`gemini-3.5-flash`, GA May 19 2026) &mdash; Flash/search tier; reasoning default stays `gemini-3.1-pro-preview`
 - **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
 - **Smart Routing** &mdash; Automatic model selection for optimal results
@@ -111,11 +116,11 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 | Profile | Tools | Best For |
 |---------|-------|----------|
 | **Minimal** | 13 | Quick tasks, low token budget |
-| **Research Power** | 35 | Deep investigation, multi-source |
+| **Research Power** | 36 | Deep investigation, multi-source |
 | **Code Focus** | 42 | Software development, SWE tasks |
-| **Balanced** | 53 | General-purpose, mixed workflows |
-| **Heavy Coding** | 57 | Max code tools + agentic workflows |
-| **Full** (default) | 64 | Everything enabled |
+| **Balanced** | 54 | General-purpose, mixed workflows |
+| **Heavy Coding** | 58 | Max code tools + agentic workflows |
+| **Full** (default) | 65 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support
@@ -195,10 +200,10 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## Tool Ecosystem (64 Tools)
+## Tool Ecosystem (65 Tools)
 
-### Research & Search (5)
-`perplexity_ask` &#183; `perplexity_reason` &#183; `grok_search` &#183; `openai_search` &#183; `gemini_search`
+### Research & Search (6)
+`perplexity_ask` &#183; `perplexity_reason` &#183; `grok_search` &#183; `grok_search_lite` &#183; `openai_search` &#183; `gemini_search`
 
 ### Reasoning & Planning (14)
 `grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans` &#183; `spec_writer`

@@ -55,6 +55,7 @@ export const PROVIDER_GROUPS: ProviderGroup[] = [
       "grok_architect",
       "grok_brainstorm",
       "grok_search",
+      "grok_search_lite",
     ],
   },
   {

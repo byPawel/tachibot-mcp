@@ -2,11 +2,11 @@
   "manifest_version": "0.2",
   "dxt_version": "1.1.1",
   "name": "tachibot-mcp",
-  "version": "2.26.0",
-  "description": "Multi-model AI orchestration platform with 64 tools across Perplexity, Grok, OpenAI GPT-5.5, Gemini, DeepSeek, GLM, Kimi, Qwen, MiniMax, and local models",
+  "version": "2.27.0",
+  "description": "Multi-model AI orchestration platform with 65 tools across Perplexity, Grok, OpenAI GPT-5.6, Gemini, DeepSeek, GLM, Kimi, Qwen, MiniMax, and local models",
   "author": {
     "name": "Pawel Pawlowski",
-    "email": "pawel@example.com",
+    "email": "108490+byPawel@users.noreply.github.com",
     "url": "https://github.com/byPawel"
   },
   "license": "MIT",

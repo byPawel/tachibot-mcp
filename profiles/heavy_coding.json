@@ -1,5 +1,5 @@
 {
-  "description": "Heavy coding with all reasoning & code tools (57 tools)",
+  "description": "Heavy coding with all reasoning & code tools (58 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -16,6 +16,7 @@
     "grok_architect": true,
     "grok_brainstorm": true,
     "grok_search": true,
+    "grok_search_lite": true,
     "openai_reason": true,
     "openai_brainstorm": true,
     "openai_code_review": true,

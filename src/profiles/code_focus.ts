@@ -18,6 +18,7 @@ export const codeFocusProfile: ProfileConfig = {
     grok_architect: false,
     grok_brainstorm: false,
     grok_search: false,
+    grok_search_lite: false,
     openai_reason: false,
     openai_brainstorm: false,
     openai_code_review: true,

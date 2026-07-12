@@ -29,6 +29,7 @@ export interface ToolsConfig {
   grok_architect: boolean;
   grok_brainstorm: boolean;
   grok_search: boolean;
+  grok_search_lite: boolean;   // Cheap live search (grok-4-1-fast, ~10x cheaper than grok_search)
 
   // OpenAI tools
   openai_reason: boolean;

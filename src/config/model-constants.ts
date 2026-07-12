@@ -7,28 +7,36 @@
 // =============================================================================
 // OPENAI MODELS (provider-based naming)
 // =============================================================================
-// GPT-5.5 released Apr 23, 2026 - CURRENT (agentic-focused, 1.1M context, omnimodal)
-// GPT-5.4 released Mar 5, 2026 - previous flagship (kept for MINI tier — no 5.5-mini yet)
-// Model is "gpt-5.5", "thinking" is controlled by reasoning.effort parameter
-// OpenRouter uses prefix: openai/gpt-5.5, openai/gpt-5.5-pro
+// GPT-5.6 released Jul 9, 2026 - CURRENT. Three durable tiers replace the pro/mini split:
+//   sol (flagship $5/$30) / terra (balanced $2.50/$15) / luna (fast $1/$6). All 1.05M ctx, 128K out.
+// "Pro" is no longer a model: sol + reasoning.effort (the $30/$180 gpt-5.5-pro tier is gone).
+// GPT-5.5 (Apr 23, 2026) kept as fallback. OpenRouter uses prefix: openai/gpt-5.6-sol etc.
 export const OPENAI_MODELS = {
-  // GPT-5.5 (Apr 23, 2026 - CURRENT)
-  // Note: "gpt-5.5" + reasoning.effort="high"/"xhigh" = "thinking" mode
-  DEFAULT: "gpt-5.5",               // Most capable - agentic, reasoning, omnimodal (1.1M ctx)
-  MINI: "gpt-5.4-mini",             // Fast/efficient coding & subagents (no 5.5-mini available yet)
-  PRO: "gpt-5.5-pro",               // Expert: higher compute for harder problems ($30/$180)
+  // GPT-5.6 tiers (Jul 9, 2026 - CURRENT)
+  DEFAULT: "gpt-5.6-sol",           // Flagship: coding/agentic SOTA, 54% more token-efficient than 5.5
+  SOL: "gpt-5.6-sol",               // Explicit tier alias (also aliased "gpt-5.6" server-side)
+  TERRA: "gpt-5.6-terra",           // Balanced: matches gpt-5.5 at half price ($2.50/$15)
+  LUNA: "gpt-5.6-luna",             // Fast/cheap: $1/$6 (weaker long-context recall — avoid huge inputs)
+  MINI: "gpt-5.6-luna",             // "mini" tier successor (was gpt-5.4-mini)
+  PRO: "gpt-5.6-sol",               // Pro tier eliminated in 5.6 — sol + reasoning.effort xhigh (was gpt-5.5-pro $30/$180)
+
+  // GPT-5.5 (Apr 2026) - fallback
+  FALLBACK_5_5: "gpt-5.5",
 
   // Aliases for backward compatibility
-  THINKING: "gpt-5.5",              // "Thinking" = gpt-5.5 with high reasoning effort
-  FULL: "gpt-5.5",                  // Map old FULL to DEFAULT
-  CODEX: "gpt-5.4-mini",            // Map old codex to MINI (no 5.5 mini yet)
-  CODEX_MINI: "gpt-5.4-mini",       // Map old codex-mini to MINI
-  CODEX_MAX: "gpt-5.5-pro",         // Map old codex-max to PRO
-  INSTANT: "gpt-5.4-mini",          // Map old instant to MINI
+  THINKING: "gpt-5.6-sol",          // "Thinking" = sol with high reasoning effort
+  FULL: "gpt-5.6-sol",              // Map old FULL to DEFAULT
+  CODEX: "gpt-5.6-terra",           // Coding workhorse tier
+  CODEX_MINI: "gpt-5.6-luna",       // Cheapest tier
+  CODEX_MAX: "gpt-5.6-sol",         // Map old codex-max to flagship (use high effort)
+  INSTANT: "gpt-5.6-luna",          // Fast tier
 } as const;
 
 // OpenRouter model ID mapping (add prefix when using OpenRouter gateway)
 export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
+  "gpt-5.6-sol": "openai/",
+  "gpt-5.6-terra": "openai/",
+  "gpt-5.6-luna": "openai/",
   "gpt-5.5": "openai/",
   "gpt-5.5-pro": "openai/",
   "gpt-5.4-mini": "openai/",
@@ -72,19 +80,23 @@ export const PERPLEXITY_MODELS = {
   SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model (expensive - avoid)
 } as const;
 
-// Grok Models (xAI) - Updated 2026-06-01 with Grok 4.3 (Apr 30, 2026 flagship)
+// Grok Models (xAI) - Updated 2026-07-11 with Grok 4.5 (Jul 8, 2026 flagship)
 export const GROK_MODELS = {
-  // Grok 4.3 (Apr 30, 2026) - CURRENT FLAGSHIP
-  // Single model ID with configurable reasoning effort (replaces 4.20's reasoning/non-reasoning/multi-agent split).
-  // 1M context, $1.25/$2.50 (cheaper than 4.20), xAI's recommended model, lowest hallucination rate.
-  _4_3: "grok-4.3",                                      // Flagship: 1M ctx, $1.25/$2.50, reasoning.effort low|high
+  // Grok 4.5 (Jul 8, 2026) - CURRENT FLAGSHIP ("Opus-class")
+  // 500K context (SMALLER than 4.3's 1M — fine for tools, mind huge inputs), $2/$6,
+  // configurable reasoning effort. EU API rollout was "mid-July" — 4.3 stays the fallback.
+  _4_5: "grok-4.5",                                      // Flagship: 500K ctx, $2/$6, reasoning.effort low|high
+
+  // Grok 4.3 (Apr 30, 2026) - previous flagship, kept as FALLBACK
+  // 1M context, $1.25/$2.50, lowest verified hallucination rate.
+  _4_3: "grok-4.3",                                      // Fallback: 1M ctx, $1.25/$2.50, reasoning.effort low|high
   _4_3_LATEST: "grok-4.3-latest",                        // Rolling alias for newest 4.3 snapshot
   _BUILD: "grok-build-0.1",                              // Coding specialist (May 29, 2026): 256k ctx, fast agentic coding
 
-  // Grok 4.20 models (Mar 10, 2026) - LEGACY (still valid; kept as fallback). Now resolve to 4.3 via deprecated keys.
-  _4_20_REASONING: "grok-4.3",                           // [deprecated key] → grok-4.3 (was grok-4.20-0309-reasoning)
-  _4_20_NON_REASONING: "grok-4.3",                       // [deprecated key] → grok-4.3 (was grok-4.20-0309-non-reasoning)
-  _4_20_MULTI_AGENT: "grok-4.3",                         // [deprecated key] → grok-4.3 (architect uses high reasoning.effort)
+  // Grok 4.20 models (Mar 10, 2026) - LEGACY keys. Deprecated keys now resolve to the current flagship (4.5).
+  _4_20_REASONING: "grok-4.5",                           // [deprecated key] → grok-4.5 (was grok-4.20-0309-reasoning)
+  _4_20_NON_REASONING: "grok-4.5",                       // [deprecated key] → grok-4.5 (was grok-4.20-0309-non-reasoning)
+  _4_20_MULTI_AGENT: "grok-4.5",                         // [deprecated key] → grok-4.5 (architect uses high reasoning.effort)
 
   // Grok 4.1 fast models (Nov 2025) - BEST VALUE (10x cheaper)
   _4_1_FAST_REASONING: "grok-4-1-fast-reasoning",     // Fast reasoning: 2M context, $0.20/$0.50
@@ -183,26 +195,27 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
-// UPDATED Apr 26, 2026: GPT-5.5 (flagship, agentic-focused) + GPT-5.4-mini (coding/fast — no 5.5-mini yet)
-// Kimi K2.6 (Apr 20, 2026 - SWE-bench Pro leader)
+// UPDATED Jul 11, 2026: GPT-5.6 tiers (sol/terra/luna — Jul 9) + Grok 4.5 (Jul 8 flagship)
+// Kimi K2.7-Code (Jun 12, 2026)
 export const CURRENT_MODELS = {
   openai: {
-    default: OPENAI_MODELS.DEFAULT,       // gpt-5.5 - most capable, agentic (Apr 2026)
-    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (gpt-5.5 + effort=high)
-    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (gpt-5.5 + effort=medium)
-    code: OPENAI_MODELS.MINI,             // Code tasks (gpt-5.4-mini - cheapest tier, no 5.5-mini yet)
-    explain: OPENAI_MODELS.MINI,          // Explanations (gpt-5.4-mini - fast & capable)
-    search: OPENAI_MODELS.DEFAULT,        // Web search (gpt-5.5 + web_search tool)
-    // Premium option for opt-in (use sparingly - $30/$180 per 1M tokens)
-    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.5-pro - higher compute)
+    default: OPENAI_MODELS.DEFAULT,       // gpt-5.6-sol - flagship, agentic/coding SOTA (Jul 2026)
+    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (sol + effort=high)
+    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (sol + effort=medium)
+    code: OPENAI_MODELS.TERRA,            // Code tasks (gpt-5.6-terra - 5.5-level at half price)
+    explain: OPENAI_MODELS.LUNA,          // Explanations (gpt-5.6-luna - $1/$6, fast)
+    search: OPENAI_MODELS.DEFAULT,        // Web search (sol + web_search tool)
+    // Premium: the 5.5-pro tier ($30/$180) is gone — sol + effort=xhigh replaces it at $5/$30
+    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.6-sol - crank reasoning effort)
   },
   grok: {
-    reason: GROK_MODELS._4_3,            // grok-4.3 (flagship, low hallucination, high reasoning effort)
-    code: GROK_MODELS._4_3,              // grok-4.3 (flagship quality, tool-calling)
-    debug: GROK_MODELS._4_3,             // grok-4.3 (low hallucination for debugging)
-    brainstorm: GROK_MODELS._4_3,        // grok-4.3 (1M context)
-    search: GROK_MODELS._4_3,            // grok-4.3 LOW HALLUCINATION - critical for search
-    architect: GROK_MODELS._4_3,         // grok-4.3 with high reasoning.effort (agentic swarm behaviour)
+    reason: GROK_MODELS._4_5,            // grok-4.5 (Jul 2026 flagship, high reasoning effort)
+    code: GROK_MODELS._4_5,              // grok-4.5 (flagship quality, tool-calling)
+    debug: GROK_MODELS._4_5,             // grok-4.5 (flagship debugging)
+    brainstorm: GROK_MODELS._4_5,        // grok-4.5 (500K context)
+    search: GROK_MODELS._4_5,            // grok-4.5 flagship synthesis over live search
+    search_lite: GROK_MODELS._4_1_FAST_NON_REASONING, // grok-4-1-fast: $0.20/$0.50, 2M ctx, tool-calling optimized — 10x cheaper search
+    architect: GROK_MODELS._4_5,         // grok-4.5 with high reasoning.effort (agentic swarm behaviour)
   },
   gemini: {
     default: GEMINI_MODELS.GEMINI_3_PRO,
@@ -303,6 +316,11 @@ export const TOOL_DEFAULTS = {
     maxTokens: 3000,
     temperature: 0.7,
   },
+  grok_search_lite: {
+    model: CURRENT_MODELS.grok.search_lite,
+    maxTokens: 3000,
+    temperature: 0.3,
+  },
   grok_brainstorm: {
     model: CURRENT_MODELS.grok.brainstorm,
     maxTokens: 4000,
@@ -375,6 +393,10 @@ export const DEFAULT_WORKFLOW_TOOL = "openai_brainstorm";
 // Used in tool outputs, usage stats, logs - keeps display consistent
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // OpenAI
+  "gpt-5.6-sol": "gpt-5.6-sol",
+  "gpt-5.6-terra": "gpt-5.6-terra",
+  "gpt-5.6-luna": "gpt-5.6-luna",
+  "gpt-5.6": "gpt-5.6-sol",
   "gpt-5.5": "gpt-5.5",
   "gpt-5.5-pro": "gpt-5.5-pro",
   "gpt-5.4": "gpt-5.4",
@@ -388,6 +410,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
 
   // Grok (xAI)
+  "grok-4.5": "grok-4.5",
   "grok-4.3": "grok-4.3",
   "grok-4.3-latest": "grok-4.3",
   "grok-build-0.1": "grok-build",
@@ -437,8 +460,11 @@ export function getModelDisplayName(modelId: string): string {
 // Model pricing per 1K tokens (input/output average) for cost tracking
 export const MODEL_PRICING: Record<string, number> = {
   // OpenAI
-  "gpt-5.5": 0.0175,            // ($5 + $30) / 2 / 1000 (Apr 23, 2026)
-  "gpt-5.5-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Apr 23, 2026)
+  "gpt-5.6-sol": 0.0175,        // ($5 + $30) / 2 / 1000 (Jul 9, 2026)
+  "gpt-5.6-terra": 0.00875,     // ($2.50 + $15) / 2 / 1000 (Jul 9, 2026)
+  "gpt-5.6-luna": 0.0035,       // ($1 + $6) / 2 / 1000 (Jul 9, 2026)
+  "gpt-5.5": 0.0175,            // ($5 + $30) / 2 / 1000 (Apr 23, 2026 - fallback)
+  "gpt-5.5-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Apr 23, 2026 - tier removed in 5.6)
   "gpt-5.4": 0.00875,           // ($2.50 + $15) / 2 / 1000 (Mar 2026 - legacy)
   "gpt-5.4-mini": 0.002625,     // ($0.75 + $4.50) / 2 / 1000 (Mar 17, 2026)
   "gpt-5.4-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Mar 2026)
@@ -450,7 +476,8 @@ export const MODEL_PRICING: Record<string, number> = {
   "gemini-3.1-flash-lite": 0.001,       // Cheapest/fastest in 3.1 series (Mar 2026)
 
   // Grok
-  "grok-4.3": 0.001875,                     // ($1.25 + $2.50) / 2 / 1000 (Apr 30, 2026 - cheaper than 4.20)
+  "grok-4.5": 0.004,                        // ($2 + $6) / 2 / 1000 (Jul 8, 2026 flagship)
+  "grok-4.3": 0.001875,                     // ($1.25 + $2.50) / 2 / 1000 (Apr 30, 2026 - fallback)
   "grok-4.3-latest": 0.001875,
   "grok-build-0.1": 0.001875,               // Coding specialist (estimate, same tier)
   "grok-4.20-0309-reasoning": 0.004,        // ($2 + $6) / 2 / 1000 (legacy)

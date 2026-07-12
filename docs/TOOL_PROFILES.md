@@ -25,11 +25,11 @@ Counts below are generated from `src/profiles/*.ts` via `npm run build:profiles`
 | Profile | Tools | Description |
 |---------|-------|-------------|
 | `minimal` | 13 | Minimal essential tools for basic tasks |
-| `research_power` | 35 | Research-focused with Grok search + all Perplexity + brainstorming |
+| `research_power` | 36 | Research-focused with Grok search + all Perplexity + brainstorming |
 | `code_focus` | 42 | Code-heavy work with debugging and analysis |
-| `balanced` | 53 | Balanced set for general use |
-| `heavy_coding` | 57 | Heavy coding with all reasoning & code tools |
-| `full` | 64 | **Default profile** — every tool enabled |
+| `balanced` | 54 | Balanced set for general use |
+| `heavy_coding` | 58 | Heavy coding with all reasoning & code tools |
+| `full` | 65 | **Default profile** — every tool enabled |
 
 ---
 
@@ -50,13 +50,13 @@ Minimal essential tools for basic tasks.
 
 ---
 
-### 2. `research_power` (35 tools)
+### 2. `research_power` (36 tools)
 
 Research-focused with Grok search + all Perplexity + brainstorming + the full reasoning/planning suite.
 
 **Tools:**
 - Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
-- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `openai_search`, `gemini_search`
+- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `grok_search_lite`, `openai_search`, `gemini_search`
 - Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`
 - Judgment: `gemini_judge`, `jury`
 - Creative: `openai_brainstorm`, `gemini_brainstorm`
@@ -68,7 +68,7 @@ Research-focused with Grok search + all Perplexity + brainstorming + the full re
 **Best for:** Deep research, fact-checking, multi-source verification, brainstorming sessions.
 
 **Key tools for research:**
-- `grok_search` / `openai_search` / `gemini_search` — live web search, three different engines
+- `grok_search` / `openai_search` / `gemini_search` — live web search, three different engines (`grok_search_lite` = same Grok search on grok-4-1-fast, ~10x cheaper for high-volume lookups)
 - `jury` — multi-model consensus (parallel jurors + Gemini synthesis)
 - `gemini_judge` — evaluate/synthesize/rank/resolve multiple perspectives into one verdict
 
@@ -94,13 +94,13 @@ Code-heavy work with debugging and analysis.
 
 ---
 
-### 4. `balanced` (53 tools)
+### 4. `balanced` (54 tools)
 
 Balanced set for general use — nearly everything except the deepest niche reasoning/creative extras.
 
 **Tools:**
 - Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
-- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `openai_search`, `gemini_search`
+- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `grok_search_lite`, `openai_search`, `gemini_search`
 - Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`
 - Code: `grok_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`, `debug_triage`
 - Judgment: `gemini_judge`, `jury`
@@ -117,13 +117,13 @@ Balanced set for general use — nearly everything except the deepest niche reas
 
 ---
 
-### 5. `heavy_coding` (57 tools)
+### 5. `heavy_coding` (58 tools)
 
 Heavy coding with the full reasoning & code toolset, minus the general workflow-management tools.
 
 **Tools:**
 - Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
-- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `openai_search`, `gemini_search`
+- Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `grok_search_lite`, `openai_search`, `gemini_search`
 - Reasoning: `grok_reason`, `openai_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`
 - Code: `grok_code`, `grok_debug`, `grok_architect`, `openai_code_review`, `openai_explain`, `gemini_analyze_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`, `debug_triage`
 - Judgment: `gemini_judge`, `jury`
@@ -141,7 +141,7 @@ Heavy coding with the full reasoning & code toolset, minus the general workflow-
 
 ---
 
-### 6. `full` (64 tools) — default
+### 6. `full` (65 tools) — default
 
 All tools enabled for maximum capability. This is the profile set in `tools.config.json`'s `activeProfile` by default.
 
@@ -149,7 +149,7 @@ All tools enabled for maximum capability. This is the profile set in `tools.conf
 
 **Best for:** Maximum flexibility, specialized tasks, demonstrations.
 
-**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools won't register even under `full`. Run `doctor` to see exactly what's active. `continue_focus` is always registered regardless of profile (see [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md#continue_focus)) and isn't counted in the 64.
+**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools won't register even under `full`. Run `doctor` to see exactly what's active. `continue_focus` is always registered regardless of profile (see [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md#continue_focus)) and isn't counted in the 65.
 
 ---
 
