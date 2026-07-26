@@ -85,7 +85,11 @@ export const PERPLEXITY_MODELS = {
   SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model (expensive - avoid)
 } as const;
 
-// Grok Models (xAI) - Re-verified 2026-07-26: Grok 4.5 is still the flagship (no 4.6/5 shipped)
+// Grok Models (xAI) - Re-verified 2026-07-27 against docs.x.ai: Grok 4.5 is still the flagship.
+// NEXT BUMP CANDIDATE: Grok 4.6 (2T params) was confirmed by Musk on Jul 18, finished pre-training
+// the week of Jul 20, and was given a "~2 weeks" ETA — so expect it early Aug 2026, with 4.7 ~2 weeks
+// behind it. Nothing is official yet (no ID, pricing, or context window). Check before bumping.
+// Also verified absent: grok-code-fast-2 (unannounced) and grok-build-0.2 (docs still list 0.1 only).
 export const GROK_MODELS = {
   // Grok 4.5 (Jul 8, 2026) - CURRENT FLAGSHIP ("Opus-class")
   // 500K context (SMALLER than 4.3's 1M — fine for tools, mind huge inputs), $2/$6,

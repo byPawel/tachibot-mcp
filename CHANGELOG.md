@@ -24,6 +24,13 @@ Full provider audit run Jul 26, 2026 — every model in `model-constants.ts` che
 - **MiniMax M3**, **StepFun Step 3.7 Flash**, **ERNIE 4.5 VL** — all still the newest available on OpenRouter (no ERNIE 5.x listing).
 - **Perplexity** `sonar` / `sonar-pro` / `sonar-reasoning-pro` — naming unchanged.
 - **Qwen coder** stays `qwen3-coder-next`; no `qwen4-coder` exists on OpenRouter. `qwen_reason`/`qwen_algo` deliberately stay on `qwen3-235b-a22b-thinking-2507` — Qwen3.7-Max is newer and agent-tuned, but publishes no thinking/reasoning mode, so swapping a dedicated reasoning model for it would risk a regression on the math/CP workloads those tools serve.
+
+Second-pass sweep of the remaining constants (Jul 27) — all confirmed already-newest, nothing bumpable:
+- **Qwen 4 Coder** (Jun 2, 32B-A3B, ~82% SWE-Verified) is real but is **not listed on OpenRouter** — no callable ID across its 76-model Qwen catalog — so it is unreachable on the gateway every Qwen tool uses. `qwen3-coder-next` remains the newest dedicated Qwen coder.
+- **QwQ line** has no successor: only `qwen/qwq-32b` and the older `qwq-32b-preview` exist; Qwen3+ superseded the line for reasoning.
+- **Grok specialists** verified against docs.x.ai: `grok-build-0.1` is still the only Grok Build model string (the "v0.2.73" in release notes is the *agent product*, not the model), and `grok-code-fast-2` is unannounced.
+- **ERNIE 5.1** still has no published weights, no Hugging Face repo, and no OpenRouter listing — it is Qianfan-API-only, so `baidu/ernie-4.5-vl-424b-a47b` stays.
+- **Grok 4.6** is the next expected bump: 2T params, confirmed by Musk Jul 18, pre-training finished the week of Jul 20, ETA "~2 weeks" (early Aug), with 4.7 ~2 weeks behind. No ID/pricing/context published yet — a watch note now sits in `GROK_MODELS`.
 - K3's weights were due under a Modified MIT license by Jul 27; the API is live regardless, so this bump does not depend on the weight drop.
 
 ## [2.23.3] - 2026-06-17
