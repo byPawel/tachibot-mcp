@@ -56,21 +56,26 @@ export const OPENAI_REASONING = {
 // =============================================================================
 // GEMINI MODELS (Google)
 // =============================================================================
-// Gemini 3.5 Flash went GA May 19, 2026 (Google I/O) — agentic/coding, 1M ctx, $1.50/$9.
-// It is the new FLASH/search tier. Gemini 3.5 Pro is NOT out yet (June 2026), so the
-// reasoning DEFAULT stays on gemini-3.1-pro-preview until 3.5 Pro ships.
+// Gemini 3.6 Flash GA'd Jul 21, 2026 — workhorse tier, 1M ctx, $1.50/$7.50, ~17% fewer
+// output tokens than 3.5 Flash. It is the new FLASH/search tier. Gemini 3.5 Flash-Lite
+// shipped the same day ($0.30/$2.50) and replaces 3.1-flash-lite as the cheap tier.
+// Gemini 3.5 Pro STILL has not shipped (Google released three models on Jul 21 and
+// explicitly skipped Pro — internal perf goals unmet, "landing soon" + Gemini 4 pre-training
+// underway), so the reasoning DEFAULT stays on gemini-3.1-pro-preview.
 export const GEMINI_MODELS = {
-  // Gemini 3.1 Pro - reasoning default (3.0 Pro retired Mar 9, 2026)
+  // Gemini 3.1 Pro - reasoning default (3.0 Pro retired Mar 9, 2026; no 3.5 Pro as of Jul 26, 2026)
   GEMINI_3_PRO: "gemini-3.1-pro-preview",     // Default: top reasoning model available
   GEMINI_3_1_PRO: "gemini-3.1-pro-preview",   // Enhanced reasoning, 1M context
-  GEMINI_3_5_FLASH: "gemini-3.5-flash",        // GA May 19, 2026 - agentic/coding, 1M ctx
+  GEMINI_3_6_FLASH: "gemini-3.6-flash",        // GA Jul 21, 2026 - CURRENT flash/search tier, 1M ctx, $1.50/$7.50
+  GEMINI_3_5_FLASH: "gemini-3.5-flash",        // GA May 19, 2026 - previous flash tier (fallback)
   GEMINI_3_FLASH: "gemini-3-flash-preview",    // Legacy fast frontier (kept for model-router)
-  GEMINI_3_1_FLASH_LITE: "gemini-3.1-flash-lite", // Mar 3, 2026 - fastest/cheapest in 3.1 series
+  GEMINI_3_5_FLASH_LITE: "gemini-3.5-flash-lite", // Jul 21, 2026 - cheapest tier, $0.30/$2.50
+  GEMINI_3_1_FLASH_LITE: "gemini-3.1-flash-lite", // Mar 3, 2026 - previous cheap tier (legacy)
 
   // Aliases
   PRO: "gemini-3.1-pro-preview",
-  FLASH: "gemini-3.5-flash",                   // Bumped: 3-flash-preview -> 3.5-flash (May 2026)
-  FLASH_LITE: "gemini-3.1-flash-lite",
+  FLASH: "gemini-3.6-flash",                   // Bumped: 3.5-flash -> 3.6-flash (Jul 21, 2026)
+  FLASH_LITE: "gemini-3.5-flash-lite",         // Bumped: 3.1-flash-lite -> 3.5-flash-lite (Jul 21, 2026)
 } as const;
 
 // Perplexity Models
@@ -80,11 +85,11 @@ export const PERPLEXITY_MODELS = {
   SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model (expensive - avoid)
 } as const;
 
-// Grok Models (xAI) - Updated 2026-07-11 with Grok 4.5 (Jul 8, 2026 flagship)
+// Grok Models (xAI) - Re-verified 2026-07-26: Grok 4.5 is still the flagship (no 4.6/5 shipped)
 export const GROK_MODELS = {
   // Grok 4.5 (Jul 8, 2026) - CURRENT FLAGSHIP ("Opus-class")
   // 500K context (SMALLER than 4.3's 1M — fine for tools, mind huge inputs), $2/$6,
-  // configurable reasoning effort. EU API rollout was "mid-July" — 4.3 stays the fallback.
+  // configurable reasoning effort. EU API access landed Jul 17, 2026 — 4.3 kept as quota/region fallback.
   _4_5: "grok-4.5",                                      // Flagship: 500K ctx, $2/$6, reasoning.effort low|high
 
   // Grok 4.3 (Apr 30, 2026) - previous flagship, kept as FALLBACK
@@ -113,13 +118,17 @@ export const GROK_MODELS = {
 } as const;
 
 // Kimi Models (Moonshot AI via OpenRouter)
-// K2.7-Code released Jun 12, 2026 - coding-specialized (built on K2.6), +21.8% on Kimi Code Bench v2, lower token use, 262K ctx, multimodal, always-thinking
+// K3 released Jul 16, 2026 - 2.8T open-weight MoE, largest open model shipped; 1M ctx, native multimodal,
+//   long-horizon agentic coding (beats Opus 4.8 / GPT-5.5 on coding+agent benchmarks). $3/$15 per M.
+//   NOTE: 4x the price of K2.7-Code — quality-over-cost per repo strategy, but mind cheap/bulk call sites.
+// K2.7-Code released Jun 12, 2026 - coding-specialized (built on K2.6), 262K ctx, $0.75/$3.50 (fallback)
 // K2.6 released Apr 20, 2026 - 1T MoE, leads SWE-bench Pro for long-horizon coding (fallback)
 // K2.5 released Jan 27, 2026 - kept as legacy
 export const KIMI_MODELS = {
+  K3: "moonshotai/kimi-k3",                     // CURRENT (Jul 16, 2026): 2.8T MoE, 1M ctx, multimodal, $3/$15
   K2_THINKING: "moonshotai/kimi-k2-thinking",   // 1T MoE, 32B active - agentic reasoning (256k context)
-  K2_7_CODE: "moonshotai/kimi-k2.7-code",       // CURRENT (Jun 12, 2026): coding-specialized, +21.8% Code Bench v2, 262K ctx, $0.75/$3.50
-  K2_6: "moonshotai/kimi-k2.6",                 // Previous (Apr 2026): 1T MoE, SWE-Pro leader (fallback)
+  K2_7_CODE: "moonshotai/kimi-k2.7-code",       // Previous (Jun 12, 2026): coding-specialized, 262K ctx, $0.75/$3.50 (fallback)
+  K2_6: "moonshotai/kimi-k2.6",                 // Older (Apr 2026): 1T MoE, SWE-Pro leader (fallback)
   K2_5: "moonshotai/kimi-k2.5",                 // Legacy: multimodal + agent swarm
 } as const;
 
@@ -136,7 +145,8 @@ export const MINIMAX_MODELS = {
 // Qwen3 235B Thinking (July 2025) - Largest reasoning model available
 // Qwen3-Coder-Next (Feb 2026) - Agentic coding specialist, 80B/3B MoE, 262K context
 export const QWEN_MODELS = {
-  PLUS_3_6: "qwen/qwen3.6-plus",               // NEW (Apr 2026): general-purpose flagship, $0.325/$1.95
+  PLUS_3_7: "qwen/qwen3.7-plus",               // Jun 3, 2026: general-purpose flagship, 1M ctx, multimodal, $0.32/$1.28
+  PLUS_3_6: "qwen/qwen3.6-plus",               // Apr 2026: previous general-purpose flagship (legacy)
   CODER_NEXT: "qwen/qwen3-coder-next",         // 80B/3B MoE, 262K ctx, SWE-Bench >70%, $0.14/$0.80 (still PRIMARY coder — no 3.6-coder yet)
   CODER_PLUS: "qwen/qwen3-coder-plus",         // Code specialist (32K context)
   CODER: "qwen/qwen3-coder",                   // Legacy coder - 480B MoE, SWE-Bench 69.6%
@@ -195,8 +205,11 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
-// UPDATED Jul 11, 2026: GPT-5.6 tiers (sol/terra/luna — Jul 9) + Grok 4.5 (Jul 8 flagship)
-// Kimi K2.7-Code (Jun 12, 2026)
+// UPDATED Jul 26, 2026 (full provider audit):
+//   Kimi K2.7-Code -> K3 (Jul 16) · Gemini Flash 3.5 -> 3.6 + Flash-Lite 3.1 -> 3.5 (Jul 21)
+// Re-verified as still-current, NOT bumped: GPT-5.6 tiers (Jul 9), Grok 4.5 (Jul 8),
+//   Gemini 3.1 Pro (no 3.5 Pro shipped), DeepSeek V4 Pro (GA Jul 20), GLM-5.2, MiniMax M3,
+//   StepFun 3.7, ERNIE 4.5 VL, Qwen Coder-Next, Perplexity Sonar.
 export const CURRENT_MODELS = {
   openai: {
     default: OPENAI_MODELS.DEFAULT,       // gpt-5.6-sol - flagship, agentic/coding SOTA (Jul 2026)
@@ -225,7 +238,7 @@ export const CURRENT_MODELS = {
     reason: PERPLEXITY_MODELS.SONAR_REASONING, // sonar-reasoning-pro $2/$8 per M
   },
   openrouter: {
-    kimi: KIMI_MODELS.K2_7_CODE,           // K2.7-Code (Jun 2026): coding-specialized, built on K2.6
+    kimi: KIMI_MODELS.K3,                  // K3 (Jul 16, 2026): 2.8T MoE, 1M ctx, multimodal, agentic coding
     qwen: QWEN_MODELS.CODER_NEXT,          // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70% (no 3.6-coder yet)
     qwen_reason: QWEN_MODELS.MAX_THINKING, // 235B MoE thinking mode (HMMT 98%) — still best for reasoning
     minimax: MINIMAX_MODELS.M3,            // M3: 1M ctx, MSA sparse attention, agentic/coding
@@ -353,7 +366,7 @@ export const TOOL_DEFAULTS = {
     temperature: 0.3,                      // Lower for precise reasoning
   },
   kimi_thinking: {
-    model: KIMI_MODELS.K2_7_CODE,         // K2.7-Code (Jun 2026): coding-specialized, built on K2.6
+    model: KIMI_MODELS.K3,                // K3 (Jul 2026): 2.8T MoE, 1M ctx, long-horizon agentic reasoning
     maxTokens: 16000,
     temperature: 0.7,
   },
@@ -405,6 +418,8 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
 
   // Gemini
   "gemini-3.1-pro-preview": "gemini-3.1-pro",
+  "gemini-3.6-flash": "gemini-3.6-flash",
+  "gemini-3.5-flash-lite": "gemini-3.5-flash-lite",
   "gemini-3.5-flash": "gemini-3.5-flash",
   "gemini-3-flash-preview": "gemini-3-flash",
   "gemini-3.1-flash-lite": "gemini-3.1-flash-lite",
@@ -430,6 +445,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "sonar-reasoning-pro": "perplexity-reason",
 
   // Kimi (Moonshot)
+  "moonshotai/kimi-k3": "kimi-k3",
   "moonshotai/kimi-k2-thinking": "kimi-k2",
   "moonshotai/kimi-k2.7-code": "kimi-k2.7-code",
   "moonshotai/kimi-k2.6": "kimi-k2.6",
@@ -437,6 +453,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "moonshotai/kimi-k2.5-thinking": "kimi-k2.5",
 
   // Qwen (Alibaba)
+  "qwen/qwen3.7-plus": "qwen3.7-plus",
   "qwen/qwen3.6-plus": "qwen3.6-plus",
   "qwen/qwen3-coder-next": "qwen-coder-next",
   "qwen/qwen3-coder-plus": "qwen-coder",
@@ -471,7 +488,9 @@ export const MODEL_PRICING: Record<string, number> = {
 
   // Gemini
   "gemini-3.1-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
-  "gemini-3.5-flash": 0.00525,           // ($1.50 + $9) / 2 / 1000 (GA May 19, 2026)
+  "gemini-3.6-flash": 0.0045,            // ($1.50 + $7.50) / 2 / 1000 (GA Jul 21, 2026)
+  "gemini-3.5-flash-lite": 0.0014,       // ($0.30 + $2.50) / 2 / 1000 (Jul 21, 2026)
+  "gemini-3.5-flash": 0.00525,           // ($1.50 + $9) / 2 / 1000 (GA May 19, 2026 - fallback)
   "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000 (legacy)
   "gemini-3.1-flash-lite": 0.001,       // Cheapest/fastest in 3.1 series (Mar 2026)
 
@@ -497,6 +516,7 @@ export const MODEL_PRICING: Record<string, number> = {
   "sonar-reasoning-pro": 0.006,   // avoid - expensive reasoning tokens
 
   // OpenRouter models - Kimi
+  "moonshotai/kimi-k3": 0.009,           // ($3 + $15) / 2 / 1000 (Jul 16, 2026)
   "moonshotai/kimi-k2-thinking": 0.002,
   "moonshotai/kimi-k2.7-code": 0.002125, // ($0.75 + $3.50) / 2 / 1000 (Jun 12, 2026)
   "moonshotai/kimi-k2.6": 0.0027,      // ($0.74 + $4.65) / 2 / 1000 (Apr 2026)
@@ -504,7 +524,8 @@ export const MODEL_PRICING: Record<string, number> = {
   "moonshotai/kimi-k2.5-thinking": 0.003,
 
   // OpenRouter models - Qwen
-  "qwen/qwen3.6-plus": 0.001138,       // ($0.325 + $1.95) / 2 / 1000 (Apr 2026)
+  "qwen/qwen3.7-plus": 0.0008,         // ($0.32 + $1.28) / 2 / 1000 (Jun 3, 2026 - promo pricing)
+  "qwen/qwen3.6-plus": 0.001138,       // ($0.325 + $1.95) / 2 / 1000 (Apr 2026 - legacy)
   "qwen/qwen3-coder-next": 0.00047,    // ($0.14 + $0.80) / 2 / 1000 (verified via OpenRouter Apr 2026)
   "qwen/qwen3-coder-plus": 0.0005,
   "qwen/qwen3-coder": 0.0003,

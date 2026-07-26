@@ -70,14 +70,14 @@ function buildPanel(): Panelist[] {
   if (hasOpenRouterApiKey()) {
     panel.push({
       key: "kimi",
-      label: "Kimi K2.7-Code (SWE regressions)",
+      label: "Kimi K3 (SWE regressions)",
       call: (q) =>
         callOpenRouter(
           [
-            { role: "system", content: `You are Kimi K2.7-Code, an SWE-specialized reviewer. Hunt regressions and missed edge cases in diffs. ${FORMAT_INSTRUCTION}` },
+            { role: "system", content: `You are Kimi K3, an SWE-specialized reviewer. Hunt regressions and missed edge cases in diffs. ${FORMAT_INSTRUCTION}` },
             { role: "user", content: q },
           ],
-          OpenRouterModel.KIMI_K2_7_CODE,
+          OpenRouterModel.KIMI_K3,
           0.3,
           PANELIST_MAX_TOKENS,
         ),
@@ -100,14 +100,14 @@ function buildPanel(): Panelist[] {
   if (hasOpenAIApiKey()) {
     panel.push({
       key: "gpt",
-      label: "GPT-5.5 (intent & API-contract)",
+      label: "GPT-5.6 Sol (intent & API-contract)",
       call: (q) =>
         callOpenAI(
           [
             { role: "system", content: `You review diffs for intent mismatches and API-contract breaks (types, error paths, backward compatibility). ${FORMAT_INSTRUCTION}` },
             { role: "user", content: q },
           ],
-          OPENAI_MODELS.DEFAULT, // explicit: undefined falls back to INSTANT (gpt-5.4-mini), contradicting the GPT-5.5 label
+          OPENAI_MODELS.DEFAULT, // explicit: undefined falls back to INSTANT (cheapest tier), contradicting the flagship label
           0.3,
           PANELIST_MAX_TOKENS,
           "high",
@@ -120,7 +120,7 @@ function buildPanel(): Panelist[] {
 export const diffReviewTool = defineModelTool({
   name: "diff_review",
   description:
-    "Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K2.7-Code, DeepSeek V4 Pro, GPT-5.5) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in 'diff'.",
+    "Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K3, DeepSeek V4 Pro, GPT-5.6 Sol) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in 'diff'.",
   parameters: z.object({
     diff: z.string().describe("Unified diff to review (git diff output) — REQUIRED"),
     intent: z.string().optional().describe("What the change is SUPPOSED to do (enables intent-mismatch detection)"),

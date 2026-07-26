@@ -181,7 +181,7 @@ export async function getAllTools(
         kimiThinkingTool,
         kimiCodeTool, // SWE-focused code (Kimi K2.5 - 76.8% SWE-Bench)
         kimiDecomposeTool, // Task decomposition (Kimi K2.5 Agent Swarm)
-        kimiLongContextTool, // Long-context analysis (Kimi K2.5 - 256K)
+        kimiLongContextTool, // Long-context analysis (Kimi K3 - 1M)
         qwenReasonTool, // Heavy reasoning (Qwen3-Max-Thinking >1T params)
         minimaxCodeTool, // MiniMax M3 - 1M ctx, agentic/coding
         minimaxAgentTool, // MiniMax M3 - agentic workflows

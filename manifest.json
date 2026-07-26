@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "dxt_version": "1.1.1",
   "name": "tachibot-mcp",
-  "version": "2.27.0",
+  "version": "2.27.1",
   "description": "Multi-model AI orchestration platform with 65 tools across Perplexity, Grok, OpenAI GPT-5.6, Gemini, DeepSeek, GLM, Kimi, Qwen, MiniMax, and local models",
   "author": {
     "name": "Pawel Pawlowski",

@@ -56,7 +56,7 @@ export interface ToolsConfig {
   kimi_thinking: boolean;
   kimi_code: boolean;            // NEW: Kimi K2.5 (SWE-focused code, 76.8%)
   kimi_decompose: boolean;       // NEW: Kimi K2.5 (task decomposition)
-  kimi_long_context: boolean;    // NEW: Kimi K2.5 (256K context analysis)
+  kimi_long_context: boolean;    // Kimi K3 (1M context analysis)
   qwen_competitive: boolean;
   minimax_code: boolean;       // MiniMax M3 (1M ctx, MSA sparse attention, agentic/coding)
   minimax_agent: boolean;      // MiniMax M3 (agentic, multimodal, long-horizon)

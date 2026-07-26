@@ -5,6 +5,27 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.27.1] - 2026-07-26
+
+### Changed
+- **Kimi K2.7-Code → K3** (`moonshotai/kimi-k3`, released Jul 16 on OpenRouter, verified via WebSearch + grok_search against OpenRouter/Moonshot docs): 2.8T-parameter open-weight MoE — the largest open model shipped — built for long-horizon coding, reasoning, and agent workflows. 1M-token context (up from 262K), native multimodal, tool calls, structured outputs. Beats Claude Opus 4.8 and GPT-5.5 on coding and general-agent benchmarks. List price **$3/$15 per M (4x K2.7-Code's $0.75/$3.50)** — accepted per the repo's quality-over-cost model strategy. Now powers all Kimi tools — `kimi_thinking`, `kimi_code`, `kimi_decompose`, `kimi_long_context` (`openrouter-tools.ts`), the `kimi` juror (`jury-tool.ts`), and the Kimi seat on the `diff_review` panel. K2.7-Code kept as quota fallback via `MODEL_FALLBACKS` (K3 → K2.7-Code → K2.6 → K2-Thinking); the `kimi` substring already routes K3 to the 600s reasoning timeout (regression test extended).
+- **Gemini Flash 3.5 → 3.6** (`gemini-3.6-flash`, GA Jul 21): the new workhorse/search tier — 1M ctx, **$1.50/$7.50 (down from $9 output)**, ~17% fewer output tokens than 3.5 Flash. Powers `gemini_search` and the `"flash"` choice in the workflow tool-mapper. 3.5 Flash kept as the previous tier.
+- **Gemini Flash-Lite 3.1 → 3.5** (`gemini-3.5-flash-lite`, Jul 21, $0.30/$2.50) — catalog/pricing entry only; no tool calls this tier today.
+- **Qwen general-purpose constant 3.6-Plus → 3.7-Plus** (`qwen/qwen3.7-plus`, Jun 3, 1M ctx, multimodal, $0.32/$1.28) — catalog/pricing entry only; `QWEN_MODELS.PLUS_*` is not wired to any tool (the Qwen tools use `CODER_NEXT` and `MAX_THINKING`).
+- **`diff_review` panel label corrected** — the OpenAI seat was labelled "GPT-5.5" while already calling `OPENAI_MODELS.DEFAULT` (`gpt-5.6-sol`). Label and tool description now say GPT-5.6 Sol; no model change.
+
+### Notes
+Full provider audit run Jul 26, 2026 — every model in `model-constants.ts` checked against live provider docs/OpenRouter. Verified current, **no bump needed**:
+- **GPT-5.6** (sol/terra/luna, Jul 9) — no GPT-5.7. Only `gpt-realtime-2.1` (specialized voice) shipped since.
+- **Grok 4.5** (Jul 8) — no Grok 4.6/5; Grok 5 has no confirmed date. xAI's staged rollout completed (EU access Jul 17), so the `grok-4.3` fallback is now quota/region insurance rather than a rollout workaround.
+- **Gemini 3.1 Pro** stays the reasoning/judge default — Google shipped three models on Jul 21 (3.6 Flash, 3.5 Flash-Lite, 3.5 Flash Cyber) and **explicitly skipped 3.5 Pro**; it missed internal perf goals, with Gemini 4 pre-training already underway.
+- **DeepSeek V4 Pro/Flash** — V4 went GA Jul 20; `deepseek/deepseek-v4-pro` is unchanged and no V5/R2 is announced. DeepSeek's Jul 24 alias retirement only affects direct-API `deepseek-chat`/`deepseek-reasoner`, which this repo never calls (all DeepSeek traffic goes through OpenRouter).
+- **GLM-5.2** — current; GLM-5.5 is an unconfirmed August target with no published endpoint.
+- **MiniMax M3**, **StepFun Step 3.7 Flash**, **ERNIE 4.5 VL** — all still the newest available on OpenRouter (no ERNIE 5.x listing).
+- **Perplexity** `sonar` / `sonar-pro` / `sonar-reasoning-pro` — naming unchanged.
+- **Qwen coder** stays `qwen3-coder-next`; no `qwen4-coder` exists on OpenRouter. `qwen_reason`/`qwen_algo` deliberately stay on `qwen3-235b-a22b-thinking-2507` — Qwen3.7-Max is newer and agent-tuned, but publishes no thinking/reasoning mode, so swapping a dedicated reasoning model for it would risk a regression on the math/CP workloads those tools serve.
+- K3's weights were due under a Modified MIT license by Jul 27; the API is live regardless, so this bump does not depend on the weight drop.
+
 ## [2.23.3] - 2026-06-17
 
 ### Changed

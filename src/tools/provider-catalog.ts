@@ -161,7 +161,7 @@ export const SKILLS: { name: string; desc: string }[] = [
   { name: "decompose", desc: "Split into sub-problems, deep-dive each (depth-first)" },
   { name: "prompt", desc: "Recommends the right thinking technique" },
   { name: "algo", desc: "Algorithm analysis with 4 models (deepseek_algo lead)" },
-  { name: "lens", desc: "Long-context analysis via active retrieval (256K)" },
+  { name: "lens", desc: "Long-context analysis via active retrieval (1M)" },
   { name: "reflect", desc: "Grounded reflexion loop vs external evidence" },
   { name: "tot", desc: "Tree-of-Thought: branch, prune via jury, synthesize" },
   { name: "review", desc: "Multi-model diff review + Gemini judge verdict" },

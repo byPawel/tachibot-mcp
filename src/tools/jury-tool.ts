@@ -66,9 +66,9 @@ export const JUROR_REGISTRY: Record<string, {
     label: "Kimi (Step-by-Step)",
     role: "Think step-by-step. Decompose the problem. Find edge cases others miss.",
     call: async (q) => callOpenRouter([
-      { role: "system", content: `You are Kimi K2.7-Code. Think step-by-step. Decompose problems. Find edge cases. ${FORMAT_INSTRUCTION}` },
+      { role: "system", content: `You are Kimi K3. Think step-by-step. Decompose problems. Find edge cases. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.KIMI_K2_7_CODE, 0.4, JUROR_MAX_TOKENS, { top_p: 0.9 }, 240000),
+    ], OpenRouterModel.KIMI_K3, 0.4, JUROR_MAX_TOKENS, { top_p: 0.9 }, 240000),
   },
   perplexity: {
     label: "Perplexity (Research)",

@@ -3,9 +3,10 @@ import { getOpenRouterModelTimeout, getTimeoutConfig } from "../timeout-config.j
 describe("getOpenRouterModelTimeout", () => {
   const { openrouter, openrouterThinking } = getTimeoutConfig();
 
-  it("gives Kimi K2.x the extended thinking timeout (regression: kimi timeouts)", () => {
+  it("gives every Kimi generation the extended thinking timeout (regression: kimi timeouts)", () => {
     // Kimi IDs contain neither "thinking" nor "reasoning" — they must still
     // be classified as slow reasoning models, else they fall back to 180s.
+    expect(getOpenRouterModelTimeout("moonshotai/kimi-k3")).toBe(openrouterThinking);
     expect(getOpenRouterModelTimeout("moonshotai/kimi-k2.5")).toBe(openrouterThinking);
     expect(getOpenRouterModelTimeout("moonshotai/kimi-k2.6")).toBe(openrouterThinking);
     expect(getOpenRouterModelTimeout("moonshotai/kimi-k2.7-code")).toBe(openrouterThinking);

@@ -1,12 +1,12 @@
 ---
 name: lens
-description: Long-context analysis — examine a large document or codebase under a focused lens using active retrieval over Kimi's 256K window, surfacing insights, relations, and inconsistencies
+description: Long-context analysis — examine a large document or codebase under a focused lens using active retrieval over Kimi's 1M window, surfacing insights, relations, and inconsistencies
 user-invocable: true
 ---
 
 # Lens - Long-Context Analysis
 
-Deeply analyze a large document, codebase, or transcript that's too big to reason about by skimming. Uses ACTIVE RETRIEVAL (map → query → synthesize) over Kimi K2.6's 256K window instead of dumping everything in at once — which avoids the "lost in the middle" failure mode of naive long-context prompting.
+Deeply analyze a large document, codebase, or transcript that's too big to reason about by skimming. Uses ACTIVE RETRIEVAL (map → query → synthesize) over Kimi K3's 1M window instead of dumping everything in at once — which avoids the "lost in the middle" failure mode of naive long-context prompting.
 
 ## Usage
 ```
@@ -25,7 +25,7 @@ Deeply analyze a large document, codebase, or transcript that's too big to reaso
 
 | | `/lens` | `/decompose` | `gemini_analyze_text` |
 |---|---|---|---|
-| Input | Large existing content (≤256K) | A problem to split | A single argument/text |
+| Input | Large existing content (≤1M) | A problem to split | A single argument/text |
 | Strategy | Map → query sections → synthesize | Split into sub-problems | Rhetoric/bias dissection |
 | Use when | "Understand this big thing" | "Break this problem down" | "Analyze this claim" |
 

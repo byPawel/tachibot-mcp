@@ -271,7 +271,7 @@ qwq_reason({
 
 ### kimi_thinking
 
-Kimi K2.7-Code multimodal reasoning (always-thinking). Put your PROBLEM in the `problem` parameter.
+Kimi K3 multimodal reasoning (2.8T MoE, 1M context). Put your PROBLEM in the `problem` parameter.
 
 #### Parameters
 
@@ -296,7 +296,7 @@ kimi_thinking({
 
 ### kimi_decompose
 
-Structured task decomposition with Kimi K2.7-Code extended reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.
+Structured task decomposition with Kimi K3 extended reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.
 
 #### Parameters
 
@@ -544,7 +544,7 @@ spec_writer({
 
 ### kimi_code
 
-SWE-focused code generation/fixing with Kimi K2.7-Code (coding-specialized). Put your REQUEST in the `query` parameter.
+SWE-focused code generation/fixing with Kimi K3 (long-horizon agentic coding). Put your REQUEST in the `query` parameter.
 
 #### Parameters
 
@@ -937,7 +937,7 @@ jury({
 
 ### diff_review
 
-Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K2.7-Code, DeepSeek V4 Pro, GPT-5.5) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in `diff`.
+Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K3, DeepSeek V4 Pro, GPT-5.6 Sol) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in `diff`.
 
 #### Parameters
 
@@ -1168,7 +1168,7 @@ security_review({
 
 ### kimi_long_context
 
-Long-context analysis with Kimi K2.7-Code (262K context window). Put CONTENT in the `content` parameter.
+Long-context analysis with Kimi K3 (1M context window). Put CONTENT in the `content` parameter.
 
 #### Parameters
 
