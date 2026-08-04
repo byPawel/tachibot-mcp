@@ -71,7 +71,8 @@ export function getOpenRouterModelTimeout(modelId: string): number {
   if (
     id.includes('thinking') || id.includes('reasoning') ||
     id.includes('kimi') || id.includes('deepseek') || id.includes('glm') ||
-    id.includes('stepfun') || id.includes('ernie')
+    id.includes('stepfun') || id.includes('ernie') ||
+    id.includes('qwen3.8') || id.includes('qwen3.7-max')
   ) {
     return config.openrouterThinking;
   }

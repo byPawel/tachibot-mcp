@@ -4,7 +4,7 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.27.1-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.28.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-65_active-brightgreen.svg)](#-tool-ecosystem-65-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
@@ -29,6 +29,13 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 ---
 
 ## What's New
+
+### v2.28.0
+- **Qwen3.8 Max** (Aug 3, `qwen/qwen3.8-max`) — Alibaba's new flagship, GA the same day, now powers `qwen_algo`, `qwen_reason`, and the `qwen_reason` juror. **1M context (up from 262K)**, multimodal (text+image+video in), and the first Qwen exposing **configurable reasoning effort**. $2/$6 per M.
+- **Measured on a range-query algorithm problem**, 3.8 Max was the only one of five Qwen candidates to surface both the offline-vs-online tradeoff and the strict-inequality-with-duplicates edge case. The outgoing `qwen3-235b-a22b-thinking-2507` was correct but shallow; `qwen3.7-max` cost 1.6x for twice the wall time; `qwen3-max-thinking` was rejected outright — it returns zero reasoning tokens.
+- **Effort is pinned to `medium`, deliberately.** This model's *default* effort behaves like `high`: 302s and $0.09 on a single `qwen_algo` call. At `medium` the same call answers at equal depth in 18–48s for $0.006–0.018 — cheaper *and* 3.5x faster than the model it replaces, which took 169s and $0.036 for a shorter answer. `low` starts dropping alternatives and is not used.
+- **`reasoning_effort` pass-through for OpenRouter** — `callOpenRouter` now forwards the parameter; OpenRouter drops it for models that don't list it, so the quota fallback chain (3.8 Max → 3.7 Max → 235B Thinking) stays safe. Qwen3.8/3.7-Max also join the 600s extended-timeout bucket.
+- **`qwen_coder`, `qwen_competitive`, `testgen` stay on Qwen3-Coder-Next** — it is coding-specialized and ~16x cheaper ($0.12/$0.80); 3.8 Max is the reasoning tier, not the codegen tier.
 
 ### v2.27.1
 - **Kimi K3** (Jul 16, `moonshotai/kimi-k3`) now powers every Kimi tool, the `kimi` juror, and the Kimi seat on `diff_review`. 2.8T open-weight MoE — the largest open model shipped — with a **1M context (up from 262K)**, native multimodal input, and long-horizon agentic coding that beats Opus 4.8 and GPT-5.5 on coding/agent benchmarks. Note the price: **$3/$15 per M, 4x K2.7-Code** — K2.7-Code stays as the automatic fallback (K3 → K2.7-Code → K2.6).

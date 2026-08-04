@@ -59,7 +59,7 @@ The single-model reasoning tools (`grok_reason`, `deepseek_reason`, `glm_reason`
 
 Model-specific extras: `grok_reason` has `useHeavy: boolean` (Grok 4 Heavy, $3/$15, for hard problems); `kimi_thinking` has `maxSteps: integer (1-10, default 3)`.
 
-**Choosing among the reasoning tools** — see CLAUDE.md's Model Configuration table for current model IDs/pricing. As a rule of thumb: `deepseek_reason` for open-weight frontier math/reasoning, `qwen_reason` for the heaviest math (HMMT-grade), `qwq_reason` when you want 4-perspective debate instead of a single answer, `kimi_thinking`/`glm_reason` for agentic/tool-use planning, `stepfun_reason` for cheaper-but-strong AIME/SWE reasoning, `ernie_reason` for broad-knowledge/arena-style answers.
+**Choosing among the reasoning tools** — see CLAUDE.md's Model Configuration table for current model IDs/pricing. As a rule of thumb: `deepseek_reason` for open-weight frontier math/reasoning, `qwen_reason` for the heaviest math (Qwen3.8 Max, 1M context), `qwq_reason` when you want 4-perspective debate instead of a single answer, `kimi_thinking`/`glm_reason` for agentic/tool-use planning, `stepfun_reason` for cheaper-but-strong AIME/SWE reasoning, `ernie_reason` for broad-knowledge/arena-style answers.
 
 ---
 

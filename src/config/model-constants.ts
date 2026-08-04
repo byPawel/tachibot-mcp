@@ -149,6 +149,8 @@ export const MINIMAX_MODELS = {
 // Qwen3 235B Thinking (July 2025) - Largest reasoning model available
 // Qwen3-Coder-Next (Feb 2026) - Agentic coding specialist, 80B/3B MoE, 262K context
 export const QWEN_MODELS = {
+  MAX_3_8: "qwen/qwen3.8-max",                 // Aug 3, 2026: CURRENT flagship reasoning model — 1M ctx, multimodal (text+image+video), reasoning_effort, $2/$6
+  MAX_3_7: "qwen/qwen3.7-max",                 // May 21, 2026: previous flagship, 1M ctx, agent-centric, $1.475/$4.425 (fallback)
   PLUS_3_7: "qwen/qwen3.7-plus",               // Jun 3, 2026: general-purpose flagship, 1M ctx, multimodal, $0.32/$1.28
   PLUS_3_6: "qwen/qwen3.6-plus",               // Apr 2026: previous general-purpose flagship (legacy)
   CODER_NEXT: "qwen/qwen3-coder-next",         // 80B/3B MoE, 262K ctx, SWE-Bench >70%, $0.14/$0.80 (still PRIMARY coder — no 3.6-coder yet)
@@ -244,7 +246,7 @@ export const CURRENT_MODELS = {
   openrouter: {
     kimi: KIMI_MODELS.K3,                  // K3 (Jul 16, 2026): 2.8T MoE, 1M ctx, multimodal, agentic coding
     qwen: QWEN_MODELS.CODER_NEXT,          // Qwen3-Coder-Next: 80B/3B MoE, 262K ctx, SWE >70% (no 3.6-coder yet)
-    qwen_reason: QWEN_MODELS.MAX_THINKING, // 235B MoE thinking mode (HMMT 98%) — still best for reasoning
+    qwen_reason: QWEN_MODELS.MAX_3_8,      // Qwen3.8 Max (Aug 3, 2026): flagship reasoning, 1M ctx, high reasoning effort
     minimax: MINIMAX_MODELS.M3,            // M3: 1M ctx, MSA sparse attention, agentic/coding
   }
 } as const;
@@ -360,13 +362,13 @@ export const TOOL_DEFAULTS = {
     temperature: 0.5,
   },
   qwen_algo: {
-    model: QWEN_MODELS.MAX_THINKING,      // 235B-Thinking (LiveCodeBench 91.4, HMMT 98%)
-    maxTokens: 8000,
+    model: QWEN_MODELS.MAX_3_8,           // Qwen3.8 Max at reasoning_effort "medium" (default effort ≈ high ≈ 5min)
+    maxTokens: 12000,                     // Raised from 8000 — headroom for the visible answer
     temperature: 0.2,
   },
   qwen_reason: {
-    model: QWEN_MODELS.MAX_THINKING,      // 235B-Thinking, HMMT 98%
-    maxTokens: 8000,
+    model: QWEN_MODELS.MAX_3_8,           // Qwen3.8 Max at reasoning_effort "medium" (default effort ≈ high ≈ 5min)
+    maxTokens: 12000,                     // Raised from 8000 — headroom for the visible answer
     temperature: 0.3,                      // Lower for precise reasoning
   },
   kimi_thinking: {

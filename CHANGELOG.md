@@ -5,6 +5,27 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.28.0] - 2026-08-03
+
+### Added
+- **Qwen3.8 Max** (`qwen/qwen3.8-max`) registered in `OpenRouterModel` and `QWEN_MODELS`. Alibaba's flagship 3.8-series model, general-availability on OpenRouter as of today (Aug 3, 2026). 1M context (up from the 262K of the model it replaces), multimodal input (text+image+video), 131K max completion, $2/$6 per M with cache reads at $0.25/M. It is the **first Qwen model exposing `reasoning_effort`**.
+- **`reasoning_effort` option on `callOpenRouter`** (`"low" | "medium" | "high"`) — forwarded to the OpenRouter request body only when set. OpenRouter drops the parameter for models that don't list it in `supported_parameters`, so the quota-fallback chain stays safe.
+- **`qwen/qwen3.7-max`** registered as the intermediate fallback tier.
+
+### Changed
+- **`qwen_algo` and `qwen_reason` move to Qwen3.8 Max** (from `qwen/qwen3-235b-a22b-thinking-2507`). Verified live against a range-query algorithm problem (offline BIT / persistent segment tree): 3.8 Max produced the most complete answer of the five Qwen candidates tested — the only one to flag both the offline-vs-online tradeoff and the strict-inequality-with-duplicates edge case. The outgoing 235B Thinking model was correct but shallow; `qwen3.7-max` cost 1.6x for twice the wall time. `qwen/qwen3-max-thinking` was rejected outright: it returns 0 reasoning tokens, so its fast/cheap result is not a thinking pass.
+- **`reasoning_effort` is pinned to `"medium"` on every Qwen3.8 call site — never left unset.** Measured on one `qwen_algo` call with the full tool prompt: default effort 302s / 14991 completion tokens / $0.091, `high` 353s / 17521 tokens / $0.106, `medium` 48s / $0.018, `low` 38s / $0.014. On the quality probe, `medium` (18s, $0.006) hit both depth markers that `high` did, while `low` dropped the online-alternative discussion. For reference the outgoing 235B model took 169s and $0.036 on the same prompt for a *shorter* answer — so `medium` is faster, cheaper, and deeper than what it replaces, while the default would have been a 6x latency and 2.5x cost regression.
+- **Output budget for both tools raised 8000 → 12000 tokens** — headroom for the visible answer. Note that reasoning tokens are billed as completion tokens but are *not* charged against `max_tokens` by this provider (a 12000-cap call returned 17521 completion tokens).
+- **`qwen_reason` juror** (`jury-tool.ts`) also moves to Qwen3.8 Max, likewise pinned to `"medium"` — the panel waits on its slowest juror, and default effort would have parked it at ~5 minutes.
+- **`MODEL_FALLBACKS`**: `qwen3.8-max` → `qwen3.7-max` → `qwen3-235b-a22b-thinking-2507`.
+- **`getOpenRouterModelTimeout()`** now routes `qwen3.8` and `qwen3.7-max` to the 600s extended bucket — neither ID contains `thinking`/`reasoning`, so they would otherwise have inherited the 180s default despite being reasoning models.
+- **`TOOL_DEFAULTS.qwen_algo` / `.qwen_reason`** and `CURRENT_MODELS.openrouter.qwen_reason` updated to match the wired values.
+- Tool description and system prompt for `qwen_reason` renamed from "Qwen3-Max-Thinking (>1T params, 98% HMMT)" to Qwen3.8 Max; golden tool-contract snapshot regenerated (this description is the only contract change — tool count stays 65).
+
+### Unchanged
+- **`qwen_coder`, `qwen_competitive`, and `testgen` stay on `qwen3-coder-next`** — it is coding-specialized and ~16x cheaper ($0.12/$0.80 vs $2/$6). Qwen3.8 Max is the reasoning tier, not the codegen tier.
+- `deepseek_algo` (DeepSeek V4 Pro) remains the primary recommendation for algorithmic review; `qwen_algo` is now a stronger runner-up.
+
 ## [2.27.1] - 2026-07-26
 
 ### Changed

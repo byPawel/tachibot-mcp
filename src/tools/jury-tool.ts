@@ -58,9 +58,12 @@ export const JUROR_REGISTRY: Record<string, {
     label: "Qwen Reason (Mathematical)",
     role: "Apply rigorous mathematical and formal reasoning.",
     call: async (q) => callOpenRouter([
-      { role: "system", content: `You are Qwen3-Max-Thinking, a flagship reasoning model. Apply rigorous formal reasoning. ${FORMAT_INSTRUCTION}` },
+      { role: "system", content: `You are Qwen3.8-Max, Alibaba's flagship reasoning model. Apply rigorous formal reasoning. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.QWEN3_MAX_THINKING, 0.3, JUROR_MAX_TOKENS),
+      // Effort MUST be set explicitly: Qwen3.8-Max's default behaves like "high"
+      // (~5 min/call), and the panel waits on its slowest juror. "medium" answers
+      // at the same depth in well under a minute.
+    ], OpenRouterModel.QWEN3_8_MAX, 0.3, JUROR_MAX_TOKENS, { reasoning_effort: "medium" }),
   },
   kimi: {
     label: "Kimi (Step-by-Step)",

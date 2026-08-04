@@ -222,7 +222,7 @@ openai_reason({
 
 ### qwen_reason
 
-Heavy mathematical reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT). Put your PROBLEM in the `problem` parameter.
+Heavy mathematical reasoning with Qwen3.8-Max (flagship Qwen reasoning model, 1M context). Put your PROBLEM in the `problem` parameter.
 
 #### Parameters
 

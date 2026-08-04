@@ -28,6 +28,8 @@ export enum OpenRouterModel {
   QWEN3_30B = "qwen/qwen3-30b-a3b-instruct-2507",        // 30B MoE model
   QWEN3_235B_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // 235B thinking model
   QWQ_32B = "qwen/qwq-32b",                              // Deep reasoning - CodeElo 1261
+  QWEN3_8_MAX = "qwen/qwen3.8-max",                      // CURRENT (Aug 3, 2026): flagship 3.8 reasoning, 1M ctx, multimodal, reasoning_effort, $2/$6 - PRIMARY for algo/reason
+  QWEN3_7_MAX = "qwen/qwen3.7-max",                      // Previous flagship (May 21, 2026): 1M ctx, agent-centric, $1.475/$4.425 (fallback)
   QWEN3_MAX_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // NOTE: Same as QWEN3_235B_THINKING — alias kept for compat
 
   // Moonshot AI models (Kimi)
@@ -65,6 +67,8 @@ export enum OpenRouterModel {
 const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.QWEN3_CODER_NEXT]: OpenRouterModel.QWEN3_CODER, // Fall back to 480B if Coder-Next fails
   [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
+  [OpenRouterModel.QWEN3_8_MAX]: OpenRouterModel.QWEN3_7_MAX,    // Fall back to the 3.7 flagship if 3.8 Max is quota-blocked
+  [OpenRouterModel.QWEN3_7_MAX]: OpenRouterModel.QWEN3_MAX_THINKING, // Then to the open-weight 235B thinking model
   [OpenRouterModel.KIMI_K3]: OpenRouterModel.KIMI_K2_7_CODE,     // Fall back to K2.7-Code if K3 fails (also 4x cheaper)
   [OpenRouterModel.KIMI_K2_7_CODE]: OpenRouterModel.KIMI_K2_6,   // Fall back to K2.6 if K2.7-Code fails
   [OpenRouterModel.KIMI_K2_6]: OpenRouterModel.KIMI_K2_THINKING,  // Fall back to k2-thinking if K2.6 fails (k2.5 retired from OpenRouter)
@@ -84,6 +88,9 @@ interface OpenRouterOptions {
   top_k?: number;           // Top-k sampling
   presence_penalty?: number; // Reduce repetition (-2 to 2)
   frequency_penalty?: number; // Reduce word frequency (-2 to 2)
+  // Reasoning depth. Only models listing `reasoning_effort` honour it (Qwen3.8-Max today);
+  // OpenRouter drops it for models that don't, so quota fallbacks stay safe.
+  reasoning_effort?: "low" | "medium" | "high";
 }
 
 /**
@@ -123,6 +130,7 @@ export async function callOpenRouter(
       ...(options.top_k !== undefined && { top_k: options.top_k }),
       ...(options.presence_penalty !== undefined && { presence_penalty: options.presence_penalty }),
       ...(options.frequency_penalty !== undefined && { frequency_penalty: options.frequency_penalty }),
+      ...(options.reasoning_effort !== undefined && { reasoning_effort: options.reasoning_effort }),
     };
 
     const response = await fetch(OPENROUTER_API_URL, {
@@ -584,7 +592,10 @@ ${FORMAT_INSTRUCTION}`;
     // Use heartbeat to prevent MCP timeout
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.QWEN3_MAX_THINKING, 0.25, 8000),
+      // Qwen3.8-Max. Effort is set EXPLICITLY: this model's default effort behaves like
+      // "high" — measured 302s/$0.09 on a single algo call, vs 18-48s/$0.006-0.018 at
+      // "medium" for answers of equal depth. Never leave it unset.
+      () => callOpenRouter(messages, OpenRouterModel.QWEN3_8_MAX, 0.25, 12000, { reasoning_effort: "medium" }),
       reportFn
     );
   }
@@ -1031,7 +1042,7 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const qwenReasonTool = defineModelTool({
   name: "qwen_reason",
-  description: "Heavy mathematical reasoning with Qwen3-Max-Thinking (>1T params, 98% HMMT). Put your PROBLEM in the 'problem' parameter.",
+  description: "Heavy mathematical reasoning with Qwen3.8-Max (flagship Qwen reasoning model, 1M context). Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     ...reasoningContextField,
@@ -1061,7 +1072,7 @@ export const qwenReasonTool = defineModelTool({
     const messages = [
       {
         role: "system",
-        content: `You are Qwen3-Max-Thinking, a flagship reasoning model with >1T parameters.
+        content: `You are Qwen3.8-Max, Alibaba's flagship reasoning model.
 ${approachPrompts[args.approach || 'mathematical']}.
 Show your complete reasoning process.
 ${args.context ? `Context: ${args.context}` : ''}
@@ -1075,7 +1086,8 @@ ${FORMAT_INSTRUCTION}`
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.QWEN3_MAX_THINKING, 0.3, 8000),
+      // Effort set explicitly — see the note in qwen_algo: unset behaves like "high" (~5min).
+      () => callOpenRouter(messages, OpenRouterModel.QWEN3_8_MAX, 0.3, 12000, { reasoning_effort: "medium" }),
       reportFn
     );
   }
