@@ -121,20 +121,36 @@ function isPartialResponsesAPI(data: unknown): data is PartialResponsesAPI {
   return Array.isArray(obj.output);
 }
 
-// GPT-5.4 (Mar 2026) - Most capable, coding, agentic, professional
-// GPT-5.3-Codex (Feb 2026) - Agentic coding specialist
-// PRO: gpt-5.4-pro - Expert programming/science (88.4% GPQA, $21/$168, 400K)
+/**
+ * Pull the human-readable message out of an OpenAI JSON error body so the
+ * per-attempt log stays one line instead of an embedded JSON blob.
+ * Falls back to the raw (truncated) body when it isn't the expected shape.
+ */
+function extractApiErrorMessage(body: string): string {
+  try {
+    const parsed = JSON.parse(body);
+    const message = parsed?.error?.message;
+    if (typeof message === 'string' && message.length > 0) return message;
+  } catch {
+    // Not JSON — fall through to the raw body.
+  }
+  const flat = body.replace(/\s+/g, ' ').trim();
+  return flat.length > 200 ? `${flat.slice(0, 200)}…` : flat;
+}
+
+// GPT-5.6 (Jul 2026) - sol / terra / luna tiers; see OPENAI_MODELS in
+// src/config/model-constants.ts for the authoritative tier list and pricing.
 
 // Type alias for model strings
 export type OpenAIModel = string;
 
 // Re-export for backward compatibility
-// "Thinking" mode = gpt-5.4 with reasoning.effort="high"/"xhigh"
+// "Thinking" mode = the flagship tier with reasoning.effort="high"/"xhigh"
 export const OpenAIModel5 = {
-  DEFAULT: OPENAI_MODELS.DEFAULT,     // gpt-5.4 (use with reasoning.effort)
-  THINKING: OPENAI_MODELS.DEFAULT,    // gpt-5.4 + high effort = "thinking"
-  PRO: OPENAI_MODELS.PRO,             // gpt-5.4-pro (expert mode)
-  INSTANT: OPENAI_MODELS.DEFAULT,     // gpt-5.4 + low effort = fast
+  DEFAULT: OPENAI_MODELS.DEFAULT,     // gpt-5.6-sol (use with reasoning.effort)
+  THINKING: OPENAI_MODELS.DEFAULT,    // gpt-5.6-sol + high effort = "thinking"
+  PRO: OPENAI_MODELS.PRO,             // gpt-5.6-sol + xhigh effort (no separate pro model in 5.6)
+  INSTANT: OPENAI_MODELS.DEFAULT,     // gpt-5.6-sol + low effort = fast
   // Legacy aliases
   FULL: OPENAI_MODELS.DEFAULT,
   CODEX_MINI: OPENAI_MODELS.DEFAULT,
@@ -197,13 +213,18 @@ export async function callOpenAI(
     "gpt-5.6-sol": ["gpt-5.6-terra", "gpt-5.5"],
     "gpt-5.6-terra": ["gpt-5.5"],
     "gpt-5.6-luna": ["gpt-5.6-terra"],
-    "gpt-5.4": [],           // No fallback - test actual gpt-5.4
-    "gpt-5.4-mini": ["gpt-5.4"],  // Mini falls back to flagship
-    "gpt-5.4-pro": []        // No fallback - test actual gpt-5.4-pro
+    // Legacy 5.4 names (retired) — route to the equivalent current tier so old
+    // callers/configs degrade to a live model instead of 404ing on a dead one.
+    "gpt-5.4": ["gpt-5.6-terra", "gpt-5.5"],
+    "gpt-5.4-mini": ["gpt-5.6-luna", "gpt-5.6-terra"],
+    "gpt-5.4-pro": ["gpt-5.6-sol", "gpt-5.6-terra"]
   };
 
   const modelsToTry = [model, ...(modelFallbacks[model] || [])];
   console.error(`🔍 TRACE: Models to try: ${modelsToTry.join(', ')}`);
+  // Every attempt is recorded — reporting only the LAST one hides why the
+  // requested model was skipped (e.g. sol 403-gated, then terra/5.5 out of quota).
+  const attemptErrors: string[] = [];
   let lastError: string = '';
 
   for (const currentModel of modelsToTry) {
@@ -264,6 +285,7 @@ export async function callOpenAI(
       if (!response.ok) {
         const error = await response.text();
         lastError = `${currentModel}: ${response.statusText} - ${error}`;
+        attemptErrors.push(`${currentModel} → ${response.status} ${response.statusText}: ${extractApiErrorMessage(error)}`);
         console.error(`🔍 TRACE: ${currentModel} failed - Status: ${response.status}, Error: ${error}`);
 
         // Check if it's a model not found / not-yet-unlocked error
@@ -335,12 +357,16 @@ export async function callOpenAI(
         lastError = `${currentModel}: ${error instanceof Error ? error.message : String(error)}`;
         console.error(`🔍 TRACE: ${currentModel} EXCEPTION - ${lastError}`);
       }
+      attemptErrors.push(lastError);
       continue; // Try next model
     }
   }
 
   console.error(`🔍 TRACE: ALL MODELS FAILED - Last error: ${lastError}`);
-  return `[GPT-5 model "${model}" not available. Error: ${lastError}]`;
+  const attemptLog = attemptErrors.length
+    ? attemptErrors.map((e) => `  - ${e}`).join('\n')
+    : `  - ${lastError}`;
+  return `[OpenAI request failed. Requested "${model}"; tried ${modelsToTry.join(' → ')}.\n${attemptLog}]`;
 }
 
 
@@ -487,9 +513,9 @@ export const openAIBrainstormTool = defineModelTool({
     constraints: z.string().optional().describe("Technical constraints: language, framework, performance requirements, team size"),
     ...filesField,
     quantity: z.number().optional().describe("Number of approaches to generate (default: 5)"),
-    model: z.enum(["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-pro"])
+    model: z.enum(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
       .optional()
-      .describe("Model to use - gpt-5.4 (default), gpt-5.4-mini (coding/fast), gpt-5.4-pro (expert)"),
+      .describe("Model to use - gpt-5.6-sol (default, flagship), gpt-5.6-terra (balanced), gpt-5.6-luna (fast/cheap)"),
     reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh"])
       .optional()
       .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh"),

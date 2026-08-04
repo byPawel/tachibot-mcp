@@ -89,10 +89,11 @@ const nebulaTheme: Theme = {
 
   modelBadges: {
     // OpenAI - Emerald green (brand color)
-    openai: { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
-    'gpt-5.4': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
-    'gpt-5.4-mini': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4-mini ' },
-    'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.4-pro ' },
+    openai: { bg: 'bgGreen', fg: 'black', label: ' openai ' },
+    'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.6-sol ' },
+    'gpt-5.6-terra': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-terra ' },
+    'gpt-5.6-luna': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-luna ' },
+    'gpt-5.5': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.5 ' },
 
     // Gemini - Google blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
@@ -189,10 +190,11 @@ const cyberpunkTheme: Theme = {
 
   modelBadges: {
     // OpenAI - Electric green
-    openai: { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4 ' },
-    'gpt-5.4': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4 ' },
-    'gpt-5.4-mini': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4-MINI ' },
-    'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.4-PRO ' },
+    openai: { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ OPENAI ' },
+    'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-SOL ' },
+    'gpt-5.6-terra': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-TERRA ' },
+    'gpt-5.6-luna': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-LUNA ' },
+    'gpt-5.5': { bg: 'bgGreen', fg: 'black', label: ' ⚡ GPT-5.5 ' },
 
     // Gemini - Electric blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI ' },
@@ -289,10 +291,11 @@ const minimalTheme: Theme = {
 
   modelBadges: {
     // All badges are simple, dark bg with white text
-    openai: { bg: 'bgBlack', fg: 'green', label: ' gpt-5.4 ' },
-    'gpt-5.4': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.4 ' },
-    'gpt-5.4-mini': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.4-mini ' },
-    'gpt-5.4-pro': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-5.4-pro ' },
+    openai: { bg: 'bgBlack', fg: 'green', label: ' openai ' },
+    'gpt-5.6-sol': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-5.6-sol ' },
+    'gpt-5.6-terra': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.6-terra ' },
+    'gpt-5.6-luna': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.6-luna ' },
+    'gpt-5.5': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.5 ' },
 
     gemini: { bg: 'bgBlack', fg: 'blue', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlack', fg: 'blue', label: ' gemini-3 ' },
@@ -382,10 +385,11 @@ const oceanTheme: Theme = {
   description: 'Cool blues and teals - calm and professional',
 
   modelBadges: {
-    openai: { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
-    'gpt-5.4': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4 ' },
-    'gpt-5.4-mini': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.4-mini ' },
-    'gpt-5.4-pro': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.4-pro ' },
+    openai: { bg: 'bgGreen', fg: 'black', label: ' openai ' },
+    'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.6-sol ' },
+    'gpt-5.6-terra': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-terra ' },
+    'gpt-5.6-luna': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-luna ' },
+    'gpt-5.5': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.5 ' },
 
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3 ' },
