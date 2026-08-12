@@ -404,7 +404,7 @@ export const gpt5ReasonTool = defineModelTool({
     const messages = [
       {
         role: "system",
-        content: `You are GPT-5, the most advanced reasoning model.\n${modePrompts[args.mode as keyof typeof modePrompts || 'analytical']}.\nProvide step-by-step reasoning with clear explanations.\n${args.context ? `Context: ${args.context}` : ''}\n${FORMAT_INSTRUCTION}`
+        content: `You are GPT-5, the most advanced reasoning model.\n${modePrompts[args.mode as keyof typeof modePrompts] || modePrompts.analytical}.\nProvide step-by-step reasoning with clear explanations.\n${args.context ? `Context: ${args.context}` : ''}\n${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -442,7 +442,7 @@ export const gpt5MiniReasonTool = defineModelTool({
     const messages = [
       {
         role: "system",
-        content: `You are GPT-5-mini, optimized for efficient reasoning.\n${modePrompts[args.mode as keyof typeof modePrompts || 'analytical']}.\nProvide clear, step-by-step reasoning.\n${args.context ? `Context: ${args.context}` : ''}\n${FORMAT_INSTRUCTION}`
+        content: `You are GPT-5-mini, optimized for efficient reasoning.\n${modePrompts[args.mode as keyof typeof modePrompts] || modePrompts.analytical}.\nProvide clear, step-by-step reasoning.\n${args.context ? `Context: ${args.context}` : ''}\n${FORMAT_INSTRUCTION}`
       },
       {
         role: "user",
@@ -483,7 +483,7 @@ export const openaiGpt5ReasonTool = defineModelTool({
       {
         role: "system",
         content: `You are an expert reasoner using advanced analytical capabilities.
-${modePrompts[args.mode as keyof typeof modePrompts || 'analytical']}.
+${modePrompts[args.mode as keyof typeof modePrompts] || modePrompts.analytical}.
 Provide step-by-step reasoning with clear explanations.
 ${args.context ? `Context: ${args.context}` : ''}
 ${FORMAT_INSTRUCTION}`
@@ -678,8 +678,8 @@ export const openaiExplainTool = defineModelTool({
       {
         role: "system",
         content: `You are an expert educator.
-${levelPrompts[args.level as keyof typeof levelPrompts || 'intermediate']}.
-${stylePrompts[args.style as keyof typeof stylePrompts || 'simple']}.
+${levelPrompts[args.level as keyof typeof levelPrompts] || levelPrompts.intermediate}.
+${stylePrompts[args.style as keyof typeof stylePrompts] || stylePrompts.simple}.
 Make the explanation clear, engaging, and memorable.
 ${FORMAT_INSTRUCTION}`
       },
