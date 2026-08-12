@@ -1,10 +1,11 @@
 import { ProfileConfig } from './types.js';
 
 export const minimalProfile: ProfileConfig = {
-  description: "Minimal essential tools for basic tasks (13 tools)",
+  description: "Minimal essential tools for basic tasks (14 tools)",
   tools: {
     think: true,
     focus: true,
+    continue_focus: true,
     tachi: true,
     doctor: true,
     nextThought: true,

@@ -12,6 +12,7 @@ export interface ToolsConfig {
   // Core reasoning tools
   think: boolean;
   focus: boolean;
+  continue_focus: boolean;  // Resumes a focus session — tracks `focus` in every profile
   tachi: boolean;
   doctor: boolean;         // Setup diagnostic — zero-cost, no API key
   nextThought: boolean;

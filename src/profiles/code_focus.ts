@@ -1,10 +1,11 @@
 import { ProfileConfig } from './types.js';
 
 export const codeFocusProfile: ProfileConfig = {
-  description: "Code-heavy work with debugging and analysis (42 tools)",
+  description: "Code-heavy work with debugging and analysis (43 tools)",
   tools: {
     think: true,
     focus: true,
+    continue_focus: true,
     tachi: true,
     doctor: true,
     nextThought: true,
