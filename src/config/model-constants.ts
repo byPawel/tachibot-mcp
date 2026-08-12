@@ -48,13 +48,17 @@ export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
 } as const;
 
 // OpenAI Reasoning Effort Levels (for models that support it)
-// Use with gpt-5.5: none=fast, low/medium=balanced, high/xhigh="thinking" mode
+// All three GPT-5.6 tiers (sol/terra/luna) accept the full range; medium is the API default.
 export const OPENAI_REASONING = {
   NONE: "none",     // No extra reasoning (fastest, allows temperature)
-  LOW: "low",       // Light reasoning
-  MEDIUM: "medium", // Balanced reasoning (default)
+  LOW: "low",       // Light reasoning — right for grounded web-search lookups
+  MEDIUM: "medium", // Balanced reasoning (API default)
   HIGH: "high",     // Strong reasoning ("thinking" mode)
-  XHIGH: "xhigh",   // Maximum reasoning (most thorough, slowest)
+  XHIGH: "xhigh",   // Very thorough
+  MAX: "max",       // Ceiling (verified Aug 12, 2026 against OpenAI model docs — this tier
+                    // was missing here, so nothing in the codebase could request it and the
+                    // "premium" path topped out one level below what sol actually offers).
+                    // Reserve for hardest quality-first tasks; compare against xhigh first.
 } as const;
 
 
@@ -228,9 +232,11 @@ export const CURRENT_MODELS = {
     brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (sol + effort=medium)
     code: OPENAI_MODELS.TERRA,            // Code tasks (gpt-5.6-terra - 5.5-level at $2/$12)
     explain: OPENAI_MODELS.LUNA,          // Explanations (gpt-5.6-luna - $0.20/$1.20, fast)
-    search: OPENAI_MODELS.DEFAULT,        // Web search (sol + web_search tool)
-    // Premium: the 5.5-pro tier ($30/$180) is gone — sol + effort=xhigh replaces it at $5/$30
-    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.6-sol - crank reasoning effort)
+    search: OPENAI_MODELS.TERRA,          // Web search: $10/1k call fee is flat across tiers,
+                                          // so terra ($2/$12) does grounded lookup at 2.5x less
+                                          // token cost than sol. All 5.6 tiers support web_search.
+    // Premium: the 5.5-pro tier ($30/$180) is gone — sol + effort=max replaces it at $5/$30
+    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.6-sol + reasoning.effort=max)
   },
   grok: {
     reason: GROK_MODELS._4_5,            // grok-4.5 (Jul 2026 flagship, high reasoning effort)

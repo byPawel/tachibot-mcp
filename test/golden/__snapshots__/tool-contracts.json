@@ -1572,13 +1572,14 @@
           "type": "number"
         },
         "reasoning_effort": {
-          "description": "Reasoning effort level - must be one of: none, low, medium, high, xhigh",
+          "description": "Reasoning effort level - must be one of: none, low, medium, high, xhigh, max",
           "enum": [
             "none",
             "low",
             "medium",
             "high",
-            "xhigh"
+            "xhigh",
+            "max"
           ],
           "type": "string"
         }

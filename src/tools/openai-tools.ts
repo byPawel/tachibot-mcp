@@ -265,8 +265,11 @@ export async function callOpenAI(
 
       console.error(`🔍 TRACE: Using ${isGPT5 ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${currentModel}`);
 
-      // GPT-5.4 with high reasoning effort can take 2+ minutes
-      const timeoutMs = (reasoningEffort === 'high' || reasoningEffort === 'xhigh') ? 180000 : 90000;
+      // High reasoning effort can take 2+ minutes; "max" is the slowest tier of all, so it
+      // gets the long timeout too — omitting it here would abort max-effort calls at 90s.
+      const timeoutMs = (reasoningEffort === 'high' || reasoningEffort === 'xhigh' || reasoningEffort === 'max')
+        ? 180000
+        : 90000;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -491,10 +494,14 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    // Use heartbeat to prevent MCP timeout during reasoning
+    // Use heartbeat to prevent MCP timeout during reasoning.
+    // Effort is xhigh, not high: this is the dedicated deep-reasoning tool and sol supports
+    // none|low|medium|high|xhigh|max. "max" is deliberately NOT the default here — OpenAI
+    // recommends reserving it for the hardest quality-first work and comparing it against
+    // xhigh first, and it costs latency on every call. Both land in the 180s timeout branch.
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 8000, "high"),
+      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 8000, OPENAI_REASONING.XHIGH),
       reportFn
     );
   }
@@ -516,9 +523,9 @@ export const openAIBrainstormTool = defineModelTool({
     model: z.enum(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
       .optional()
       .describe("Model to use - gpt-5.6-sol (default, flagship), gpt-5.6-terra (balanced), gpt-5.6-luna (fast/cheap)"),
-    reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh"])
+    reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh", "max"])
       .optional()
-      .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh"),
+      .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh, max"),
     max_tokens: z.number().optional().describe("Maximum tokens for response")
   }),
   execute: async (args: { problem: string; constraints?: string; files?: string[]; quantity?: number; model?: string; reasoning_effort?: string; max_tokens?: number }, options: any = {}) => {
@@ -722,7 +729,13 @@ async function callOpenAIWithSearch(
   }
 
   const requestBody = {
-    model: OPENAI_MODELS.DEFAULT, // gpt-5.4
+    // Web search bills a FLAT $10/1k calls regardless of model, so the model is the only
+    // cost lever here — and this was set to the $5/$30 flagship for what is mostly grounded
+    // lookup. Terra supports web_search identically (verified against OpenAI model docs,
+    // Aug 12 2026) at $2/$12, and keeps the long-context recall that luna trades away —
+    // which matters because search results are large inputs. Effort stays at the API
+    // default (medium) so multi-step queries still get agentic search.
+    model: OPENAI_MODELS.TERRA,
     input: [
       {
         role: "system",
