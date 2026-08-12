@@ -15,6 +15,13 @@ import { callLocal } from "./local-tools.js";
 import { callGemini } from "./gemini-tools.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import {
+  JUDGE_MODE_INSTRUCTIONS,
+  JUDGE_METHOD,
+  JUDGE_EPISTEMIC_LIMIT,
+  JUDGE_BIAS_CONTROLS,
+  JUDGE_FORMAT_EXCEPTION,
+} from "../utils/judge-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 
@@ -23,6 +30,17 @@ import { withHeartbeat } from "../utils/streaming-helper.js";
 // BEFORE the visible answer, so a tight cap truncates the verdict mid-sentence
 // (finish_reason: "length"). 8000 leaves room for reasoning + a complete take.
 const JUROR_MAX_TOKENS = 8000;
+
+// Provider helpers (callGrok/callOpenAI/callOpenRouter/callGemini) catch their own
+// errors and RETURN a bracketed marker string instead of throwing, so the try/catch
+// around juror calls only ever sees typed throws (callLocal). Detect the markers here
+// or a quota-limited juror reaches the judge as a genuine opinion.
+const PROVIDER_FAILURE =
+  /^\s*\[[^\]]*\b(error|timeout|failed|unavailable|not available|not configured|quota|rate.?limit)\b/i;
+
+export function isProviderFailure(text: string): boolean {
+  return PROVIDER_FAILURE.test(text) || /^\s*No response from /i.test(text);
+}
 
 // Available juror models and how to call them
 export const JUROR_REGISTRY: Record<string, {
@@ -214,58 +232,82 @@ export const juryTool = defineModelTool({
 
     // Phase 2: Format perspectives for the judge
     const liveJurors = jurorResults.filter(
-      (j) => typeof j.result === "string" && j.result.length > 0,
+      (j) =>
+        typeof j.result === "string" &&
+        j.result.length > 0 &&
+        !isProviderFailure(j.result),
     );
-    const droppedCount = jurorResults.length - liveJurors.length;
-    if (droppedCount > 0) {
+    const dropped = jurorResults.filter((j) => !liveJurors.includes(j));
+    if (dropped.length > 0) {
       console.error(
-        `⚠️ ${droppedCount} juror(s) dropped (offline/error) — synthesizing from ${liveJurors.length}`,
+        `⚠️ ${dropped.length} juror(s) dropped (offline/error) — synthesizing from ${liveJurors.length}`,
       );
     }
-    const perspectives = liveJurors
-      .map(j => `--- ${j.label} ---\n${j.result}`)
+    if (liveJurors.length === 0) {
+      return `[Jury failed: all ${jurorResults.length} juror(s) errored or timed out. Run \`doctor\` to check provider keys and quota.]`;
+    }
+
+    // Anonymize before synthesis. The judge is asked to weigh reasoning, so it must not
+    // see which lab produced which perspective — identity bias is the one bias the old
+    // prompt debiased against while actively inducing it. The lens (the parenthetical in
+    // each label) survives because it states what angle the juror was asked to take; the
+    // vendor names are restored only in the roster printed below.
+    const anonymized = liveJurors.map((j, i) => ({
+      tag: `JUROR ${String.fromCharCode(65 + i)}`,
+      lens: j.label.match(/\(([^)]+)\)/)?.[1] ?? j.label,
+      text: j.result as string,
+    }));
+    const perspectives = anonymized
+      .map((a) => `--- ${a.tag} (${a.lens} lens) ---\n${a.text}`)
       .join("\n\n");
 
-    // Phase 3: Gemini judge synthesizes
-    const modeInstructions: Record<string, string> = {
-      synthesize: "SYNTHESIZE the best elements from each juror into one unified answer. Do NOT pick a winner.",
-      evaluate: "SCORE each juror on accuracy, completeness, reasoning, actionability, novelty (1-10).",
-      rank: "RANK jurors from strongest to weakest. Use pairwise comparison to avoid position bias.",
-      resolve: "IDENTIFY conflicts between jurors. For each, state the disagreement, evaluate evidence, render verdict."
-    };
+    // Phase 3: judge synthesizes. Counts below MUST come from `anonymized`, not
+    // `validJurors` — the judge can only reason about perspectives it was actually shown,
+    // and telling it "4 jurors" while showing 2 miscalibrates every consensus claim.
+    const droppedNote = dropped.length > 0
+      ? `\nNOTE: ${dropped.length} of ${jurorResults.length} jurors failed (provider error or quota)
+and are ABSENT below. Do not infer agreement from jurors you cannot see — calibrate
+confidence to the ${anonymized.length} present, and say the panel was short-handed.\n`
+      : "";
 
     const judgePrompt = `JURY VERDICT REQUEST
 
 QUESTION: ${args.question}
 
-${modeInstructions[args.mode || 'synthesize']}
+${JUDGE_MODE_INSTRUCTIONS[args.mode || 'synthesize']}
 
-JUROR PERSPECTIVES (${validJurors.length} jurors):
+JUROR PERSPECTIVES (${anonymized.length}):
 
 ${perspectives}
 
-Apply chain-of-thought reasoning. Show your analysis before concluding. The final synthesis must be BETTER than any single juror.`;
+${JUDGE_METHOD}
+
+${JUDGE_EPISTEMIC_LIMIT}
+${droppedNote}`;
 
     const judgeResult = await withHeartbeat(
       () => callGemini(
         judgePrompt,
         GEMINI_MODELS.GEMINI_3_PRO,
-        `You are Gemini 3 Pro, acting as the presiding judge of an AI jury.
-Evaluate ${validJurors.length} juror perspectives with intellectual rigor.
-Decompose evaluation across traits: accuracy, reasoning, completeness, novelty.
-Mitigate bias: don't favor the first, longest, or most verbose response.
-Extract what each juror contributes uniquely before synthesizing.
-${FORMAT_INSTRUCTION}`,
+        `You are the presiding judge of an AI jury, evaluating ${anonymized.length} anonymized
+juror perspectives. Extract what each contributes uniquely before synthesizing.
+${JUDGE_BIAS_CONTROLS}
+${FORMAT_INSTRUCTION}
+${JUDGE_FORMAT_EXCEPTION}`,
         0.3,
         'llm-orchestration'
       ),
       reportFn
     );
 
-    // Format output
-    const jurorSummary = validJurors.map(j => `- ${JUROR_REGISTRY[j].label}`).join("\n");
+    // Format output. The judge saw anonymous letters; the USER gets the mapping back,
+    // plus an honest account of who never made it to the panel.
+    const jurorSummary = [
+      ...liveJurors.map((j, i) => `- ${String.fromCharCode(65 + i)}: ${j.label}`),
+      ...dropped.map(j => `- ${j.label} — DROPPED (provider error or quota)`),
+    ].join("\n");
 
-    return stripFormatting(`JURY PANEL
+    return stripFormatting(`JURY PANEL (${liveJurors.length}/${jurorResults.length} responded)
 ${jurorSummary}
 
 VERDICT

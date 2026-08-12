@@ -3,23 +3,27 @@
  * Part of Phase 1A implementation for cost optimization
  */
 
+// Tiers refreshed Aug 12, 2026. These were stuck on Mar-2026 models (gpt-5.4,
+// gpt-5.4-pro, gemini-3-flash-preview) — the workflow engine was routing live traffic to
+// a legacy lineup, and estimateCost() fell through to its flat $0.001 default for every
+// current model because none of them were in MODEL_COSTS below.
 export enum ModelTier {
-  // Tier 0: Cheapest - Gemini 3 Flash Preview (Dec 2025)
-  ULTRA_CHEAP = "gemini-3-flash-preview", // Fast frontier model
+  // Tier 0: Cheapest — Gemini 3.5 Flash-Lite ($0.30/$2.50, Jul 21 2026)
+  ULTRA_CHEAP = "gemini-3.5-flash-lite",
 
   // Tier 1: Fast & Efficient
-  ULTRA_EFFICIENT = "gemini-3-flash-preview", // Fast frontier model
-  EFFICIENT = "gpt-5.4", // Most capable (Mar 2026)
+  ULTRA_EFFICIENT = "gemini-3.6-flash", // $1.50/$7.50 workhorse (Jul 21 2026)
+  EFFICIENT = "gpt-5.6-luna", // $0.20/$1.20 after the Jul 30 -80% cut
 
-  // Tier 2: Balanced - GPT-5.4 (best value)
-  STANDARD = "gpt-5.4", // Most capable (Mar 2026)
-  GPT5_MINI = "gpt-5.4", // Alias
+  // Tier 2: Balanced — gpt-5.6-terra is gpt-5.5-level at $2/$12
+  STANDARD = "gpt-5.6-terra",
+  GPT5_MINI = "gpt-5.6-luna", // Legacy alias: the "mini" tier is now luna
 
-  // Tier 3: Advanced ($0.01-$0.05 per request)
-  WEB_SEARCH = "perplexity-sonar-pro", // $0.006/1K - With citations
+  // Tier 3: Advanced
+  WEB_SEARCH = "perplexity-sonar-pro", // With citations
 
-  // Tier 4: Premium (Use with caution - much more expensive)
-  GPT5_FULL = "gpt-5.4-pro", // Expert model ($21/$168) - opt-in only
+  // Tier 4: Premium (opt-in only)
+  GPT5_FULL = "gpt-5.6-sol", // Flagship $5/$30; crank reasoning.effort for "pro"
 }
 
 export interface QueryContext {
@@ -51,19 +55,34 @@ interface ModelCosts {
   };
 }
 
+// Prices are per 1K tokens (0.005 = $5.00 per 1M). Any model missing here silently
+// falls through to estimateCost()'s flat $0.001 default, so every routable tier above
+// MUST have an entry.
 const MODEL_COSTS: ModelCosts = {
-  // GPT-5.x Models (Mar 2026 pricing) - ACTUAL API MODEL NAMES
-  "gpt-5.4": { input: 0.0025, output: 0.015, latency: 1500 },            // Most capable (Mar 2026)
-  "gpt-5.4-mini": { input: 0.00075, output: 0.0045, latency: 800 },     // Fast coding (Mar 17, 2026)
-  "gpt-5.4-pro": { input: 0.030, output: 0.180, latency: 2500 },        // Premium expert (Mar 2026)
+  // GPT-5.6 family (Jul 9, 2026; terra/luna repriced Jul 30, 2026)
+  "gpt-5.6-sol": { input: 0.005, output: 0.030, latency: 2200 },        // Flagship
+  "gpt-5.6-terra": { input: 0.002, output: 0.012, latency: 1300 },      // Balanced (-20%)
+  "gpt-5.6-luna": { input: 0.0002, output: 0.0012, latency: 700 },      // Cheap (-80%)
 
-  // Gemini 3 models - Dec 2025
-  "gemini-3-flash-preview": { input: 0.0005, output: 0.003, latency: 500 }, // Fast frontier
-  "gemini-3.1-pro-preview": { input: 0.002, output: 0.012, latency: 1200 },   // Quality
+  // GPT-5.5 fallback
+  "gpt-5.5": { input: 0.005, output: 0.030, latency: 2000 },
+
+  // Legacy GPT-5.4 (kept so historical workflow runs still cost out)
+  "gpt-5.4": { input: 0.0025, output: 0.015, latency: 1500 },
+  "gpt-5.4-mini": { input: 0.00075, output: 0.0045, latency: 800 },
+  "gpt-5.4-pro": { input: 0.030, output: 0.180, latency: 2500 },
+
+  // Gemini
+  "gemini-3.6-flash": { input: 0.0015, output: 0.0075, latency: 600 },       // Jul 21, 2026
+  "gemini-3.5-flash-lite": { input: 0.0003, output: 0.0025, latency: 400 },  // Jul 21, 2026
+  "gemini-3.5-flash": { input: 0.0015, output: 0.009, latency: 600 },        // May 19, 2026
+  "gemini-3.1-pro-preview": { input: 0.002, output: 0.012, latency: 1200 },  // Judge/reasoning default
+  "gemini-3-flash-preview": { input: 0.0005, output: 0.003, latency: 500 },  // Legacy
 
   // Other models
   qwencoder: { input: 0.00015, output: 0.0006, latency: 1000 },
   "perplexity-sonar-pro": { input: 0.006, output: 0.006, latency: 2000 },
+  sonar: { input: 0.001, output: 0.001, latency: 1500 },
 };
 
 export class SmartModelRouter {

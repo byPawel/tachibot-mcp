@@ -8,15 +8,20 @@
 // OPENAI MODELS (provider-based naming)
 // =============================================================================
 // GPT-5.6 released Jul 9, 2026 - CURRENT. Three durable tiers replace the pro/mini split:
-//   sol (flagship $5/$30) / terra (balanced $2.50/$15) / luna (fast $1/$6). All 1.05M ctx, 128K out.
+//   sol (flagship $5/$30) / terra (balanced $2/$12) / luna (fast $0.20/$1.20). 1.05M ctx, 128K out.
+//   Jul 30, 2026 price cut: luna -80%, terra -20%, sol unchanged. Verified Aug 12, 2026.
+//   No Codex-specific API model exists (no gpt-5.6-codex / codex-max) — the CODEX* aliases
+//   below are legacy names repointed onto the sol/terra/luna tiers.
 // "Pro" is no longer a model: sol + reasoning.effort (the $30/$180 gpt-5.5-pro tier is gone).
 // GPT-5.5 (Apr 23, 2026) kept as fallback. OpenRouter uses prefix: openai/gpt-5.6-sol etc.
 export const OPENAI_MODELS = {
   // GPT-5.6 tiers (Jul 9, 2026 - CURRENT)
   DEFAULT: "gpt-5.6-sol",           // Flagship: coding/agentic SOTA, 54% more token-efficient than 5.5
   SOL: "gpt-5.6-sol",               // Explicit tier alias (also aliased "gpt-5.6" server-side)
-  TERRA: "gpt-5.6-terra",           // Balanced: matches gpt-5.5 at half price ($2.50/$15)
-  LUNA: "gpt-5.6-luna",             // Fast/cheap: $1/$6 (weaker long-context recall — avoid huge inputs)
+  TERRA: "gpt-5.6-terra",           // Balanced: gpt-5.5-level at $2/$12 (Jul 30, 2026 cut: -20%)
+  LUNA: "gpt-5.6-luna",             // Fast/cheap: $0.20/$1.20 after the Jul 30, 2026 -80% cut.
+                                    // Now ~9x cheaper than terra, not 2.5x — worth routing to it
+                                    // far more aggressively. (Weak long-context recall: avoid huge inputs.)
   MINI: "gpt-5.6-luna",             // "mini" tier successor (was gpt-5.4-mini)
   PRO: "gpt-5.6-sol",               // Pro tier eliminated in 5.6 — sol + reasoning.effort xhigh (was gpt-5.5-pro $30/$180)
 
@@ -221,8 +226,8 @@ export const CURRENT_MODELS = {
     default: OPENAI_MODELS.DEFAULT,       // gpt-5.6-sol - flagship, agentic/coding SOTA (Jul 2026)
     reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (sol + effort=high)
     brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (sol + effort=medium)
-    code: OPENAI_MODELS.TERRA,            // Code tasks (gpt-5.6-terra - 5.5-level at half price)
-    explain: OPENAI_MODELS.LUNA,          // Explanations (gpt-5.6-luna - $1/$6, fast)
+    code: OPENAI_MODELS.TERRA,            // Code tasks (gpt-5.6-terra - 5.5-level at $2/$12)
+    explain: OPENAI_MODELS.LUNA,          // Explanations (gpt-5.6-luna - $0.20/$1.20, fast)
     search: OPENAI_MODELS.DEFAULT,        // Web search (sol + web_search tool)
     // Premium: the 5.5-pro tier ($30/$180) is gone — sol + effort=xhigh replaces it at $5/$30
     premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.6-sol - crank reasoning effort)
@@ -483,9 +488,9 @@ export function getModelDisplayName(modelId: string): string {
 // Model pricing per 1K tokens (input/output average) for cost tracking
 export const MODEL_PRICING: Record<string, number> = {
   // OpenAI
-  "gpt-5.6-sol": 0.0175,        // ($5 + $30) / 2 / 1000 (Jul 9, 2026)
-  "gpt-5.6-terra": 0.00875,     // ($2.50 + $15) / 2 / 1000 (Jul 9, 2026)
-  "gpt-5.6-luna": 0.0035,       // ($1 + $6) / 2 / 1000 (Jul 9, 2026)
+  "gpt-5.6-sol": 0.0175,        // ($5 + $30) / 2 / 1000 (unchanged in the Jul 30 cut)
+  "gpt-5.6-terra": 0.007,       // ($2 + $12) / 2 / 1000 (Jul 30, 2026 cut: -20%)
+  "gpt-5.6-luna": 0.0007,       // ($0.20 + $1.20) / 2 / 1000 (Jul 30, 2026 cut: -80%)
   "gpt-5.5": 0.0175,            // ($5 + $30) / 2 / 1000 (Apr 23, 2026 - fallback)
   "gpt-5.5-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Apr 23, 2026 - tier removed in 5.6)
   "gpt-5.4": 0.00875,           // ($2.50 + $15) / 2 / 1000 (Mar 2026 - legacy)

@@ -10,6 +10,13 @@ import { GEMINI_MODELS } from "../config/model-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import {
+  JUDGE_MODE_INSTRUCTIONS,
+  JUDGE_METHOD,
+  JUDGE_EPISTEMIC_LIMIT,
+  JUDGE_BIAS_CONTROLS,
+  JUDGE_FORMAT_EXCEPTION,
+} from "../utils/judge-constants.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { getTimeoutConfig } from "../config/timeout-config.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
@@ -530,62 +537,33 @@ export const geminiJudgeTool = defineModelTool({
       return "Error: No content provided. Pass perspectives to judge in the 'perspectives' parameter.";
     }
     args.perspectives = perspectives;
-    const modeInstructions: Record<string, string> = {
-      synthesize: `SYNTHESIS MODE: Extract the best elements from each perspective and merge into one cohesive answer.
-Do NOT pick a winner. Find what is uniquely valuable in EACH perspective.
-The final answer must be BETTER than any single input.`,
+    const systemPrompt = `You are the presiding judge over a set of AI perspectives.
+Evaluate them with intellectual rigor and fairness.
 
-      evaluate: `EVALUATION MODE: Score each perspective on these dimensions (1-10):
-- Accuracy: Factual correctness
-- Completeness: Coverage of the problem
-- Reasoning: Quality of logic and argumentation
-- Actionability: How useful/implementable the advice is
-- Novelty: Unique insights others missed
-Provide per-perspective scores and brief justification.`,
+${JUDGE_MODE_INSTRUCTIONS[args.mode || 'synthesize']}
 
-      rank: `RANKING MODE: Order perspectives from strongest to weakest.
-For each, state: rank, key strength, key weakness.
-Use pairwise comparison (compare each pair) to avoid position bias.`,
+${JUDGE_METHOD}
 
-      resolve: `CONFLICT RESOLUTION MODE: Identify where perspectives disagree.
-For each conflict:
-1. State the disagreement clearly
-2. Evaluate evidence on both sides
-3. Render a verdict with reasoning
-4. Note confidence level (high/medium/low)`
-    };
+${JUDGE_EPISTEMIC_LIMIT}
 
-    const systemPrompt = `You are Gemini 3 Pro, acting as an expert judge and synthesizer.
-
-ROLE: Evaluate multiple AI perspectives with intellectual rigor and fairness.
-
-${modeInstructions[args.mode || 'synthesize']}
-
-METHODOLOGY (based on LLM-as-a-Judge research — Gu et al. arXiv:2411.15594):
-1. READ all perspectives completely before forming any opinion
-2. DECOMPOSE evaluation across traits: accuracy, reasoning, completeness, novelty, actionability
-3. MITIGATE BIAS: Don't favor the first, longest, or most verbose response — evaluate on substance
-4. CHAIN-OF-THOUGHT: Show your reasoning step-by-step before concluding (chain_of_thought technique)
-5. FIRST PRINCIPLES: Strip away assumptions, identify ground truths, rebuild from fundamentals
-6. TREE OF THOUGHTS: Consider multiple synthesis paths, evaluate each, prune weak branches
-7. ADVERSARIAL CHECK: For each conclusion, argue the counterpoint — does it survive scrutiny?
-8. SELF-CONSISTENCY: If you arrived at this verdict 3 different ways, would you get the same answer?
-9. EXTRACT before synthesizing: identify what each perspective contributes uniquely
+${JUDGE_BIAS_CONTROLS}
 
 OUTPUT STRUCTURE:
-## Per-Perspective Analysis
-For each input, note: key contribution, strength, weakness, unique insight
+🧠 SUB-CLAIMS ───
+The 2-5 claims the perspectives turn on, each tagged AGREED / CONTESTED / UNVERIFIED
 
-## Consensus Points
-What all perspectives agree on (high confidence)
+🧠 PER-PERSPECTIVE ───
+What each one uniquely contributes, and its weakest point
 
-## Conflicts & Resolution
-Where they disagree — evidence on each side, verdict, confidence level
+🧠 RESOLUTION ───
+Each CONTESTED sub-claim settled, with the reasoning that settled it and a
+confidence level. Include the counter-case you tested and why it failed.
 
-## Final Synthesis
-The unified answer combining the best elements — must be better than any single input
+🧠 VERDICT ───
+The unified answer. State plainly if it is not better than the best single input.
 
-${FORMAT_INSTRUCTION}`;
+${FORMAT_INSTRUCTION}
+${JUDGE_FORMAT_EXCEPTION}`;
 
     const userPrompt = args.question
       ? `QUESTION: ${args.question}\n\nPERSPECTIVES TO JUDGE:\n${args.perspectives}`
