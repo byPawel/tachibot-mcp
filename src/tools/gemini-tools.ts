@@ -5,6 +5,9 @@
  */
 
 import { z } from "zod";
+import { config } from "dotenv";
+import * as path from "path";
+import { fileURLToPath } from "url";
 import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
@@ -24,8 +27,28 @@ import { defineModelTool } from "./factory/define-model-tool.js";
 import { filesField } from "./factory/base-schemas.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
-// NOTE: dotenv is loaded in server.ts before any imports
-// No need to reload here - just read from process.env
+// Load .env here rather than relying on a sibling module to have done it.
+//
+// The old comment claimed "dotenv is loaded in server.ts before any imports". That is not
+// true: server.ts is a 12-line bin dispatcher with ZERO static imports and no dotenv call
+// at all, and server-main.ts's dotenvConfig({override:true}) runs in its module BODY —
+// which ESM evaluates AFTER the entire static import graph, so it cannot reach the
+// module-scope capture below.
+//
+// What actually made this work was import ORDER inside registry.ts: grok-tools.js (:43)
+// calls config() at module scope, eleven lines before gemini-tools.js (:53) is reached, so
+// process.env happened to be populated by the time we read it. Demonstrated:
+//
+//   import openrouter-tools alone      -> isOpenRouterAvailable() === false
+//   import grok-tools first, then it   -> isOpenRouterAvailable() === true
+//
+// That coupling is invisible and load-bearing: reordering registry's imports, or dropping
+// grok-tools, would silently unregister every Gemini tool. Loading dotenv here makes this
+// module self-sufficient. Non-override, matching every other tool module, so an ambient
+// var still wins — that precedence is deliberate (12-factor) and unchanged.
+const __gtFilename = fileURLToPath(import.meta.url);
+const __gtDirname = path.dirname(__gtFilename);
+config({ path: path.resolve(__gtDirname, '../../../.env') });
 
 // Gemini API configuration
 const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
