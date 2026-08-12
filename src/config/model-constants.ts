@@ -117,8 +117,15 @@ export const GROK_MODELS = {
   _4_20_MULTI_AGENT: "grok-4.5",                         // [deprecated key] → grok-4.5 (architect uses high reasoning.effort)
 
   // Grok 4.1 fast models (Nov 2025) - BEST VALUE (10x cheaper)
-  _4_1_FAST_REASONING: "grok-4-1-fast-reasoning",     // Fast reasoning: 2M context, $0.20/$0.50
-  _4_1_FAST_NON_REASONING: "grok-4-1-fast-non-reasoning", // Tool-calling optimized: 2M context, $0.20/$0.50
+  // RETIRED by xAI — verified Aug 12, 2026. DO NOT WIRE THESE TO ANYTHING.
+  // The retirement is invisible at runtime: xAI answers a request for these ids with
+  // HTTP 200 and silently serves grok-4.3, disclosing the swap only in the response
+  // body's `model` field. Nothing throws, so no fallback or try/catch can detect it —
+  // you just quietly pay grok-4.3 rates ($1.25/$2.50) while believing you pay $0.20/$0.50.
+  // Kept only so existing references resolve to a real (substituted) model rather than
+  // breaking; grok_search_lite was moved off them and onto _4_3 explicitly.
+  _4_1_FAST_REASONING: "grok-4-1-fast-reasoning",         // [RETIRED → serves grok-4.3]
+  _4_1_FAST_NON_REASONING: "grok-4-1-fast-non-reasoning", // [RETIRED → serves grok-4.3]
 
   // Grok 4 fast models (2025) - Still good
   CODE_FAST: "grok-code-fast-1",              // Coding specialist: 256K→2M, $0.20/$1.50, 92 tok/sec
@@ -244,7 +251,9 @@ export const CURRENT_MODELS = {
     debug: GROK_MODELS._4_5,             // grok-4.5 (flagship debugging)
     brainstorm: GROK_MODELS._4_5,        // grok-4.5 (500K context)
     search: GROK_MODELS._4_5,            // grok-4.5 flagship synthesis over live search
-    search_lite: GROK_MODELS._4_1_FAST_NON_REASONING, // grok-4-1-fast: $0.20/$0.50, 2M ctx, tool-calling optimized — 10x cheaper search
+    search_lite: GROK_MODELS._4_3,       // grok-4.3: $1.25/$2.50, 1M ctx — ~1.6x/2.4x cheaper than
+                                         // grok-4.5 search. Was _4_1_FAST_NON_REASONING until that id
+                                         // was retired (xAI silently served 4.3 for it anyway).
     architect: GROK_MODELS._4_5,         // grok-4.5 with high reasoning.effort (agentic swarm behaviour)
   },
   gemini: {

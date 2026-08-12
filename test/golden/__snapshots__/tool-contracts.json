@@ -914,7 +914,7 @@
     "name": "grok_search"
   },
   {
-    "description": "Cheap web search (grok-4-1-fast, ~10x cheaper than grok_search). Put your QUERY in the 'query' parameter.",
+    "description": "Cheap web search (grok-4.3, ~2x cheaper than grok_search). Put your QUERY in the 'query' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,

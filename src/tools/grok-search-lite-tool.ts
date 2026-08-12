@@ -1,10 +1,24 @@
 /**
  * Grok Search Lite — cost-optimized live web search.
  *
- * Same xAI live-search path as grok_search, but on grok-4-1-fast
- * (tool-calling optimized, 2M context, $0.20/$0.50 — ~10x cheaper than the
- * grok-4.5 flagship). Use for high-volume lookups, jury/council fan-outs, and
- * quick fact checks; use grok_search when synthesis quality matters most.
+ * Same xAI live-search path as grok_search, but on grok-4.3 (1M context,
+ * $1.25/$2.50) instead of the grok-4.5 flagship ($2/$6) — roughly 1.6x cheaper
+ * on input and 2.4x on output. Use for high-volume lookups, jury/council
+ * fan-outs, and quick fact checks; use grok_search when synthesis quality
+ * matters most.
+ *
+ * WAS grok-4-1-fast-non-reasoning ($0.20/$0.50, advertised as "10x cheaper").
+ * That id was retired by xAI, and the retirement is INVISIBLE at runtime: a
+ * request for it returns HTTP 200 and xAI silently serves grok-4.3, disclosing
+ * the swap only in the response body's `model` field. Verified Aug 12, 2026:
+ *
+ *   requested grok-4-1-fast-non-reasoning -> HTTP 200, served "grok-4.3"
+ *   requested grok-4.5                    -> HTTP 200, served "grok-4.5"  (control)
+ *
+ * So no error was ever raised, no fallback ever fired, and this tool billed at
+ * grok-4.3 rates while advertising grok-4-1-fast rates. Pointing at grok-4.3
+ * explicitly changes nothing about what runs — it just stops the tool lying
+ * about its own cost.
  */
 
 import { z } from "zod";
@@ -33,7 +47,7 @@ ${FORMAT_INSTRUCTION}`;
 export const grokSearchLiteTool = defineModelTool({
   name: "grok_search_lite",
   description:
-    "Cheap web search (grok-4-1-fast, ~10x cheaper than grok_search). Put your QUERY in the 'query' parameter.",
+    "Cheap web search (grok-4.3, ~2x cheaper than grok_search). Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string(),
     sources: z
@@ -68,7 +82,7 @@ export const grokSearchLiteTool = defineModelTool({
     ];
 
     log?.info(
-      `Grok Search Lite: ${max_search_results} sources, recency: ${recency} (using grok-4-1-fast, $0.20/$0.50)`
+      `Grok Search Lite: ${max_search_results} sources, recency: ${recency} (using grok-4.3, $1.25/$2.50)`
     );
 
     // Extract domains from sources if specified
@@ -78,7 +92,7 @@ export const grokSearchLiteTool = defineModelTool({
         ?.flatMap((s: any) => s.allowed_websites) || [];
 
     const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_1_FAST, // Tool-calling optimized cheap tier — the whole point of this tool
+      model: GrokModel.GROK_4_3, // Cheapest surviving general tier (see header note on the retired 4-1-fast id)
       enableLiveSearch: true,
       searchSources: max_search_results,
       searchDomains: domains,
