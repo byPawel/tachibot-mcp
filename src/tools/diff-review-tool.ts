@@ -2,14 +2,16 @@
  * diff_review — multi-model, diff-AWARE code review.
  * Differs from openai_code_review (whole-file, single model) and jury (free-
  * text, no code structure): reviewers are scoped to the changed lines, then a
- * Gemini judge dedupes and severity-ranks into ONE actionable list.
- * Gated on Gemini (judge); panelists self-drop when their key is missing.
+ * judge dedupes and severity-ranks into ONE actionable list (Gemini, falling back
+ * to gpt-5.6-sol, then to raw unmerged findings — see utils/judge-runner.ts).
+ * NOTE: still REGISTERED behind a Gemini key (registry.ts:143) even though the judge
+ * can now run on OpenAI — relaxing that gate to (Gemini OR OpenAI) is a follow-up.
  */
 import { z } from "zod";
 import { defineModelTool } from "./factory/define-model-tool.js";
 import { callOpenRouter, OpenRouterModel } from "./openrouter-tools.js";
 import { callOpenAI } from "./openai-tools.js";
-import { callGemini } from "./gemini-tools.js";
+import { runJudge, judgeAttribution, type JudgeResult } from "../utils/judge-runner.js";
 import { hasOpenAIApiKey, hasOpenRouterApiKey } from "../utils/api-keys.js";
 import { OPENAI_MODELS } from "../config/model-constants.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
@@ -120,7 +122,7 @@ function buildPanel(): Panelist[] {
 export const diffReviewTool = defineModelTool({
   name: "diff_review",
   description:
-    "Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K3, DeepSeek V4 Pro, GPT-5.6 Sol) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in 'diff'.",
+    "Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K3, DeepSeek V4 Pro, GPT-5.6 Sol) scoped to the changed lines, deduplicated and severity-ranked by a judge. Provide the unified diff in 'diff'.",
   parameters: z.object({
     diff: z.string().describe("Unified diff to review (git diff output) — REQUIRED"),
     intent: z.string().optional().describe("What the change is SUPPOSED to do (enables intent-mismatch detection)"),
@@ -146,19 +148,24 @@ export const diffReviewTool = defineModelTool({
       return "Error: all reviewers failed (provider outage or quota). Try again or run `doctor`.";
     }
     const judgePrompt = buildDiffJudgePrompt(perspectives, args);
-    const verdict = await withHeartbeat(
+    const judged = (await withHeartbeat(
       () =>
-        callGemini(
+        runJudge(
           judgePrompt,
-          undefined,
-          `You are Gemini 3 Pro, the presiding code reviewer synthesizing a panel review of one diff. Be decisive; keep only verified findings. ${FORMAT_INSTRUCTION}`,
+          `You are the presiding code reviewer synthesizing a panel review of one diff. Be decisive; keep only verified findings. ${FORMAT_INSTRUCTION}`,
           0.3,
         ),
       reportProgress,
       10000,
-    );
+    )) as JudgeResult;
     const roster = perspectives.map((p) => p.label).join(", ");
-    return `DIFF REVIEW (${perspectives.length} reviewers: ${roster})\n\n${verdict}`;
+    // Reviewers already ran and billed; hand back their raw findings rather than losing
+    // the panel because the synthesis step had no judge available.
+    if (judged.text === null) {
+      const raw = perspectives.map((p) => `=== ${p.label} ===\n${p.text}`).join("\n\n");
+      return `DIFF REVIEW (${perspectives.length} reviewers: ${roster})\n\n⚠️ NO MERGE VERDICT — every judge was unavailable (usually quota). Findings below are UNMERGED and NOT deduplicated or severity-ranked; they may contradict each other or misread the diff.\n\n${raw}`;
+    }
+    return `DIFF REVIEW (${perspectives.length} reviewers: ${roster})\n\n${judgeAttribution(judged)}${judged.text}`;
   },
 });
 

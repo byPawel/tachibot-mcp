@@ -9,6 +9,7 @@ import { config } from "dotenv";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
+import { isProviderFailure } from "../utils/provider-failure.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { stripFormatting } from "../utils/format-stripper.js";
@@ -61,7 +62,70 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
  *   - 'code-analysis': Relaxed for code analysis tools
  *   - 'llm-orchestration': Medium for LLM-to-LLM calls
  */
+/** Pull RetryInfo.retryDelay ("37s") out of a Google error body. Null when absent — and
+ *  absence is itself a signal: Google omits RetryInfo for plan/daily caps, so a 429 with
+ *  no retryDelay generally means waiting will not help. */
+export function parseRetryDelayMs(body: string): number | null {
+  const m = body.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/);
+  return m ? Math.ceil(parseFloat(m[1]) * 1000) : null;
+}
+
+/** Transient statuses worth retrying, as they appear in the marker string we get back. */
+const GEMINI_RETRYABLE =
+  /\b(429|500|502|503|504|Too Many Requests|RESOURCE_EXHAUSTED|UNAVAILABLE|overloaded|Internal Server Error|Service Unavailable)\b/i;
+
+const GEMINI_MAX_ATTEMPTS = 3;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Public entry point: retry transient Gemini failures, then degrade to the Flash tier.
+ *
+ * Previously a single 429 killed the call outright — no retry, no fallback — which for the
+ * jury/council/diff_review/plan_critique judges meant the whole panel ran and billed and
+ * then died at synthesis. Two stages here:
+ *
+ *   1. Retry on transient statuses, honouring RetryInfo.retryDelay when Google supplies it
+ *      and using exponential backoff when it doesn't.
+ *   2. Fall back Pro -> Flash. This helps when the cap is specific to the Pro PREVIEW model
+ *      (preview models carry their own tighter quotas) but NOT when the key's whole quota
+ *      is exhausted, since both tiers draw on it. Verified Aug 12 2026: with the key capped,
+ *      3.6 Flash 429s too. That limitation is why judges also need a cross-provider stage,
+ *      which lives in utils/judge-runner.ts rather than here — a Gemini helper silently
+ *      answering as GPT would be a surprise to every other caller.
+ */
 export async function callGemini(
+  prompt: string,
+  model: string = GEMINI_MODELS.GEMINI_3_PRO,
+  systemPrompt?: string,
+  temperature: number = 0.7,
+  validationContext: ValidationContext = 'llm-orchestration',
+  maxTokens: number = 18000
+): Promise<string> {
+  let last = "";
+  for (let attempt = 1; attempt <= GEMINI_MAX_ATTEMPTS; attempt++) {
+    last = await callGeminiAttempt(prompt, model, systemPrompt, temperature, validationContext, maxTokens);
+    if (!isProviderFailure(last) || !GEMINI_RETRYABLE.test(last)) break;
+    if (attempt === GEMINI_MAX_ATTEMPTS) break;
+    const suggested = parseRetryDelayMs(last);
+    const delay = Math.min(suggested ?? 1000 * 2 ** (attempt - 1), 15000);
+    console.error(`⏳ [Gemini] ${model} transient failure (attempt ${attempt}/${GEMINI_MAX_ATTEMPTS}), retrying in ${delay}ms`);
+    await sleep(delay);
+  }
+
+  // Same-provider degrade: Pro -> Flash. Skipped when Flash was already the request.
+  if (isProviderFailure(last) && GEMINI_RETRYABLE.test(last) && model !== GEMINI_MODELS.FLASH) {
+    console.error(`🔻 [Gemini] ${model} exhausted, degrading to ${GEMINI_MODELS.FLASH}`);
+    const flash = await callGeminiAttempt(prompt, GEMINI_MODELS.FLASH, systemPrompt, temperature, validationContext, maxTokens);
+    if (!isProviderFailure(flash)) {
+      return `[degraded: ${model} unavailable, answered by ${GEMINI_MODELS.FLASH}]\n\n${flash}`;
+    }
+  }
+
+  return last;
+}
+
+async function callGeminiAttempt(
   prompt: string,
   model: string = GEMINI_MODELS.GEMINI_3_PRO,
   systemPrompt?: string,
@@ -167,7 +231,17 @@ export async function callGemini(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      // Keep the BODY, not just statusText. Google puts the useful part there: which quota
+      // was hit, and a RetryInfo.retryDelay when the limit is a transient per-minute
+      // throttle rather than a plan/daily cap. Discarding it (as this did) turned every
+      // failure into an indistinguishable "Too Many Requests".
+      const body = await response.text().catch(() => "");
+      const err: any = new Error(
+        `Gemini API error: ${response.statusText}${body ? ` - ${body.slice(0, 400)}` : ""}`,
+      );
+      err.status = response.status;
+      err.retryAfterMs = parseRetryDelayMs(body);
+      throw err;
     }
 
     const data = await response.json() as any;

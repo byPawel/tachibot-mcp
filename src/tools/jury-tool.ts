@@ -15,6 +15,8 @@ import { callLocal } from "./local-tools.js";
 import { callGemini } from "./gemini-tools.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import { isProviderFailure } from "../utils/provider-failure.js";
+import { runJudge, judgeAttribution, type JudgeResult } from "../utils/judge-runner.js";
 import {
   JUDGE_MODE_INSTRUCTIONS,
   JUDGE_METHOD,
@@ -31,16 +33,9 @@ import { withHeartbeat } from "../utils/streaming-helper.js";
 // (finish_reason: "length"). 8000 leaves room for reasoning + a complete take.
 const JUROR_MAX_TOKENS = 8000;
 
-// Provider helpers (callGrok/callOpenAI/callOpenRouter/callGemini) catch their own
-// errors and RETURN a bracketed marker string instead of throwing, so the try/catch
-// around juror calls only ever sees typed throws (callLocal). Detect the markers here
-// or a quota-limited juror reaches the judge as a genuine opinion.
-const PROVIDER_FAILURE =
-  /^\s*\[[^\]]*\b(error|timeout|failed|unavailable|not available|not configured|quota|rate.?limit)\b/i;
-
-export function isProviderFailure(text: string): boolean {
-  return PROVIDER_FAILURE.test(text) || /^\s*No response from /i.test(text);
-}
+// Re-exported for back-compat; the detector now lives in utils/provider-failure.ts so the
+// judge runner can share it without importing this module (which would be a cycle).
+export { isProviderFailure };
 
 // Available juror models and how to call them
 export const JUROR_REGISTRY: Record<string, {
@@ -285,20 +280,16 @@ ${JUDGE_METHOD}
 ${JUDGE_EPISTEMIC_LIMIT}
 ${droppedNote}`;
 
-    const judgeResult = await withHeartbeat(
-      () => callGemini(
-        judgePrompt,
-        GEMINI_MODELS.GEMINI_3_PRO,
-        `You are the presiding judge of an AI jury, evaluating ${anonymized.length} anonymized
+    const judgeSystemPrompt = `You are the presiding judge of an AI jury, evaluating ${anonymized.length} anonymized
 juror perspectives. Extract what each contributes uniquely before synthesizing.
 ${JUDGE_BIAS_CONTROLS}
 ${FORMAT_INSTRUCTION}
-${JUDGE_FORMAT_EXCEPTION}`,
-        0.3,
-        'llm-orchestration'
-      ),
+${JUDGE_FORMAT_EXCEPTION}`;
+
+    const judged = (await withHeartbeat(
+      () => runJudge(judgePrompt, judgeSystemPrompt, 0.3),
       reportFn
-    );
+    )) as JudgeResult;
 
     // Format output. The judge saw anonymous letters; the USER gets the mapping back,
     // plus an honest account of who never made it to the panel.
@@ -307,10 +298,25 @@ ${JUDGE_FORMAT_EXCEPTION}`,
       ...dropped.map(j => `- ${j.label} — DROPPED (provider error or quota)`),
     ].join("\n");
 
+    // Every judge down. The panel already ran and was already billed, so hand back the raw
+    // perspectives rather than an error string — unsynthesized jurors are still the bulk of
+    // the value, and throwing them away is the one outcome with no upside.
+    if (judged.text === null) {
+      return stripFormatting(`JURY PANEL (${liveJurors.length}/${jurorResults.length} responded)
+${jurorSummary}
+
+⚠️ NO VERDICT — every judge was unavailable (Gemini and OpenAI both failed; usually
+quota). The juror perspectives below are UNSYNTHESIZED and were not cross-checked
+against each other. Run \`doctor\` to see provider status.
+
+RAW PERSPECTIVES
+${perspectives}`);
+    }
+
     return stripFormatting(`JURY PANEL (${liveJurors.length}/${jurorResults.length} responded)
 ${jurorSummary}
 
 VERDICT
-${judgeResult}`);
+${judgeAttribution(judged)}${judged.text}`);
   }
 });

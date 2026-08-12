@@ -5,6 +5,31 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.29.0] - 2026-08-12
+
+### Fixed
+- **Failed jurors were synthesized as real opinions.** Every provider helper catches internally and RETURNS a marker string (`[Grok error: ...]`, `[OpenRouter timeout: ...]`) rather than throwing, so `jury`'s drop filter only ever caught typed throws from `callLocal`. A quota-limited juror reached the judge as a considered perspective. New `utils/provider-failure.ts` detects the markers; verified against all nine real provider error strings with no false positives on realistic answers.
+- **The judge was told the wrong juror count.** The prompt interpolated `validJurors.length` while showing `liveJurors`, presenting a short-handed panel as full and miscalibrating every consensus claim. Counts now come from what the judge is actually shown, and dropped jurors are declared to it.
+- **`grok_search_lite` advertised a model it wasn't using.** `grok-4-1-fast-non-reasoning` was retired by xAI, and the retirement is invisible: the API returns HTTP 200 and silently serves `grok-4.3`, disclosing the swap only in `response.model` (which the codebase discards). Nothing threw, so no fallback could fire. The tool billed $1.25/$2.50 while claiming $0.20/$0.50 and "~10x cheaper" in three user-visible places. Now points at `grok-4.3` explicitly with corrected claims — zero behaviour change, since 4.3 was already what ran.
+- **`continue_focus` was unprofileable.** Emitted by the server but absent from `ToolsConfig` and all six profiles, so it could not be disabled by any profile including `minimal`, and was invisible to every count. Registered in all six (behaviour-preserving); `full` now reports 66, matching the emitted contract exactly.
+- **The literal string `"undefined"` could be injected into reasoning prompts.** Five sites indexed a closed prompt map with the fallback inside the brackets (`modePrompts[x || 'default']`), so any value not in the map missed the lookup silently. Only `openai_reason` was reachable — its `mode` is a free string per the tool-param rule, which is precisely what removed the enum guard protecting the others.
+- **`gemini-tools.ts` depended on import order for its API key.** It read `process.env` at module scope under a comment claiming "dotenv is loaded in server.ts before any imports" — false: `server.ts` is a 12-line dispatcher with no dotenv call, and `server-main.ts`'s `override: true` runs in its module body, after the whole static graph. It worked only because `grok-tools.js` calls `config()` eleven lines earlier in `registry.ts`. Now self-sufficient.
+
+### Added
+- **Judge fallback chain (`utils/judge-runner.ts`).** A single Gemini failure used to destroy an entire panel *after* every juror had run and billed. Judges now escalate: retry with backoff (honouring Google's `RetryInfo.retryDelay`) → degrade Pro→Flash → escalate to `gpt-5.6-sol` → return raw unsynthesized perspectives with an explicit warning. Wired into `jury`, `diff_review`, and `plan_critique`. Verified live against a real quota outage: Pro 429 ×3 → Flash 429 → sol answered in 7.5s.
+- **`callGemini` retains the API error body**, which it previously discarded in favour of `statusText`. Google puts the useful part there — which quota was hit, and a `retryDelay` when the limit is transient rather than a plan cap.
+- **`max` reasoning effort** for OpenAI. `gpt-5.6` accepts `none|low|medium|high|xhigh|max`, but `OPENAI_REASONING` stopped at `xhigh` and the zod enum rejected `max`, so nothing could request the top tier. The 180s timeout branch now covers it.
+
+### Changed
+- **Judge prompts rewritten** (`utils/judge-constants.ts`, shared by `jury` and `gemini_judge`, which carried drifting copies). Jurors are anonymized so the judge weighs reasoning rather than brand; the "You are Gemini 3 Pro" persona is gone (stale, and an invitation to self-preference bias); six stacked reasoning frameworks are replaced by decomposition into sub-claims tagged AGREED/CONTESTED/UNVERIFIED plus one adversarial pass; the impossible self-consistency instruction is removed (it requires sampling repeatedly, which one call cannot do); and the judge is told it cannot verify factual claims rather than being graded on "accuracy" it has no means to assess.
+- **OpenAI pricing corrected** for the Jul 30 2026 cut: terra $2.50/$15 → $2/$12, luna $1/$6 → $0.20/$1.20. `MODEL_COSTS` had luna 5x over reality, skewing cost-aware routing.
+- **`optimization/model-router.ts` refreshed.** Its `ModelTier` enum was routing live workflow traffic to Mar-2026 models (`gpt-5.4`, `gpt-5.4-pro`, `gemini-3-flash-preview`), and no current model appeared in its cost table, so every one fell through to a flat $0.001 estimate.
+- **`openai_reason` runs `xhigh`** (was `high`). `max` is deliberately not the default — OpenAI recommends reserving it for hardest-case work.
+- **`openai_search` moves to `gpt-5.6-terra`** (was `sol`). Web search bills a flat $10/1k calls regardless of model, so the model is the only cost lever, and it was set to the most expensive option. All 5.6 tiers support `web_search` identically.
+
+### Verified, not changed
+- **Gemini 3.1 Pro is still the newest Pro model** — no 3.5 Pro or 4 has shipped. Confirmed against Google's live docs by two independent sources plus a direct `models.list` probe (HTTP 200, exact id match). Grok 4.5 likewise remains flagship. No Codex-specific OpenAI model exists; the `CODEX*` constants are legacy aliases.
+
 ## [2.28.0] - 2026-08-03
 
 ### Added

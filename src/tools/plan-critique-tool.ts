@@ -2,15 +2,17 @@
  * plan_critique — adversarial red-team of an EXISTING plan (any source:
  * hand-written, planner_maker output, a design doc). planner_maker BUILDS
  * plans and planner_runner EXECUTES them; nothing critiques a plan you
- * already hold. Panel of diverse critics + Gemini synthesis, pre-mortem first.
- * Gated on Gemini (judge); critics self-drop when their key is missing.
+ * already hold. Panel of diverse critics + judge synthesis, pre-mortem first.
+ * Judge escalates Gemini -> gpt-5.6-sol -> raw critiques (utils/judge-runner.ts).
+ * NOTE: still REGISTERED behind a Gemini key (registry.ts:148); relaxing that gate
+ * to (Gemini OR OpenAI) is a follow-up.
  */
 import { z } from "zod";
 import { defineModelTool } from "./factory/define-model-tool.js";
 import { callOpenRouter, OpenRouterModel } from "./openrouter-tools.js";
 import { callGrok } from "./grok-tools.js";
 import { callOpenAI } from "./openai-tools.js";
-import { callGemini } from "./gemini-tools.js";
+import { runJudge, judgeAttribution, type JudgeResult } from "../utils/judge-runner.js";
 import { OPENAI_MODELS } from "../config/model-constants.js";
 import { hasGrokApiKey, hasOpenAIApiKey, hasOpenRouterApiKey } from "../utils/api-keys.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
@@ -143,19 +145,23 @@ export const planCritiqueTool = defineModelTool({
       return "Error: all critics failed (provider outage or quota). Try again or run `doctor`.";
     }
     const judgePrompt = buildPlanCritiqueJudgePrompt(perspectives, args);
-    const verdict = await withHeartbeat(
+    const judged = (await withHeartbeat(
       () =>
-        callGemini(
+        runJudge(
           judgePrompt,
-          undefined,
-          `You are Gemini 3 Pro, synthesizing a red-team panel's critiques of one plan. Convergent concerns are signal; be decisive. ${FORMAT_INSTRUCTION}`,
+          `You are the presiding judge synthesizing a red-team panel's critiques of one plan. Convergent concerns are signal; be decisive. ${FORMAT_INSTRUCTION}`,
           0.3,
         ),
       reportProgress,
       10000,
-    );
+    )) as JudgeResult;
     const roster = perspectives.map((p) => p.label).join(", ");
-    return `PLAN CRITIQUE (${perspectives.length} critics: ${roster})\n\n${verdict}`;
+    // Critics already ran and billed — return their raw critiques rather than nothing.
+    if (judged.text === null) {
+      const raw = perspectives.map((p) => `=== ${p.label} ===\n${p.text}`).join("\n\n");
+      return `PLAN CRITIQUE (${perspectives.length} critics: ${roster})\n\n⚠️ NO SYNTHESIS — every judge was unavailable (usually quota). Critiques below are UNMERGED; convergence across critics has NOT been assessed, so weigh them yourself.\n\n${raw}`;
+    }
+    return `PLAN CRITIQUE (${perspectives.length} critics: ${roster})\n\n${judgeAttribution(judged)}${judged.text}`;
   },
 });
 
