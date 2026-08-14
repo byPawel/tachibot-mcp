@@ -664,7 +664,7 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
       try {
         // Add date context to query
         const dateAwareQuery = `[Current date: ${currentDate}] Verify this claim: "${claim.text}". Is it factually accurate? Provide evidence.`;
-        console.log(`[Challenger] Fact-checking with date context: ${currentDate}`);
+        console.error(`[Challenger] Fact-checking with date context: ${currentDate}`);
 
         // Use SmartAPIClient with retry logic
         const timeoutConfig = getSmartTimeout(PROVIDER_PERPLEXITY, 'batch');
@@ -715,7 +715,7 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
         // Skip if no programming-specific domains were found
         // This prevents false positives where generic words triggered technical detection
         if (domains.length === 0) {
-          console.log(`Skipping doc verification for claim (no programming domains found): ${claim.text.substring(0, 50)}...`);
+          console.error(`Skipping doc verification for claim (no programming domains found): ${claim.text.substring(0, 50)}...`);
           continue;
         }
 

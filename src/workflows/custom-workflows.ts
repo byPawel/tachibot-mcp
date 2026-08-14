@@ -666,7 +666,7 @@ export class CustomWorkflowEngine {
     fs.writeFileSync(filepath, content);
     this.workflows.set(workflow.name, workflow);
 
-    console.log(`✅ Saved workflow: ${workflow.name} to ${filepath}`);
+    console.error(`✅ Saved workflow: ${workflow.name} to ${filepath}`);
   }
 
   /**
