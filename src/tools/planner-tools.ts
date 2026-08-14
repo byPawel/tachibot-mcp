@@ -527,7 +527,8 @@ function getActiveWorkflow(task: string, context: string): WorkflowStep[] {
 }
 
 // All workflow steps (conditional ones filtered at runtime)
-const ALL_WORKFLOW_STEPS: WorkflowStep[] = [
+// Exported so tests can validate emitted params against the real tool schemas
+export const ALL_WORKFLOW_STEPS: WorkflowStep[] = [
   // Phase 1: Search (with current date for fresh results)
   {
     id: "search",
@@ -560,7 +561,9 @@ const ALL_WORKFLOW_STEPS: WorkflowStep[] = [
     buildParams: (task, context, codeContext, answers, prior) => ({
       task: codeContext ? "review" : "analyze",
       ...(codeContext ? { code: codeContext } : {}),
-      requirements: `Task: ${task}
+      // qwen_coder's schema requires `query` (there is no `requirements`
+      // field, and it's not a recognized alias — see param-aliases.ts)
+      query: `Task: ${task}
 ${context ? `Context: ${context}` : ""}
 ${answers ? `User Clarifications:\n${answers}` : ""}
 ${prior.search ? `Research:\n${extractSummary(prior.search, PRIOR_CONTEXT_LIMIT_INTERMEDIATE)}` : ""}
