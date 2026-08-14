@@ -14,6 +14,8 @@
     "profiles/",
     "workflows/",
     "skills/",
+    "!skills/release",
+    "!skills/landing",
     "docs/",
     "tools.config.json",
     "smithery.yaml",

@@ -45,7 +45,8 @@ zip -r "$PACKAGE_NAME" \
     LICENSE \
     .env.example \
     docs/ \
-    -x "*.DS_Store" "*/__tests__/*" "*.test.js" "*.spec.js" "*/.git/*"
+    -x "*.DS_Store" "*/__tests__/*" "*.test.js" "*.spec.js" "*/.git/*" \
+       "skills/landing/*" "skills/release/*"
 
 # Check if package was created successfully
 if [ -f "$OUTPUT_PATH" ]; then

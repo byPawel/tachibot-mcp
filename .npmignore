@@ -76,3 +76,9 @@ azure-pipelines.yml
 run-*.mjs
 analyze-*.mjs
 verify-*.js
+
+# Private maintainer skills — internal tooling, not for users.
+# /release publishes THIS package; /landing targets a private sibling repo.
+# .gitignore does not govern npm packing, so they must be listed here too.
+skills/landing/
+skills/release/
