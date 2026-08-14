@@ -1,15 +1,16 @@
 /**
- * stdout protocol guard — no console.log in src/.
+ * stdout protocol guard — no stdout writes in src/.
  *
  * WHY THIS EXISTS: TachiBot is a stdio-transport MCP server. stdout IS the
  * JSON-RPC channel between the server and the client. Anything written to
  * stdout that is not a JSON-RPC frame corrupts the protocol stream and can
- * break or wedge the client session. console.log writes to stdout, so every
+ * break or wedge the client session. console.log, console.info and
+ * console.debug all write to stdout, as does process.stdout.write, so every
  * diagnostic in src/ must use console.error (stderr) instead.
  *
  * If this test just failed on your new code: do NOT silence or exclude it —
- * change your console.log(...) to console.error(...). The output still shows
- * up in the terminal/logs; it just stays off the protocol channel.
+ * change your console.log/info/debug(...) to console.error(...). The output
+ * still shows up in the terminal/logs; it just stays off the protocol channel.
  *
  * Deliberate exclusions:
  *  - src/cli/          a real CLI, stdout is the correct place for its output
@@ -44,8 +45,18 @@ function collectTsFiles(dir: string): string[] {
   return out;
 }
 
+// Every call form that writes to stdout. Paren-anchored so prose mentions in
+// string literals (e.g. commit-guardian's "Remove console.log statements"
+// suggestion text) don't trip the guard.
+const STDOUT_WRITERS = [
+  "console.log(",
+  "console.info(",
+  "console.debug(",
+  "process.stdout.write(",
+];
+
 describe("stdout protocol guard", () => {
-  it("src/ contains no console.log (stdout is the MCP JSON-RPC channel)", () => {
+  it("src/ contains no stdout writes (stdout is the MCP JSON-RPC channel)", () => {
     const offenders: string[] = [];
 
     const files = collectTsFiles(SRC_DIR).filter(
@@ -56,20 +67,22 @@ describe("stdout protocol guard", () => {
       const lines = fs.readFileSync(file, "utf8").split("\n");
       lines.forEach((line, i) => {
         const trimmed = line.trim();
-        // Skip pure comment lines — only executable console.log corrupts stdout
+        // Skip pure comment lines — only executable writes corrupt stdout
         if (trimmed.startsWith("//") || trimmed.startsWith("*")) return;
-        if (line.includes("console.log(")) {
-          offenders.push(`${path.relative(SRC_DIR, file)}:${i + 1}`);
+        const hit = STDOUT_WRITERS.find((w) => line.includes(w));
+        if (hit) {
+          offenders.push(`${path.relative(SRC_DIR, file)}:${i + 1} (${hit}...)`);
         }
       });
     }
 
     if (offenders.length > 0) {
       throw new Error(
-        `console.log found in src/ — stdout is the MCP JSON-RPC protocol channel ` +
-          `on stdio transport, so console.log CORRUPTS the stream and can break the ` +
-          `client session. Use console.error instead (stderr is safe and still ` +
-          `visible in logs). Offenders:\n  ${offenders.join("\n  ")}`,
+        `stdout write found in src/ — stdout is the MCP JSON-RPC protocol channel ` +
+          `on stdio transport, so console.log/info/debug and process.stdout.write ` +
+          `CORRUPT the stream and can break the client session. Use console.error ` +
+          `instead (stderr is safe and still visible in logs). Offenders:\n  ` +
+          `${offenders.join("\n  ")}`,
       );
     }
   });
