@@ -92,3 +92,6 @@ dokoro/
 
 # Landing-site sync skill — references sibling repo ../landing/tachibot-landing
 skills/landing/
+
+# Desktop config template — holds API-key placeholders, machine-specific paths
+claude_desktop_config.template.json
