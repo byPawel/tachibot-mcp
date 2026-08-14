@@ -4,18 +4,18 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.28.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
-[![Tools](https://img.shields.io/badge/tools-65_active-brightgreen.svg)](#-tool-ecosystem-65-tools)
+[![Version](https://img.shields.io/badge/version-2.30.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Tools](https://img.shields.io/badge/tools-66_active-brightgreen.svg)](#-tool-ecosystem-66-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**65 AI tools. 12 providers. One protocol.**
+**66 AI tools. 12 providers. One protocol.**
 
-Orchestrate Perplexity, Grok 4.5, GPT-5.6, Gemini, Qwen, Kimi K3, and MiniMax M3
+Orchestrate Perplexity, Grok 4.6, GPT-5.6, Gemini, Qwen, Kimi K3, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
-[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-65-tools) &#183; [Documentation](https://tachibot.com/docs)
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-66-tools) &#183; [Documentation](https://tachibot.com/docs)
 
 <br>
 
@@ -29,6 +29,15 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 ---
 
 ## What's New
+
+### v2.30.0
+- **`grok_search` was not searching.** It ran on `grok-4.5`, which never invokes the `web_search` tool on xAI's Agent Tools API — so it answered from training data while still rendering a source footer and a "Search used up to N sources" cost line computed locally from `max_search_results`, not from real usage. Probed Aug 14: asked today's date, `grok-4.5` replied *"October 10, 2025"* with zero `web_search_call` entries; **`grok-4.6` replied correctly with two search calls and a citation.** `grok_search` now runs `grok-4.6` (same $2/$6 and 500K context as 4.5). The regression test asserts *grounding* — a `web_search_call` and ≥1 annotation — never the answer text, because a plausible ungrounded answer is precisely what hid this.
+- **Correction to the v2.27.0 note below:** `grok_search_lite` never ran on `grok-4-1-fast` at $0.20/$0.50. xAI retired that id and silently served `grok-4.3` — HTTP 200, the swap disclosed only in the response body's `model` field, so nothing threw and no fallback fired. The advertised "~10x cheaper" was really ~1.6x, and `grok-4.3` does not invoke web search either.
+- **13 `console.log` calls were corrupting the MCP protocol stream.** stdout is the JSON-RPC channel on a stdio server; diagnostics now go to stderr, guarded by a test that also rejects `console.info`, `console.debug` and `process.stdout.write`.
+- **`create_workflow` silently destroyed existing workflow files** — the existence check guarded the *directory*, not the *file*. It now refuses to clobber unless `overwrite: true`, and reports the real `.tachibot/workflows/` path instead of `.tachi/workflows/`.
+- **Eight prompt maps injected the literal string `"undefined"`** into system prompts for any unrecognised `approach`/`task`, because the `||` fallback sat *inside* the index. Fixed across `grok_reason`, `grok_code`, `kimi_thinking`, `qwen_reason`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`.
+- **Workflow steps ran the wrong model** — the `qwen_algo` step called QwQ-32B with a generic prompt instead of Qwen3.8-Max, and `qwq_reason` lost its 4-persona deliberation entirely. Both now delegate to the real tools. Separately, `planner_maker`'s `qwen_coder` step sent a parameter the schema rejects, so every execution of it failed validation.
+- Test suite **130 → 158**. The live search probe is now opt-in behind `RUN_LIVE_TESTS=1`, so an ordinary `npm test` no longer makes a billed API call.
 
 ### v2.28.0
 - **Qwen3.8 Max** (Aug 3, `qwen/qwen3.8-max`) — Alibaba's new flagship, GA the same day, now powers `qwen_algo`, `qwen_reason`, and the `qwen_reason` juror. **1M context (up from 262K)**, multimodal (text+image+video in), and the first Qwen exposing **configurable reasoning effort**. $2/$6 per M.
@@ -212,7 +221,7 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## Tool Ecosystem (65 Tools)
+## Tool Ecosystem (66 Tools)
 
 ### Research & Search (6)
 `perplexity_ask` &#183; `perplexity_reason` &#183; `grok_search` &#183; `grok_search_lite` &#183; `openai_search` &#183; `gemini_search`

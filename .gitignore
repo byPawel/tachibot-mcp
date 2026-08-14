@@ -95,3 +95,6 @@ skills/landing/
 
 # Desktop config template — holds API-key placeholders, machine-specific paths
 claude_desktop_config.template.json
+
+# Release skill — performs npm publish / tagging (account-level actions)
+skills/release/
