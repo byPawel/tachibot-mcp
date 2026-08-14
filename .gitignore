@@ -89,3 +89,6 @@ evals/
 
 # Dokoro workspace (personal notes/assets)
 dokoro/
+
+# Landing-site sync skill — references sibling repo ../landing/tachibot-landing
+skills/landing/

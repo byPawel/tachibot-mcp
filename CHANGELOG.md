@@ -5,6 +5,25 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.0] - 2026-08-14
+
+Ten defects found by an MCP-compliance audit. Every one was verified against source or the live xAI API before being fixed; each carries a regression test.
+
+### Fixed
+- **`grok_search` was not searching.** It ran on `grok-4.5`, which never invokes the `web_search` tool on xAI's Agent Tools API — so it answered from training data while rendering a source footer and a "Search used up to N sources" line computed locally from `max_search_results`, not from actual usage. Probed 2026-08-14: asked the date, `grok-4.5` returned "October 10, 2025" with zero `web_search_call` entries; `grok-4.6` returned the correct date with two search calls and a citation. Repointed to `grok-4.6` (added to `GROK_MODELS`/`GrokModel`; same $2/$6 and 500K context as 4.5). The new test asserts *grounding* — presence of a `web_search_call` and ≥1 annotation — never the answer text, because a plausible ungrounded answer is exactly what hid this.
+- **13 `console.log` calls corrupted the JSON-RPC stream.** stdout is the protocol channel on a stdio-transport MCP server. Sites in `provider-router.ts` (fired on every routed provider call), `smart-api-client.ts`, `scout.ts`, `challenger.ts`, `custom-workflows.ts` now use `console.error`. Guarded by a test that also rejects `console.info`, `console.debug` and `process.stdout.write`.
+- **`create_workflow` silently destroyed user files.** `saveWorkflow()` checked `existsSync` on the *directory* and then wrote the *file* unguarded, so a name collision overwrote existing YAML with no warning. Now refuses unless `overwrite: true` is passed, and the success message reports the real `.tachibot/workflows/` path instead of `.tachi/workflows/`.
+- **Eight prompt maps injected the literal string "undefined".** The `||` fallback sat *inside* the index (`approachPrompts[args.approach || 'analytical']`), so it only rescued an empty value — any unknown one still resolved to `undefined` and landed in the system prompt. Fixed in `grok_reason`, `grok_code`, `kimi_thinking`, `qwen_reason`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`. Same class as 2.28.x's OpenAI fix.
+- **`tool-mapper` ran the wrong model.** Its `qwen_algo` case called `QWQ_32B` with a generic prompt instead of Qwen3.8-Max with the algorithm-engineer protocol, and `qwq_reason` lost its 4-persona deliberation entirely — so a workflow step got a materially different tool than the MCP tool of the same name. Both now delegate to the real tool objects.
+- **`planner_maker` emitted an invalid tool call.** Its `qwen_coder` step sent `{task, code, requirements}`, but that schema has no `requirements`, requires `query`, and `requirements` is not an input alias — so every agent execution of that step failed Zod validation.
+
+### Changed
+- Test suite 130 → 158 (157 passing, 1 opt-in live probe). The live grok grounding probe now requires `RUN_LIVE_TESTS=1` in addition to a key, so an ordinary `npm test` no longer fires a billed API call.
+
+### Notes
+- Golden snapshot unchanged: no tool name, description, or input schema moved. This release is behavior-only.
+- `grok-4.6` is the current latest Grok, verified against `GET /v1/models`. There is no `grok-4.7` or `grok-5`.
+
 ## [2.29.0] - 2026-08-12
 
 ### Fixed

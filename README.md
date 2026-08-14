@@ -64,7 +64,7 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 - **One-click Claude Desktop install** &mdash; download the `.mcpb` from the latest release and double-click. No JSON editing.
 - **`doctor`** &mdash; shows which keys are set, which tools are visible vs hidden and why, and what to try first.
 
-#### New tools & skills (65 tools · 19 skills)
+#### New tools & skills (66 tools · 19 skills)
 - `debug_triage` &mdash; ranked root-cause hypotheses with the cheapest discriminating check for each (Grok 4.3)
 - `spec_writer` &mdash; loose request → reviewable spec: user stories, Given/When/Then, out-of-scope, open questions (GPT-5.5)
 - `diff_review` / `plan_critique` / `testgen` / `security_review` &mdash; multi-model diff review, adversarial plan red-team, test generation, OWASP/CWE audit
