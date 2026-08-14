@@ -17,9 +17,13 @@
  *  1. Keyless wiring guard (always runs, mocked fetch): grokSearchTool must send
  *     the pinned search model (CURRENT_MODELS.grok.search) to /v1/responses with
  *     a web_search tool declared. Catches pin drift without network or keys.
- *  2. Live grounding probe (network-gated, skipped without a real GROK_API_KEY /
- *     XAI_API_KEY): the pinned model must actually invoke web_search. Catches
- *     the grok-4.5 failure mode, which is invisible at the request level.
+ *  2. Live grounding probe (EXPLICIT OPT-IN: set RUN_LIVE_TESTS=1 AND have a
+ *     real GROK_API_KEY / XAI_API_KEY): the pinned model must actually invoke
+ *     web_search. Catches the grok-4.5 failure mode, which is invisible at the
+ *     request level. Opt-in because it fires a real BILLED web search with a
+ *     180s timeout — a key in .env alone must not make every local `npm test`
+ *     cost money and depend on the network. Run it with:
+ *       RUN_LIVE_TESTS=1 npm test -- grok-search-grounding
  */
 
 import { jest } from "@jest/globals";
@@ -115,8 +119,10 @@ describe("grok_search wiring guard (no network, no real key needed)", () => {
   });
 });
 
-// Live probe — only with a real key. CI without keys stays green via describe.skip.
-const describeLive = REAL_GROK_KEY ? describe : describe.skip;
+// Live probe — needs BOTH a real key AND the explicit RUN_LIVE_TESTS=1 opt-in
+// (see header). Everything else stays green via describe.skip.
+const describeLive =
+  REAL_GROK_KEY && process.env.RUN_LIVE_TESTS === "1" ? describe : describe.skip;
 
 describeLive("grok_search grounding (LIVE network — costs one real API call)", () => {
   it(
