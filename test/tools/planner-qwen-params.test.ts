@@ -12,9 +12,13 @@
  * server-main.ts safeAddTool) — so schema and emitter can't silently drift.
  */
 
-const { ALL_WORKFLOW_STEPS } = await import("../../src/tools/planner-tools.js");
-const { qwenCoderTool } = await import("../../src/tools/openrouter-tools.js");
-const { withParamAliases } = await import("../../src/utils/param-aliases.js");
+// Static imports (not top-level await): without an import/export statement the
+// file is not a module, so plain `npx jest <file>` fails under CJS emit with
+// "await expressions are only allowed at the top level of a module". Nothing
+// here needs env vars set before import, so static imports are safe.
+import { ALL_WORKFLOW_STEPS } from "../../src/tools/planner-tools.js";
+import { qwenCoderTool } from "../../src/tools/openrouter-tools.js";
+import { withParamAliases } from "../../src/utils/param-aliases.js";
 
 // The schema exactly as registered: alias preprocessing wrapped around it
 const registeredSchema = withParamAliases(qwenCoderTool).parameters;
