@@ -216,7 +216,7 @@ export const grokReasonTool = defineModelTool({
       {
         role: "system",
         content: `You are Grok 4.5, an expert at logical reasoning and problem-solving.
-${approachPrompts[approach as keyof typeof approachPrompts]}.
+${approachPrompts[approach as keyof typeof approachPrompts] || approachPrompts["first-principles"]}.
 ${context ? `Context: ${context}` : ''}
 ${FORMAT_INSTRUCTION}`
       },
@@ -274,7 +274,7 @@ export const grokCodeTool = defineModelTool({
       {
         role: "system",
         content: `You are Grok 4.5, expert programmer and code analyst.
-Task: ${taskPrompts[task as keyof typeof taskPrompts]}
+Task: ${taskPrompts[task as keyof typeof taskPrompts] || taskPrompts.analyze}
 ${language ? `Language: ${language}` : ''}
 ${requirements ? `Requirements: ${requirements}` : ''}
 ${FORMAT_INSTRUCTION}`
