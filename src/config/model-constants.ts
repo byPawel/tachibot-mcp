@@ -94,15 +94,21 @@ export const PERPLEXITY_MODELS = {
   SONAR_REASONING: "sonar-reasoning-pro", // Reasoning model (expensive - avoid)
 } as const;
 
-// Grok Models (xAI) - Re-verified 2026-07-27 against docs.x.ai: Grok 4.5 is still the flagship.
-// NEXT BUMP CANDIDATE: Grok 4.6 (2T params) was confirmed by Musk on Jul 18, finished pre-training
-// the week of Jul 20, and was given a "~2 weeks" ETA — so expect it early Aug 2026, with 4.7 ~2 weeks
-// behind it. Nothing is official yet (no ID, pricing, or context window). Check before bumping.
+// Grok Models (xAI) - Re-verified 2026-08-14 against GET /v1/models: Grok 4.6 has shipped and is
+// the current latest. Catalog: grok-4.20-0309-* (x3), grok-4.3, grok-4.5, grok-4.6, grok-build-0.1,
+// plus grok-imagine image/video. grok-4.7 and grok-5 do NOT exist yet.
 // Also verified absent: grok-code-fast-2 (unannounced) and grok-build-0.2 (docs still list 0.1 only).
 export const GROK_MODELS = {
-  // Grok 4.5 (Jul 8, 2026) - CURRENT FLAGSHIP ("Opus-class")
+  // Grok 4.6 (Aug 2026) - CURRENT LATEST — verified against /v1/models on 2026-08-14.
+  // 500K ctx, $2/$6 (same as 4.5), cached input $0.50/M (vs 4.5's $0.30/M). No `-latest` alias yet.
+  // CRITICAL for search: 4.6 actually invokes web_search on the Agent Tools API; 4.5 does NOT
+  // (returns ungrounded training-data answers with zero web_search_call entries).
+  _4_6: "grok-4.6",                                      // Latest: 500K ctx, $2/$6, cached $0.50/M
+
+  // Grok 4.5 (Jul 8, 2026) - previous flagship ("Opus-class")
   // 500K context (SMALLER than 4.3's 1M — fine for tools, mind huge inputs), $2/$6,
   // configurable reasoning effort. EU API access landed Jul 17, 2026 — 4.3 kept as quota/region fallback.
+  // WARNING: does not invoke web_search on /v1/responses — do not pin search paths to it.
   _4_5: "grok-4.5",                                      // Flagship: 500K ctx, $2/$6, reasoning.effort low|high
 
   // Grok 4.3 (Apr 30, 2026) - previous flagship, kept as FALLBACK
@@ -250,7 +256,9 @@ export const CURRENT_MODELS = {
     code: GROK_MODELS._4_5,              // grok-4.5 (flagship quality, tool-calling)
     debug: GROK_MODELS._4_5,             // grok-4.5 (flagship debugging)
     brainstorm: GROK_MODELS._4_5,        // grok-4.5 (500K context)
-    search: GROK_MODELS._4_5,            // grok-4.5 flagship synthesis over live search
+    search: GROK_MODELS._4_6,            // grok-4.6: the ONLY current model verified (2026-08-14) to
+                                         // actually invoke web_search on /v1/responses — grok-4.5
+                                         // silently answers from training data with zero searches
     search_lite: GROK_MODELS._4_3,       // grok-4.3: $1.25/$2.50, 1M ctx — ~1.6x/2.4x cheaper than
                                          // grok-4.5 search. Was _4_1_FAST_NON_REASONING until that id
                                          // was retired (xAI silently served 4.3 for it anyway).

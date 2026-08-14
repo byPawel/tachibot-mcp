@@ -433,7 +433,7 @@ export const grokSearchTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.5 with live search. Search for: "${query}".
+        content: `You are Grok 4.6 with live search. Search for: "${query}".
 ${recencyPrompt}
 Provide concise, factual results with sources.
 Limit search to ${max_search_results} sources for cost control.
@@ -445,7 +445,7 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    log?.info(`Grok Search: ${max_search_results} sources, recency: ${recency} (using grok-4.5 flagship)`);
+    log?.info(`Grok Search: ${max_search_results} sources, recency: ${recency} (using grok-4.6, verified grounded)`);
 
     // Extract domains from sources if specified
     const domains = sources
@@ -453,7 +453,9 @@ ${FORMAT_INSTRUCTION}`
       ?.flatMap((s: any) => s.allowed_websites) || [];
 
     const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_20_REASONING,  // → grok-4.5 flagship (grok_search_lite is the cheap tier)
+      model: GrokModel.GROK_4_6,  // grok-4.6: only current model that actually invokes web_search
+                                  // on /v1/responses — 4.5 answers ungrounded from training data
+                                  // (grok_search_lite is the cheap tier)
       enableLiveSearch: true,
       searchSources: max_search_results,
       searchDomains: domains,
