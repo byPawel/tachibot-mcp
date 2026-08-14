@@ -19,10 +19,14 @@ import { trackToolCall, estimateTokens, isTrackingEnabled } from "../utils/usage
 // Lazy load OpenRouter for Qwen models
 let callOpenRouter: any = null;
 let OpenRouterModel: any = null;
+let qwenAlgoTool: any = null;
+let qwqReasoningTool: any = null;
 try {
   const openRouterModule = await import("../tools/openrouter-tools.js");
   callOpenRouter = openRouterModule.callOpenRouter;
   OpenRouterModel = openRouterModule.OpenRouterModel;
+  qwenAlgoTool = openRouterModule.qwenAlgoTool;
+  qwqReasoningTool = openRouterModule.qwqReasoningTool;
 } catch {
   // OpenRouter not available
 }
@@ -252,41 +256,64 @@ export async function executeWorkflowTool(
         return buildResult(perplexityResult, "perplexity-sonar-pro");
 
       // ============ QWEN TOOLS (via OpenRouter) ============
+      // ROOT CAUSE NOTE: most cases in this switch are a PARALLEL
+      // REIMPLEMENTATION — they call provider functions with hand-written
+      // prompts instead of delegating to the registered tool objects, so
+      // model and prompt can silently drift from the real MCP tool
+      // (qwen_algo ran QWQ-32B with a generic prompt while the real tool ran
+      // Qwen3.8-Max with the Principal Algorithm Engineer protocol). When
+      // touching a case, prefer delegating to the real tool object — see the
+      // perplexity_*, qwq_reason, and qwen_algo cases.
       case "qwen_coder":
-      case "qwq_reason":
         if (!callOpenRouter) {
           return buildResult("[Qwen tools require OpenRouter API key. Add OPENROUTER_API_KEY to .env]", "error");
         }
-        const qwenModel =
-          toolName === "qwq_reason"
-            ? OpenRouterModel.QWQ_32B
-            : OpenRouterModel.QWEN3_CODER;
         return buildResult(
           await callOpenRouter(
             toMessages(prompt, systemPrompt),
-            qwenModel,
+            OpenRouterModel.QWEN3_CODER,
             temperature,
             maxTokens,
           ),
-          qwenModel
+          OpenRouterModel.QWEN3_CODER
+        );
+
+      case "qwq_reason":
+        if (!qwqReasoningTool) {
+          return buildResult("[Qwen tools require OpenRouter API key. Add OPENROUTER_API_KEY to .env]", "error");
+        }
+        // Delegate to the real tool so workflows get the same 4-persona
+        // multi-perspective protocol as the qwq_reason MCP tool
+        return buildResult(
+          await qwqReasoningTool.execute(
+            {
+              problem: prompt,
+              ...(typeof input === 'object' && input.context ? { context: input.context } : {}),
+              ...(typeof input === 'object' && input.approach ? { approach: input.approach } : {}),
+            },
+            { log: console.error },
+          ),
+          OpenRouterModel.QWQ_32B
         );
 
       case "qwen_algo":
-        if (!callOpenRouter) {
+        if (!qwenAlgoTool) {
           return buildResult("[Qwen algo tool requires OpenRouter API key. Add OPENROUTER_API_KEY to .env]", "error");
         }
-        // Extract focus mode from input if available
-        const algoFocus = typeof input === 'object' && input.focus ? input.focus : 'general';
-        const algoSystemPrompt = systemPrompt || `You are QwQ-32B, an expert algorithmic reasoning model.
-Focus: ${algoFocus}. Analyze complexity, suggest optimizations, and provide implementation guidance.`;
+        // Delegate to the real tool: Qwen3.8-Max with reasoning_effort=medium
+        // and the full algorithm-analysis prompt (this case previously ran
+        // QWQ-32B with a generic prompt — a silently weaker model)
         return buildResult(
-          await callOpenRouter(
-            toMessages(prompt, algoSystemPrompt),
-            OpenRouterModel.QWQ_32B,
-            0.2, // Low temperature for precise algorithmic analysis
-            maxTokens,
+          await qwenAlgoTool.execute(
+            {
+              problem: prompt,
+              focus: typeof input === 'object' && input.focus ? input.focus : 'general',
+              ...(typeof input === 'object' && input.constraints ? { constraints: input.constraints } : {}),
+              ...(typeof input === 'object' && input.context ? { context: input.context } : {}),
+            },
+            { log: console.error },
           ),
-          OpenRouterModel.QWQ_32B
+          OpenRouterModel.QWEN3_8_MAX
         );
 
       // ============ KIMI TOOLS (via OpenRouter) ============

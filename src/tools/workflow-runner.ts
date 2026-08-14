@@ -443,7 +443,7 @@ export function registerWorkflowTools(server: FastMCP) {
 
 To use it: workflow --name ${args.name} --query "your input"
 
-Workflow saved to: .tachi/workflows/${args.name}.yaml`;
+Workflow saved to: .tachibot/workflows/${args.name}.yaml`;
       } catch (error: any) {
         return `Failed to create workflow: ${error.message}`;
       }

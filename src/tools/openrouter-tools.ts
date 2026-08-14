@@ -693,7 +693,7 @@ export const kimiThinkingTool = defineModelTool({
       {
         role: "system",
         content: `You are Kimi K3, an expert reasoning model. Be concise and direct.
-${approachPrompts[args.approach as keyof typeof approachPrompts || 'step-by-step']}.
+${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['step-by-step']}.
 Use ${args.maxSteps} reasoning steps max. ${args.context ? `Context: ${args.context}` : ''}
 ${FORMAT_INSTRUCTION}`
       },
@@ -1073,7 +1073,7 @@ export const qwenReasonTool = defineModelTool({
       {
         role: "system",
         content: `You are Qwen3.8-Max, Alibaba's flagship reasoning model.
-${approachPrompts[args.approach || 'mathematical']}.
+${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['mathematical']}.
 Show your complete reasoning process.
 ${args.context ? `Context: ${args.context}` : ''}
 ${FORMAT_INSTRUCTION}`
@@ -1304,7 +1304,7 @@ export const deepseekReasonTool = {
       {
         role: "system",
         content: `You are DeepSeek V4 Pro, an open-weight frontier reasoning model (MLA/GRPO) with elite math and chained-reasoning ability.
-${approachPrompts[args.approach || 'analytical']}.
+${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['analytical']}.
 Show your reasoning chain, then state a clear conclusion. Flag any assumptions and uncertainty explicitly.
 ${args.context ? `Context: ${args.context}` : ''}
 ${FORMAT_INSTRUCTION}`
@@ -1432,7 +1432,7 @@ export const glmReasonTool = {
       {
         role: "system",
         content: `You are Zhipu GLM-5.2, a frontier open-weights agentic model with a 1M-token context, strong at long-horizon coding, tool-use planning and software-engineering reasoning.
-${approachPrompts[args.approach || 'agentic']}.
+${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['agentic']}.
 State your plan, reason through it, then give a decisive conclusion. Flag assumptions and risks explicitly.
 ${args.context ? `Context: ${args.context}` : ''}
 ${FORMAT_INSTRUCTION}`
@@ -1486,7 +1486,7 @@ export const stepfunReasonTool = {
       {
         role: "system",
         content: `You are StepFun Step 3.7 Flash, an efficient reasoning model with strong AIME/SWE-Verified results.
-${approachPrompts[args.approach || 'analytical']}.
+${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['analytical']}.
 Be efficient: reason tightly, then give a clear conclusion. Flag assumptions explicitly.
 ${args.context ? `Context: ${args.context}` : ''}
 ${FORMAT_INSTRUCTION}`
@@ -1537,7 +1537,7 @@ export const ernieReasonTool = {
       {
         role: "system",
         content: `You are Baidu ERNIE 4.5 VL, a 424B-parameter MoE with broad knowledge and strong human-preference alignment.
-${approachPrompts[args.approach || 'analytical']}.
+${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['analytical']}.
 Give a well-rounded, decisive answer. Flag assumptions and uncertainty.
 ${args.context ? `Context: ${args.context}` : ''}
 ${FORMAT_INSTRUCTION}`

@@ -94,7 +94,7 @@ export class SmartAPIClient {
 
         const latency = Date.now() - attemptStart;
 
-        console.log(
+        console.error(
           `[SmartAPIClient] Success: ${fullConfig.provider} ` +
           `(attempt ${attempt + 1}, ${latency}ms, timeout=${timeoutMs}ms)`
         );
@@ -171,7 +171,7 @@ export class SmartAPIClient {
       ? Math.random() * cappedDelay  // Full jitter: random(0, cappedDelay)
       : cappedDelay;
 
-    console.log(
+    console.error(
       `[SmartAPIClient] Backing off for ${Math.round(finalDelay)}ms ` +
       `(attempt ${attempt + 1}, ${enableJitter ? 'with' : 'without'} jitter)`
     );
@@ -205,7 +205,7 @@ export class SmartAPIClient {
       errorMessage.includes(pattern.toLowerCase())
     );
 
-    console.log(
+    console.error(
       `[SmartAPIClient] Error "${errorMessage.slice(0, 50)}..." is ` +
       `${isRetryable ? 'retryable' : 'not retryable'}`
     );

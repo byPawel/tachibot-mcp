@@ -177,7 +177,7 @@ export class Scout {
     // Get current date and prepend to query for temporal context
     const currentDate = getCurrentDate();
     const dateAwareQuery = `[Current date: ${currentDate}] ${query}`;
-    console.log(`[Scout] Date-aware query: ${dateAwareQuery}`);
+    console.error(`[Scout] Date-aware query: ${dateAwareQuery}`);
 
     // Create progress stream
     const progressStream = createProgressStream(4);
@@ -487,7 +487,7 @@ export class Scout {
     try {
       const enhancedQuery = `Provide comprehensive, current information about: ${query}. Include latest updates, key facts, and reliable sources.`;
 
-      console.log(`[Scout] Starting deep search for query: ${query}`);
+      console.error(`[Scout] Starting deep search for query: ${query}`);
 
       // Build provider list for failover
       const providers: ProviderConfig<string>[] = [];
@@ -548,7 +548,7 @@ export class Scout {
       }
 
       const searchDuration = Date.now() - startTime;
-      console.log(`[Scout] Deep search completed in ${searchDuration}ms using ${result.provider}`);
+      console.error(`[Scout] Deep search completed in ${searchDuration}ms using ${result.provider}`);
 
       return {
         facts,

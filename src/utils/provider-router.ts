@@ -64,7 +64,7 @@ export class ProviderRouter {
       throw new Error('[ProviderRouter] No providers available or enabled');
     }
 
-    console.log(
+    console.error(
       `[ProviderRouter] Available providers: ${availableProviders.map(p => p.name).join(', ')}`
     );
 
@@ -73,7 +73,7 @@ export class ProviderRouter {
       attempts++;
 
       try {
-        console.log(
+        console.error(
           `[ProviderRouter] Attempting ${provider.name} (attempt ${attempts}/${availableProviders.length})`
         );
 
@@ -87,7 +87,7 @@ export class ProviderRouter {
 
         const totalTime = Date.now() - startTime;
 
-        console.log(
+        console.error(
           `[ProviderRouter] Success with ${provider.name} ` +
           `(total time: ${totalTime}ms, attempts: ${attempts})`
         );
@@ -117,7 +117,7 @@ export class ProviderRouter {
         }
 
         // Otherwise continue to next provider
-        console.log(
+        console.error(
           `[ProviderRouter] Failing over to next provider...`
         );
       }

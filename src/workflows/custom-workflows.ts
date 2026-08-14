@@ -649,6 +649,7 @@ export class CustomWorkflowEngine {
   async saveWorkflow(
     workflow: Workflow,
     format: "yaml" | "json" = "yaml",
+    overwrite: boolean = false,
   ): Promise<void> {
     const dir = path.join(process.cwd(), ".tachibot", "workflows");
     if (!fs.existsSync(dir)) {
@@ -658,6 +659,15 @@ export class CustomWorkflowEngine {
     const filename = `${workflow.name}.${format}`;
     const filepath = path.join(dir, filename);
 
+    // Never silently destroy an existing (possibly hand-edited) workflow file
+    if (!overwrite && fs.existsSync(filepath)) {
+      throw new Error(
+        `Workflow file already exists: ${filepath}. ` +
+          `Choose a different workflow name, or delete/rename the existing file ` +
+          `first if you intend to replace it.`,
+      );
+    }
+
     const content =
       format === "json"
         ? JSON.stringify(workflow, null, 2)
@@ -666,7 +676,7 @@ export class CustomWorkflowEngine {
     fs.writeFileSync(filepath, content);
     this.workflows.set(workflow.name, workflow);
 
-    console.log(`✅ Saved workflow: ${workflow.name} to ${filepath}`);
+    console.error(`✅ Saved workflow: ${workflow.name} to ${filepath}`);
   }
 
   /**

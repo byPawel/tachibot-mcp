@@ -27,10 +27,16 @@ config({ path: path.resolve(__dirname, '../../../.env') });
 const GROK_API_KEY = getGrokApiKey();
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
-// Available Grok models - Updated 2026-07-11 with Grok 4.5 (Jul 8, 2026 flagship)
+// Available Grok models - Updated 2026-08-14 with Grok 4.6 (verified against /v1/models)
 export enum GrokModel {
-  // Grok 4.5 (Jul 8, 2026) - CURRENT FLAGSHIP ("Opus-class")
+  // Grok 4.6 (Aug 2026) - CURRENT LATEST — verified against /v1/models on 2026-08-14.
+  // 500K ctx, $2/$6 (same as 4.5), cached input $0.50/M, no `-latest` alias yet.
+  // The only current model that actually invokes web_search on the Agent Tools API.
+  GROK_4_6 = "grok-4.6",                                      // Latest: 500K ctx, $2/$6, grounded search
+
+  // Grok 4.5 (Jul 8, 2026) - previous flagship ("Opus-class")
   // 500K ctx (smaller than 4.3's 1M), $2/$6, configurable reasoning effort.
+  // WARNING: does NOT invoke web_search on /v1/responses — do not pin search paths to it.
   GROK_4_5 = "grok-4.5",                                      // Flagship: 500K ctx, reasoning.effort low|high
 
   // Grok 4.3 (Apr 30, 2026) - previous flagship, kept as FALLBACK
@@ -210,7 +216,7 @@ export const grokReasonTool = defineModelTool({
       {
         role: "system",
         content: `You are Grok 4.5, an expert at logical reasoning and problem-solving.
-${approachPrompts[approach as keyof typeof approachPrompts]}.
+${approachPrompts[approach as keyof typeof approachPrompts] || approachPrompts["first-principles"]}.
 ${context ? `Context: ${context}` : ''}
 ${FORMAT_INSTRUCTION}`
       },
@@ -268,7 +274,7 @@ export const grokCodeTool = defineModelTool({
       {
         role: "system",
         content: `You are Grok 4.5, expert programmer and code analyst.
-Task: ${taskPrompts[task as keyof typeof taskPrompts]}
+Task: ${taskPrompts[task as keyof typeof taskPrompts] || taskPrompts.analyze}
 ${language ? `Language: ${language}` : ''}
 ${requirements ? `Requirements: ${requirements}` : ''}
 ${FORMAT_INSTRUCTION}`
