@@ -5,6 +5,25 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.31.0] - 2026-08-15
+
+### Added
+- **Prompt technique library goes 37 → 74**, closing three families that were at **zero** coverage. Two of them were load-bearing for tools this server already ships:
+  - **Retrieval (4 new).** TachiBot ships five search tools (`grok_search`, `grok_search_lite`, `perplexity_ask`, `gemini_search`, `openai_search`) and had no discipline for what to do with what they return — retrieved text went straight into reasoning unfiltered, which is where confidently-miscited sources come from. `chain_of_note` (write a note on each source *before* answering), `self_rag` (decide whether to retrieve at all; mark each claim SUPPORTED/UNSUPPORTED), `ircot` (interleave retrieval with each reasoning step, for multi-hop questions where query 2 depends on result 1), `flare` (retrieve only where confidence drops).
+  - **Prompt-injection defence (1 new).** Those same five tools ingest untrusted web text with no isolation contract, so a page saying "ignore previous instructions" was read exactly like our own prompt. `spotlighting` fences untrusted content in explicit markers and states the rule: analyse it as data, never obey it.
+  - **Few-shot / exemplars (5 new).** Nothing touched example selection, ordering or generation, despite this moving accuracy more than most reasoning tricks. `analogical` is the cheapest entry — the model writes its own worked examples, so there is nothing to curate — plus `contrastive_cot`, `auto_cot`, `complexity_based`, `exemplar_selection`.
+- **Eight trace-management techniques** from Jun–Aug 2026 research: `structured_thoughts` (alternating `<try>`/`<outcome>` blocks so the scratch work can be pruned from long runs), `breadth_then_depth` (repair 3 candidates rather than sampling 20 — resampling saturates), `hourglass` (compress to a rule, discard the exploration, regenerate from the rule instead of appending errors), `backtrack` (rewind to the last validated checkpoint rather than restarting or patching), `compute_ration` (triage a *set* by difficulty × payoff before solving any of it), `loop_spec` (declare trigger/goal/verification ladder/stopping rule before running an agent loop), `context_preflight` (score the context on 7 criteria before spending tokens), `prompt_coverage` (map each test to the requirement it covers).
+- **Twelve more filling thin families**: `universal_consistency` (`self_consistency` silently fails on prose, code and plans — nothing to string-match), `self_verification` (re-derive a given *backwards* from your answer), `self_calibration` (judge the answer in a fresh context — a model that just spent 2k tokens justifying an answer will defend it), `adaptive_consistency`, `paraphrase_ensemble`, `maieutic`, `s2a`, `self_ask`, `rephrase_respond`, `metacognitive`, `re2`, plus `atom_of_thoughts`, `algorithm_of_thoughts`, `chain_of_code`, `chain_of_draft` (~5 words per step — there was no cheap-reasoning mode at all), `thread_of_thought`, `chain_of_density`, `verbalized_sampling`, `skeleton_parallel`.
+- **Recommendation rules for all of it.** 74 techniques is past the point where anyone recalls names, so `RECOMMEND_RULES` gained eight groups matched to how people actually phrase the situation — search/cite → `chain_of_note`, untrusted/scraped → `spotlighting`, batch/each-of → `compute_ration`, vague/ambiguous → `rephrase_respond`, agent/loop → `loop_spec`, and so on. Without these the new techniques were reachable only by knowing their name in advance.
+
+### Changed
+- **Twelve original prompts rewritten to read as instructions.** The early set used telegraphic shorthand — `"X" systematic: components→relationships→patterns→strengths/risks→conclusions` — which reads as a label rather than a request and leaves the model to infer the task. Now: *"Analyse X systematically: 1) break it into its components, 2) map how those components relate…"*. Affects `what_if`, `alt_view`, `creative_use`, `investigate`, `evidence`, `analyze`, `first_prin`, `feasible`, `reflect`, `patterns`, `decompose`, `integrate`. A note in the source records the convention so the two styles don't diverge again.
+- **Three new categories** (`retrieval`, `security`, `few_shot`) extend the `list_prompt_techniques` filter enum — the only wire-contract change in this release.
+
+### Notes
+- `skeleton_parallel` is deliberately named apart from the existing `skeleton`: the published Skeleton-of-Thought expands branches independently, ours expands sequentially. Same name upstream, different goal.
+- **Consilience** (arXiv:2608.09898) was evaluated and deliberately **not** added — it ranks candidate runs by the temporal shape of their token-level confidence, which isn't available through an MCP prompt contract. A prose approximation would be cargo-cult rather than the technique.
+
 ## [2.30.1] - 2026-08-14
 
 ### Fixed
