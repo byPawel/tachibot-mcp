@@ -138,7 +138,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 
 ### Advanced Workflows
 - **YAML-Based Workflows** &mdash; Multi-step AI processes with dependency graphs
-- **Prompt Engineering** &mdash; 37 research-backed techniques (including SCoT, ReAct, Reflexion)
+- **Prompt Engineering** &mdash; 85 research-backed techniques (including SCoT, ReAct, Reflexion, Chain-of-Note, Spotlighting)
 - **Verification Checkpoints** &mdash; 50% / 80% / 100% with automated quality scoring
 - **Parallel Execution** &mdash; Run multiple models simultaneously
 

@@ -104,6 +104,9 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "self_rag", alias: "adaptive_retrieval", description: "Decide whether to retrieve at all, critique what returns, mark each claim SUPPORTED/UNSUPPORTED (arXiv:2310.11511)" },
     { name: "ircot", alias: "interleaved_retrieval", description: "Interleave retrieval with each reasoning step — for multi-hop questions where query 2 depends on result 1 (arXiv:2212.10509)" },
     { name: "flare", alias: "active_rag", description: "Retrieve on demand: mark low-confidence spans mid-answer and look up only those (arXiv:2305.06983)" },
+    { name: "astute_rag", alias: "conflict_check", description: "Answer from memory FIRST, then mark each source agrees/fills/conflicts and resolve every conflict out loud — a wrong page silently overriding correct knowledge looks identical to the reverse (arXiv:2410.07176)", tier: 'core', kind: 'contract' },
+    { name: "crag", alias: "grade_the_sources", description: "Grade retrieved sources correct/ambiguous/wrong and act on the grade — search always returns its nearest neighbours, it has no way to return nothing (arXiv:2401.15884)" },
+    { name: "hyde", alias: "hypothetical_answer", description: "Draft the answer you wish existed, search with ITS vocabulary, then discard it — questions and the documents answering them don't look alike (arXiv:2212.10496)" },
   ],
   security: [
     { name: "spotlighting", alias: "untrusted_input", description: "Fence untrusted text in explicit markers so a fetched page saying 'ignore previous instructions' reads as data, not instruction (arXiv:2403.14720)", tier: 'core', kind: 'contract' },
@@ -114,6 +117,15 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "auto_cot", alias: "auto_examples", description: "Cluster the case types, generate one exemplar per cluster — diversity beats polish (arXiv:2210.03493)" },
     { name: "complexity_based", alias: "diverse_examples", description: "Reason at three depths, prefer the longest complete chain over the majority (arXiv:2210.00720)" },
     { name: "exemplar_selection", alias: "pick_examples", description: "Choose examples by similarity to the live query; watch label balance and ordering effects (arXiv:2406.06608)" },
+  ],
+  tabular: [
+    { name: "data_assert", alias: "assert_dont_eyeball", description: "State the downstream purpose, then check the data with executable assertions carrying counts — a filter that silently matched zero rows looks identical to one that worked (arXiv:2412.06724)", tier: 'core', kind: 'contract' },
+    { name: "self_debug", alias: "feed_the_traceback", description: "Feed the ACTUAL traceback back in and fix the smallest thing it implicates, max 3 rounds — re-prompting from scratch discards the only evidence you have (arXiv:2304.05128)", tier: 'core', kind: 'contract' },
+    { name: "chain_of_table", alias: "table_walk", description: "Transform the table one operation at a time, showing the intermediate table and row count after each, until the table IS the answer (arXiv:2401.04398)" },
+    { name: "sub_table_first", alias: "tabsqlify", description: "Extract the relevant sub-table (and prune the schema) with one explicit query, then reason over the small result instead of 10k rows (arXiv:2404.10150, arXiv:2403.00872)" },
+    { name: "sql_stages", alias: "din_sql", description: "Text-to-SQL in four passes: schema-link → classify difficulty → generate → self-correct, capped at 2 correction rounds (arXiv:2304.11015, arXiv:2312.11242)" },
+    { name: "xlsx_map", alias: "map_the_sheet", description: "Map a human-made spreadsheet before computing — merged cells, multi-row headers, formulas, and the subtotal rows hiding inside the data that double-count silently (arXiv:2407.09025)" },
+    { name: "table_format", alias: "pick_the_format", description: "Choose Markdown/HTML/CSV/JSON on purpose — format measurably changes accuracy, and long tables lose their middle (arXiv:2408.08841, arXiv:2307.03172)" },
   ],
   creative: [
     { name: "verbalized_sampling", alias: "spread_candidates", description: "Ask for N candidates WITH probabilities in one pass — directly targets the mode collapse that makes what_if/innovate feel same-y (arXiv:2510.01171)" },
@@ -228,8 +240,8 @@ function findTechnique(nameOrAlias: string): (Technique & { category: string }) 
 // scanned against the task; each hit contributes its techniques with a reason.
 // This is what powers preview_prompt_technique(technique="auto").
 const RECOMMEND_RULES: { match: RegExp; techniques: string[]; why: string }[] = [
-  { match: /\b(bug|error|crash|exception|stack ?trace|failing|broken|throws?|undefined|null)\b/i,
-    techniques: ["rubber_duck", "react"], why: "isolate the fault by explaining the code and looping thought→action→observation" },
+  { match: /\b(bug|error|crash|exception|stack ?trace|traceback|failing|broken|throws?|undefined|null)\b/i,
+    techniques: ["self_debug", "rubber_duck", "react"], why: "debug from the actual traceback, explaining the code and looping thought→action→observation" },
   { match: /\b(test|spec|acceptance|requirement|behav|scenario)\b/i,
     techniques: ["bdd_spec", "test_driven"], why: "pin behavior as Given/When/Then scenarios, then tests-before-code" },
   { match: /\b(refactor|restructure|clean ?up|migrate|rewrite|port)\b/i,
@@ -258,6 +270,12 @@ const RECOMMEND_RULES: { match: RegExp; techniques: string[]; why: string }[] = 
     techniques: ["chain_of_note", "self_rag"], why: "note what each source actually says before answering, and mark which claims it supports" },
   { match: /\b(multi[- ]?hop|follow[- ]?up search|then look up|chain of|depends on (the )?result)\b/i,
     techniques: ["ircot"], why: "interleave retrieval with reasoning when query 2 depends on result 1" },
+  // Conflict is the case a second retrieval surface makes routine rather than rare: an
+  // indexed local note and a fetched page can disagree, and neither wins by default.
+  { match: /\b(contradict\w*|conflict\w*|disagree\w*|out ?of ?date|stale|outdated|which is right|says otherwise|inconsistent)\b/i,
+    techniques: ["astute_rag", "crag"], why: "answer from memory first, then resolve each source-vs-knowledge conflict out loud instead of silently deferring" },
+  { match: /\b(no (good )?results|nothing (relevant|useful)|bad results|irrelevant|can'?t find|couldn'?t find|search (failed|returned))\b/i,
+    techniques: ["crag", "hyde"], why: "grade the sources before reasoning over them, and search with a drafted answer's vocabulary rather than the question's" },
 
   // Untrusted input
   { match: /\b(untrusted|user[- ]?supplied|third[- ]?party|injection|jailbreak|prompt[- ]?inject\w*|ignore previous|external content|scraped)\b/i,
@@ -282,6 +300,19 @@ const RECOMMEND_RULES: { match: RegExp; techniques: string[]; why: string }[] = 
   // Long agent runs
   { match: /\b(agent|loop|iterate until|keep going|multi[- ]?step|long[- ]?running|workflow|pipeline)\b/i,
     techniques: ["loop_spec", "structured_thoughts"], why: "declare the loop and its stopping rule, and separate scratch work from conclusions so it can be pruned" },
+
+  // Tabular / spreadsheet work — nothing here matched data-shaped tasks before, so
+  // "filter these rows" fell through to the generic core contracts.
+  { match: /\b(table|tabular|csv|dataframe|pandas|rows?|columns?|cells?)\b/i,
+    techniques: ["chain_of_table", "sub_table_first", "data_assert"], why: "transform the table step by step, narrow before reasoning, and assert what should be true" },
+  // Spreadsheets are matched separately from tables: an .xlsx has layout that a CSV
+  // doesn't, and mapping it has to happen before any of the table techniques apply.
+  { match: /\b(spreadsheet|excel|xlsx|xls|google ?sheet|workbook|worksheet|merged cells?|pivot)\b/i,
+    techniques: ["xlsx_map", "table_format"], why: "map headers, formulas and embedded subtotal rows before computing, and pick the paste format on purpose" },
+  { match: /\b(sql|quer(y|ies)|schema|joins?|group by|postgres|sqlite|bigquery|text[- ]?to[- ]?sql|database)\b/i,
+    techniques: ["sql_stages", "sub_table_first"], why: "schema-link → classify → generate → self-correct, and prune the schema before generating" },
+  { match: /\b(clean\w* (the )?data|messy data|dedup\w*|missing values|data quality|sanity[- ]?check|validate the data)\b/i,
+    techniques: ["data_assert"], why: "name the downstream purpose first, then write assertions that could actually fail" },
 ];
 
 interface Recommendation { technique: string; kind: string; tier: string; category: string; why: string; }
@@ -318,16 +349,20 @@ function generateToken(): string {
   return `pt_${randomBytes(16).toString('hex')}`;
 }
 
+// Counted, not hardcoded. The literal "37" survived two expansions of this catalogue
+// (37 → 74 → 85) in text the model reads to decide whether to call the tool at all.
+const TECHNIQUE_COUNT = FLAT_TECHNIQUES.length;
+
 /**
  * Tool 1: list_prompt_techniques
- * Discovery tool - shows all 37 techniques organized by category
+ * Discovery tool - shows every technique organized by category
  */
 export const listPromptTechniquesTool = defineModelTool({
   name: "list_prompt_techniques",
-  description: "Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 37, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
+  description: `Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all ${TECHNIQUE_COUNT}, or filter by category. Don't know which? preview_prompt_technique with technique="auto".`,
   parameters: z.object({
-    all: z.boolean().optional().default(false).describe("Show all 37 techniques (default false = core only)"),
-    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding", "retrieval", "security", "few_shot"])
+    all: z.boolean().optional().default(false).describe(`Show all ${TECHNIQUE_COUNT} techniques (default false = core only)`),
+    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding", "retrieval", "security", "few_shot", "tabular"])
       .optional()
       .describe("Show one category in full (implies all techniques in it)")
   }),

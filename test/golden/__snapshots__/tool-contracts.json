@@ -1241,14 +1241,14 @@
       "readOnlyHint": true,
       "title": "List Prompt Techniques"
     },
-    "description": "Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 37, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
+    "description": "Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 85, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
         "all": {
           "default": false,
-          "description": "Show all 37 techniques (default false = core only)",
+          "description": "Show all 85 techniques (default false = core only)",
           "type": "boolean"
         },
         "filter": {
@@ -1270,7 +1270,8 @@
             "structured_coding",
             "retrieval",
             "security",
-            "few_shot"
+            "few_shot",
+            "tabular"
           ],
           "type": "string"
         }

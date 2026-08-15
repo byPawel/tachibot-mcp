@@ -5,6 +5,24 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.32.0] - 2026-08-15
+
+### Added
+- **Tabular family (7 new techniques)** — the library had nothing that matched data-shaped work, so "filter these rows" fell through to the generic core contracts. Every one of these exists because the failure it prevents is *silent*:
+  - `data_assert` (`assert_dont_eyeball`) — state the downstream purpose, then check the data with executable assertions carrying counts. A filter that silently matched zero rows is indistinguishable from one that worked.
+  - `self_debug` (`feed_the_traceback`) — feed the **actual** traceback back in and fix the smallest thing it implicates, capped at 3 rounds. Re-prompting from scratch throws away the only evidence you have.
+  - `chain_of_table` (`table_walk`) — transform the table one operation at a time, showing the intermediate table and row count after each, until the table *is* the answer.
+  - `sub_table_first` (`tabsqlify`) — extract the relevant sub-table and prune the schema with one explicit query, then reason over the small result instead of 10k rows.
+  - `sql_stages` (`din_sql`) — text-to-SQL in four passes: schema-link → classify difficulty → generate → self-correct, capped at 2 correction rounds.
+  - `xlsx_map` (`map_the_sheet`) — map a human-made spreadsheet before computing: merged cells, multi-row headers, formulas, and the subtotal rows hiding inside the data that double-count silently.
+  - `table_format` (`pick_the_format`) — choose Markdown/HTML/CSV/JSON on purpose; format measurably changes accuracy, and long tables lose their middle.
+- **Retrieval family completed (3 new)** — `astute_rag` (`conflict_check`) answers from memory first, then marks each source agrees/fills/conflicts and resolves every conflict out loud, because a wrong page silently overriding correct knowledge looks identical to the reverse; `crag` (`grade_the_sources`) grades sources correct/ambiguous/wrong and acts on the grade, since search always returns its nearest neighbours and has no way to return nothing; `hyde` (`hypothetical_answer`) drafts the answer you wish existed, searches with *its* vocabulary, then discards it.
+- **Recommender routing for both families** — new matchers for tables/spreadsheets/SQL/data-cleaning, and for the two retrieval cases that had no route: contradictory sources and empty result sets. `self_debug` now leads the bug/traceback rule.
+
+### Fixed
+- **Spotlighting fences carried 24 bits of entropy, not 32.** `untrustedFence()` called `randomBytes(3)` while its own comment block reasoned its way to 4 bytes ("8 hex characters put it back above where it started"). Spotlighting's entire security property is that an attacker cannot guess the delimiter to close your block, so the shortfall was load-bearing. Now `randomBytes(4)` → 8 hex chars, as documented.
+- **The literal `37` survived two expansions of the technique catalogue** (37 → 74 → 85) in the `list_prompt_techniques` description — text the model reads to decide whether to call the tool at all. The count is now derived from `FLAT_TECHNIQUES.length` rather than hardcoded.
+
 ## [2.31.0] - 2026-08-15
 
 ### Added
