@@ -248,7 +248,39 @@ const RECOMMEND_RULES: { match: RegExp; techniques: string[]; why: string }[] = 
   { match: /\b(verif\w*|fact[- ]?check\w*|double[- ]?check|is (this|that) (true|correct|right)|accura\w*|claims?|hallucinat\w*)\b/i,
     techniques: ["cove", "cross_verify"], why: "turn each claim into a falsifiable question, then audit from outside" },
   { match: /\b(cost|cheap\w*|expensive|budget|latency|speed|fast\w*|slow\w*|overkill|too (much|slow|expensive))\b/i,
-    techniques: ["cascade"], why: "answer at the lowest sufficient effort and escalate only on low confidence" },
+    techniques: ["cascade", "chain_of_draft", "adaptive_consistency"], why: "answer at the lowest sufficient effort, keep steps terse, and stop sampling once consensus is clear" },
+
+  // Retrieval — these fire on the language people use when they've just run a search
+  // tool. This repo ships five of them, so the retrieved-text case is common and was
+  // previously unmatched by any rule.
+  { match: /\b(search|retriev\w*|sources?|cite|citation|reference|according to|web ?page|scrape[d]?|fetched|docs?|documentation)\b/i,
+    techniques: ["chain_of_note", "self_rag"], why: "note what each source actually says before answering, and mark which claims it supports" },
+  { match: /\b(multi[- ]?hop|follow[- ]?up search|then look up|chain of|depends on (the )?result)\b/i,
+    techniques: ["ircot"], why: "interleave retrieval with reasoning when query 2 depends on result 1" },
+
+  // Untrusted input
+  { match: /\b(untrusted|user[- ]?supplied|third[- ]?party|injection|jailbreak|prompt[- ]?inject\w*|ignore previous|external content|scraped)\b/i,
+    techniques: ["spotlighting"], why: "fence the untrusted text so it reads as data, never as instruction" },
+
+  // Few-shot / examples
+  { match: /\b(example|exemplar|few[- ]?shot|demonstrat\w*|sample (input|case)|show me how)\b/i,
+    techniques: ["analogical", "contrastive_cot"], why: "have the model write its own worked examples, and show the plausible wrong path too" },
+
+  // Batches — the failure is spending the budget on item one
+  { match: /\b(each of|all of these|batch|these \d+|list of|every (file|item|pr|module|question)|across (the )?(files|items|repos))\b/i,
+    techniques: ["compute_ration"], why: "triage difficulty x payoff and budget per item before solving any of them" },
+
+  // Long / messy context
+  { match: /\b(long (context|thread|document)|messy|unstructured|dump|transcript|many (docs|files|sources)|summar\w*)\b/i,
+    techniques: ["thread_of_thought", "s2a", "chain_of_density"], why: "walk the context piece by piece, strip what's irrelevant, and densify without growing" },
+
+  // Ambiguous or under-specified asks
+  { match: /\b(unclear|ambiguous|not sure what|vague|ill[- ]?defined|what do you mean|underspecified)\b/i,
+    techniques: ["rephrase_respond", "self_ask", "context_preflight"], why: "fix the question before answering it, and check the context is even sufficient" },
+
+  // Long agent runs
+  { match: /\b(agent|loop|iterate until|keep going|multi[- ]?step|long[- ]?running|workflow|pipeline)\b/i,
+    techniques: ["loop_spec", "structured_thoughts"], why: "declare the loop and its stopping rule, and separate scratch work from conclusions so it can be pruned" },
 ];
 
 interface Recommendation { technique: string; kind: string; tier: string; category: string; why: string; }
