@@ -49,7 +49,7 @@ RULES: Do NOT invent requirements the request doesn't imply. PRESERVE ambiguity 
 export const specWriterTool = defineModelTool({
   name: "spec_writer",
   description:
-    "Turn a loose feature request into a reviewable spec (GPT-5.5): user stories, Given/When/Then acceptance criteria, non-functional requirements, explicit out-of-scope, open questions. For sign-off BEFORE planning — feed the approved spec to planner_maker.",
+    "Turn a loose feature request into a reviewable spec: user stories, Given/When/Then acceptance criteria, non-functional requirements, explicit out-of-scope, open questions. For sign-off BEFORE planning — feed the approved spec to planner_maker.",
   parameters: z.object({
     request: z.string().describe("The feature request, as loose as it comes — REQUIRED"),
     context: z.string().optional().describe("System context (existing behavior, constraints, user base)"),

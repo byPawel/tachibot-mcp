@@ -457,7 +457,7 @@ export const gpt5MiniReasonTool = defineModelTool({
 
 export const openaiGpt5ReasonTool = defineModelTool({
   name: "openai_reason",
-  description: "Mathematical reasoning using GPT-5.2-thinking. Put your QUERY in the 'query' parameter.",
+  description: "Mathematical and formal reasoning with OpenAI's thinking tier (high reasoning effort). Use for proofs, derivations, and problems where a wrong step invalidates the answer. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("The question or problem to reason about (REQUIRED - put your question here)"),
     ...reasoningContextField,
@@ -812,7 +812,7 @@ async function callOpenAIWithSearch(
  */
 export const openaiSearchTool = defineModelTool({
   name: "openai_search",
-  description: "Web search using GPT-5.2 with real-time web access. Put your QUERY in the 'query' parameter.",
+  description: "Web search with OpenAI's real-time web access. Use when you want search results reasoned over and synthesized rather than listed. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("The search query (REQUIRED - put your question here)"),
     searchContextSize: z

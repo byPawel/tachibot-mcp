@@ -4,6 +4,9 @@
  */
 
 import { z } from "zod";
+import { config } from "dotenv";
+import * as path from "path";
+import { fileURLToPath } from "url";
 import { defineModelTool } from "./factory/define-model-tool.js";
 import { filesField, reasoningContextField } from "./factory/base-schemas.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
@@ -12,8 +15,30 @@ import { withHeartbeat } from "../utils/streaming-helper.js";
 import { getOpenRouterModelTimeout } from "../config/timeout-config.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
 
-// NOTE: dotenv is loaded in server.ts before any imports
-// No need to reload here - just read from process.env
+// Load .env in-module rather than relying on import order.
+//
+// The previous comment here claimed "dotenv is loaded in server.ts before any imports".
+// That is false: server.ts is a thin bin dispatcher, and server-main.ts's
+// dotenvConfig({override:true}) runs in its module BODY — i.e. after ESM has already
+// evaluated the entire static import graph, so it cannot populate process.env in time
+// for a module-scope capture like OPENROUTER_API_KEY below.
+//
+// What actually made this work was accidental ordering: registry.ts imports
+// grok-tools.js (which self-loads dotenv) ~11 lines before it imports this module.
+// Demonstrable under a stripped environment with keys only in .env:
+//   import openrouter-tools alone      -> isOpenRouterAvailable() === false
+//   import grok-tools first, then it   -> isOpenRouterAvailable() === true
+//
+// That coupling is invisible and load-bearing: reordering registry's imports, or dropping
+// grok-tools, would silently unregister every OpenRouter-backed tool (Qwen, QwQ, Kimi,
+// MiniMax, DeepSeek, GLM, StepFun, ERNIE, and the planner tools) with no error at all.
+// Loading dotenv here makes this module self-sufficient. Non-override, matching every
+// other tool module, so an ambient var still wins — that precedence is deliberate
+// (12-factor) and unchanged.
+const __orFilename = fileURLToPath(import.meta.url);
+const __orDirname = path.dirname(__orFilename);
+config({ path: path.resolve(__orDirname, '../../../.env') });
+
 // OpenRouter API configuration
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -198,7 +223,7 @@ export async function callOpenRouter(
  */
 export const qwenCoderTool = defineModelTool({
   name: "qwen_coder",
-  description: "Code generation and analysis with Qwen3-Coder-Next. Put your REQUEST in the 'query' parameter.",
+  description: "Code generation and analysis with a coding-specialized model (Qwen). Cheap default for everyday code work. Put your REQUEST in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("Your request or question (REQUIRED - put your main request here)"),
     task: z.enum(["generate", "review", "optimize", "debug", "refactor", "explain", "analyze"])
@@ -361,7 +386,7 @@ export const qwenGeneralTool = defineModelTool({
       {
         role: "system",
         content: `You are Qwen3, a helpful AI assistant.
-${modePrompts[args.mode as keyof typeof modePrompts || 'chat']}.
+${modePrompts[args.mode as keyof typeof modePrompts] || modePrompts.chat}.
 ${FORMAT_INSTRUCTION}`
       },
       {
@@ -522,7 +547,7 @@ Provide full analysis covering:
     const systemPrompt = `You are a Principal Algorithm Engineer and Competitive Programming Coach (ICPC/IOI/Codeforces expert level).
 You are NOT for abstract math proofs (that's qwen_reason). Focus on concrete algorithm analysis, optimization, and implementation.
 
-${focusPrompts[args.focus || 'general']}
+${focusPrompts[args.focus || 'general'] || focusPrompts.general}
 
 COMPLEXITY PRIORITY — ALWAYS explore top-down, chase O(1) first:
   O(1) → O(log n) → O(n) → O(n log n) → O(n²) → worse
@@ -660,7 +685,7 @@ ${FORMAT_INSTRUCTION}`
  */
 export const kimiThinkingTool = defineModelTool({
   name: "kimi_thinking",
-  description: "Kimi K3 multimodal reasoning (2.8T MoE, 1M context). Put your PROBLEM in the 'problem' parameter.",
+  description: "Extended multimodal reasoning over text and images (Kimi, ~1M token context). Use for hard problems that mix long context with visual input. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     ...reasoningContextField,
@@ -725,7 +750,7 @@ ${FORMAT_INSTRUCTION}`
  */
 export const kimiCodeTool = defineModelTool({
   name: "kimi_code",
-  description: "SWE-focused code generation/fixing with Kimi K3 (long-horizon agentic coding). Put your REQUEST in the 'query' parameter.",
+  description: "Repo-scale code generation and bug fixing (Kimi). Use for changes that span multiple files or need the model to navigate a codebase, not single-function snippets. Put your REQUEST in the 'query' parameter.",
   parameters: z.object({
     query: z.string().describe("Your request or question (REQUIRED - put your main request here)"),
     task: z.enum(["generate", "fix", "review", "optimize", "debug", "refactor"])
@@ -792,7 +817,7 @@ const DECOMPOSE_MAX_TOKENS = 4500;
  */
 export const kimiDecomposeTool = defineModelTool({
   name: "kimi_decompose",
-  description: "Structured task decomposition with Kimi K3 extended reasoning. Breaks tasks into subtasks with IDs, dependencies, and acceptance criteria.",
+  description: "Structured task decomposition (Kimi). Breaks a task into subtasks with IDs, dependencies, and acceptance criteria — use before planning when scope is unclear.",
   parameters: z.object({
     task: z.string().describe("The task to decompose (REQUIRED - describe the complex task)"),
     context: z.string().optional().describe("Additional context about the project, codebase, or constraints"),
@@ -976,7 +1001,7 @@ Wrap your final output in <output> tags. Everything outside <output> is discarde
  */
 export const kimiLongContextTool = defineModelTool({
   name: "kimi_long_context",
-  description: "Long-context analysis with Kimi K3 (1M context window). Put CONTENT in the 'content' parameter.",
+  description: "Analysis over very large documents or codebases (Kimi, ~1M token context). Use when the input is too big for a normal call rather than because the task is hard. Put CONTENT in the 'content' parameter.",
   parameters: z.object({
     content: z.string().describe("The long text/document to analyze (REQUIRED - put your content here)"),
     task: z.enum(["summarize", "extract", "analyze", "compare", "find"])
@@ -1042,7 +1067,7 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const qwenReasonTool = defineModelTool({
   name: "qwen_reason",
-  description: "Heavy mathematical reasoning with Qwen3.8-Max (flagship Qwen reasoning model, 1M context). Put your PROBLEM in the 'problem' parameter.",
+  description: "Heavy mathematical reasoning over very large inputs (Qwen flagship, ~1M token context). Use when the problem is both hard and long. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     ...reasoningContextField,
@@ -1273,7 +1298,7 @@ ${FORMAT_INSTRUCTION}`
  */
 export const deepseekReasonTool = {
   name: "deepseek_reason",
-  description: "Deep reasoning with DeepSeek V4 Pro (open-weight frontier — MLA/GRPO, top AIME/GPQA/math). Put your PROBLEM in the 'problem' parameter.",
+  description: "Deep step-by-step reasoning for math, proofs, and formal logic (DeepSeek). Strongest pick when the problem has one verifiably correct answer. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
@@ -1331,7 +1356,7 @@ ${FORMAT_INSTRUCTION}`
  */
 export const deepseekAlgoTool = {
   name: "deepseek_algo",
-  description: "Algorithmic code review with DeepSeek V4 Pro (top AIME/CodeElo): correctness, complexity/Big-O, edge cases, data-structure choice, optimization. Put PROBLEM/CODE in 'problem'.",
+  description: "Algorithmic code review (DeepSeek): correctness, complexity/Big-O, edge cases, data-structure choice, optimization. Use for algorithm-level critique, not style or architecture. Put PROBLEM/CODE in 'problem'.",
   parameters: z.object({
     problem: z.string().describe("The algorithm problem or code to review (REQUIRED - put your question/code here)"),
     constraints: z.string().optional().describe("Input constraints: N size, time/memory limit (e.g., 'N≤10^5, 1s, 256MB')"),
@@ -1401,7 +1426,7 @@ ${FORMAT_INSTRUCTION}`;
  */
 export const glmReasonTool = {
   name: "glm_reason",
-  description: "Agentic reasoning & tool-use planning with Zhipu GLM-5.2 (1M ctx, top open-weights for long-horizon coding). Put your PROBLEM in the 'problem' parameter.",
+  description: "Agentic reasoning and tool-use planning (GLM). Use for multi-step plans where the model must sequence tool calls or reason about a long-horizon task. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
@@ -1458,7 +1483,7 @@ ${FORMAT_INSTRUCTION}`
  */
 export const stepfunReasonTool = {
   name: "stepfun_reason",
-  description: "Efficient deep reasoning with StepFun Step 3.7 Flash (196B — high AIME/SWE-Verified at lower cost). Put your PROBLEM in the 'problem' parameter.",
+  description: "Deep reasoning at low cost (StepFun). Use when you want a reasoning second opinion cheaply, or as a jury member for lab diversity. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),
@@ -1509,7 +1534,7 @@ ${FORMAT_INSTRUCTION}`
  */
 export const ernieReasonTool = {
   name: "ernie_reason",
-  description: "Broad-knowledge reasoning with Baidu ERNIE 4.5 VL (424B MoE — human-preference/arena strength). Put your PROBLEM in the 'problem' parameter.",
+  description: "Broad general-knowledge reasoning (Baidu ERNIE). Use for open-ended questions where world knowledge and judgment matter more than formal rigor. Put your PROBLEM in the 'problem' parameter.",
   parameters: z.object({
     problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
     context: z.string().optional().describe("Additional context for the reasoning task"),

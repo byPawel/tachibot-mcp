@@ -122,7 +122,7 @@ function buildPanel(): Panelist[] {
 export const diffReviewTool = defineModelTool({
   name: "diff_review",
   description:
-    "Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K3, DeepSeek V4 Pro, GPT-5.6 Sol) scoped to the changed lines, deduplicated and severity-ranked by a judge. Provide the unified diff in 'diff'.",
+    "Multi-model diff-aware code review: 2-3 lab-diverse reviewers scoped to the changed lines, deduplicated and severity-ranked by a judge into a merge verdict. Provide the unified diff in 'diff'.",
   parameters: z.object({
     diff: z.string().describe("Unified diff to review (git diff output) — REQUIRED"),
     intent: z.string().optional().describe("What the change is SUPPOSED to do (enables intent-mismatch detection)"),

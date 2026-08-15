@@ -43,7 +43,7 @@ OUTPUT: a single test file's contents, then a short list of cases deliberately N
 export const testgenTool = defineModelTool({
   name: "testgen",
   description:
-    "Generate runnable tests with a coding-specialized model (Qwen3-Coder-Next). Enumerates edge cases first, then emits test code. Provide 'code' or 'files'.",
+    "Generate runnable tests with a coding-specialized model. Enumerates edge cases first, then emits test code. Provide 'code' or 'files'.",
   parameters: z.object({
     code: z.string().optional().describe("The code to generate tests for (or use 'files')"),
     files: z.array(z.string()).optional().describe("File paths to read as code-under-test. Supports line ranges: 'src/foo.ts:100-200'."),

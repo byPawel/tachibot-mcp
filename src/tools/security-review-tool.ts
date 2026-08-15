@@ -54,7 +54,7 @@ If the code is clean in an area you checked, say so explicitly — absence of fi
 export const securityReviewTool = defineModelTool({
   name: "security_review",
   description:
-    "Dedicated security audit (DeepSeek V4 Pro): taint/data-flow analysis, OWASP/CWE-mapped findings with severity, exploitability sketch, and concrete fixes. For code you are authorized to review. Provide 'code', 'diff', or 'files'.",
+    "Dedicated security audit: taint/data-flow analysis, OWASP/CWE-mapped findings with severity, exploitability sketch, and concrete fixes. For code you are authorized to review. Provide 'code', 'diff', or 'files'.",
   parameters: z.object({
     code: z.string().optional().describe("Code to audit (or use 'diff'/'files')"),
     diff: z.string().optional().describe("Unified diff to audit (scopes the review to the change)"),

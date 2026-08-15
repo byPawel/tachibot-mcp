@@ -413,7 +413,7 @@ export const grokFunctionTool = {
  */
 export const grokSearchTool = {
   name: "grok_search",
-  description: "Web search",
+  description: "Web search with live X/Twitter and news grounding (Grok). Best for breaking events and social discussion; use grok_search_lite for the same search at lower cost. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string(),
     sources: z.array(z.object({
@@ -453,7 +453,7 @@ ${FORMAT_INSTRUCTION}`
       ?.flatMap((s: any) => s.allowed_websites) || [];
 
     const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_6,  // grok-4.6: only current model that actually invokes web_search
+      model: GrokModel.GROK_4_6,  // grounds reliably; grok-4.5 does not (see GrokModel notes)
                                   // on /v1/responses — 4.5 answers ungrounded from training data
                                   // (grok_search_lite is the cheap tier)
       enableLiveSearch: true,

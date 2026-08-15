@@ -47,7 +47,7 @@ ${FORMAT_INSTRUCTION}`;
 export const grokSearchLiteTool = defineModelTool({
   name: "grok_search_lite",
   description:
-    "Cheap web search (grok-4.3, ~2x cheaper than grok_search). Put your QUERY in the 'query' parameter.",
+    "Cheap web search (Grok, cheaper tier than grok_search). Prefer this for routine lookups; use grok_search when answer quality matters more than cost. Put your QUERY in the 'query' parameter.",
   parameters: z.object({
     query: z.string(),
     sources: z
