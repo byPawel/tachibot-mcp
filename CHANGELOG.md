@@ -5,6 +5,23 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.1] - 2026-08-14
+
+### Fixed
+- **19 tool descriptions carried version-pinned model IDs.** Pinned strings ("GPT-5.2", "Kimi K3", "GLM-5.2", "Step 3.7 Flash", "424B MoE", "top AIME/GPQA") silently rot on every model bump and then actively mislead the routing model. All 19 were rewritten to name the provider and the task instead. Two were outright wrong: `openai_reason` and `openai_search` advertised "GPT-5.2" while the code actually calls the current OpenAI flagship tier.
+- **`grok_search` had a 10-character description.** "Web search" gave the routing model no way to choose it over the four other search tools. It now states its live X/news grounding edge and cross-references `grok_search_lite` as the cheaper path.
+- **The five OpenRouter reasoners were indistinguishable.** `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason` and `qwen_reason` previously differed only by vendor trivia; each now carries an actual routing rule for when to pick it.
+- **manifest.json misdescribed the server.** It advertised "65 tools" (actual: 66), omitted the `heavy_coding` profile from the `TACHIBOT_PROFILE` help, and its `OPENAI_API_KEY` hint wrongly claimed that key powers the Qwen and QwQ tools — those route via OpenRouter.
+- **`scripts/package-extension.sh` left the working tree unbuildable.** It ran `npm install --production`, pruning devDependencies and leaving `tsc` unable to build afterward (missing @types). It now restores the full dependency tree when it finishes.
+- **The server reported itself as v2.0.0 on every connection.** `serverInfo.version` was hardcoded — a 12-tool era that ended ~28 minor versions ago — so Claude Desktop's connector panel misidentified which build was running. It now reads the real version from `package.json`, falling back to `0.0.0` rather than failing to start.
+- **The `/setup` wizard quoted profile sizes that no longer existed** — "full (63, default), balanced (52), code_focus (41), minimal (13)". Corrected to the real six (full 66, heavy_coding 59, balanced 55 and the actual default, code_focus 43, research_power 37, minimal 14).
+
+- **Correction to the v2.30.0 note: `grok-4.3` does grounded search.** That note claimed grok-4.3 "does not invoke web search either", which would have made `grok_search_lite` useless and justified deleting it. Re-probed 2026-08-15 against `/v1/responses` with `tools:[web_search,x_search]`, asking for today's date: **grok-4.3 returned 2 `web_search_call` entries and 1 citation in 10.4s; grok-4.6 returned 2 calls and 2 citations in 36.4s.** `grok_search_lite` is grounded, cheaper, and roughly 3–4x faster than `grok_search` — keep using it for high-volume lookups and jury fan-outs. `grok-4.5` remains the model that does not ground.
+- **The cheap search tier now has its own grounding test.** The v2.30.0 probe only covered `grok_search`, so nothing contradicted the false claim above. `test/smoke/grok-search-grounding.test.ts` now probes `grok_search_lite` too, asserting a `web_search_call`, a citation, and that the served model equals the requested one.
+
+### Notes
+- No tools were added or removed; the tool count stays 66. The tool-contract golden baseline changed only in description text.
+
 ## [2.30.0] - 2026-08-14
 
 Ten defects found by an MCP-compliance audit. Every one was verified against source or the live xAI API before being fixed; each carries a regression test.

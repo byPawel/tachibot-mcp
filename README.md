@@ -4,7 +4,7 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.30.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.30.1-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-66_active-brightgreen.svg)](#-tool-ecosystem-66-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
@@ -30,9 +30,18 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ## What's New
 
+### v2.30.1
+- **Tool descriptions no longer name-drop model versions.** 19 descriptions were rewritten to name the provider and the task instead of pinned strings like "GPT-5.2", "Kimi K3" or "424B MoE" — those silently rot on every model bump and then actively mislead the routing model. Two were outright wrong: `openai_reason` and `openai_search` advertised "GPT-5.2" while the code calls the current OpenAI flagship tier.
+- **`grok_search` finally says why to pick it.** Its entire description was "Web search" — no way to choose it over the four other search tools. It now states its live X/news grounding edge and cross-references `grok_search_lite` as the cheaper path. The five OpenRouter reasoners (`deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`, `qwen_reason`) likewise differed only by vendor trivia; each now carries an actual routing rule for when to pick it.
+- **Claude Desktop manifest corrected** — it advertised 65 tools (actual: 66), omitted the `heavy_coding` profile from the `TACHIBOT_PROFILE` help, and its `OPENAI_API_KEY` hint claimed that key powers the Qwen and QwQ tools (those route via OpenRouter).
+- **Packaging no longer breaks the working tree.** `scripts/package-extension.sh` ran `npm install --production`, pruning devDependencies and leaving `tsc` unable to build afterward. It now restores the full dependency tree when it finishes.
+- **The server introduced itself as v2.0.0.** `serverInfo.version` was hardcoded from a 12-tool era ~28 minor versions ago, so Claude Desktop's connector panel misidentified every install. It now reads the real version from `package.json`. The `/setup` wizard's profile sizes were stale in the same way and now match the six real profiles.
+- **Correction to v2.30.0: `grok_search_lite` is not broken, and is staying.** That release claimed `grok-4.3` "does not invoke web search either" — which would have made the cheap search tier pointless. Re-probed Aug 15 asking today's date: **grok-4.3 ran 2 web searches and returned a citation in 10.4s; grok-4.6 did the same in 36.4s.** Lite is grounded, cheaper, and 3–4x faster — prefer it for high-volume lookups. `grok-4.5` is still the one that doesn't ground. The cheap tier now has its own grounding test, since nothing previously covered it.
+- No tools added or removed — the count stays 66.
+
 ### v2.30.0
 - **`grok_search` was not searching.** It ran on `grok-4.5`, which never invokes the `web_search` tool on xAI's Agent Tools API — so it answered from training data while still rendering a source footer and a "Search used up to N sources" cost line computed locally from `max_search_results`, not from real usage. Probed Aug 14: asked today's date, `grok-4.5` replied *"October 10, 2025"* with zero `web_search_call` entries; **`grok-4.6` replied correctly with two search calls and a citation.** `grok_search` now runs `grok-4.6` (same $2/$6 and 500K context as 4.5). The regression test asserts *grounding* — a `web_search_call` and ≥1 annotation — never the answer text, because a plausible ungrounded answer is precisely what hid this.
-- **Correction to the v2.27.0 note below:** `grok_search_lite` never ran on `grok-4-1-fast` at $0.20/$0.50. xAI retired that id and silently served `grok-4.3` — HTTP 200, the swap disclosed only in the response body's `model` field, so nothing threw and no fallback fired. The advertised "~10x cheaper" was really ~1.6x, and `grok-4.3` does not invoke web search either.
+- **Correction to the v2.27.0 note below:** `grok_search_lite` never ran on `grok-4-1-fast` at $0.20/$0.50. xAI retired that id and silently served `grok-4.3` — HTTP 200, the swap disclosed only in the response body's `model` field, so nothing threw and no fallback fired. The advertised "~10x cheaper" was really ~1.6x.
 - **13 `console.log` calls were corrupting the MCP protocol stream.** stdout is the JSON-RPC channel on a stdio server; diagnostics now go to stderr, guarded by a test that also rejects `console.info`, `console.debug` and `process.stdout.write`.
 - **`create_workflow` silently destroyed existing workflow files** — the existence check guarded the *directory*, not the *file*. It now refuses to clobber unless `overwrite: true`, and reports the real `.tachibot/workflows/` path instead of `.tachi/workflows/`.
 - **Eight prompt maps injected the literal string `"undefined"`** into system prompts for any unrecognised `approach`/`task`, because the `||` fallback sat *inside* the index. Fixed across `grok_reason`, `grok_code`, `kimi_thinking`, `qwen_reason`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`.
@@ -100,7 +109,7 @@ TachiBot ships with 19 slash commands for Claude Code. These orchestrate the too
 | `/focus` | Mode-based reasoning (debate, research, analyze) | `/focus architecture-debate Redis vs Pg` |
 | `/breakdown` | Strategic decomposition with pre-mortem | `/breakdown refactor payment module` |
 | `/decompose` | Split into sub-problems, deep-dive each one | `/decompose implement collaborative editor` |
-| `/prompt` | Recommend the right thinking technique (31 available) | `/prompt why do users churn` |
+| `/prompt` | Recommend the right thinking technique (37 available) | `/prompt why do users churn` |
 | `/algo` | Algorithm analysis with 4 specialized models (DeepSeek lead) | `/algo optimize LRU cache O(1)` |
 | `/lens` | Long-context analysis over Kimi's 1M window | `/lens find inconsistencies in this spec` |
 | `/reflect` | Grounded reflexion loop — critique vs external evidence | `/reflect harden this auth middleware` |
@@ -129,7 +138,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 
 ### Advanced Workflows
 - **YAML-Based Workflows** &mdash; Multi-step AI processes with dependency graphs
-- **Prompt Engineering** &mdash; 31 research-backed techniques (including SCoT, ReAct, Reflexion)
+- **Prompt Engineering** &mdash; 37 research-backed techniques (including SCoT, ReAct, Reflexion)
 - **Verification Checkpoints** &mdash; 50% / 80% / 100% with automated quality scoring
 - **Parallel Execution** &mdash; Run multiple models simultaneously
 

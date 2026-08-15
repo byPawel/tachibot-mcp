@@ -8,6 +8,6 @@ user-invocable: true
 
 1. Call the `doctor` tool. Relay: which keys are detected, how many tools are visible vs hidden, and the active profile.
 2. For each MISSING key the user wants, tell them exactly where to get it (OpenRouter: openrouter.ai/keys — unlocks the most tools; Perplexity: perplexity.ai; Google AI Studio; OpenAI platform; xAI console) and how to add it for their client: Claude Code → `claude mcp add` with `--env` flags (or edit the tachibot entry in ~/.claude.json); Claude Desktop → extension settings or claude_desktop_config.json env block.
-3. If they want fewer tools/tokens, explain profiles: full (63, default), balanced (52), code_focus (41), minimal (13) — set via TACHIBOT_PROFILE env in the same config.
+3. If they want fewer tools/tokens, explain profiles: full (66 — every tool), heavy_coding (59), balanced (55, the default), code_focus (43), research_power (37), minimal (14) — set via TACHIBOT_PROFILE env in the same config.
 4. After they update config, remind them to restart the client (or /mcp reconnect in Claude Code), then re-run `doctor` to confirm the delta.
 5. Suggest a first call that exercises their newest key (e.g. jury for Gemini+any, grok_search for Grok).

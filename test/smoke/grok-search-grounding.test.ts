@@ -174,4 +174,55 @@ describeLive("grok_search grounding (LIVE network — costs one real API call)",
     },
     180_000,
   );
+
+  // grok_search_lite runs a different, cheaper model than grok_search, so the
+  // probe above says nothing about it. That gap let a false claim stand in the
+  // v2.30.0 notes — "grok-4.3 does not invoke web search either" — which would
+  // have justified deleting a tool that works. Re-probed 2026-08-15: grok-4.3
+  // returned 2 web_search_call entries and 1 citation. Assert it, don't assume.
+  it(
+    "the cheap search tier also invokes web_search and returns citations",
+    async () => {
+      global.fetch = nativeFetch;
+
+      const response = await nativeFetch("https://api.x.ai/v1/responses", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${REAL_GROK_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: GrokModel.GROK_4_3,
+          input: [
+            {
+              role: "user",
+              content: "What is today's date? Search the web to confirm.",
+            },
+          ],
+          tools: [{ type: "web_search" }, { type: "x_search" }],
+          temperature: 0.3,
+          max_output_tokens: 1000,
+        }),
+      });
+
+      expect(response.ok).toBe(true);
+      const data = (await response.json()) as any;
+
+      // Guards the silent-substitution failure mode that hid the grok-4-1-fast
+      // retirement: xAI returns HTTP 200 and discloses the swap only here.
+      expect(data.model).toBe(GrokModel.GROK_4_3);
+
+      const searchCalls = (data.output ?? []).filter(
+        (o: any) => o.type === "web_search_call",
+      );
+      expect(searchCalls.length).toBeGreaterThanOrEqual(1);
+
+      const message = (data.output ?? []).find((o: any) => o.type === "message");
+      const citations = (message?.content ?? []).flatMap((c: any) =>
+        (c.annotations ?? []).filter((a: any) => a.type === "url_citation"),
+      );
+      expect(citations.length).toBeGreaterThanOrEqual(1);
+    },
+    180_000,
+  );
 });

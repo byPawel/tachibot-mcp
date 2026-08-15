@@ -22,7 +22,19 @@ fi
 echo "🔖 Syncing manifest.json version to package.json..."
 node -e "const fs=require('fs');const pkg=require('./package.json');const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version=pkg.version;fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n');console.log('   manifest.json version -> '+pkg.version)"
 
-# Install production dependencies
+# Install production dependencies.
+#
+# This prunes devDependencies so they don't bloat the .mcpb — but it leaves the
+# working tree unable to build afterward (tsc dies on missing @types/*). Restore
+# the full tree on exit, however we exit, so packaging is never a one-way door.
+restore_dev_deps() {
+    echo ""
+    echo "♻️  Restoring devDependencies (pruned for packaging)..."
+    npm install --silent >/dev/null 2>&1 && echo "   dev tree restored" \
+        || echo "   ⚠️  restore failed — run 'npm install' before your next build"
+}
+trap restore_dev_deps EXIT
+
 echo "📦 Installing production dependencies..."
 npm install --production --no-optional
 

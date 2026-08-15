@@ -2,8 +2,8 @@
   "manifest_version": "0.2",
   "dxt_version": "1.1.1",
   "name": "tachibot-mcp",
-  "version": "2.30.0",
-  "description": "Multi-model AI orchestration platform with 65 tools across Perplexity, Grok, OpenAI GPT-5.6, Gemini, DeepSeek, GLM, Kimi, Qwen, MiniMax, and local models",
+  "version": "2.30.1",
+  "description": "Multi-model AI orchestration platform with 66 tools across Perplexity, Grok, OpenAI, Gemini, DeepSeek, GLM, Kimi, Qwen, MiniMax, StepFun, ERNIE, and local models",
   "author": {
     "name": "Pawel Pawlowski",
     "email": "108490+byPawel@users.noreply.github.com",
@@ -37,7 +37,7 @@
     "TACHIBOT_PROFILE": {
       "title": "Tool Profile",
       "type": "string",
-      "description": "Select tool profile: minimal, research_power, code_focus, balanced (default), or full",
+      "description": "Select tool profile: minimal (14), research_power (37), code_focus (43), balanced (55, default), heavy_coding (59), or full (66 — every tool)",
       "default": "balanced"
     },
     "PERPLEXITY_API_KEY": {
@@ -55,19 +55,19 @@
     "OPENAI_API_KEY": {
       "title": "OpenAI API Key",
       "type": "string",
-      "description": "For GPT-5, Qwen, and QwQ models (Get from platform.openai.com)",
+      "description": "For OpenAI reasoning, search, code review, and explain tools (Get from platform.openai.com)",
       "required": false
     },
     "GOOGLE_API_KEY": {
       "title": "Google Gemini API Key",
       "type": "string",
-      "description": "For Gemini brainstorming and analysis (Get from makersuite.google.com)",
+      "description": "For Gemini analysis plus the multi-model jury, diff_review and plan_critique judges (Get from aistudio.google.com)",
       "required": false
     },
     "OPENROUTER_API_KEY": {
-      "title": "OpenRouter API Key (Optional)",
+      "title": "OpenRouter API Key",
       "type": "string",
-      "description": "Alternative provider for additional models (Get from openrouter.ai)",
+      "description": "Powers the DeepSeek, GLM, Kimi, Qwen, MiniMax, StepFun and ERNIE tools — roughly 20 tools will not register without it (Get from openrouter.ai)",
       "required": false
     },
     "TACHI_ENABLE_CACHE": {

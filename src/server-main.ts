@@ -14,6 +14,7 @@ console.warn = function(...args: any[]) {
 // Load environment variables FIRST, before any other imports
 import { config as dotenvConfig } from 'dotenv';
 import * as path from 'path';
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -96,10 +97,28 @@ initializeOptimizations({
   enableBatching: process.env.TACHI_ENABLE_BATCHING !== 'false',
 });
 
-// Create a new MCP server - TachiBot MCP v2.0
+// Read the real package version rather than hardcoding it. This value is what
+// clients see as `serverInfo.version` on initialize — Claude Desktop shows it in
+// the connector panel. It was pinned at "2.0.0" (a 12-tool era that ended ~28
+// minor versions ago), so every install misreported which build it was running.
+const PACKAGE_VERSION: string = (() => {
+  try {
+    // dist/src/server-main.js -> ../../package.json (same depth from src/ in dev);
+    // __dirname is already resolved above for the .env lookup.
+    const pkg = JSON.parse(
+      readFileSync(path.resolve(__dirname, "../../package.json"), "utf8"),
+    );
+    return typeof pkg.version === "string" ? pkg.version : "0.0.0";
+  } catch {
+    // Never let a packaging quirk stop the server from starting.
+    return "0.0.0";
+  }
+})();
+
+// Create a new MCP server
 const server = new FastMCP({
   name: "tachibot-mcp",
-  version: "2.0.0", // 12 consolidated tools, 2.6k tokens
+  version: PACKAGE_VERSION as `${number}.${number}.${number}`,
 });
 
 // Load configuration
