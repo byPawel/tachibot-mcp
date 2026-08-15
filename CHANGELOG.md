@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.32.0] - 2026-08-15
 
 ### Added
+- **`consilience` (`confidence_trajectory`)** — rank several runs by the SHAPE of their confidence rather than by majority vote; a run that was certain from its first line was guessing (arXiv:2608.09898). Landed in `9cfb71a`, after 2.31.0 shipped, and was missing from this file entirely — which is why the counts here read 37 → 74 → 84 while the tool reported 85.
 - **Tabular family (7 new techniques)** — the library had nothing that matched data-shaped work, so "filter these rows" fell through to the generic core contracts. Every one of these exists because the failure it prevents is *silent*:
   - `data_assert` (`assert_dont_eyeball`) — state the downstream purpose, then check the data with executable assertions carrying counts. A filter that silently matched zero rows is indistinguishable from one that worked.
   - `self_debug` (`feed_the_traceback`) — feed the **actual** traceback back in and fix the smallest thing it implicates, capped at 3 rounds. Re-prompting from scratch throws away the only evidence you have.
@@ -21,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Spotlighting fences carried 24 bits of entropy, not 32.** `untrustedFence()` called `randomBytes(3)` while its own comment block reasoned its way to 4 bytes ("8 hex characters put it back above where it started"). Spotlighting's entire security property is that an attacker cannot guess the delimiter to close your block, so the shortfall was load-bearing. Now `randomBytes(4)` → 8 hex chars, as documented.
-- **The literal `37` survived two expansions of the technique catalogue** (37 → 74 → 85) in the `list_prompt_techniques` description — text the model reads to decide whether to call the tool at all. The count is now derived from `FLAT_TECHNIQUES.length` rather than hardcoded.
+- **The literal `37` survived two expansions of the technique catalogue** (37 → 74 → 75 → 85) in the `list_prompt_techniques` description — text the model reads to decide whether to call the tool at all. The count is now derived from `FLAT_TECHNIQUES.length` rather than hardcoded.
 
 ## [2.31.0] - 2026-08-15
 

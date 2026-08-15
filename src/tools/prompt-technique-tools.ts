@@ -273,7 +273,7 @@ const TECHNIQUES: Record<string, Technique[]> = {
     {
       name: "verbalized_sampling",
       alias: "spread_candidates",
-      description: "Ask for N candidates with a probability on each, in one pass — the spread is what stops every idea coming back as a variation of the first (arXiv:2510.01171)",
+      description: "Ask for five candidates with a probability on each, in one pass — the spread is what stops every idea coming back as a variation of the first (arXiv:2510.01171)",
       useWhen: "Brainstorming where the first three ideas already sound like each other.",
       example: "Ask for 10 onboarding ideas and get one idea in ten costumes. The list is still ten items long, so nothing looks wrong. Probabilities drag out the ones it would otherwise bury.",
     },
@@ -523,7 +523,7 @@ const TECHNIQUES: Record<string, Technique[]> = {
     {
       name: "adaptive_consistency",
       alias: "early_stop_consistency",
-      description: "Keep sampling answers until they clearly agree, then stop, instead of always drawing a fixed number. Often costs about half the tokens. (arXiv:2406.06608)",
+      description: "Keep sampling answers until they clearly agree, then stop, instead of always drawing a fixed number. (arXiv:2406.06608)",
       useWhen: "Running self-consistency across many items, where a fixed sample count is mostly waste.",
       example: "Five samples already agree on item three of a 200-row classification run; drawing the other fifteen every time buys nothing and burns the budget.",
     },
@@ -620,9 +620,9 @@ const TECHNIQUES: Record<string, Technique[]> = {
     {
       name: "persona_simulation",
       alias: "debate",
-      description: "One prompt, several named experts arguing it out — a security lead, a DBA, an SRE. Still one model, not real separate agents.",
-      useWhen: "A decision touches several specialisms and you want each one voiced separately.",
-      example: "A schema change reviewed by 'the DBA', 'the on-call engineer' and 'the analyst who reads this table' surfaces the nightly ETL nobody mentioned. Cheaper than a real panel, and honest about being one voice.",
+      description: "One prompt, four fixed temperaments arguing it out — a skeptic, an optimist, a pragmatist and a visionary. Still one model, not separate agents.",
+      useWhen: "You want the obvious objection and the obvious enthusiasm both said out loud before deciding.",
+      example: "A rewrite proposal where the skeptic names the migration risk and the pragmatist asks who will maintain it. The roles are temperaments, not specialisms — it cannot give you a DBA's read on a schema.",
     },
   ],
   judgment: [
@@ -1085,7 +1085,7 @@ export const previewPromptTechniqueTool = defineModelTool({
     output += `--- EXECUTION TOKEN ---\n`;
     output += `${token}\n\n`;
     output += `Use execute_prompt_technique with this token to run.\n`;
-    output += `Token expires in 5 minutes.\n`;
+    output += `Token expires in ${TOKEN_TTL_MS / 60000} minutes.\n`;
 
     return stripFormatting(output);
   }

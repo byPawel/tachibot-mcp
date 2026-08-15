@@ -1567,14 +1567,16 @@ validate_workflow_file({ filePath: "workflows/my-workflow.yaml" })
 
 ### list_prompt_techniques
 
-Discover prompt engineering techniques. By default shows the ~9 **core** techniques that still help 2026 reasoning models (output-structure contracts like `scot`, `pre_mortem`, `bdd_spec`); pass `all: true` for the full set of 37, or a category filter.
+Discover prompt engineering techniques. By default shows the 18 **core** techniques that still help 2026 reasoning models (output-structure contracts like `scot`, `pre_mortem`, `bdd_spec`); pass `all: true` for the full set of 85, or a category filter.
+
+The core list and the category listings include, per technique, what it does, the situation to reach for it in, and a worked example. The `all: true` dump is names and one-line descriptions only — it is a scan for a name you already half-remember, and the full copy for 85 techniques would bury it.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `all` | `boolean` | No | `false` | Show every technique (default shows core only) |
-| `filter` | `string` | No | - | Show one category in full: `creative`, `research`, `analytical`, `reflective`, `reasoning`, `verification`, `meta`, `debate`, `judgment`, `engineering`, `research_advanced`, `decision`, `structured_coding` |
+| `filter` | `string` | No | - | Show one category in full: `retrieval`, `security`, `few_shot`, `tabular`, `creative`, `research`, `analytical`, `reflective`, `reasoning`, `verification`, `meta`, `debate`, `judgment`, `engineering`, `research_advanced`, `decision`, `structured_coding` |
 
 #### Example
 
