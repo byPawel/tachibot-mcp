@@ -162,6 +162,18 @@ If the answer turns out wrong, fix the RULE and regenerate from it. Do not patch
 output, and do not append the failure to your reasoning — that accumulates noise and
 buries the rule that needs fixing.`],
 
+    ['consilience', (q) => `Answer "${q}" several times, then pick the winner by how each run behaved.
+
+RUN — answer at least 3 times independently, each from a blank slate.
+TRACK — for every run, state your confidence at the start, at the midpoint, and at the end.
+RANK — judge the runs by the SHAPE of that confidence, not by which answer appears most:
+  · certain from the first line → weakest. That is guessing before looking.
+  · starts unsure and converges as evidence accumulates → strongest.
+PICK — name the winning run, say why its confidence shape beat the others, give its answer.
+
+Majority voting cannot catch the case where every run is confidently wrong in the same way.
+Grading the journey catches what grading the destination misses.`],
+
     ['backtrack', (q) => `Treat "${q}" as a search, not a straight line.
 
 - After each step, mark it VALIDATED (you can say exactly why it holds) or PROVISIONAL.
@@ -565,6 +577,8 @@ the expansion of the point before it.`]
     'refine_over_resample': 'breadth_then_depth',
     'bottleneck': 'hourglass',
     'compress_rule': 'hourglass',
+    'confidence_trajectory': 'consilience',
+    'verifier_free': 'consilience',
     'rewind': 'backtrack',
     'valid_prefix': 'backtrack',
     'ration': 'compute_ration',
@@ -704,6 +718,7 @@ the expansion of the point before it.`]
       'structured_thoughts': 'Try/outcome blocks→Drop the tries',
       'breadth_then_depth': 'Sample 3→Repair each→Pick winner',
       'hourglass': 'Explore→Compress to a rule→Rebuild from it',
+      'consilience': 'Rank runs by confidence shape, not by majority',
       'backtrack': 'Checkpoint steps→Rewind to last valid',
       'compute_ration': 'Triage the set→Budget per item→Solve',
       'loop_spec': 'Specify the loop + stopping rule→Run it',

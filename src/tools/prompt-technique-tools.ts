@@ -163,6 +163,7 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "adaptive_consistency", alias: "early_stop_consistency", description: "Sample until consensus is clear instead of a fixed N — same accuracy, often half the tokens (arXiv:2406.06608)" },
     { name: "maieutic", alias: "socratic", description: "Explain both a proposition and its negation, recursively, keep the consistent subtree (arXiv:2205.11822)" },
     { name: "breadth_then_depth", alias: "refine_over_resample", description: "Sample 3 different approaches, then repair each step-by-step, then pick — beats spending the whole budget on more samples (arXiv:2608.05643)" },
+    { name: "consilience", alias: "confidence_trajectory", description: "Rank several runs by the SHAPE of their confidence, not by majority vote — a run certain from the first line was guessing (arXiv:2608.09898)" },
     { name: "prompt_coverage", alias: "spec_coverage", description: "Map each test to the requirement it covers; unmapped requirements are the real gaps (arXiv:2607.02057)" },
     { name: "self_consistency", alias: "consensus", description: "Generate 3 solutions, compare, vote best, explain confidence" },
     { name: "constitutional", alias: "principles", description: "Solve, critique against accuracy/safety/helpfulness, revise" },
