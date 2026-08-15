@@ -31,7 +31,11 @@ const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 export enum GrokModel {
   // Grok 4.6 (Aug 2026) - CURRENT LATEST — verified against /v1/models on 2026-08-14.
   // 500K ctx, $2/$6 (same as 4.5), cached input $0.50/M, no `-latest` alias yet.
-  // The only current model that actually invokes web_search on the Agent Tools API.
+  // Invokes web_search on the Agent Tools API. NOTE: 4.6 is not the *only* model
+  // that grounds — an earlier note here claimed that and it was wrong. Re-probed
+  // 2026-08-15 with tools:[web_search,x_search] asking today's date: grok-4.3
+  // returned 2 web_search_call entries + 1 citation in 10.4s; grok-4.6 returned 2
+  // calls + 2 citations in 36.4s. grok-4.5 remains the one that does NOT ground.
   GROK_4_6 = "grok-4.6",                                      // Latest: 500K ctx, $2/$6, grounded search
 
   // Grok 4.5 (Jul 8, 2026) - previous flagship ("Opus-class")
@@ -159,11 +163,18 @@ export async function callGrok(
     
     // Handle Grok 4's reasoning tokens
     if (!content && data.usage?.completion_tokens_details?.reasoning_tokens > 0) {
-      // If Grok 4 returns no visible content, retry with Grok 3 for visible output
+      // If Grok 4 returns no visible content, retry on a model that emits visible text.
+      // NOTE: this used to pass GrokModel.GROK_3. That id is retired at xAI, which does
+      // NOT 404 it — it returns HTTP 200 and silently serves grok-4.3, disclosing the swap
+      // only in the response body's `model` field. So grok-4.3 is what this path has
+      // actually been running; naming it explicitly is behaviour-preserving and stops the
+      // cost table from mispricing it (grok-3 was listed at ~5.4x under grok-4.3's rate).
+      // Caveat worth revisiting: grok-4.3 is itself a reasoning model, so this retry is a
+      // weaker guarantee of visible output than a true non-reasoning model would be.
       if (isGrok4Plus && forceVisibleOutput) {
-        console.error(`Grok 4 used ${data.usage.completion_tokens_details.reasoning_tokens} reasoning tokens with no output. Retrying with Grok 3...`);
+        console.error(`Grok 4 used ${data.usage.completion_tokens_details.reasoning_tokens} reasoning tokens with no output. Retrying with ${GrokModel.GROK_4_3}...`);
         // Messages already validated - use same context for retry
-        return callGrok(validatedMessages, GrokModel.GROK_3, temperature, maxTokens, false, validationContext);
+        return callGrok(validatedMessages, GrokModel.GROK_4_3, temperature, maxTokens, false, validationContext);
       }
       return `[Grok ${model} performed deep reasoning with ${data.usage.completion_tokens_details.reasoning_tokens} tokens]`;
     }

@@ -222,6 +222,16 @@ export class PromptEngineer {
       ].join('\n')
     });
 
+    this.techniques.set('step_back', {
+      apply: (query: string) => [
+        `Before answering "${query}", step back to the general case:`,
+        `1. What broader question or principle sits behind this one?`,
+        `2. What is established about that general case?`,
+        `3. Now apply those principles back to the specific question.`,
+        `Answer the general question first, then the specific one.`
+      ].join('\n')
+    });
+
     this.techniques.set('feasibility_analysis', {
       apply: (query: string, context?: string) => {
         const ideas = context ? `the creative ideas generated for "${query}"` : `"${query}"`;
@@ -283,6 +293,16 @@ export class PromptEngineer {
       ].join('\n')
     });
 
+    this.techniques.set('skeleton', {
+      apply: (query: string) => [
+        `For "${query}": build the skeleton before the substance.`,
+        `1. Write only the structure — section headings or function signatures, one line each, no bodies.`,
+        `2. Review that skeleton for gaps, wrong ordering, and missing edge cases.`,
+        `3. Expand each point in turn, keeping the agreed structure.`,
+        `Do not start expanding until the skeleton is complete.`
+      ].join('\n')
+    });
+
     this.techniques.set('integration_reflection', {
       apply: (query: string, context?: string) => [
         `Synthesize all perspectives on "${query}" into unified insights:`,
@@ -309,6 +329,39 @@ export class PromptEngineer {
         `ROUND 2 — Re-critique:`,
         `  Re-score. If all ≥8, stop. Otherwise, one more round.`,
         `Max 3 rounds. Show score progression.`
+      ].join('\n')
+    });
+
+    this.techniques.set('cove', {
+      apply: (query: string) => [
+        `Answer "${query}", then verify it before you commit:`,
+        `1. Write a draft answer.`,
+        `2. List the specific factual claims that draft depends on.`,
+        `3. For each claim, write a verification question that would falsify it.`,
+        `4. Answer each verification question on its own, without consulting the draft.`,
+        `5. Rewrite the answer so it asserts only what survived verification.`,
+        `State plainly which claims you dropped and why.`
+      ].join('\n')
+    });
+
+    this.techniques.set('cross_verify', {
+      apply: (query: string) => [
+        `For "${query}", split generation from verification:`,
+        `1. Produce the answer.`,
+        `2. Now audit it from a deliberately different angle than the one that produced it — wrong assumptions, unhandled cases, claims asserted rather than derived.`,
+        `3. Report the audit separately from the answer; do not silently fold fixes in.`,
+        `4. State which findings you accept and which you reject, with reasons.`,
+        `This is most effective when the audit is run by a different model than the answer.`
+      ].join('\n')
+    });
+
+    this.techniques.set('cascade', {
+      apply: (query: string) => [
+        `For "${query}", answer at the lowest sufficient effort:`,
+        `1. Give a short, direct answer.`,
+        `2. State your confidence and exactly what would make you wrong.`,
+        `3. If confidence is low, or being wrong is expensive, escalate: redo it with full reasoning.`,
+        `4. If you escalated, say what changed between the two answers.`
       ].join('\n')
     });
 
@@ -411,6 +464,17 @@ export class PromptEngineer {
         `Now write the code that implements EXACTLY this structure.`,
         `The code should mirror your reasoning 1:1 — every sequence/branch/loop in your reasoning must appear in the code.`,
         `(Li et al. 2025: SCoT outperforms standard CoT by up to 13.79% on code benchmarks)`
+      ].join('\n')
+    });
+
+    this.techniques.set('program_of_thoughts', {
+      apply: (query: string) => [
+        `For "${query}": do not compute in prose — write code that produces the answer.`,
+        `1. State the language and any assumptions about input shape.`,
+        `2. Write executable code that computes the result.`,
+        `3. State what the code prints when run.`,
+        `4. Only then explain the result in words.`,
+        `If the task is not computational, say so rather than forcing code.`
       ].join('\n')
     });
 
@@ -669,13 +733,18 @@ export class PromptEngineer {
       evidence_gathering: 'Finding supporting data',
       systematic_analysis: 'Structured examination',
       first_principles: 'Fundamental truth analysis',
+      step_back: 'Answer the general case first',
       feasibility_analysis: 'Practical evaluation',
       quick_reflection: 'Pattern recognition',
       pattern_recognition: 'Identifying connections',
       problem_decomposition: 'Breaking down complexity',
+      skeleton: 'Structure first, substance after',
       integration_reflection: 'Synthesizing insights',
       // Engineering (2026)
       reflexion: 'Generate→Critique→Revise loop',
+      cove: 'Chain-of-verification before committing',
+      cross_verify: 'Separate the answer from its audit',
+      cascade: 'Cheapest answer first, escalate if unsure',
       react_prompting: 'Thought→Action→Observation loop',
       rubber_duck_debugging: 'Explain line-by-line to find bugs',
       test_driven_prompting: 'Tests first, then minimal code',
@@ -685,6 +754,7 @@ export class PromptEngineer {
       pre_mortem_analysis: 'Assume failure, prevent causes',
       // Structured Coding (2025)
       structured_chain_of_thought: 'Reason in code structures (SCoT)',
+      program_of_thoughts: 'Compute with code, not prose',
       pre_post_conditions: 'Design by contract: pre/postconditions',
       bdd_specification: 'Given/When/Then behavioral specs'
     };

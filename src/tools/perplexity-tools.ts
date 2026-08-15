@@ -242,7 +242,7 @@ export const perplexityReasonTool = defineModelTool({
     const messages = [
       {
         role: "system",
-        content: `Expert reasoning. Today: ${currentDate}. ${approachPrompts[approach as keyof typeof approachPrompts]}.
+        content: `Expert reasoning. Today: ${currentDate}. ${approachPrompts[approach as keyof typeof approachPrompts] || approachPrompts.analytical}.
 ${context ? `Context: ${context}` : ''}${FORMAT_INSTRUCTION}`
       },
       {

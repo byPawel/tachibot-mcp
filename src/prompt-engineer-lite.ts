@@ -96,7 +96,19 @@ FEATURE: [one-line description]
     Given [invalid input or failure condition]
     When [action]
     Then [error handling behavior]
-Now implement code that passes ALL scenarios. Each scenario becomes a test.`]
+Now implement code that passes ALL scenarios. Each scenario becomes a test.`],
+
+    // Computation (2026)
+    ['program_of_thoughts', (q) => `For "${q}": don't reason in prose — write code that computes the answer. State the language, the code, and exactly what it prints.`],
+
+    // Abstraction (2026)
+    ['step_back', (q) => `Step back from "${q}": what general principle governs this class of problem? Establish that first, then apply it back to the specific case.`],
+    ['skeleton', (q) => `For "${q}": write the structure first (headings or signatures, one line each, no bodies), review it for gaps, then expand each point.`],
+
+    // Verification (2026)
+    ['cove', (q) => `Draft an answer to "${q}", list the claims it depends on, write one falsifying question per claim, answer those independently, then rewrite asserting only what survived.`],
+    ['cross_verify', (q) => `Answer "${q}", then audit that answer from a deliberately different angle. Report the audit separately — don't fold fixes in silently.`],
+    ['cascade', (q) => `Answer "${q}" briefly first, then state your confidence and what would falsify it. Escalate to full reasoning only if confidence is low or being wrong is costly.`]
   ]);
 
   // Compact technique mapping (aliases to canonical names)
@@ -168,7 +180,20 @@ Now implement code that passes ALL scenarios. Each scenario becomes a test.`]
     'design_by_contract': 'pre_post',
     'bdd': 'bdd_spec',
     'given_when_then': 'bdd_spec',
-    'behavioral': 'bdd_spec'
+    'behavioral': 'bdd_spec',
+
+    // Computation aliases (2026)
+    'pot': 'program_of_thoughts',
+
+    // Abstraction aliases (2026)
+    'abstract_first': 'step_back',
+    'outline_first': 'skeleton',
+
+    // Verification aliases (2026)
+    'chain_of_verification': 'cove',
+    'verify_chain': 'cove',
+    'second_opinion': 'cross_verify',
+    'escalate': 'cascade'
   };
 
   applyTechnique(tool: string, technique: string, query: string, prev?: ToolResult[]): string {
@@ -239,7 +264,16 @@ Now implement code that passes ALL scenarios. Each scenario becomes a test.`]
       // Structured Coding (2025)
       'scot': 'Reason in code structures',
       'pre_post': 'Contract: pre/postconditions',
-      'bdd_spec': 'Given/When/Then specs'
+      'bdd_spec': 'Given/When/Then specs',
+      // Computation (2026)
+      'program_of_thoughts': 'Compute via code, not prose',
+      // Abstraction (2026)
+      'step_back': 'Principle first→Apply back',
+      'skeleton': 'Outline→Review→Expand',
+      // Verification (2026)
+      'cove': 'Draft→Falsify claims→Rewrite',
+      'cross_verify': 'Answer→Independent audit',
+      'cascade': 'Quick answer→Escalate if unsure'
     };
     const key = this.techniqueMap[technique] || technique;
     return desc[key] || technique;

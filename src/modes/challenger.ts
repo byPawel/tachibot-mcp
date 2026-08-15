@@ -881,7 +881,11 @@ Write concrete, specific analysis. Do NOT include brackets or placeholders.`;
       const timeoutConfig = getSmartTimeout(PROVIDER_GROK, 'batch');
       const response = await smartAPIClient.callWithRetries(
         () => callGrokEnhanced(messages, {
-          model: GrokModel.GROK_3,
+          // Was GrokModel.GROK_3 — retired at xAI, which returns HTTP 200 and silently
+          // serves grok-4.3 rather than erroring. This is what already ran; naming it
+          // explicitly also reconciles the call with this step's own system prompt,
+          // which already claims "You are Grok 4.3 with live search".
+          model: GrokModel.GROK_4_3,
           enableLiveSearch: true,
           searchSources: 20,
           searchDomains: domains.length > 0 ? domains : undefined,
