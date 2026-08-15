@@ -16,7 +16,7 @@ truth for recommendations — don't maintain a parallel list here.
 /prompt [technique] [query]     — apply a specific technique
 /prompt refine [query]          — opt-in: rewrite the raw query into a brief via refine_prompt
 /prompt list                    — the ~9 core techniques (default)
-/prompt all                     — all 31 techniques
+/prompt all                     — all 37 techniques
 /prompt [category]              — one category in full
 ```
 
@@ -68,4 +68,4 @@ Match the target tool to the technique's category:
 - `/prompt refactor the payment module safely` — auto recommends `pre_post` / `scot` / `test_driven`
 - `/prompt scot implement a rate limiter` — applies structured-CoT directly
 - `/prompt bdd_spec user registration flow` — Given/When/Then before code
-- `/prompt list` — the core techniques · `/prompt all` — all 31
+- `/prompt list` — the core techniques · `/prompt all` — all 37

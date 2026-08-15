@@ -113,6 +113,7 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "analyze", alias: "systematic", description: "Components, relationships, patterns, conclusions" },
     { name: "first_principles", alias: "first_prin", description: "Truths, assumptions, atomic units, rebuild" },
     { name: "feasibility", alias: "feasible", description: "Technical/economic/time/resources/risks" },
+    { name: "step_back", alias: "abstract_first", description: "Solve the general principle first, then apply it to the specific case" },
   ],
   reflective: [
     { name: "reflect", alias: null, description: "Patterns, surprises, key insight, gaps" },
@@ -128,9 +129,12 @@ const TECHNIQUES: Record<string, Technique[]> = {
   verification: [
     { name: "self_consistency", alias: "consensus", description: "Generate 3 solutions, compare, vote best, explain confidence" },
     { name: "constitutional", alias: "principles", description: "Solve, critique against accuracy/safety/helpfulness, revise" },
+    { name: "cove", alias: "verify_chain", description: "Draft, list its claims, write a falsifying question per claim, keep only what survives" },
+    { name: "cross_verify", alias: "second_opinion", description: "Generate, then audit from a different angle. Report the audit separately." },
   ],
   meta: [
     { name: "meta_prompting", alias: "improve_prompt", description: "Write better prompt for this, then solve using it" },
+    { name: "cascade", alias: "escalate", description: "Answer briefly with a confidence statement, escalate to full reasoning only if needed" },
   ],
   debate: [
     { name: "adversarial", alias: "critic", description: "Argue FOR then AGAINST, find counterarguments, synthesize", tier: 'core', kind: 'contract' },
@@ -155,6 +159,8 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "scot", alias: "structured_cot", description: "Structured CoT: reason in code structures (sequence/branch/loop) before writing code (Li et al. 2025, +13.79%)", tier: 'core', kind: 'contract' },
     { name: "pre_post", alias: "contracts", description: "Design by contract: state preconditions + postconditions before implementing", tier: 'core', kind: 'contract' },
     { name: "bdd_spec", alias: "given_when_then", description: "Behavioral specs: Given/When/Then scenarios before code. Each scenario = a test.", tier: 'core', kind: 'contract' },
+    { name: "program_of_thoughts", alias: "pot", description: "Compute in code, not prose: state the language, write the code, show its output" },
+    { name: "skeleton", alias: "outline_first", description: "Structure first (headings/signatures, no bodies), review for gaps, then expand" },
   ],
 };
 
@@ -194,6 +200,12 @@ const RECOMMEND_RULES: { match: RegExp; techniques: string[]; why: string }[] = 
     techniques: ["adversarial", "constitutional"], why: "steelman then attack, and critique against explicit principles" },
   { match: /\b(idea|brainstorm|creative|novel|alternative|possibilit)\b/i,
     techniques: ["innovate", "what_if", "alt_view"], why: "generate unconventional options and view from several angles" },
+  { match: /\b(arithmetic|calculat\w*|comput(e|es|ing|ation\w*)|count\w*|how many|sum|total|percentage|math|numeric)\b/i,
+    techniques: ["program_of_thoughts"], why: "compute it in code rather than in prose, where digits drift" },
+  { match: /\b(verif\w*|fact[- ]?check\w*|double[- ]?check|is (this|that) (true|correct|right)|accura\w*|claims?|hallucinat\w*)\b/i,
+    techniques: ["cove", "cross_verify"], why: "turn each claim into a falsifiable question, then audit from outside" },
+  { match: /\b(cost|cheap\w*|expensive|budget|latency|speed|fast\w*|slow\w*|overkill|too (much|slow|expensive))\b/i,
+    techniques: ["cascade"], why: "answer at the lowest sufficient effort and escalate only on low confidence" },
 ];
 
 interface Recommendation { technique: string; kind: string; tier: string; category: string; why: string; }
@@ -232,13 +244,13 @@ function generateToken(): string {
 
 /**
  * Tool 1: list_prompt_techniques
- * Discovery tool - shows all 31 techniques organized by category
+ * Discovery tool - shows all 37 techniques organized by category
  */
 export const listPromptTechniquesTool = defineModelTool({
   name: "list_prompt_techniques",
-  description: "Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 31, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
+  description: "Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 37, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
   parameters: z.object({
-    all: z.boolean().optional().default(false).describe("Show all 31 techniques (default false = core only)"),
+    all: z.boolean().optional().default(false).describe("Show all 37 techniques (default false = core only)"),
     filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding"])
       .optional()
       .describe("Show one category in full (implies all techniques in it)")

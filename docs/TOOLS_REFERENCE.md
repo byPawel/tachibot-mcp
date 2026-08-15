@@ -1567,13 +1567,13 @@ validate_workflow_file({ filePath: "workflows/my-workflow.yaml" })
 
 ### list_prompt_techniques
 
-Discover prompt engineering techniques. By default shows the ~9 **core** techniques that still help 2026 reasoning models (output-structure contracts like `scot`, `pre_mortem`, `bdd_spec`); pass `all: true` for the full set of 31, or a category filter.
+Discover prompt engineering techniques. By default shows the ~9 **core** techniques that still help 2026 reasoning models (output-structure contracts like `scot`, `pre_mortem`, `bdd_spec`); pass `all: true` for the full set of 37, or a category filter.
 
 #### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `all` | `boolean` | No | `false` | Show all 31 techniques (default shows core only) |
+| `all` | `boolean` | No | `false` | Show all 37 techniques (default shows core only) |
 | `filter` | `string` | No | - | Show one category in full: `creative`, `research`, `analytical`, `reflective`, `reasoning`, `verification`, `meta`, `debate`, `judgment`, `engineering`, `research_advanced`, `decision`, `structured_coding` |
 
 #### Example

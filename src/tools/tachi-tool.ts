@@ -611,7 +611,7 @@ Examples:
         `Both, for a messy ask AND structured output:\n` +
         `   refine_prompt first, approve the brief, then feed the brief to\n` +
         `   preview_prompt_technique → execute_prompt_technique.\n\n` +
-        `Browse techniques: list_prompt_techniques (core) · all=true (all 31)\n` +
+        `Browse techniques: list_prompt_techniques (core) · all=true (all 37)\n` +
         `In Claude Code: /prompt refine <query> · /prompt <query>`
       );
     }
