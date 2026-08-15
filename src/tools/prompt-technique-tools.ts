@@ -99,7 +99,24 @@ interface Technique {
 
 // Technique definitions organized by category
 const TECHNIQUES: Record<string, Technique[]> = {
+  retrieval: [
+    { name: "chain_of_note", alias: "note_taking", description: "Note each retrieved source (relevant? what it actually says?) BEFORE answering — the fix for citing a source that didn't say that (arXiv:2311.09210)", tier: 'core', kind: 'contract' },
+    { name: "self_rag", alias: "adaptive_retrieval", description: "Decide whether to retrieve at all, critique what returns, mark each claim SUPPORTED/UNSUPPORTED (arXiv:2310.11511)" },
+    { name: "ircot", alias: "interleaved_retrieval", description: "Interleave retrieval with each reasoning step — for multi-hop questions where query 2 depends on result 1 (arXiv:2212.10509)" },
+    { name: "flare", alias: "active_rag", description: "Retrieve on demand: mark low-confidence spans mid-answer and look up only those (arXiv:2305.06983)" },
+  ],
+  security: [
+    { name: "spotlighting", alias: "untrusted_input", description: "Fence untrusted text in explicit markers so a fetched page saying 'ignore previous instructions' reads as data, not instruction (arXiv:2403.14720)", tier: 'core', kind: 'contract' },
+  ],
+  few_shot: [
+    { name: "analogical", alias: "self_examples", description: "Model writes its OWN worked examples, then solves by analogy — few-shot quality with zero curation (arXiv:2310.01714)", tier: 'core', kind: 'contract' },
+    { name: "contrastive_cot", alias: "good_and_bad", description: "Show a correct chain AND a plausible wrong one, labelled — teaches what the trap looks like (arXiv:2311.09277)" },
+    { name: "auto_cot", alias: "auto_examples", description: "Cluster the case types, generate one exemplar per cluster — diversity beats polish (arXiv:2210.03493)" },
+    { name: "complexity_based", alias: "diverse_examples", description: "Reason at three depths, prefer the longest complete chain over the majority (arXiv:2210.00720)" },
+    { name: "exemplar_selection", alias: "pick_examples", description: "Choose examples by similarity to the live query; watch label balance and ordering effects (arXiv:2406.06608)" },
+  ],
   creative: [
+    { name: "verbalized_sampling", alias: "spread_candidates", description: "Ask for N candidates WITH probabilities in one pass — directly targets the mode collapse that makes what_if/innovate feel same-y (arXiv:2510.01171)" },
     { name: "what_if", alias: null, description: "Explore wild possibilities without limits" },
     { name: "alt_view", alias: "perspectives", description: "5 angles: child, scientist, artist, strategist, futurist" },
     { name: "creative_use", alias: "applications", description: "Cross-domain creative applications" },
@@ -110,12 +127,17 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "evidence", alias: "facts", description: "Support, contradict, cases, stats, experts" },
   ],
   analytical: [
+    { name: "s2a", alias: "clean_context", description: "System 2 Attention: rewrite the input keeping only what's relevant, then answer the clean version (arXiv:2311.11829)" },
+    { name: "metacognitive", alias: "think_about_thinking", description: "Understand, judge, evaluate, confirm, report confidence — a general-purpose thinking wrapper (arXiv:2308.05342)" },
+    { name: "rephrase_respond", alias: "rar", description: "Rewrite the question more precisely, surface the ambiguity, then answer the rewrite (arXiv:2311.04205)" },
+    { name: "re2", alias: "reread", description: "Re-Reading: put the question in twice. Near-zero cost, works surprisingly well (arXiv:2309.06275)" },
     { name: "analyze", alias: "systematic", description: "Components, relationships, patterns, conclusions" },
     { name: "first_principles", alias: "first_prin", description: "Truths, assumptions, atomic units, rebuild" },
     { name: "feasibility", alias: "feasible", description: "Technical/economic/time/resources/risks" },
     { name: "step_back", alias: "abstract_first", description: "Solve the general principle first, then apply it to the specific case" },
   ],
   reflective: [
+    { name: "chain_of_density", alias: "densify", description: "Summarise, then repeatedly add missing entities WITHOUT growing the length — forces real compression (arXiv:2309.04269)" },
     { name: "hourglass", alias: "bottleneck", description: "Explore wide, compress to a schema + one rule, DISCARD the exploration, rebuild from the rule. On failure fix the rule, don't append the error (arXiv:2607.11696)" },
     { name: "reflect", alias: null, description: "Patterns, surprises, key insight, gaps" },
     { name: "patterns", alias: "connections", description: "Themes, causality, cycles, anomalies" },
@@ -123,12 +145,23 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "integrate", alias: "synthesize", description: "Convergent themes, contradictions, meta-pattern" },
   ],
   reasoning: [
+    { name: "self_ask", alias: "follow_up_questions", description: "Generate explicit follow-up questions and answer each before concluding — better than decompose for multi-hop facts (arXiv:2210.03350)" },
+    { name: "atom_of_thoughts", alias: "aot", description: "Each step rewritten as a fresh self-contained question, no history carried, so errors can't compound (arXiv:2502.12018)" },
+    { name: "algorithm_of_thoughts", alias: "in_prompt_search", description: "Whole search including dead ends inside ONE prompt — tree-of-thoughts behaviour at ~one query's cost (arXiv:2308.10379)" },
+    { name: "chain_of_draft", alias: "cod", description: "CoT with ~5 words per step. Same accuracy on many tasks at a fraction of the tokens (arXiv:2502.18600)" },
+    { name: "thread_of_thought", alias: "thot", description: "Walk a long, chaotic context piece by piece, summarising as you go, before answering (arXiv:2311.08734)" },
     { name: "backtrack", alias: "rewind", description: "Mark steps validated/provisional; on a late failure rewind to the last validated checkpoint instead of restarting or patching (arXiv:2607.07492)" },
     { name: "chain_of_thought", alias: "step_by_step", description: "Think step-by-step: identify, breakdown, logic, conclude" },
     { name: "tree_of_thoughts", alias: "explore_paths", description: "Branch 3 paths, explore, evaluate, prune, synthesize" },
     { name: "graph_of_thoughts", alias: "idea_map", description: "Map as graph: nodes=ideas, edges=connections, find loops" },
   ],
   verification: [
+    { name: "universal_consistency", alias: "usc", description: "Pick among candidates by READING them, not string-matching — fixes vote-by-string-match on prose, code and plans (arXiv:2311.17311)", tier: 'core', kind: 'contract' },
+    { name: "self_verification", alias: "backward_check", description: "Re-derive a hidden given from your own answer. Catches different errors than checking forwards (arXiv:2212.09561)" },
+    { name: "self_calibration", alias: "fresh_eyes", description: "Judge your answer in a FRESH context — a model that just justified an answer will defend it (arXiv:2406.06608)" },
+    { name: "paraphrase_ensemble", alias: "reframe_ensemble", description: "Ask the same question in 3 framings and compare — catches phrasing-sensitivity (arXiv:2406.06608)" },
+    { name: "adaptive_consistency", alias: "early_stop_consistency", description: "Sample until consensus is clear instead of a fixed N — same accuracy, often half the tokens (arXiv:2406.06608)" },
+    { name: "maieutic", alias: "socratic", description: "Explain both a proposition and its negation, recursively, keep the consistent subtree (arXiv:2205.11822)" },
     { name: "breadth_then_depth", alias: "refine_over_resample", description: "Sample 3 different approaches, then repair each step-by-step, then pick — beats spending the whole budget on more samples (arXiv:2608.05643)" },
     { name: "prompt_coverage", alias: "spec_coverage", description: "Map each test to the requirement it covers; unmapped requirements are the real gaps (arXiv:2607.02057)" },
     { name: "self_consistency", alias: "consensus", description: "Generate 3 solutions, compare, vote best, explain confidence" },
@@ -164,6 +197,8 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "pre_mortem", alias: "failure_analysis", description: "Assume project failed → brainstorm 7-10 causes → rank → mitigate top 5", tier: 'core', kind: 'contract' },
   ],
   structured_coding: [
+    { name: "chain_of_code", alias: "coc", description: "Write code; run what runs; SIMULATE the interpreter for steps code can't express (arXiv:2312.04474)" },
+    { name: "skeleton_parallel", alias: "sot", description: "Full skeleton first, then expand each point independently of the others (arXiv:2307.15337). Distinct from `skeleton`, which expands sequentially." },
     { name: "scot", alias: "structured_cot", description: "Structured CoT: reason in code structures (sequence/branch/loop) before writing code (Li et al. 2025, +13.79%)", tier: 'core', kind: 'contract' },
     { name: "pre_post", alias: "contracts", description: "Design by contract: state preconditions + postconditions before implementing", tier: 'core', kind: 'contract' },
     { name: "bdd_spec", alias: "given_when_then", description: "Behavioral specs: Given/When/Then scenarios before code. Each scenario = a test.", tier: 'core', kind: 'contract' },
@@ -259,7 +294,7 @@ export const listPromptTechniquesTool = defineModelTool({
   description: "Discover prompt engineering techniques. By default shows the ~9 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 37, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
   parameters: z.object({
     all: z.boolean().optional().default(false).describe("Show all 37 techniques (default false = core only)"),
-    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding"])
+    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding", "retrieval", "security", "few_shot"])
       .optional()
       .describe("Show one category in full (implies all techniques in it)")
   }),

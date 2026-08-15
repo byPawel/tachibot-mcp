@@ -1267,7 +1267,10 @@
             "engineering",
             "research_advanced",
             "decision",
-            "structured_coding"
+            "structured_coding",
+            "retrieval",
+            "security",
+            "few_shot"
           ],
           "type": "string"
         }

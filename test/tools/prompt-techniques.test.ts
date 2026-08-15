@@ -1,7 +1,7 @@
 import { listPromptTechniquesTool, previewPromptTechniqueTool } from "../../src/tools/prompt-technique-tools.js";
 
 describe("prompt techniques — curated list", () => {
-  test("default list shows only core techniques, not all 37", async () => {
+  test("default list shows only core techniques, not the full library", async () => {
     const out = await listPromptTechniquesTool.execute({});
     expect(out).toContain("CORE PROMPT TECHNIQUES");
     // core contracts present
