@@ -116,23 +116,28 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "step_back", alias: "abstract_first", description: "Solve the general principle first, then apply it to the specific case" },
   ],
   reflective: [
+    { name: "hourglass", alias: "bottleneck", description: "Explore wide, compress to a schema + one rule, DISCARD the exploration, rebuild from the rule. On failure fix the rule, don't append the error (arXiv:2607.11696)" },
     { name: "reflect", alias: null, description: "Patterns, surprises, key insight, gaps" },
     { name: "patterns", alias: "connections", description: "Themes, causality, cycles, anomalies" },
     { name: "decompose", alias: "breakdown", description: "Core, sub-problems, dependencies, steps" },
     { name: "integrate", alias: "synthesize", description: "Convergent themes, contradictions, meta-pattern" },
   ],
   reasoning: [
+    { name: "backtrack", alias: "rewind", description: "Mark steps validated/provisional; on a late failure rewind to the last validated checkpoint instead of restarting or patching (arXiv:2607.07492)" },
     { name: "chain_of_thought", alias: "step_by_step", description: "Think step-by-step: identify, breakdown, logic, conclude" },
     { name: "tree_of_thoughts", alias: "explore_paths", description: "Branch 3 paths, explore, evaluate, prune, synthesize" },
     { name: "graph_of_thoughts", alias: "idea_map", description: "Map as graph: nodes=ideas, edges=connections, find loops" },
   ],
   verification: [
+    { name: "breadth_then_depth", alias: "refine_over_resample", description: "Sample 3 different approaches, then repair each step-by-step, then pick — beats spending the whole budget on more samples (arXiv:2608.05643)" },
+    { name: "prompt_coverage", alias: "spec_coverage", description: "Map each test to the requirement it covers; unmapped requirements are the real gaps (arXiv:2607.02057)" },
     { name: "self_consistency", alias: "consensus", description: "Generate 3 solutions, compare, vote best, explain confidence" },
     { name: "constitutional", alias: "principles", description: "Solve, critique against accuracy/safety/helpfulness, revise" },
     { name: "cove", alias: "verify_chain", description: "Draft, list its claims, write a falsifying question per claim, keep only what survives" },
     { name: "cross_verify", alias: "second_opinion", description: "Generate, then audit from a different angle. Report the audit separately." },
   ],
   meta: [
+    { name: "context_preflight", alias: "preflight", description: "Score the context on 7 criteria (role, guardrails, consistency, tools, grounding, untrusted input, efficiency) BEFORE spending tokens (arXiv:2607.14275)" },
     { name: "meta_prompting", alias: "improve_prompt", description: "Write better prompt for this, then solve using it" },
     { name: "cascade", alias: "escalate", description: "Answer briefly with a confidence statement, escalate to full reasoning only if needed" },
   ],
@@ -144,6 +149,8 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "council_of_experts", alias: "judge", description: "Multi-model council: gather diverse perspectives, extract best elements, synthesize final verdict" },
   ],
   engineering: [
+    { name: "structured_thoughts", alias: "try_outcome", description: "Alternate <try> scratch work with standalone <outcome> blocks, so the tries can be dropped from context later (arXiv:2607.10386)", tier: 'core', kind: 'contract' },
+    { name: "loop_spec", alias: "agent_loop", description: "Declare the agent loop before running it: trigger, goal, 5-rung verification ladder, stopping rule, carried memory (arXiv:2607.00038)", tier: 'core', kind: 'contract' },
     { name: "reflexion", alias: "iterate", description: "Generate→Critique→Revise loop (2-3 rounds, score each criterion 1-10)", tier: 'core', kind: 'contract' },
     { name: "react", alias: "thought_action", description: "Thought→Action→Observation loops for multi-step coding tasks", tier: 'core', kind: 'contract' },
     { name: "rubber_duck", alias: "explain_code", description: "Explain code line-by-line to a novice, flag bugs/assumptions", tier: 'core', kind: 'contract' },
@@ -153,6 +160,7 @@ const TECHNIQUES: Record<string, Technique[]> = {
     { name: "least_to_most", alias: "build_up", description: "Decompose to atomic sub-problems, solve simplest first, build up to hardest" },
   ],
   decision: [
+    { name: "compute_ration", alias: "ration", description: "For a SET of items: score difficulty x payoff, budget effort per item, then solve — models otherwise front-load thought on whatever came first (arXiv:2608.07968)" },
     { name: "pre_mortem", alias: "failure_analysis", description: "Assume project failed → brainstorm 7-10 causes → rank → mitigate top 5", tier: 'core', kind: 'contract' },
   ],
   structured_coding: [
