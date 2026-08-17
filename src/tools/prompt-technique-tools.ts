@@ -306,6 +306,33 @@ const TECHNIQUES: Record<string, Technique[]> = {
       example: "A rate-limit problem 'solved' by adding Redis — before anyone asked whether the caller could just batch. Three options make the default visible as a choice.",
     },
   ],
+  writing: [
+    {
+      name: "storm",
+      alias: "research_first",
+      description: "Interview four different personas about the topic, mark each answer KNOWN/SEARCH/OPINION, then build the piece around only the 3 answers that would surprise a reader who knows the basics. (arXiv:2402.14207)",
+      useWhen: "Any researched piece — article, doc, report — where you would otherwise start drafting from what you already know.",
+      example: "Generic writing happens because the model answers the obvious questions. The sceptic's awkward question is the one that makes the piece worth reading.",
+      tier: 'core',
+      kind: 'contract',
+    },
+    {
+      name: "re3",
+      alias: "four_pass",
+      description: "Plan, draft, restructure, then line-edit — as four separate passes, never combined. (arXiv:2210.06774)",
+      useWhen: "Anything past a few hundred words that has to hold together.",
+      example: "Ask for structure and sentence polish at once and you get neither: the model tidies prose in a piece whose architecture is wrong. If the draft never got shorter, the restructure pass did not happen.",
+      tier: 'core',
+      kind: 'contract',
+    },
+    {
+      name: "de_generic",
+      alias: "fix_boring",
+      description: "Attack originality, elaboration and specificity directly instead of asking for a better draft — fluency is the part that was already fine. (arXiv:2309.14556)",
+      useWhen: "A draft that reads competently and says nothing.",
+      example: "\"Improve this\" gets you more fluency, which is what made it dull. The test is whether a competitor could publish it unchanged under their own name.",
+    },
+  ],
   research: [
     {
       name: "investigate",
@@ -929,7 +956,7 @@ export const listPromptTechniquesTool = defineModelTool({
   description: `Discover prompt engineering techniques. By default shows the ${CORE_COUNT} CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all ${TECHNIQUE_COUNT}, or filter by category. Don't know which? preview_prompt_technique with technique="auto".`,
   parameters: z.object({
     all: z.boolean().optional().default(false).describe(`Show all ${TECHNIQUE_COUNT} techniques (default false = core only)`),
-    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding", "retrieval", "security", "few_shot", "tabular"])
+    filter: z.enum(["all", "creative", "writing", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding", "retrieval", "security", "few_shot", "tabular"])
       .optional()
       .describe("Show one category in full (implies all techniques in it)")
   }),

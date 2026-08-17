@@ -40,6 +40,83 @@ export class PromptEngineerLite {
     ['creative_use', (q, c) => `Find creative applications for "${q}"${c ? ' and the findings above' : ''}. Draw deliberately from unrelated fields — biology, games, logistics, art. For each application, say what makes it work and what would have to be true for it to be practical.`],
     ['innovate', (q) => `Generate creative, unconventional solutions for "${q}". Consider multiple approaches: rethinking existing processes, drawing inspiration from other domains, removing constraints, and combining different methods. Provide 3+ novel, practical approaches.`],
 
+    // Writing
+    ['storm', (q) => `Write about "${q}". Do NOT start writing yet — research first.
+
+STAGE 1 — PERSPECTIVES. Identify 4 people who would each care about this topic for a
+DIFFERENT reason: a practitioner, a sceptic, a buyer, and someone burned by it before.
+Name what each one actually wants to know.
+
+STAGE 2 — INTERVIEW. For each perspective write the 4 questions they would ask,
+including the awkward one that usually gets left out. Answer each, marking it:
+  [KNOWN]   confident, no source needed
+  [SEARCH]  needs a real source — say what would settle it
+  [OPINION] genuinely contested — say who disagrees and why
+
+STAGE 3 — WHAT IS ACTUALLY INTERESTING. Across all 16 answers, which 3 would surprise
+a reader who already knows the basics? Those 3 are the piece; everything else is
+context. If nothing surprises you, say so — the topic may not warrant writing up.
+
+STAGE 4 — OUTLINE around those 3, with a WORD BUDGET per section. Budgets must be
+uneven; equal budgets mean you have not decided what matters.`],
+
+    ['re3', (q) => `Produce a long-form piece on "${q}" in four separate passes. Structural
+rewriting and line editing fight each other — asking for both at once gets you neither,
+because the model tidies sentences in a piece whose architecture is wrong.
+
+PASS 1 — PLAN. No prose yet. Produce:
+  - the ONE thing the reader should take away
+  - the promise the opening makes (the piece must pay it off)
+  - a section list, each with purpose, word budget, and the specific point it lands
+  - the strongest objection a smart reader will have, and where you deal with it
+Budgets must be UNEVEN. If they are all equal, the plan is lazy.
+
+PASS 2 — DRAFT. Write to the plan. Do not polish, do not self-edit, do not stop to
+improve a sentence. Hit the budgets.
+
+PASS 3 — REWRITE, STRUCTURE ONLY. Ignore sentence quality entirely. Only ask:
+  - does each section do its stated job?
+  - is anything in the wrong order?
+  - what can be CUT wholesale? Name at least one thing — "nothing" is not an
+    acceptable answer.
+  - does the ending pay off the opening's promise?
+Output the restructured draft, not notes about it.
+
+PASS 4 — EDIT, LINE ONLY. Structure is now fixed: do not move or delete sections. Only:
+  - cut every word that earns nothing
+  - break up any sentence you have to re-read
+  - replace abstractions with specifics
+  - vary sentence length; read for rhythm
+  - delete every hedge that is not load-bearing
+
+Report at the end: word count per pass, and what you cut in Pass 3. If the piece never
+got shorter, Pass 3 did not happen.`],
+
+    ['de_generic', (q) => `The following piece is competent and dull. Do NOT "improve" it —
+improving fluency is what made it dull. Attack these three things only.
+
+1. ORIGINALITY — find every sentence a competent writer would produce by default on
+   this topic. Quote each one, then replace it with something only someone who
+   actually knows this subject would say. If you cannot, mark it CUT.
+
+2. ELABORATION — find every claim that is asserted and then abandoned. Each needs ONE
+   of: a concrete example, a number, a named case, or a mechanism explaining why it is
+   true. Generic support ("this improves efficiency") counts as abandoned.
+
+3. SPECIFICITY SWEEP — replace every one of these:
+   - "many/several/various"        → the actual number
+   - "significantly/dramatically"  → by how much
+   - "experts say"                 → which experts
+   - "can be challenging"          → the specific failure
+   - any noun phrase that would fit an article on a completely different topic
+
+Then answer: could a competitor publish this under their name with no changes? If yes,
+say which parts made that possible.
+
+Do NOT lengthen it. Trade word for word.
+
+PIECE: ${q}`],
+
     // Research
     ['investigate', (q) => `Investigate "${q}" by answering each question in turn: Who is involved? What exactly is it? When did it arise? Where does it apply? Why does it matter? How does it work? Finish with what has changed recently and what is still unsettled.`],
     ['evidence', (q, _c) => `Gather the evidence on "${q}": what supports it, what contradicts it, concrete cases either way, relevant numbers, and where informed people disagree. Then state what the evidence as a whole actually supports — not what you expected it to.`],
@@ -728,6 +805,11 @@ depends on rows buried in the middle, narrow the table or sort them to an edge f
     'critic': 'adversarial',
     'debate': 'persona_simulation',
 
+    // Writing aliases
+    research_first: 'storm',
+    four_pass: 're3',
+    fix_boring: 'de_generic',
+
     // Judgment aliases
     'judge': 'council_of_experts',
     'council': 'council_of_experts',
@@ -887,6 +969,10 @@ depends on rows buried in the middle, narrow the table or sort them to an edge f
       'alt_view': 'Multi-angle',
       'creative_use': 'Applications',
       'innovate': 'Innovation',
+      // Writing
+      'storm': 'Research-first',
+      're3': 'Four-pass',
+      'de_generic': 'De-generic',
       // Research
       'investigate': '5W1H',
       'evidence': 'Evidence',
