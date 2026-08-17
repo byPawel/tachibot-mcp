@@ -64,13 +64,21 @@ export const blogWriterTool = defineModelTool({
     const reportFn = reportProgress ?? (async () => {});
     // Timeout inherited from getOpenRouterModelTimeout() — Kimi -> 600s, plenty of
     // headroom for the combined research + four-pass write in one call.
+    //
+    // maxTokens is higher than sibling single-artifact tools (testgen/security_review use
+    // 12000) because this tool's OUTPUT is not one artifact — re3 alone asks for a full
+    // draft (Pass 2), a full restructured draft (Pass 3: "Output the restructured draft,
+    // not notes about it"), and a full line-edited draft (Pass 4), and research:true adds
+    // storm's 16 marked answers plus a 4-section outline on top. The budget is per-pass,
+    // not per-piece, so it has to be multiplied accordingly or a long wordCount truncates
+    // mid-Pass-4 with no error.
     return withHeartbeat(
       () =>
         callOpenRouter(
           [{ role: "user", content: prompt }],
           OpenRouterModel.KIMI_K3,
           0.7,
-          8000,
+          16000,
         ),
       reportFn,
       10000,

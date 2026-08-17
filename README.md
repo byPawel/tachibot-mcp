@@ -145,12 +145,12 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ### Tool Profiles
 | Profile | Tools | Best For |
 |---------|-------|----------|
-| **Minimal** | 13 | Quick tasks, low token budget |
-| **Research Power** | 36 | Deep investigation, multi-source |
-| **Code Focus** | 42 | Software development, SWE tasks |
-| **Balanced** | 54 | General-purpose, mixed workflows |
-| **Heavy Coding** | 58 | Max code tools + agentic workflows |
-| **Full** (default) | 65 | Everything enabled |
+| **Minimal** | 14 | Quick tasks, low token budget |
+| **Research Power** | 38 | Deep investigation, multi-source |
+| **Code Focus** | 43 | Software development, SWE tasks |
+| **Balanced** | 56 | General-purpose, mixed workflows |
+| **Heavy Coding** | 59 | Max code tools + agentic workflows |
+| **Full** (default) | 67 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support

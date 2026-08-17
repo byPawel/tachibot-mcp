@@ -24,16 +24,16 @@ Counts below are generated from `src/profiles/*.ts` via `npm run build:profiles`
 
 | Profile | Tools | Description |
 |---------|-------|-------------|
-| `minimal` | 13 | Minimal essential tools for basic tasks |
-| `research_power` | 36 | Research-focused with Grok search + all Perplexity + brainstorming |
-| `code_focus` | 42 | Code-heavy work with debugging and analysis |
-| `balanced` | 54 | Balanced set for general use |
-| `heavy_coding` | 58 | Heavy coding with all reasoning & code tools |
-| `full` | 65 | **Default profile** — every tool enabled |
+| `minimal` | 14 | Minimal essential tools for basic tasks |
+| `research_power` | 38 | Research-focused with Grok search + all Perplexity + brainstorming |
+| `code_focus` | 43 | Code-heavy work with debugging and analysis |
+| `balanced` | 56 | Balanced set for general use |
+| `heavy_coding` | 59 | Heavy coding with all reasoning & code tools |
+| `full` | 67 | **Default profile** — every tool enabled |
 
 ---
 
-### 1. `minimal` (13 tools)
+### 1. `minimal` (14 tools)
 
 Minimal essential tools for basic tasks.
 
@@ -50,7 +50,7 @@ Minimal essential tools for basic tasks.
 
 ---
 
-### 2. `research_power` (36 tools)
+### 2. `research_power` (38 tools)
 
 Research-focused with Grok search + all Perplexity + brainstorming + the full reasoning/planning suite.
 
@@ -61,7 +61,7 @@ Research-focused with Grok search + all Perplexity + brainstorming + the full re
 - Judgment: `gemini_judge`, `jury`
 - Creative: `openai_brainstorm`, `gemini_brainstorm`
 - Code: `qwen_coder`, `kimi_code`, `kimi_long_context`, `minimax_agent`
-- Planning: `planner_maker`, `planner_runner`, `list_plans`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`, `blog_writer`
 - Workflow: `workflow`
 - Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`
 
@@ -74,7 +74,7 @@ Research-focused with Grok search + all Perplexity + brainstorming + the full re
 
 ---
 
-### 3. `code_focus` (42 tools)
+### 3. `code_focus` (43 tools)
 
 Code-heavy work with debugging and analysis.
 
@@ -94,7 +94,7 @@ Code-heavy work with debugging and analysis.
 
 ---
 
-### 4. `balanced` (54 tools)
+### 4. `balanced` (56 tools)
 
 Balanced set for general use — nearly everything except the deepest niche reasoning/creative extras.
 
@@ -107,7 +107,7 @@ Balanced set for general use — nearly everything except the deepest niche reas
 - Creative: `openai_brainstorm`, `gemini_brainstorm`
 - Analysis: `gemini_analyze_code`, `gemini_analyze_text`
 - Local: `local_query`
-- Planning: `planner_maker`, `planner_runner`, `list_plans`, `spec_writer`
+- Planning: `planner_maker`, `planner_runner`, `list_plans`, `spec_writer`, `blog_writer`
 - Workflow: `workflow`, `list_workflows`, `create_workflow`, `visualize_workflow`
 - Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`, `refine_prompt`
 - Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
@@ -117,7 +117,7 @@ Balanced set for general use — nearly everything except the deepest niche reas
 
 ---
 
-### 5. `heavy_coding` (58 tools)
+### 5. `heavy_coding` (59 tools)
 
 Heavy coding with the full reasoning & code toolset, minus the general workflow-management tools.
 
@@ -141,7 +141,7 @@ Heavy coding with the full reasoning & code toolset, minus the general workflow-
 
 ---
 
-### 6. `full` (65 tools) — default
+### 6. `full` (67 tools) — default
 
 All tools enabled for maximum capability. This is the profile set in `tools.config.json`'s `activeProfile` by default.
 
@@ -149,7 +149,7 @@ All tools enabled for maximum capability. This is the profile set in `tools.conf
 
 **Best for:** Maximum flexibility, specialized tasks, demonstrations.
 
-**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools won't register even under `full`. Run `doctor` to see exactly what's active. `continue_focus` is always registered regardless of profile (see [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md#continue_focus)) and isn't counted in the 65.
+**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools won't register even under `full`. Run `doctor` to see exactly what's active. `continue_focus` is always registered regardless of profile (see [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md#continue_focus)) and isn't counted in the 67.
 
 ---
 
