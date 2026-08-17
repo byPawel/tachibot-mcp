@@ -84,6 +84,9 @@ export const heavyCodingProfile: ProfileConfig = {
     // Test generation
     testgen: true,
 
+    // Long-form writing
+    blog_writer: false,
+
     // Security audit
     security_review: true,
 

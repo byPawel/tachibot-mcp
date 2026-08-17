@@ -1300,6 +1300,10 @@ async function executeTargetTool(toolName: string, prompt: string, context: any)
       const { kimiThinkingTool } = await import('./openrouter-tools.js');
       return kimiThinkingTool.execute({ problem: prompt }, context);
     },
+    'blog_writer': async () => {
+      const { blogWriterTool } = await import('./blog-writer-tool.js');
+      return blogWriterTool.execute({ topic: prompt }, context);
+    },
   };
 
   const executor = toolMappings[toolName];

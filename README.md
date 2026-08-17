@@ -5,17 +5,17 @@
 ### Multi-Model AI Orchestration Platform
 
 [![Version](https://img.shields.io/badge/version-2.30.1-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
-[![Tools](https://img.shields.io/badge/tools-66_active-brightgreen.svg)](#-tool-ecosystem-66-tools)
+[![Tools](https://img.shields.io/badge/tools-67_active-brightgreen.svg)](#-tool-ecosystem-67-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**66 AI tools. 12 providers. One protocol.**
+**67 AI tools. 12 providers. One protocol.**
 
 Orchestrate Perplexity, Grok 4.6, GPT-5.6, Gemini, Qwen, Kimi K3, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
-[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-66-tools) &#183; [Documentation](https://tachibot.com/docs)
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-67-tools) &#183; [Documentation](https://tachibot.com/docs)
 
 <br>
 
@@ -230,13 +230,13 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## Tool Ecosystem (66 Tools)
+## Tool Ecosystem (67 Tools)
 
 ### Research & Search (6)
 `perplexity_ask` &#183; `perplexity_reason` &#183; `grok_search` &#183; `grok_search_lite` &#183; `openai_search` &#183; `gemini_search`
 
-### Reasoning & Planning (14)
-`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans` &#183; `spec_writer`
+### Reasoning & Planning (15)
+`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans` &#183; `spec_writer` &#183; `blog_writer`
 
 ### Code Intelligence (11)
 `kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `deepseek_algo` &#183; `minimax_code` &#183; `minimax_agent` &#183; `testgen` &#183; `debug_triage`

@@ -64,6 +64,7 @@
     "planner_runner": true,
     "list_plans": true,
     "testgen": true,
+    "blog_writer": false,
     "security_review": true,
     "diff_review": true,
     "plan_critique": true

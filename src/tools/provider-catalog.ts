@@ -115,6 +115,7 @@ export const PROVIDER_GROUPS: ProviderGroup[] = [
       "list_plans",
       "testgen",
       "security_review",
+      "blog_writer",
     ],
   },
   {

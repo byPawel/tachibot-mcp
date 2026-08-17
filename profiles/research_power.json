@@ -1,5 +1,5 @@
 {
-  "description": "Research-focused with Grok search + all Perplexity + brainstorming (37 tools)",
+  "description": "Research-focused with Grok search + all Perplexity + brainstorming (38 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -64,6 +64,7 @@
     "planner_runner": true,
     "list_plans": true,
     "testgen": false,
+    "blog_writer": true,
     "security_review": false,
     "diff_review": false,
     "plan_critique": false
