@@ -844,6 +844,14 @@ const RECOMMEND_RULES: { match: RegExp; techniques: string[]; why: string }[] = 
     techniques: ["adversarial", "constitutional"], why: "steelman then attack, and critique against explicit principles" },
   { match: /\b(idea|brainstorm|creative|novel|alternative|possibilit)\b/i,
     techniques: ["innovate", "what_if", "alt_view"], why: "generate unconventional options and view from several angles" },
+  // Writing intent previously matched nothing here and fell through to
+  // CORE_TECHNIQUES.slice(0,3) — chain_of_note/astute_rag/spotlighting, none of
+  // which have anything to do with drafting prose. storm researches before the
+  // first word is written, re3 keeps structural and line editing as separate
+  // passes instead of fighting each other in one, and de_generic attacks
+  // competent-but-boring output directly rather than vaguely asking for "better".
+  { match: /\b(write|writing|draft|blog|article|essay|post|prose|long[- ]form|revise|rewrite|edit(ing)?|boring|generic|dull)\b/i,
+    techniques: ["storm", "re3", "de_generic"], why: "research before drafting, keep structural and line editing in separate passes, and attack originality directly" },
   { match: /\b(arithmetic|calculat\w*|comput(e|es|ing|ation\w*)|count\w*|how many|sum|total|percentage|math|numeric)\b/i,
     techniques: ["program_of_thoughts"], why: "compute it in code rather than in prose, where digits drift" },
   { match: /\b(verif\w*|fact[- ]?check\w*|double[- ]?check|is (this|that) (true|correct|right)|accura\w*|claims?|hallucinat\w*)\b/i,

@@ -29,7 +29,7 @@ export function buildBlogWriterPrompt(args: BlogWriterArgs): string {
   if (research) {
     parts.push(engine.applyTechnique("blog_writer", "storm", topic));
     parts.push(
-      "Having completed the research above, now write the piece using the four-pass method below. Use only the 3 surprising answers as the spine.",
+      "Having completed the research above, now write the piece using the four-pass method below. Use only the 3 surprising answers as the spine, and carry Stage 4's outline and word budgets into Pass 1 rather than re-deriving them.",
     );
   }
 

@@ -1,6 +1,6 @@
 # TachiBot MCP - Complete Tools Reference
 
-**Complete parameter schemas and example calls for all 66 tools** (67 registered — `continue_focus` is an always-on companion to `focus` outside the profile system; see [Meta & Orchestration](#meta--orchestration)).
+**Complete parameter schemas and example calls for all 67 tools** (see [Meta & Orchestration](#meta--orchestration) for `continue_focus`).
 
 Schemas below are generated from the wire contract (`test/golden/__snapshots__/tool-contracts.json`) — the exact JSON Schema the MCP server publishes for each tool.
 
