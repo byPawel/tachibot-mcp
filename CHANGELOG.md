@@ -5,6 +5,19 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.33.0] - 2026-08-27
+
+### Added
+- **The writing family (`storm`, `re3`, `de_generic`)** — the library had creative *thinking* (`what_if`, `innovate`, `alt_view`, `creative_use`) and zero creative *writing*. Against a 7-stage pipeline, stage 4 (structure) and stage 5 (draft) were empty, and stage 6 (revise) fell to `reflexion`, which optimises toward *correct* — prose revision is cutting, rhythm and specificity, which is a different objective. 85 → 88 techniques.
+- **`blog_writer`** — researched long-form in one call, composing `storm` and `re3` rather than carrying a private copy of their text. A copy would drift the moment either template was edited, and drift *silently*, because both paths still emit well-formed prose. `research: true` runs the persona interview first and feeds its 3 surprising answers into the four-pass write; `research: false` goes straight to the passes. 66 → 67 tools; enabled in `full`, `balanced` and `research_power`, off in `minimal`, `code_focus` and `heavy_coding`.
+
+### Fixed
+- **`preview_prompt_technique(technique="auto")` had no route for writing intent.** `RECOMMEND_RULES` carried no matcher for it, so "write a blog post" fell through to `CORE_TECHNIQUES.slice(0, 3)` — `chain_of_note` / `astute_rag` / `spotlighting` — while `list_prompt_techniques` advertised `auto` as the way in. Writing verbs now route to `storm`, `re3`, `de_generic`.
+- **`blog_writer` truncated silently at `maxTokens: 8000`.** Its output is several full renderings of the same piece (`re3`'s draft, restructure and line-edit passes, plus `storm`'s 16 marked answers on the default research path), unlike sibling tools that emit one artifact. 8000 was already at the ceiling at the word count the docs use as their own example, and nothing errored on truncation. Raised to 16000.
+- **The storm → re3 seam discarded its own outline.** `blog-writer-tool.ts` dropped storm's Stage 4 outline and word budgets and re-derived them from scratch in re3's Pass 1; they are now carried across.
+- **Stale doc counts.** `TOOLS_REFERENCE.md` and `TOOL_PROFILES.md` claimed `continue_focus` sits outside the profile system and is not counted — `profiles/full.json` and the golden snapshot both count it. `skills/prompt/SKILL.md` still said 37 techniques (now 88) and was missing five filter categories (retrieval, security, few_shot, tabular, writing). README's per-profile table was one release behind before this work and two behind after.
+- **Anti-drift tests could not detect drift.** The "uses the template rather than a private copy" tests asserted characteristic phrases that a copy would also satisfy; they now assert the engine's exact live output.
+
 ## [2.32.0] - 2026-08-15
 
 ### Added

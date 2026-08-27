@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
   "name": "io.github.byPawel/tachibot-mcp",
-  "description": "Multi-model AI orchestration with 66 tools, YAML workflows, and 6 token-optimized profiles.",
+  "description": "Multi-model AI orchestration with 67 tools, YAML workflows, and 6 token-optimized profiles.",
   "repository": {
     "url": "https://github.com/byPawel/tachibot-mcp",
     "source": "github"
   },
-  "version": "2.4.0",
+  "version": "2.33.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "tachibot-mcp",
-      "version": "2.4.0",
+      "version": "2.33.0",
       "transport": {
         "type": "stdio"
       },

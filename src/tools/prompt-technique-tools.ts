@@ -306,6 +306,33 @@ const TECHNIQUES: Record<string, Technique[]> = {
       example: "A rate-limit problem 'solved' by adding Redis — before anyone asked whether the caller could just batch. Three options make the default visible as a choice.",
     },
   ],
+  writing: [
+    {
+      name: "storm",
+      alias: "research_first",
+      description: "Interview four different personas about the topic, mark each answer KNOWN/SEARCH/OPINION, then build the piece around only the 3 answers that would surprise a reader who knows the basics. (arXiv:2402.14207)",
+      useWhen: "Any researched piece — article, doc, report — where you would otherwise start drafting from what you already know.",
+      example: "Generic writing happens because the model answers the obvious questions. The sceptic's awkward question is the one that makes the piece worth reading.",
+      tier: 'core',
+      kind: 'contract',
+    },
+    {
+      name: "re3",
+      alias: "four_pass",
+      description: "Plan, draft, restructure, then line-edit — as four separate passes, never combined. (arXiv:2210.06774)",
+      useWhen: "Anything past a few hundred words that has to hold together.",
+      example: "Ask for structure and sentence polish at once and you get neither: the model tidies prose in a piece whose architecture is wrong. If the draft never got shorter, the restructure pass did not happen.",
+      tier: 'core',
+      kind: 'contract',
+    },
+    {
+      name: "de_generic",
+      alias: "fix_boring",
+      description: "Attack originality, elaboration and specificity directly instead of asking for a better draft — fluency is the part that was already fine. (arXiv:2309.14556)",
+      useWhen: "A draft that reads competently and says nothing.",
+      example: "\"Improve this\" gets you more fluency, which is what made it dull. The test is whether a competitor could publish it unchanged under their own name.",
+    },
+  ],
   research: [
     {
       name: "investigate",
@@ -817,6 +844,14 @@ const RECOMMEND_RULES: { match: RegExp; techniques: string[]; why: string }[] = 
     techniques: ["adversarial", "constitutional"], why: "steelman then attack, and critique against explicit principles" },
   { match: /\b(idea|brainstorm|creative|novel|alternative|possibilit)\b/i,
     techniques: ["innovate", "what_if", "alt_view"], why: "generate unconventional options and view from several angles" },
+  // Writing intent previously matched nothing here and fell through to
+  // CORE_TECHNIQUES.slice(0,3) — chain_of_note/astute_rag/spotlighting, none of
+  // which have anything to do with drafting prose. storm researches before the
+  // first word is written, re3 keeps structural and line editing as separate
+  // passes instead of fighting each other in one, and de_generic attacks
+  // competent-but-boring output directly rather than vaguely asking for "better".
+  { match: /\b(write|writing|draft|blog|article|essay|post|prose|long[- ]form|revise|rewrite|edit(ing)?|boring|generic|dull)\b/i,
+    techniques: ["storm", "re3", "de_generic"], why: "research before drafting, keep structural and line editing in separate passes, and attack originality directly" },
   { match: /\b(arithmetic|calculat\w*|comput(e|es|ing|ation\w*)|count\w*|how many|sum|total|percentage|math|numeric)\b/i,
     techniques: ["program_of_thoughts"], why: "compute it in code rather than in prose, where digits drift" },
   { match: /\b(verif\w*|fact[- ]?check\w*|double[- ]?check|is (this|that) (true|correct|right)|accura\w*|claims?|hallucinat\w*)\b/i,
@@ -929,7 +964,7 @@ export const listPromptTechniquesTool = defineModelTool({
   description: `Discover prompt engineering techniques. By default shows the ${CORE_COUNT} CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all ${TECHNIQUE_COUNT}, or filter by category. Don't know which? preview_prompt_technique with technique="auto".`,
   parameters: z.object({
     all: z.boolean().optional().default(false).describe(`Show all ${TECHNIQUE_COUNT} techniques (default false = core only)`),
-    filter: z.enum(["all", "creative", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding", "retrieval", "security", "few_shot", "tabular"])
+    filter: z.enum(["all", "creative", "writing", "research", "analytical", "reflective", "reasoning", "verification", "meta", "debate", "judgment", "engineering", "research_advanced", "decision", "structured_coding", "retrieval", "security", "few_shot", "tabular"])
       .optional()
       .describe("Show one category in full (implies all techniques in it)")
   }),
@@ -1272,6 +1307,10 @@ async function executeTargetTool(toolName: string, prompt: string, context: any)
     'kimi_thinking': async () => {
       const { kimiThinkingTool } = await import('./openrouter-tools.js');
       return kimiThinkingTool.execute({ problem: prompt }, context);
+    },
+    'blog_writer': async () => {
+      const { blogWriterTool } = await import('./blog-writer-tool.js');
+      return blogWriterTool.execute({ topic: prompt }, context);
     },
   };
 

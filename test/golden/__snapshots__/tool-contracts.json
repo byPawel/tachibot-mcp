@@ -1,5 +1,36 @@
 [
   {
+    "description": "Write a researched long-form post: interview four personas for the angle, then plan/draft/restructure/line-edit in separate passes. Put the SUBJECT in the 'topic' parameter.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "audience": {
+          "description": "Who it is for, e.g. 'backend engineers'",
+          "type": "string"
+        },
+        "research": {
+          "default": true,
+          "description": "Run the persona-interview research stage first (default true)",
+          "type": "boolean"
+        },
+        "topic": {
+          "description": "What the post is about (REQUIRED - put your subject here)",
+          "type": "string"
+        },
+        "wordCount": {
+          "description": "Target length in words",
+          "type": "number"
+        }
+      },
+      "required": [
+        "topic"
+      ],
+      "type": "object"
+    },
+    "name": "blog_writer"
+  },
+  {
     "description": "Continue a focus session",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1241,14 +1272,14 @@
       "readOnlyHint": true,
       "title": "List Prompt Techniques"
     },
-    "description": "Discover prompt engineering techniques. By default shows the 18 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 85, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
+    "description": "Discover prompt engineering techniques. By default shows the 20 CORE techniques that still help 2026 reasoning models (output-structure contracts). Pass all=true for all 88, or filter by category. Don't know which? preview_prompt_technique with technique=\"auto\".",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
         "all": {
           "default": false,
-          "description": "Show all 85 techniques (default false = core only)",
+          "description": "Show all 88 techniques (default false = core only)",
           "type": "boolean"
         },
         "filter": {
@@ -1256,6 +1287,7 @@
           "enum": [
             "all",
             "creative",
+            "writing",
             "research",
             "analytical",
             "reflective",

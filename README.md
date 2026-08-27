@@ -4,18 +4,18 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.30.1-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
-[![Tools](https://img.shields.io/badge/tools-66_active-brightgreen.svg)](#-tool-ecosystem-66-tools)
+[![Version](https://img.shields.io/badge/version-2.33.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Tools](https://img.shields.io/badge/tools-67_active-brightgreen.svg)](#-tool-ecosystem-67-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**66 AI tools. 12 providers. One protocol.**
+**67 AI tools. 12 providers. One protocol.**
 
 Orchestrate Perplexity, Grok 4.6, GPT-5.6, Gemini, Qwen, Kimi K3, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
-[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-66-tools) &#183; [Documentation](https://tachibot.com/docs)
+[Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-67-tools) &#183; [Documentation](https://tachibot.com/docs)
 
 <br>
 
@@ -29,6 +29,26 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 ---
 
 ## What's New
+
+### v2.33.0
+- **The writing family (`storm`, `re3`, `de_generic`).** The library had creative *thinking* (`what_if`, `innovate`, `alt_view`, `creative_use`) and zero creative *writing*: against a 7-stage pipeline, stage 4 (structure) and stage 5 (draft) were empty, and stage 6 (revise) fell through to `reflexion` — which optimises toward *correct*, while prose revision is cutting, rhythm and specificity. **85 → 88 techniques.**
+- **`blog_writer`** — researched long-form in one call, composing `storm` and `re3` rather than carrying a private copy of their text. A copy would drift the moment either template was edited, and drift *silently*, because both paths still emit well-formed prose. `research: true` runs the persona interview first and feeds its 3 surprising answers into the four-pass write. **66 → 67 tools**; enabled in `full`, `balanced` and `research_power`.
+- **`preview_prompt_technique(technique="auto")` had no route for writing intent.** `RECOMMEND_RULES` carried no matcher, so "write a blog post" fell through to `CORE_TECHNIQUES.slice(0, 3)` — `chain_of_note` / `astute_rag` / `spotlighting` — while `list_prompt_techniques` advertised `auto` as the way in. Writing verbs now route to `storm`, `re3`, `de_generic`.
+- **`blog_writer` truncated silently at `maxTokens: 8000`.** Its output is several full renderings of the same piece (`re3`'s draft, restructure and line-edit passes, plus `storm`'s 16 marked answers), unlike sibling tools that emit one artifact. 8000 was already at the ceiling at the word count the docs use as their own example, and nothing errored on truncation. Raised to 16000.
+- **Anti-drift tests could not detect drift.** The "uses the template rather than a private copy" tests asserted characteristic phrases that a copy would also satisfy; they now assert the engine's exact live output.
+
+### v2.32.0
+- **Tabular family (7 new techniques)** — data-shaped work had no coverage at all, so "filter these rows" fell through to the generic core contracts. `data_assert` states the downstream purpose first, then checks the data with executable assertions carrying counts, because a filter that silently matched zero rows is indistinguishable from one that worked. Plus `chain_of_table`, `sub_table_first`, `sql_stages`, `xlsx_map`, `table_format`, `self_debug`.
+- **Retrieval family completed (3 new)** — `astute_rag` answers from memory first, then marks each source agrees/fills/conflicts and resolves every conflict out loud; `crag` grades sources correct/ambiguous/wrong and acts on the grade, since search always returns its nearest neighbours and has no way to return nothing; `hyde` drafts the answer you wish existed, searches with *its* vocabulary, then discards it.
+- **Spotlighting fences carried 24 bits of entropy, not 32.** `untrustedFence()` called `randomBytes(3)` while its own comment block had reasoned its way to 4. Spotlighting's entire security property is that an attacker cannot guess the delimiter needed to close your block, so the shortfall was load-bearing. Now 8 hex characters, as documented.
+- **The literal `37` survived three expansions of the catalogue** (37 → 74 → 85) inside the `list_prompt_techniques` description — the text a model reads to decide whether to call the tool at all. It is now derived from `FLAT_TECHNIQUES.length`.
+- **74 → 85 techniques.** Tool count unchanged at 66.
+
+### v2.31.0
+- **Prompt technique library goes 37 → 74**, closing three families that were at **zero** coverage. **Retrieval (4):** TachiBot ships five search tools and had no discipline for what to do with what they return — retrieved text went straight into reasoning unfiltered, which is where confidently-miscited sources come from. **Prompt-injection defence (1):** those same tools ingest untrusted web text with no isolation contract, so a page saying "ignore previous instructions" was read exactly like our own prompt; `spotlighting` fences it and states the rule. **Few-shot (5):** nothing touched example selection or ordering, despite this moving accuracy more than most reasoning tricks.
+- **Eight trace-management techniques** from Jun–Aug 2026 research, including `hourglass` (compress to a rule, discard the exploration, regenerate from the rule instead of appending errors) and `backtrack` (rewind to the last validated checkpoint rather than restarting or patching).
+- **Twelve original prompts rewritten to read as instructions.** The early set used telegraphic shorthand that reads as a label rather than a request, leaving the model to infer the task.
+- **Recommendation rules for all of it** — 74 techniques is past the point where anyone recalls names, so `RECOMMEND_RULES` gained eight groups matched to how people actually phrase the situation. Without these the new techniques were reachable only by knowing their name in advance.
 
 ### v2.30.1
 - **Tool descriptions no longer name-drop model versions.** 19 descriptions were rewritten to name the provider and the task instead of pinned strings like "GPT-5.2", "Kimi K3" or "424B MoE" — those silently rot on every model bump and then actively mislead the routing model. Two were outright wrong: `openai_reason` and `openai_search` advertised "GPT-5.2" while the code calls the current OpenAI flagship tier.
@@ -145,12 +165,12 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ### Tool Profiles
 | Profile | Tools | Best For |
 |---------|-------|----------|
-| **Minimal** | 13 | Quick tasks, low token budget |
-| **Research Power** | 36 | Deep investigation, multi-source |
-| **Code Focus** | 42 | Software development, SWE tasks |
-| **Balanced** | 54 | General-purpose, mixed workflows |
-| **Heavy Coding** | 58 | Max code tools + agentic workflows |
-| **Full** (default) | 65 | Everything enabled |
+| **Minimal** | 14 | Quick tasks, low token budget |
+| **Research Power** | 38 | Deep investigation, multi-source |
+| **Code Focus** | 43 | Software development, SWE tasks |
+| **Balanced** | 56 | General-purpose, mixed workflows |
+| **Heavy Coding** | 59 | Max code tools + agentic workflows |
+| **Full** (default) | 67 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support
@@ -230,13 +250,13 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 
 ---
 
-## Tool Ecosystem (66 Tools)
+## Tool Ecosystem (67 Tools)
 
 ### Research & Search (6)
 `perplexity_ask` &#183; `perplexity_reason` &#183; `grok_search` &#183; `grok_search_lite` &#183; `openai_search` &#183; `gemini_search`
 
-### Reasoning & Planning (14)
-`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans` &#183; `spec_writer`
+### Reasoning & Planning (15)
+`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans` &#183; `spec_writer` &#183; `blog_writer`
 
 ### Code Intelligence (11)
 `kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `deepseek_algo` &#183; `minimax_code` &#183; `minimax_agent` &#183; `testgen` &#183; `debug_triage`

@@ -16,7 +16,7 @@ truth for recommendations — don't maintain a parallel list here.
 /prompt [technique] [query]     — apply a specific technique
 /prompt refine [query]          — opt-in: rewrite the raw query into a brief via refine_prompt
 /prompt list                    — the ~9 core techniques (default)
-/prompt all                     — all 37 techniques
+/prompt all                     — all 88 techniques
 /prompt [category]              — one category in full
 ```
 
@@ -25,7 +25,7 @@ truth for recommendations — don't maintain a parallel list here.
 ### `/prompt list`, `/prompt all`, `/prompt [category]`
 - list: `list_prompt_techniques({})` — core techniques (the ones that still help 2026 reasoning models).
 - all: `list_prompt_techniques({ all: true })`.
-- category: `list_prompt_techniques({ filter: "[category]" })` — categories: creative, research, research_advanced, analytical, reflective, reasoning, verification, meta, debate, judgment, engineering, structured_coding, decision.
+- category: `list_prompt_techniques({ filter: "[category]" })` — categories: creative, research, research_advanced, analytical, reflective, reasoning, verification, meta, debate, judgment, engineering, structured_coding, decision, retrieval, security, few_shot, tabular, writing.
 
 ### `/prompt [query]` — recommend, then apply
 
@@ -61,6 +61,7 @@ Match the target tool to the technique's category:
 | Judgment | `gemini_judge` | `jury` |
 | Engineering / Structured Coding | `qwen_coder` | `minimax_code` |
 | Research Advanced | `perplexity_reason` | `kimi_long_context` |
+| Writing | `kimi_thinking` | `gemini_analyze_text` — or skip previewing and call `blog_writer` directly for the one-call researched-draft path (storm + re3 composed) |
 
 ## Examples
 - `/prompt there's a null-pointer crash on checkout` — auto recommends `rubber_duck` / `react`
@@ -68,4 +69,4 @@ Match the target tool to the technique's category:
 - `/prompt refactor the payment module safely` — auto recommends `pre_post` / `scot` / `test_driven`
 - `/prompt scot implement a rate limiter` — applies structured-CoT directly
 - `/prompt bdd_spec user registration flow` — Given/When/Then before code
-- `/prompt list` — the core techniques · `/prompt all` — all 37
+- `/prompt list` — the core techniques · `/prompt all` — all 88

@@ -1,6 +1,6 @@
 # TachiBot MCP - Complete Tools Reference
 
-**Complete parameter schemas and example calls for all 65 tools** (66 registered — `continue_focus` is an always-on companion to `focus` outside the profile system; see [Meta & Orchestration](#meta--orchestration)).
+**Complete parameter schemas and example calls for all 67 tools** (see [Meta & Orchestration](#meta--orchestration) for `continue_focus`).
 
 Schemas below are generated from the wire contract (`test/golden/__snapshots__/tool-contracts.json`) — the exact JSON Schema the MCP server publishes for each tool.
 
@@ -9,7 +9,7 @@ Schemas below are generated from the wire contract (`test/golden/__snapshots__/t
 ## Table of Contents
 
 - [Research & Search](#research--search) (6): [perplexity_ask](#perplexity_ask) &#183; [perplexity_reason](#perplexity_reason) &#183; [grok_search](#grok_search) &#183; [grok_search_lite](#grok_search_lite) &#183; [openai_search](#openai_search) &#183; [gemini_search](#gemini_search)
-- [Reasoning & Planning](#reasoning--planning) (14): [grok_reason](#grok_reason) &#183; [openai_reason](#openai_reason) &#183; [qwen_reason](#qwen_reason) &#183; [qwq_reason](#qwq_reason) &#183; [kimi_thinking](#kimi_thinking) &#183; [kimi_decompose](#kimi_decompose) &#183; [deepseek_reason](#deepseek_reason) &#183; [glm_reason](#glm_reason) &#183; [stepfun_reason](#stepfun_reason) &#183; [ernie_reason](#ernie_reason) &#183; [planner_maker](#planner_maker) &#183; [planner_runner](#planner_runner) &#183; [list_plans](#list_plans) &#183; [spec_writer](#spec_writer)
+- [Reasoning & Planning](#reasoning--planning) (15): [grok_reason](#grok_reason) &#183; [openai_reason](#openai_reason) &#183; [qwen_reason](#qwen_reason) &#183; [qwq_reason](#qwq_reason) &#183; [kimi_thinking](#kimi_thinking) &#183; [kimi_decompose](#kimi_decompose) &#183; [deepseek_reason](#deepseek_reason) &#183; [glm_reason](#glm_reason) &#183; [stepfun_reason](#stepfun_reason) &#183; [ernie_reason](#ernie_reason) &#183; [planner_maker](#planner_maker) &#183; [planner_runner](#planner_runner) &#183; [list_plans](#list_plans) &#183; [spec_writer](#spec_writer) &#183; [blog_writer](#blog_writer)
 - [Code Intelligence](#code-intelligence) (11): [kimi_code](#kimi_code) &#183; [grok_code](#grok_code) &#183; [grok_debug](#grok_debug) &#183; [qwen_coder](#qwen_coder) &#183; [qwen_algo](#qwen_algo) &#183; [qwen_competitive](#qwen_competitive) &#183; [deepseek_algo](#deepseek_algo) &#183; [minimax_code](#minimax_code) &#183; [minimax_agent](#minimax_agent) &#183; [testgen](#testgen) &#183; [debug_triage](#debug_triage)
 - [Analysis & Judgment](#analysis--judgment) (14): [gemini_analyze_text](#gemini_analyze_text) &#183; [gemini_analyze_code](#gemini_analyze_code) &#183; [gemini_judge](#gemini_judge) &#183; [jury](#jury) &#183; [diff_review](#diff_review) &#183; [plan_critique](#plan_critique) &#183; [gemini_brainstorm](#gemini_brainstorm) &#183; [openai_brainstorm](#openai_brainstorm) &#183; [openai_code_review](#openai_code_review) &#183; [openai_explain](#openai_explain) &#183; [grok_brainstorm](#grok_brainstorm) &#183; [grok_architect](#grok_architect) &#183; [security_review](#security_review) &#183; [kimi_long_context](#kimi_long_context)
 - [Meta & Orchestration](#meta--orchestration) (7): [think](#think) &#183; [nextThought](#nextthought) &#183; [focus](#focus) &#183; [continue_focus](#continue_focus) &#183; [tachi](#tachi) &#183; [doctor](#doctor) &#183; [usage_stats](#usage_stats)
@@ -535,6 +535,31 @@ spec_writer({
   request: "Add real-time notifications when a task is assigned to me",
   context: "Current app uses websockets for live updates",
   format: "gherkin"
+})
+```
+
+---
+
+### blog_writer
+
+Write a researched long-form post in one call, via Kimi. Composes the `storm` technique (interview four personas for the angle, mark claims `[KNOWN]`/`[SEARCH]`/`[OPINION]`) with the `re3` technique (plan, draft, restructure, line-edit as four separate passes) rather than copying their prompt text — the same templates power `execute_prompt_technique({ technique: "storm" | "re3", ... })`. Note: the research stage does not itself search; it marks claims that need a real source. For genuine grounding, route those through a search-capable tool.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `topic` | `string` | ✅ Yes | - | What the post is about — REQUIRED |
+| `wordCount` | `number` | No | - | Target length in words |
+| `research` | `boolean` | No | `true` | Run the persona-interview research stage first |
+| `audience` | `string` | No | - | Who it is for, e.g. `backend engineers` |
+
+#### Example
+
+```typescript
+blog_writer({
+  topic: "MCP tool bloat",
+  wordCount: 1200,
+  audience: "backend engineers"
 })
 ```
 

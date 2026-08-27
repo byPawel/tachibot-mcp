@@ -71,6 +71,9 @@ export const minimalProfile: ProfileConfig = {
     // Test generation
     testgen: false,
 
+    // Long-form writing
+    blog_writer: false,
+
     // Security audit
     security_review: false,
 

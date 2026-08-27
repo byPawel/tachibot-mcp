@@ -209,6 +209,10 @@ export async function getAllTools(
     // security_review — dedicated security audit (DeepSeek V4 Pro) — gated on OpenRouter.
     const { securityReviewTool } = await import("./security-review-tool.js");
     tools.push(securityReviewTool as unknown as RegistryTool);
+
+    // blog_writer — researched long-form via Kimi — gated on OpenRouter.
+    const { blogWriterTool } = await import("./blog-writer-tool.js");
+    tools.push(blogWriterTool as unknown as RegistryTool);
   }
 
   // 6) Local-model tools (Ollama / LM Studio / llama.cpp / vLLM). Registered

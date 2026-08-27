@@ -92,6 +92,9 @@ export interface ToolsConfig {
   // Test generation
   testgen: boolean;  // Routed test generation via Qwen3-Coder-Next
 
+  // Long-form writing
+  blog_writer: boolean;  // Researched long-form writing via Kimi
+
   // Security audit
   security_review: boolean;  // Dedicated security audit (taint/data-flow analysis) via DeepSeek V4 Pro
 
