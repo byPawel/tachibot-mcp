@@ -2,8 +2,8 @@
   "manifest_version": "0.2",
   "dxt_version": "1.1.1",
   "name": "tachibot-mcp",
-  "version": "2.31.0",
-  "description": "Multi-model AI orchestration platform with 66 tools across Perplexity, Grok, OpenAI, Gemini, DeepSeek, GLM, Kimi, Qwen, MiniMax, StepFun, ERNIE, and local models",
+  "version": "2.33.0",
+  "description": "Multi-model AI orchestration platform with 67 tools across Perplexity, Grok, OpenAI, Gemini, DeepSeek, GLM, Kimi, Qwen, MiniMax, StepFun, ERNIE, and local models",
   "author": {
     "name": "Pawel Pawlowski",
     "email": "108490+byPawel@users.noreply.github.com",
@@ -37,7 +37,7 @@
     "TACHIBOT_PROFILE": {
       "title": "Tool Profile",
       "type": "string",
-      "description": "Select tool profile: minimal (14), research_power (37), code_focus (43), balanced (55, default), heavy_coding (59), or full (66 — every tool)",
+      "description": "Select tool profile: minimal (14), research_power (38), code_focus (43), balanced (56, default), heavy_coding (59), or full (67 — every tool)",
       "default": "balanced"
     },
     "PERPLEXITY_API_KEY": {
