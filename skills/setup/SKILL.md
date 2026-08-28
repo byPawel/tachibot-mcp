@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Use when TachiBot tools seem missing, a provider isn't working, or the user asks to set up/configure TachiBot or its API keys — runs doctor and walks through fixing the gaps
+description: Use when TachiBot tools seem missing, a provider isn't working, or the user asks for a setup wizard or to set up/configure TachiBot or its API keys — runs doctor and walks through fixing the gaps
 user-invocable: true
 ---
 
