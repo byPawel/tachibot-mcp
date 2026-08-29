@@ -68,21 +68,26 @@ export class VisualizationService implements IExtendedVisualizationRenderer {
     // same step list four times (cascade, flow, progress reel, table) plus a
     // metadata block and faux "gradient" boxes — a wall of duplicated scaffold.
     // MCP clients render markdown, so a single table IS the visualization.
+    // Ids look like "session_<timestamp>_<hex>", so slicing the front only ever
+    // showed the literal "session_" — display the distinctive hex tail instead.
+    const shortId = session.id.split('_').pop()?.slice(0, 8) ?? session.id;
+
     const lines: string[] = [];
     lines.push(`**Collaborative Reasoning** · ${session.objective}`);
     lines.push(
       `${session.domain} · ${this.modelTurnTaking ? 'sequential' : 'parallel'} · ` +
-      `step ${Math.min(done + 1, steps.length)}/${steps.length} · \`${session.id.slice(0, 8)}\``,
+      `step ${Math.min(done + 1, steps.length)}/${steps.length} · \`${shortId}\``,
     );
     lines.push('');
 
-    // One table: status · mode · model, in order. The mode already conveys each
+    // One table: status+number · mode · model. The mode already conveys each
     // step's job, so no "Role" column (its half-filled "AI" fallback is the bit
-    // that read as generic). Status marks done (✓) / current (▸) / pending (·).
+    // that read as generic). Status marks done (✓) / current (▸) / pending (·)
+    // and shares the # column. Cells stay emoji-free: terminal renderers count
+    // emoji as 1–2 columns inconsistently, which skews every table border.
     const tableData = steps.map((step, idx) => ({
-      '#': String(idx + 1),
-      '': idx < done ? '✓' : idx === done ? '▸' : '·',
-      Step: `${this.getModeIcon(step.mode)} ${step.mode}`,
+      '#': `${idx < done ? '✓' : idx === done ? '▸' : '·'} ${idx + 1}`,
+      Step: step.mode,
       Model: step.model,
     }));
     lines.push(renderTable(tableData));
