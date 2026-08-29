@@ -67,6 +67,11 @@ const ResponsesAPISchema = z.object({
   object: z.literal("response"),
   created_at: z.number(),
   status: z.string(),
+  // Present when status:"incomplete" — e.g. reason:"max_output_tokens" when
+  // reasoning consumed the whole output budget before any visible text.
+  incomplete_details: z.object({
+    reason: z.string().optional()
+  }).nullable().optional(),
   model: z.string(),
   output: z.array(ResponsesAPIOutputSchema),
   reasoning: z.object({
@@ -244,13 +249,22 @@ export async function callOpenAI(
           content: m.content
         }));
 
+        // max_output_tokens INCLUDES reasoning tokens on the Responses API, and
+        // OpenAI recommends reserving at least 25k for reasoning + visible output.
+        // Smaller caps get exhausted by reasoning alone → status:"incomplete"
+        // with a reasoning-only output array and zero output_text. The cap is an
+        // upper bound (only generated tokens bill), so flooring it is free.
+        const reasoningBudget = reasoningEffort !== 'none'
+          ? Math.max(maxTokens, 25000)
+          : maxTokens;
+
         requestBody = {
           model: currentModel,
           input: inputMessages,
           reasoning: {
             effort: reasoningEffort || 'medium'
           },
-          max_output_tokens: maxTokens
+          max_output_tokens: reasoningBudget
         };
       } else {
         // Chat Completions format for older models
@@ -344,12 +358,25 @@ export async function callOpenAI(
         }
       }
 
-      // Ensure result is always a string
-      const result = rawContent || "No response from OpenAI";
+      // Empty visible text is a FAILURE, not a result: the Responses API returns
+      // HTTP 200 + status:"incomplete" (incomplete_details.reason:"max_output_tokens")
+      // with a reasoning-only output array when the budget runs out before any
+      // output_text. Masking that as success hid the error from callers.
+      if (!rawContent) {
+        const responseStatus = rawData?.status;
+        const incompleteReason = rawData?.incomplete_details?.reason;
+        const budget = requestBody.max_output_tokens ?? requestBody.max_completion_tokens ?? maxTokens;
+        lastError = responseStatus === 'incomplete'
+          ? `${currentModel}: incomplete response (${incompleteReason ?? 'unknown reason'}) — output budget ${budget} consumed before any visible text (lower reasoning_effort or raise max_tokens)`
+          : `${currentModel}: empty response with status "${responseStatus ?? 'unknown'}"`;
+        attemptErrors.push(lastError);
+        console.error(`🔍 TRACE: ${currentModel} EMPTY - ${lastError}`);
+        continue; // Try next model instead of returning a fake success
+      }
 
-      console.error(`🔍 TRACE: ${currentModel} SUCCESS - Response length: ${result.length}`);
+      console.error(`🔍 TRACE: ${currentModel} SUCCESS - Response length: ${rawContent.length}`);
 
-      return stripFormatting(result);
+      return stripFormatting(rawContent);
 
     } catch (error) {
       // Handle abort/timeout specifically

@@ -5,6 +5,14 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.33.1] - 2026-08-29
+
+### Fixed
+- **OpenAI tools could return an empty response as success.** The Responses API returns HTTP 200 with `status: "incomplete"` (`incomplete_details.reason: "max_output_tokens"`) and a reasoning-only output array when reasoning consumes the whole token budget before any visible text. `callOpenAI` never read `status`, masked the miss with the placeholder "No response from OpenAI", and logged SUCCESS — billing the reasoning tokens for nothing and showing the caller no error. Empty visible text now records a per-attempt error and falls through the model fallback chain, so total failure surfaces as `[OpenAI request failed …]` naming the reason for every attempt.
+- **GPT-5.x output budgets sat far below OpenAI's documented reserve.** `max_output_tokens` *includes* reasoning tokens, and the docs recommend reserving at least 25,000 for reasoning models — the tools passed 4,000–8,000, which high-effort reasoning exhausts before emitting a word (the empty-response trigger above). Responses-API calls with any `reasoning_effort` other than `none` now floor the budget at 25,000; the cap is an upper bound, so only tokens actually generated bill.
+- **`npm test` ran sibling worktrees' suites.** `testPathIgnorePatterns` said "don't descend into agent worktrees" but never listed `.worktrees/`, so branches checked out there injected phantom failures into the main tree's run. Added `/.worktrees/` to the ignore list.
+- **`focus` progress table printed `session_` as the session id.** Ids are `session_<timestamp>_<hex>`, so slicing the first 8 chars only ever showed the literal prefix; the distinctive hex tail is displayed instead. Emoji also left the table cells — terminal renderers count them as 1–2 columns inconsistently, skewing every border.
+
 ## [2.33.0] - 2026-08-27
 
 ### Added

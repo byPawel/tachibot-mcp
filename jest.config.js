@@ -44,7 +44,7 @@ export default {
   ],
 
   // Don't descend into agent worktrees or build output
-  testPathIgnorePatterns: ['/node_modules/', '/.claude/', '/dist/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.claude/', '/dist/', '/.worktrees/'],
 
   // Coverage configuration
   collectCoverageFrom: [
