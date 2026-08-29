@@ -99,24 +99,22 @@ export async function callGrokEnhanced(
 
       const data = await response.json() as any;
 
-      // Responses API format: output[] contains web_search_call entries and a message entry
-      // Structure: { output: [{ type: "web_search_call", ... }, { type: "message", content: [{ type: "output_text", text: "...", annotations: [...] }] }] }
-      let content = "No response from Grok";
-      let sources: any[] = [];
+      // Responses API format: output[] interleaves reasoning, web_search_call and
+      // MULTIPLE "message" entries — agentic runs emit a preamble message ("I'll
+      // search…"), run the searches, then emit the ANSWER as a later message.
+      // .find() took the first message, so any narrated run returned the plan and
+      // dropped the answer. Collect text + citations from EVERY message, in order.
+      const texts: string[] = [];
+      const sources: any[] = [];
 
       if (data.output && Array.isArray(data.output)) {
-        // Find the message output (skip web_search_call entries)
-        const messageOutput = data.output.find((o: any) => o.type === "message");
-
-        if (messageOutput?.content && Array.isArray(messageOutput.content)) {
-          // Extract text from output_text content
-          content = messageOutput.content
-            .filter((c: any) => c.type === "output_text")
-            .map((c: any) => c.text)
-            .join("\n");
-
-          // Extract citations from annotations (NOT from top-level data.citations!)
+        for (const messageOutput of data.output) {
+          if (messageOutput?.type !== "message" || !Array.isArray(messageOutput.content)) continue;
           for (const contentItem of messageOutput.content) {
+            if (contentItem.type === "output_text" && contentItem.text) {
+              texts.push(contentItem.text);
+            }
+            // Extract citations from annotations (NOT from top-level data.citations!)
             if (contentItem.annotations && Array.isArray(contentItem.annotations)) {
               for (const annotation of contentItem.annotations) {
                 if (annotation.type === "url_citation") {
@@ -130,6 +128,19 @@ export async function callGrokEnhanced(
           }
         }
       }
+
+      // No visible text is a FAILURE (e.g. status:"incomplete" when reasoning
+      // exhausted max_output_tokens) — throw so the catch surfaces a real error
+      // instead of a fake "No response from Grok" success.
+      if (texts.length === 0) {
+        const reason = data.incomplete_details?.reason;
+        throw new Error(
+          `${model} returned no visible text on /v1/responses ` +
+          `(status: ${data.status ?? 'unknown'}${reason ? `, reason: ${reason}` : ''})`
+        );
+      }
+
+      const content = texts.join("\n\n");
 
       return {
         content,
