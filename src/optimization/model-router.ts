@@ -12,7 +12,7 @@ export enum ModelTier {
   ULTRA_CHEAP = "gemini-3.5-flash-lite",
 
   // Tier 1: Fast & Efficient
-  ULTRA_EFFICIENT = "gemini-3.6-flash", // $1.50/$7.50 workhorse (Jul 21 2026)
+  ULTRA_EFFICIENT = "gemini-3.7-flash", // $0.75/$3.75 intro workhorse (Aug 13 2026 GA; $1.50/$7.50 from Jan 2027)
   EFFICIENT = "gpt-5.6-luna", // $0.20/$1.20 after the Jul 30 -80% cut
 
   // Tier 2: Balanced — gpt-5.6-terra is gpt-5.5-level at $2/$12
@@ -73,6 +73,7 @@ const MODEL_COSTS: ModelCosts = {
   "gpt-5.4-pro": { input: 0.030, output: 0.180, latency: 2500 },
 
   // Gemini
+  "gemini-3.7-flash": { input: 0.00075, output: 0.00375, latency: 600 },     // Aug 13, 2026 (intro pricing through Dec 31, 2026)
   "gemini-3.6-flash": { input: 0.0015, output: 0.0075, latency: 600 },       // Jul 21, 2026
   "gemini-3.5-flash-lite": { input: 0.0003, output: 0.0025, latency: 400 },  // Jul 21, 2026
   "gemini-3.5-flash": { input: 0.0015, output: 0.009, latency: 600 },        // May 19, 2026

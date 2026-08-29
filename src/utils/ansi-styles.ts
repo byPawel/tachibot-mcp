@@ -98,6 +98,7 @@ const nebulaTheme: Theme = {
     // Gemini - Google blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3.1-pro ' },
+    'gemini-3.7-flash': { bg: 'bgCyanBright', fg: 'black', label: ' gemini-3.7-flash ' },
     'gemini-3.6-flash': { bg: 'bgCyanBright', fg: 'black', label: ' gemini-3.6-flash ' },
     'gemini-3.5-flash': { bg: 'bgCyanBright', fg: 'black', label: ' gemini-3.5-flash ' },
     'gemini-3-flash-preview': { bg: 'bgCyanBright', fg: 'black', label: ' gemini-flash ' },
@@ -199,6 +200,7 @@ const cyberpunkTheme: Theme = {
     // Gemini - Electric blue
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' ◈ GEMINI-3 ' },
+    'gemini-3.7-flash': { bg: 'bgCyanBright', fg: 'black', label: ' ◈ GEMINI-3.7-FLASH ' },
     'gemini-3.6-flash': { bg: 'bgCyanBright', fg: 'black', label: ' ◈ GEMINI-3.6-FLASH ' },
     'gemini-3.5-flash': { bg: 'bgCyanBright', fg: 'black', label: ' ◈ GEMINI-3.5-FLASH ' },
     'gemini-3-flash-preview': { bg: 'bgCyanBright', fg: 'black', label: ' ◈ GEMINI-FLASH ' },
@@ -299,6 +301,7 @@ const minimalTheme: Theme = {
 
     gemini: { bg: 'bgBlack', fg: 'blue', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlack', fg: 'blue', label: ' gemini-3 ' },
+    'gemini-3.7-flash': { bg: 'bgBlack', fg: 'blueBright', label: ' gemini-3.7-flash ' },
     'gemini-3.6-flash': { bg: 'bgBlack', fg: 'blueBright', label: ' gemini-3.6-flash ' },
     'gemini-3.5-flash': { bg: 'bgBlack', fg: 'blueBright', label: ' gemini-3.5-flash ' },
     'gemini-3-flash-preview': { bg: 'bgBlack', fg: 'blueBright', label: ' gemini-flash ' },
@@ -393,6 +396,7 @@ const oceanTheme: Theme = {
 
     gemini: { bg: 'bgBlueBright', fg: 'black', label: ' gemini ' },
     'gemini-3.1-pro-preview': { bg: 'bgBlueBright', fg: 'black', label: ' gemini-3 ' },
+    'gemini-3.7-flash': { bg: 'bgBlue', fg: 'white', label: ' gemini-3.7-flash ' },
     'gemini-3.6-flash': { bg: 'bgBlue', fg: 'white', label: ' gemini-3.6-flash ' },
     'gemini-3.5-flash': { bg: 'bgBlue', fg: 'white', label: ' gemini-3.5-flash ' },
     'gemini-3-flash-preview': { bg: 'bgBlue', fg: 'white', label: ' gemini-flash ' },

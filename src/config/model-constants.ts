@@ -65,17 +65,19 @@ export const OPENAI_REASONING = {
 // =============================================================================
 // GEMINI MODELS (Google)
 // =============================================================================
-// Gemini 3.6 Flash GA'd Jul 21, 2026 — workhorse tier, 1M ctx, $1.50/$7.50, ~17% fewer
-// output tokens than 3.5 Flash. It is the new FLASH/search tier. Gemini 3.5 Flash-Lite
+// Gemini 3.7 Flash GA'd Aug 13, 2026 — the new workhorse/FLASH/search tier, 1M ctx,
+// $0.75/$3.75 intro pricing through Dec 31, 2026 (then $1.50/$7.50). 3.6 Flash
+// (Jul 21, 2026, $1.50/$7.50) stays live as the fallback. Gemini 3.5 Flash-Lite
 // shipped the same day ($0.30/$2.50) and replaces 3.1-flash-lite as the cheap tier.
-// Gemini 3.5 Pro STILL has not shipped (Google released three models on Jul 21 and
-// explicitly skipped Pro — internal perf goals unmet, "landing soon" + Gemini 4 pre-training
-// underway), so the reasoning DEFAULT stays on gemini-3.1-pro-preview.
+// Gemini 3.5 Pro STILL has not shipped (missed its June window; "testing with partners",
+// Gemini 4 pre-training underway — reverified via ai.google.dev Aug 29, 2026), so the
+// reasoning DEFAULT stays on gemini-3.1-pro-preview.
 export const GEMINI_MODELS = {
-  // Gemini 3.1 Pro - reasoning default (3.0 Pro retired Mar 9, 2026; no 3.5 Pro as of Jul 26, 2026)
+  // Gemini 3.1 Pro - reasoning default (3.0 Pro retired Mar 9, 2026; no 3.5 Pro as of Aug 29, 2026)
   GEMINI_3_PRO: "gemini-3.1-pro-preview",     // Default: top reasoning model available
   GEMINI_3_1_PRO: "gemini-3.1-pro-preview",   // Enhanced reasoning, 1M context
-  GEMINI_3_6_FLASH: "gemini-3.6-flash",        // GA Jul 21, 2026 - CURRENT flash/search tier, 1M ctx, $1.50/$7.50
+  GEMINI_3_7_FLASH: "gemini-3.7-flash",        // GA Aug 13, 2026 - CURRENT flash/search tier, 1M ctx, $0.75/$3.75 intro
+  GEMINI_3_6_FLASH: "gemini-3.6-flash",        // GA Jul 21, 2026 - previous flash tier (fallback), $1.50/$7.50
   GEMINI_3_5_FLASH: "gemini-3.5-flash",        // GA May 19, 2026 - previous flash tier (fallback)
   GEMINI_3_FLASH: "gemini-3-flash-preview",    // Legacy fast frontier (kept for model-router)
   GEMINI_3_5_FLASH_LITE: "gemini-3.5-flash-lite", // Jul 21, 2026 - cheapest tier, $0.30/$2.50
@@ -83,7 +85,7 @@ export const GEMINI_MODELS = {
 
   // Aliases
   PRO: "gemini-3.1-pro-preview",
-  FLASH: "gemini-3.6-flash",                   // Bumped: 3.5-flash -> 3.6-flash (Jul 21, 2026)
+  FLASH: "gemini-3.7-flash",                   // Bumped: 3.6-flash -> 3.7-flash (Aug 13, 2026 GA)
   FLASH_LITE: "gemini-3.5-flash-lite",         // Bumped: 3.1-flash-lite -> 3.5-flash-lite (Jul 21, 2026)
 } as const;
 
@@ -452,6 +454,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
 
   // Gemini
   "gemini-3.1-pro-preview": "gemini-3.1-pro",
+  "gemini-3.7-flash": "gemini-3.7-flash",
   "gemini-3.6-flash": "gemini-3.6-flash",
   "gemini-3.5-flash-lite": "gemini-3.5-flash-lite",
   "gemini-3.5-flash": "gemini-3.5-flash",
@@ -522,7 +525,8 @@ export const MODEL_PRICING: Record<string, number> = {
 
   // Gemini
   "gemini-3.1-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
-  "gemini-3.6-flash": 0.0045,            // ($1.50 + $7.50) / 2 / 1000 (GA Jul 21, 2026)
+  "gemini-3.7-flash": 0.00225,           // ($0.75 + $3.75) / 2 / 1000 intro through Dec 31, 2026 (then $1.50/$7.50)
+  "gemini-3.6-flash": 0.0045,            // ($1.50 + $7.50) / 2 / 1000 (GA Jul 21, 2026 - fallback)
   "gemini-3.5-flash-lite": 0.0014,       // ($0.30 + $2.50) / 2 / 1000 (Jul 21, 2026)
   "gemini-3.5-flash": 0.00525,           // ($1.50 + $9) / 2 / 1000 (GA May 19, 2026 - fallback)
   "gemini-3-flash-preview": 0.00175,     // ($0.50 + $3) / 2 / 1000 (legacy)

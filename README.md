@@ -77,7 +77,7 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ### v2.27.1
 - **Kimi K3** (Jul 16, `moonshotai/kimi-k3`) now powers every Kimi tool, the `kimi` juror, and the Kimi seat on `diff_review`. 2.8T open-weight MoE — the largest open model shipped — with a **1M context (up from 262K)**, native multimodal input, and long-horizon agentic coding that beats Opus 4.8 and GPT-5.5 on coding/agent benchmarks. Note the price: **$3/$15 per M, 4x K2.7-Code** — K2.7-Code stays as the automatic fallback (K3 → K2.7-Code → K2.6).
-- **Gemini 3.6 Flash** (Jul 21, `gemini-3.6-flash`) is the new search/workhorse tier behind `gemini_search` — 1M context at **$1.50/$7.50, down from $9 output**, and ~17% fewer output tokens than 3.5 Flash. Flash-Lite moves to `gemini-3.5-flash-lite` ($0.30/$2.50).
+- **Gemini 3.7 Flash** (GA Aug 13, `gemini-3.7-flash`) is the new search/workhorse tier behind `gemini_search` — 1M context at **$0.75/$3.75 intro pricing through Dec 31, 2026** (then $1.50/$7.50); `gemini-3.6-flash` stays as the fallback. Flash-Lite remains `gemini-3.5-flash-lite` ($0.30/$2.50).
 - **Everything else re-verified, unchanged** — a full provider audit (Jul 26) confirms GPT-5.6, Grok 4.5, DeepSeek V4 Pro, GLM-5.2, MiniMax M3, StepFun 3.7, ERNIE 4.5 VL, Qwen Coder-Next and Perplexity Sonar are all still the newest available. Gemini 3.1 Pro remains the reasoning/judge default: Google shipped three models on Jul 21 and **skipped 3.5 Pro**. xAI's staged rollout finished (EU access Jul 17), so the `grok-4.3` fallback is now quota/region insurance rather than a rollout workaround.
 
 ### v2.27.0
@@ -151,7 +151,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 
 ### Multi-Model Intelligence
 - **65 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
-- **Gemini 3.6 Flash** (`gemini-3.6-flash`, GA Jul 21 2026) &mdash; Flash/search tier; reasoning default stays `gemini-3.1-pro-preview` (Google has still not shipped a 3.5 Pro)
+- **Gemini 3.7 Flash** (`gemini-3.7-flash`, GA Aug 13 2026) &mdash; Flash/search tier; reasoning default stays `gemini-3.1-pro-preview` (Google has still not shipped a 3.5 Pro)
 - **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
 - **Smart Routing** &mdash; Automatic model selection for optimal results
 - **OpenRouter Gateway** &mdash; Optional single API key for all providers
