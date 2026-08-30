@@ -98,3 +98,6 @@ claude_desktop_config.template.json
 
 # Release skill — performs npm publish / tagging (account-level actions)
 skills/release/
+
+# Codex CLI local config (side-effect of the Codex plugin)
+.codex/
