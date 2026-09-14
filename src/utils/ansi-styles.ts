@@ -90,6 +90,7 @@ const nebulaTheme: Theme = {
   modelBadges: {
     // OpenAI - Emerald green (brand color)
     openai: { bg: 'bgGreen', fg: 'black', label: ' openai ' },
+    'gpt-6-astra': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-6-astra ' },
     'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.6-sol ' },
     'gpt-5.6-terra': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-terra ' },
     'gpt-5.6-luna': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-luna ' },
@@ -129,6 +130,7 @@ const nebulaTheme: Theme = {
     'qwen/qwen3-coder-plus': { bg: 'bgRedBright', fg: 'black', label: ' qwen-coder ' },
     'qwen/qwen3-coder': { bg: 'bgRedBright', fg: 'black', label: ' qwen-coder ' },
     'qwen/qwq-32b': { bg: 'bgRed', fg: 'black', label: ' qwq-32b ' },
+    'qwen/qwen3.8-27b': { bg: 'bgRed', fg: 'black', label: ' qwen3.8-27b ' },
 
     // Tool modes
     focus: { bg: 'bgWhiteBright', fg: 'black', label: ' focus ' },
@@ -192,6 +194,7 @@ const cyberpunkTheme: Theme = {
   modelBadges: {
     // OpenAI - Electric green
     openai: { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ OPENAI ' },
+    'gpt-6-astra': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-6-ASTRA ' },
     'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-SOL ' },
     'gpt-5.6-terra': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-TERRA ' },
     'gpt-5.6-luna': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-LUNA ' },
@@ -231,6 +234,7 @@ const cyberpunkTheme: Theme = {
     'qwen/qwen3-coder-plus': { bg: 'bgRedBright', fg: 'black', label: ' ◆ QWEN-CODER ' },
     'qwen/qwen3-coder': { bg: 'bgRed', fg: 'white', label: ' ◆ QWEN ' },
     'qwen/qwq-32b': { bg: 'bgRedBright', fg: 'black', label: ' ◆ QWQ-32B ' },
+    'qwen/qwen3.8-27b': { bg: 'bgRedBright', fg: 'black', label: ' ◆ QWEN3.8-27B ' },
 
     // Tool modes
     focus: { bg: 'bgWhiteBright', fg: 'black', label: ' ▶ FOCUS ' },
@@ -294,6 +298,7 @@ const minimalTheme: Theme = {
   modelBadges: {
     // All badges are simple, dark bg with white text
     openai: { bg: 'bgBlack', fg: 'green', label: ' openai ' },
+    'gpt-6-astra': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-6-astra ' },
     'gpt-5.6-sol': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-5.6-sol ' },
     'gpt-5.6-terra': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.6-terra ' },
     'gpt-5.6-luna': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.6-luna ' },
@@ -328,6 +333,7 @@ const minimalTheme: Theme = {
     'qwen/qwen3-coder-plus': { bg: 'bgBlack', fg: 'red', label: ' qwen-coder ' },
     'qwen/qwen3-coder': { bg: 'bgBlack', fg: 'red', label: ' qwen ' },
     'qwen/qwq-32b': { bg: 'bgBlack', fg: 'redBright', label: ' qwq-32b ' },
+    'qwen/qwen3.8-27b': { bg: 'bgBlack', fg: 'redBright', label: ' qwen3.8-27b ' },
 
     focus: { bg: 'bgBlack', fg: 'white', label: ' focus ' },
     workflow: { bg: 'bgBlack', fg: 'white', label: ' workflow ' },
@@ -389,6 +395,7 @@ const oceanTheme: Theme = {
 
   modelBadges: {
     openai: { bg: 'bgGreen', fg: 'black', label: ' openai ' },
+    'gpt-6-astra': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-6-astra ' },
     'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.6-sol ' },
     'gpt-5.6-terra': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-terra ' },
     'gpt-5.6-luna': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-luna ' },
@@ -423,6 +430,7 @@ const oceanTheme: Theme = {
     'qwen/qwen3-coder-plus': { bg: 'bgRed', fg: 'white', label: ' qwen-coder ' },
     'qwen/qwen3-coder': { bg: 'bgRed', fg: 'white', label: ' qwen ' },
     'qwen/qwq-32b': { bg: 'bgRedBright', fg: 'black', label: ' qwq-32b ' },
+    'qwen/qwen3.8-27b': { bg: 'bgRedBright', fg: 'black', label: ' qwen3.8-27b ' },
 
     focus: { bg: 'bgWhite', fg: 'blue', label: ' focus ' },
     workflow: { bg: 'bgWhite', fg: 'blue', label: ' workflow ' },

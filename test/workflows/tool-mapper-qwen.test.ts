@@ -70,19 +70,21 @@ describe("tool-mapper qwen_algo parity with the real MCP tool", () => {
 });
 
 describe("tool-mapper qwq_reason parity with the real MCP tool", () => {
-  it("runs QwQ-32B with the 4-persona multi-perspective protocol", async () => {
+  it("runs Qwen3.8-27B with reasoning_effort=medium and the 4-persona protocol", async () => {
     const result = await executeWorkflowTool(
       "qwq_reason",
       "should we migrate this service to event sourcing",
     );
 
     expect(captured.url).toContain("openrouter.ai");
-    expect(captured.body.model).toBe("qwen/qwq-32b");
+    // qwen/qwq-32b was retired from OpenRouter (404 "No endpoints found", Sep 14 2026)
+    expect(captured.body.model).toBe("qwen/qwen3.8-27b");
+    expect(captured.body.reasoning_effort).toBe("medium");
     const system = systemPromptOf(captured.body);
     // The bug: the mapper's generic prompt had none of the persona protocol
     expect(system).toContain("OPTIMIST");
     expect(system).toContain("PESSIMIST");
     expect(system).toContain("CONTRARIAN");
-    expect(result.modelUsed).toBe("qwen/qwq-32b");
+    expect(result.modelUsed).toBe("qwen/qwen3.8-27b");
   });
 });

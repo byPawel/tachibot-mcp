@@ -102,7 +102,7 @@ function buildPanel(): Panelist[] {
   if (hasOpenAIApiKey()) {
     panel.push({
       key: "gpt",
-      label: "GPT-5.6 Sol (intent & API-contract)",
+      label: "GPT-6 Astra (intent & API-contract)",
       call: (q) =>
         callOpenAI(
           [

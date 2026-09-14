@@ -59,6 +59,9 @@ interface ModelCosts {
 // falls through to estimateCost()'s flat $0.001 default, so every routable tier above
 // MUST have an entry.
 const MODEL_COSTS: ModelCosts = {
+  // GPT-6 Astra (Sep 3, 2026) — current OpenAI default. Latency is an estimate, not measured.
+  "gpt-6-astra": { input: 0.010, output: 0.050, latency: 2400 },
+
   // GPT-5.6 family (Jul 9, 2026; terra/luna repriced Jul 30, 2026)
   "gpt-5.6-sol": { input: 0.005, output: 0.030, latency: 2200 },        // Flagship
   "gpt-5.6-terra": { input: 0.002, output: 0.012, latency: 1300 },      // Balanced (-20%)

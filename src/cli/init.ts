@@ -14,7 +14,7 @@ const KEYS = [
   { name: "OpenRouter", envVar: "OPENROUTER_API_KEY", unlocks: "DeepSeek/GLM/Kimi/Qwen/MiniMax/StepFun/ERNIE + planner (~30 tools)" },
   { name: "Perplexity", envVar: "PERPLEXITY_API_KEY", unlocks: "web research tools" },
   { name: "Gemini / Google", envVar: "GOOGLE_API_KEY", unlocks: "Gemini tools + jury judge + diff_review/plan_critique" },
-  { name: "OpenAI", envVar: "OPENAI_API_KEY", unlocks: "GPT-5.5 tools + spec_writer" },
+  { name: "OpenAI", envVar: "OPENAI_API_KEY", unlocks: "OpenAI (GPT) tools + spec_writer" },
   { name: "Grok / xAI", envVar: "GROK_API_KEY", unlocks: "Grok tools + debug_triage" },
 ] as const;
 

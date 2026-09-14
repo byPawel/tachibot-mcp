@@ -6,12 +6,12 @@
     "url": "https://github.com/byPawel/tachibot-mcp",
     "source": "github"
   },
-  "version": "2.33.0",
+  "version": "2.34.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "tachibot-mcp",
-      "version": "2.33.0",
+      "version": "2.34.0",
       "transport": {
         "type": "stdio"
       },

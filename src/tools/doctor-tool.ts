@@ -76,7 +76,7 @@ function suggestFirstStep(): string {
     return '  deepseek_reason  query="..."   (frontier open-weight reasoning)';
   }
   if (openai) {
-    return '  openai_reason  query="..."   (GPT-5.5 deep reasoning)';
+    return '  openai_reason  query="..."   (OpenAI deep reasoning)';
   }
   if (gemini) {
     return '  gemini_brainstorm  query="..."   (fast ideation)';

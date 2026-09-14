@@ -176,7 +176,7 @@ export async function getAllTools(
       ...([
         qwenCoderTool,
         qwenAlgoTool,
-        qwqReasoningTool, // QwQ-32B — multi-perspective deliberation (free tier)
+        qwqReasoningTool, // Qwen3.8-27B — multi-perspective deliberation (cheap)
         qwenCompetitiveTool,
         kimiThinkingTool,
         kimiCodeTool, // SWE-focused code (Kimi K2.5 - 76.8% SWE-Bench)

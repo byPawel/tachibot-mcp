@@ -28,9 +28,9 @@ const MODELS = {
   // Google Gemini
   GEMINI: GEMINI_MODELS.GEMINI_3_PRO,           // gemini-3.1-pro-preview
 
-  // OpenAI (GPT-5.5)
-  OPENAI: OPENAI_MODELS.THINKING,               // gpt-5.5 (default - most capable, agentic)
-  OPENAI_REASON: OPENAI_MODELS.THINKING,        // gpt-5.5 (deep reasoning)
+  // OpenAI (GPT-6 Astra)
+  OPENAI: OPENAI_MODELS.THINKING,               // gpt-6-astra (default - most capable, agentic)
+  OPENAI_REASON: OPENAI_MODELS.THINKING,        // gpt-6-astra (deep reasoning)
 
   // xAI Grok
   GROK: GROK_MODELS._4_3,                        // grok-4.3 (Apr 2026 flagship, 1M ctx, $1.25/$2.50)

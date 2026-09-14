@@ -5,7 +5,13 @@
 
 import { callGemini } from "../tools/gemini-tools.js";
 import { getAllPerplexityTools } from "../tools/perplexity-tools.js";
-import { callOpenAI, OpenAIModel } from "../tools/openai-tools.js";
+import {
+  callOpenAI,
+  OpenAIModel,
+  openaiGpt5ReasonTool,
+  openaiCodeReviewTool,
+  openaiExplainTool,
+} from "../tools/openai-tools.js";
 import { callGrok, GrokModel } from "../tools/grok-tools.js";
 import {
   OPENAI_MODELS,
@@ -263,7 +269,8 @@ export async function executeWorkflowTool(
       // (qwen_algo ran QWQ-32B with a generic prompt while the real tool ran
       // Qwen3.8-Max with the Principal Algorithm Engineer protocol). When
       // touching a case, prefer delegating to the real tool object — see the
-      // perplexity_*, qwq_reason, and qwen_algo cases.
+      // perplexity_*, qwq_reason, qwen_algo, openai_reason, openai_code_review
+      // and openai_explain cases.
       case "qwen_coder":
         if (!callOpenRouter) {
           return buildResult("[Qwen tools require OpenRouter API key. Add OPENROUTER_API_KEY to .env]", "error");
@@ -293,7 +300,7 @@ export async function executeWorkflowTool(
             },
             { log: console.error },
           ),
-          OpenRouterModel.QWQ_32B
+          OpenRouterModel.QWEN3_8_27B
         );
 
       case "qwen_algo":
@@ -351,55 +358,47 @@ export async function executeWorkflowTool(
           actualModel
         );
 
+      // openai_reason / openai_code_review / openai_explain delegate to the real
+      // tools so a workflow step runs the same model, effort and prompt as the MCP
+      // tool of the same name (code_review/explain ran gpt-5.6-luna here while the
+      // tools ran the flagship / sol; openai_reason sent "high" with a generic prompt).
       case "openai_reason":
-        // GPT-5 Pro with high reasoning effort for complex reasoning
-        actualModel = OPENAI_MODELS.PRO as OpenAIModel;
-        const skipValidationReason = validationContext !== 'user-input';
         return buildResult(
-          await callOpenAI(
-            toMessages(prompt, systemPrompt),
-            actualModel,
-            temperature,
-            maxTokens,
-            "high", // reasoningEffort
-            false, // requireConfirmation
-            skipValidationReason,
+          await openaiGpt5ReasonTool.execute(
+            {
+              query: prompt,
+              ...(typeof input === 'object' && input.context ? { context: input.context } : {}),
+              ...(typeof input === 'object' && input.mode ? { mode: input.mode } : {}),
+            },
+            { log: console.error, skipValidation: validationContext !== 'user-input' },
           ),
-          actualModel
+          OPENAI_MODELS.DEFAULT
         );
 
       case "openai_code_review":
-        // GPT-5.1 codex-mini for code review (medium reasoning)
-        actualModel = OPENAI_MODELS.CODEX_MINI as OpenAIModel;
-        const skipValidationCodeReview = validationContext !== 'user-input';
         return buildResult(
-          await callOpenAI(
-            toMessages(prompt, systemPrompt || "You are an expert code reviewer. Provide thorough code review with specific, actionable feedback."),
-            actualModel,
-            0.3, // Low temperature for consistent code review
-            maxTokens,
-            "medium", // reasoningEffort
-            false,
-            skipValidationCodeReview,
+          await openaiCodeReviewTool.execute(
+            {
+              code: prompt,
+              ...(typeof input === 'object' && input.language ? { language: input.language } : {}),
+              ...(typeof input === 'object' && Array.isArray(input.focusAreas) ? { focusAreas: input.focusAreas } : {}),
+            },
+            { log: console.error, skipValidation: validationContext !== 'user-input' },
           ),
-          actualModel
+          OPENAI_MODELS.DEFAULT
         );
 
       case "openai_explain":
-        // GPT-5.1 codex-mini for explanations (low reasoning)
-        actualModel = OPENAI_MODELS.CODEX_MINI as OpenAIModel;
-        const skipValidationExplain = validationContext !== 'user-input';
         return buildResult(
-          await callOpenAI(
-            toMessages(prompt, systemPrompt || "You are an expert educator. Provide clear, engaging explanations."),
-            actualModel,
-            temperature,
-            maxTokens,
-            "low", // reasoningEffort
-            false,
-            skipValidationExplain,
+          await openaiExplainTool.execute(
+            {
+              topic: prompt,
+              ...(typeof input === 'object' && input.level ? { level: input.level } : {}),
+              ...(typeof input === 'object' && input.style ? { style: input.style } : {}),
+            },
+            { log: console.error, skipValidation: validationContext !== 'user-input' },
           ),
-          actualModel
+          OPENAI_MODELS.SOL
         );
 
       case "gpt5_analyze":
@@ -408,17 +407,6 @@ export async function executeWorkflowTool(
             toMessages(prompt, systemPrompt),
             OPENAI_MODELS.CODEX_MINI as OpenAIModel,
             0.7,
-            maxTokens,
-          ),
-          OPENAI_MODELS.CODEX_MINI
-        );
-
-      case "openai_reason":
-        return buildResult(
-          await callOpenAI(
-            toMessages(prompt, systemPrompt),
-            OPENAI_MODELS.CODEX_MINI as OpenAIModel,
-            temperature,
             maxTokens,
           ),
           OPENAI_MODELS.CODEX_MINI

@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when code changes are ready for review — a diff exists, the user says "review my changes/PR", or a commit is about to happen. Multi-model diff review (Kimi K3, DeepSeek, GPT-5.6 panel + Gemini judge) with a MERGEABLE verdict
+description: Use when code changes are ready for review — a diff exists, the user says "review my changes/PR", or a commit is about to happen. Multi-model diff review (Kimi K3, DeepSeek, GPT-6 Astra panel + Gemini judge) with a MERGEABLE verdict
 user-invocable: true
 ---
 

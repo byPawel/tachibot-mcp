@@ -1,6 +1,6 @@
 /**
  * OpenAI Tools Implementation
- * Provides GPT-5.5 model capabilities with reasoning_effort control
+ * Provides GPT-6 Astra (default) and GPT-5.6 tier capabilities with reasoning_effort control
  * Uses centralized model constants from model-constants.ts
  */
 
@@ -143,7 +143,7 @@ function extractApiErrorMessage(body: string): string {
   return flat.length > 200 ? `${flat.slice(0, 200)}…` : flat;
 }
 
-// GPT-5.6 (Jul 2026) - sol / terra / luna tiers; see OPENAI_MODELS in
+// GPT-6 Astra (Sep 2026) default + GPT-5.6 sol / terra / luna tiers; see OPENAI_MODELS in
 // src/config/model-constants.ts for the authoritative tier list and pricing.
 
 // Type alias for model strings
@@ -152,10 +152,10 @@ export type OpenAIModel = string;
 // Re-export for backward compatibility
 // "Thinking" mode = the flagship tier with reasoning.effort="high"/"xhigh"
 export const OpenAIModel5 = {
-  DEFAULT: OPENAI_MODELS.DEFAULT,     // gpt-5.6-sol (use with reasoning.effort)
-  THINKING: OPENAI_MODELS.DEFAULT,    // gpt-5.6-sol + high effort = "thinking"
-  PRO: OPENAI_MODELS.PRO,             // gpt-5.6-sol + xhigh effort (no separate pro model in 5.6)
-  INSTANT: OPENAI_MODELS.DEFAULT,     // gpt-5.6-sol + low effort = fast
+  DEFAULT: OPENAI_MODELS.DEFAULT,     // gpt-6-astra (use with reasoning.effort)
+  THINKING: OPENAI_MODELS.DEFAULT,    // gpt-6-astra + high effort = "thinking"
+  PRO: OPENAI_MODELS.PRO,             // gpt-6-astra + xhigh effort (no separate pro API model)
+  INSTANT: OPENAI_MODELS.DEFAULT,     // gpt-6-astra + low effort = fast
   // Legacy aliases
   FULL: OPENAI_MODELS.DEFAULT,
   CODEX_MINI: OPENAI_MODELS.DEFAULT,
@@ -166,9 +166,25 @@ export const OpenAIModel5 = {
 export const OpenAI52Model = OpenAIModel5;
 export const OpenAI51Model = OpenAIModel5;
 
+// Models served by the Responses API: the GPT-5.x family and GPT-6 (gpt-6-astra).
+// Anything else (legacy gpt-4.x, o-series) stays on Chat Completions.
+function usesResponsesAPI(model: string): boolean {
+  return model.startsWith('gpt-5.') || model.startsWith('gpt-6');
+}
+
+// gpt-6-astra accepts only low|medium|high|xhigh|max — "none"/"minimal" are a 400.
+// Send the cheapest accepted level instead of failing the attempt; GPT-5.6 tiers
+// still receive the caller's value unchanged (they accept "none").
+function effortForModel(model: string, effort: string): string {
+  if (model.startsWith('gpt-6') && (effort === 'none' || effort === 'minimal')) {
+    return 'low';
+  }
+  return effort;
+}
+
 /**
  * Call OpenAI API with model fallback support
- * GPT-5.x uses /v1/responses endpoint
+ * GPT-5.x and GPT-6 use the /v1/responses endpoint
  */
 export async function callOpenAI(
   messages: Array<{ role: string; content: string }>,
@@ -213,6 +229,9 @@ export async function callOpenAI(
 
   // Model fallback chain
   const modelFallbacks: Record<string, string[]> = {
+    // gpt-6-astra rolled out to a limited set of orgs first (Sep 2026): an org without
+    // access gets 403/404, so degrade to the previous flagship, then terra.
+    "gpt-6-astra": ["gpt-5.6-sol", "gpt-5.6-terra"],
     // gpt-5.6-sol is org-verification gated (403 "insufficient permissions" until verified);
     // terra matches gpt-5.5 quality at half price, so it's the safe runtime fallback.
     "gpt-5.6-sol": ["gpt-5.6-terra", "gpt-5.5"],
@@ -235,14 +254,14 @@ export async function callOpenAI(
   for (const currentModel of modelsToTry) {
     console.error(`🔍 TRACE: Trying model: ${currentModel}`);
     try {
-      // GPT-5.x uses Responses API, others use Chat Completions
-      const isGPT5 = currentModel.startsWith('gpt-5.');
-      const endpoint = isGPT5 ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
+      // GPT-5.x and GPT-6 use the Responses API, others use Chat Completions
+      const isResponsesModel = usesResponsesAPI(currentModel);
+      const endpoint = isResponsesModel ? OPENAI_RESPONSES_URL : OPENAI_CHAT_URL;
 
       let requestBody: any;
 
-      if (isGPT5) {
-        // Responses API format for GPT-5.2
+      if (isResponsesModel) {
+        // Responses API format. No temperature: gpt-6-astra rejects anything but the default
         // Input is array of message objects [{role, content}]
         const inputMessages = validatedMessages.map(m => ({
           role: m.role,
@@ -254,16 +273,15 @@ export async function callOpenAI(
         // Smaller caps get exhausted by reasoning alone → status:"incomplete"
         // with a reasoning-only output array and zero output_text. The cap is an
         // upper bound (only generated tokens bill), so flooring it is free.
-        const reasoningBudget = reasoningEffort !== 'none'
+        const effort = effortForModel(currentModel, reasoningEffort || 'medium');
+        const reasoningBudget = effort !== 'none'
           ? Math.max(maxTokens, 25000)
           : maxTokens;
 
         requestBody = {
           model: currentModel,
           input: inputMessages,
-          reasoning: {
-            effort: reasoningEffort || 'medium'
-          },
+          reasoning: { effort },
           max_output_tokens: reasoningBudget
         };
       } else {
@@ -277,7 +295,7 @@ export async function callOpenAI(
         };
       }
 
-      console.error(`🔍 TRACE: Using ${isGPT5 ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${currentModel}`);
+      console.error(`🔍 TRACE: Using ${isResponsesModel ? '/v1/responses' : '/v1/chat/completions'} endpoint for ${currentModel}`);
 
       // High reasoning effort can take 2+ minutes; "max" is the slowest tier of all, so it
       // gets the long timeout too — omitting it here would abort max-effort calls at 90s.
@@ -319,8 +337,8 @@ export async function callOpenAI(
       // Parse response based on API type
       let rawContent: string | undefined;
 
-      if (isGPT5) {
-        // Parse Responses API response for GPT-5.2
+      if (isResponsesModel) {
+        // Parse Responses API response
         const parseResult = ResponsesAPISchema.safeParse(rawData);
         if (parseResult.success) {
           const responsesData: ResponsesAPIResponse = parseResult.data;
@@ -494,7 +512,7 @@ export const openaiGpt5ReasonTool = defineModelTool({
       .default("analytical")
       .describe("Reasoning mode (e.g., mathematical, scientific, logical, analytical)")
   }),
-  execute: async (args: { query: string; context?: string; files?: string[]; mode?: string }, { log, reportProgress }: any) => {
+  execute: async (args: { query: string; context?: string; files?: string[]; mode?: string }, { log, reportProgress, skipValidation }: any) => {
     const modePrompts = {
       mathematical: "Focus on mathematical proofs, calculations, and formal logic",
       scientific: "Apply scientific method and empirical reasoning",
@@ -522,13 +540,13 @@ ${FORMAT_INSTRUCTION}`
     ];
 
     // Use heartbeat to prevent MCP timeout during reasoning.
-    // Effort is xhigh, not high: this is the dedicated deep-reasoning tool and sol supports
-    // none|low|medium|high|xhigh|max. "max" is deliberately NOT the default here — OpenAI
+    // Effort is xhigh, not high: this is the dedicated deep-reasoning tool and Astra supports
+    // low|medium|high|xhigh|max. "max" is deliberately NOT the default here — OpenAI
     // recommends reserving it for the hardest quality-first work and comparing it against
     // xhigh first, and it costs latency on every call. Both land in the 180s timeout branch.
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 8000, OPENAI_REASONING.XHIGH),
+      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 8000, OPENAI_REASONING.XHIGH, false, skipValidation || false),
       reportFn
     );
   }
@@ -547,12 +565,12 @@ export const openAIBrainstormTool = defineModelTool({
     constraints: z.string().optional().describe("Technical constraints: language, framework, performance requirements, team size"),
     ...filesField,
     quantity: z.number().optional().describe("Number of approaches to generate (default: 5)"),
-    model: z.enum(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
+    model: z.enum(["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
       .optional()
-      .describe("Model to use - gpt-5.6-sol (default, flagship), gpt-5.6-terra (balanced), gpt-5.6-luna (fast/cheap)"),
+      .describe("Model to use - gpt-6-astra (default, flagship), gpt-5.6-sol (previous flagship), gpt-5.6-terra (balanced), gpt-5.6-luna (fast/cheap)"),
     reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh", "max"])
       .optional()
-      .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh, max"),
+      .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh, max (gpt-6-astra runs none as low)"),
     max_tokens: z.number().optional().describe("Maximum tokens for response")
   }),
   execute: async (args: { problem: string; constraints?: string; files?: string[]; quantity?: number; model?: string; reasoning_effort?: string; max_tokens?: number }, options: any = {}) => {
@@ -630,7 +648,7 @@ export const openaiCodeReviewTool = defineModelTool({
       .optional()
       .describe("Focus areas - array of: security, performance, readability, bugs, best-practices")
   }),
-  execute: async (args: { code: string; language?: string; files?: string[]; focusAreas?: string[] }, { log, reportProgress }: any) => {
+  execute: async (args: { code: string; language?: string; files?: string[]; focusAreas?: string[] }, { log, reportProgress, skipValidation }: any) => {
     const focusText = args.focusAreas
       ? `Focus especially on: ${args.focusAreas.join(', ')}`
       : "Review all aspects: security, performance, readability, bugs, and best practices";
@@ -658,7 +676,7 @@ ${FORMAT_INSTRUCTION}`
     // Use heartbeat to prevent MCP timeout
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.3, 6000, "medium"),
+      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.3, 6000, "medium", false, skipValidation || false),
       reportFn
     );
   }
@@ -683,7 +701,7 @@ export const openaiExplainTool = defineModelTool({
       .describe("Explanation style - must be one of: technical, simple, analogy, visual"),
     ...filesField,
   }),
-  execute: async (args: { topic: string; level?: string; style?: string; files?: string[] }, { log }: any) => {
+  execute: async (args: { topic: string; level?: string; style?: string; files?: string[] }, { log, skipValidation }: any) => {
     const levelPrompts = {
       beginner: "Explain for someone with no prior knowledge",
       intermediate: "Explain for someone with basic understanding",
@@ -716,7 +734,9 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    return await callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 2500, "low");
+    // Low-effort explanations don't need the $10/$50 flagship: pinned to sol (the pre-Astra
+    // default) so the GPT-6 Astra bump doesn't double this tool's per-call cost.
+    return await callOpenAI(messages, OPENAI_MODELS.SOL, 0.7, 2500, "low", false, skipValidation || false);
   }
 });
 

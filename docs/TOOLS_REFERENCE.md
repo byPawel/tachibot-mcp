@@ -962,7 +962,7 @@ jury({
 
 ### diff_review
 
-Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K3, DeepSeek V4 Pro, GPT-5.6 Sol) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in `diff`.
+Multi-model diff-aware code review: 2-3 lab-diverse reviewers (Kimi K3, DeepSeek V4 Pro, GPT-6 Astra) scoped to the changed lines, deduplicated and severity-ranked by a Gemini judge. Provide the unified diff in `diff`.
 
 #### Parameters
 
@@ -1046,10 +1046,10 @@ Find alternative approaches: when stuck on a programming problem, reveals 3rd/4t
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `problem` | `string` | ✅ Yes | - | The engineering problem or design tradeoff to brainstorm about |
-| `model` | `"gpt-5.4" \| "gpt-5.4-mini" \| "gpt-5.4-pro"` | No | `"gpt-5.4"` | Model variant |
+| `model` | `"gpt-6-astra" \| "gpt-5.6-sol" \| "gpt-5.6-terra" \| "gpt-5.6-luna"` | No | `"gpt-6-astra"` | Model variant |
 | `quantity` | `number` | No | `5` | Number of approaches to generate |
 | `constraints` | `string` | No | - | Technical constraints: language, framework, performance requirements, team size |
-| `reasoning_effort` | `"none" \| "low" \| "medium" \| "high" \| "xhigh"` | No | - | Reasoning effort level |
+| `reasoning_effort` | `"none" \| "low" \| "medium" \| "high" \| "xhigh" \| "max"` | No | `"medium"` | Reasoning effort level (`gpt-6-astra` runs `none` as `low`) |
 | `max_tokens` | `number` | No | - | Maximum tokens for response |
 
 #### Example
@@ -1057,7 +1057,7 @@ Find alternative approaches: when stuck on a programming problem, reveals 3rd/4t
 ```typescript
 openai_brainstorm({
   problem: "Reduce app cold start time",
-  model: "gpt-5.4-mini",
+  model: "gpt-5.6-luna",
   quantity: 5,
   constraints: "Must work on mobile devices"
 })

@@ -52,7 +52,8 @@ export enum OpenRouterModel {
   QWEN3_CODER_FLASH = "qwen/qwen3-coder-flash",          // Fast/cheap alternative
   QWEN3_30B = "qwen/qwen3-30b-a3b-instruct-2507",        // 30B MoE model
   QWEN3_235B_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // 235B thinking model
-  QWQ_32B = "qwen/qwq-32b",                              // Deep reasoning - CodeElo 1261
+  QWQ_32B = "qwen/qwq-32b",                              // RETIRED from OpenRouter (404 "No endpoints found", Sep 14 2026) — back-compat only, do NOT call
+  QWEN3_8_27B = "qwen/qwen3.8-27b",                      // Aug 14, 2026: dense 27B reasoning, 1M ctx, reasoning_effort, $0.21/$2.55 - powers qwq_reason (QwQ successor)
   QWEN3_8_MAX = "qwen/qwen3.8-max",                      // CURRENT (Aug 3, 2026): flagship 3.8 reasoning, 1M ctx, multimodal, reasoning_effort, $2/$6 - PRIMARY for algo/reason
   QWEN3_7_MAX = "qwen/qwen3.7-max",                      // Previous flagship (May 21, 2026): 1M ctx, agent-centric, $1.475/$4.425 (fallback)
   QWEN3_MAX_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // NOTE: Same as QWEN3_235B_THINKING — alias kept for compat
@@ -94,6 +95,7 @@ const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.QWEN3_CODER]: OpenRouterModel.QWEN3_CODER,
   [OpenRouterModel.QWEN3_8_MAX]: OpenRouterModel.QWEN3_7_MAX,    // Fall back to the 3.7 flagship if 3.8 Max is quota-blocked
   [OpenRouterModel.QWEN3_7_MAX]: OpenRouterModel.QWEN3_MAX_THINKING, // Then to the open-weight 235B thinking model
+  [OpenRouterModel.QWEN3_8_27B]: OpenRouterModel.QWEN3_235B_THINKING, // qwq_reason: fall back to the 235B thinking model
   [OpenRouterModel.KIMI_K3]: OpenRouterModel.KIMI_K2_7_CODE,     // Fall back to K2.7-Code if K3 fails (also 4x cheaper)
   [OpenRouterModel.KIMI_K2_7_CODE]: OpenRouterModel.KIMI_K2_6,   // Fall back to K2.6 if K2.7-Code fails
   [OpenRouterModel.KIMI_K2_6]: OpenRouterModel.KIMI_K2_THINKING,  // Fall back to k2-thinking if K2.6 fails (k2.5 retired from OpenRouter)
@@ -279,8 +281,8 @@ ${FORMAT_INSTRUCTION}`;
 });
 
 /**
- * QwQ Reasoning Tool
- * Deep reasoning with QwQ-32B model
+ * QwQ Reasoning Tool (name kept for compatibility)
+ * Multi-perspective deliberation on Qwen3.8-27B — qwen/qwq-32b was retired from OpenRouter
  */
 export const qwqReasoningTool = defineModelTool({
   name: "qwq_reason",
@@ -349,8 +351,9 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    const model = args.useFree !== false ? OpenRouterModel.QWQ_32B : OpenRouterModel.QWQ_32B;
-    return await callOpenRouter(messages, model, 0.3, 6000);
+    // Effort pinned like the other Qwen 3.8 callers (qwen_algo, qwen_reason). `useFree` stays
+    // in the schema for compatibility but never selected a model (both branches were QwQ).
+    return await callOpenRouter(messages, OpenRouterModel.QWEN3_8_27B, 0.3, 6000, { reasoning_effort: "medium" });
   }
 });
 
@@ -419,7 +422,7 @@ export const openRouterMultiModelTool = defineModelTool({
     const modelMap = {
       "qwen-coder": OpenRouterModel.QWEN3_CODER_NEXT,
       "qwen-coder-plus": OpenRouterModel.QWEN3_CODER_NEXT,
-      "qwq-32b": OpenRouterModel.QWQ_32B,
+      "qwq-32b": OpenRouterModel.QWEN3_8_27B, // qwq-32b retired from OpenRouter — alias kept for existing callers
       "kimi-k2-thinking": OpenRouterModel.KIMI_K2_THINKING
     };
 

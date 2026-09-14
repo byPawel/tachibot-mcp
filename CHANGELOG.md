@@ -5,6 +5,20 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.34.0] - 2026-09-14
+
+### Changed
+- **OpenAI default is now GPT-6 Astra (`gpt-6-astra`).** Released Sep 3, 2026: $10/$50 per 1M tokens (2x `gpt-5.6-sol`'s input price), 1.05M context, 128K output. Verified live against `/v1/models` and `/v1/responses` on Sep 14, 2026. Every `OPENAI_MODELS.DEFAULT` caller moves — `openai_reason`, `openai_brainstorm`, `openai_code_review`, `spec_writer`, `tachi`, the GPT reviewers in `diff_review` / `plan_critique` — along with the `PRO` / `THINKING` / `FULL` / `CODEX_MAX` aliases workflows use. Astra rolled out to a limited set of orgs first, so `callOpenAI` falls back astra → `gpt-5.6-sol` → `gpt-5.6-terra` on a 403/404. `openai_brainstorm` accepts `gpt-6-astra` alongside the three GPT-5.6 tiers.
+- **`openai_explain` stays on `gpt-5.6-sol`.** Low-effort explanations don't need the flagship, so the tool is pinned to the previous default rather than doubling its per-call cost. `openai_search` (terra), the jury's GPT juror (luna) and the Gemini-down judge escalation (sol) are unchanged.
+- **`qwq_reason` runs Qwen3.8-27B.** `qwen/qwq-32b` is gone from OpenRouter — every call returned 404 "No endpoints found", so the tool had been failing outright. The tool, its workflow mapping and the `openrouter_multi` `qwq-32b` option now call `qwen/qwen3.8-27b` (dense 27B, 1M context, $0.21/$2.55) with `reasoning_effort: medium`, falling back to `qwen3-235b-a22b-thinking-2507`. On a probability probe it answered correctly in 2.0s for $0.0007; the 235B thinking model took 16.3s. Tool name and parameters are unchanged.
+
+### Fixed
+- **GPT-6 models could not be called at all.** `callOpenAI` used the Responses API only for model names starting with `gpt-5.`, so `gpt-6-astra` fell through to Chat Completions with `temperature: 0.7` and no reasoning effort. OpenAI answers that with 400 "'temperature' does not support 0.7 with this model". `gpt-6-*` now goes to the Responses API without temperature.
+- **Astra rejects `reasoning_effort` `none` and `minimal`** — it accepts only low/medium/high/xhigh/max. Those values are now sent as `low` for GPT-6 models instead of burning the attempt on a 400; GPT-5.6 tiers still receive `none` unchanged.
+- **Workflow steps ran a different OpenAI model than the tool of the same name.** `tool-mapper` reimplemented `openai_code_review`, `openai_explain` and `openai_reason` with its own prompts and model picks, so after the Astra bump a workflow `openai_code_review` step ran `gpt-5.6-luna` while the MCP tool ran `gpt-6-astra` (`openai_explain`: luna vs sol; `openai_reason`: `high` effort and a generic prompt vs `xhigh`). The three cases now delegate to the real tools, so model, effort and prompt match; a step's custom `systemPrompt` no longer applies to them. A second, unreachable `case "openai_reason"` was removed.
+- **Stale model labels.** The `diff_review` and `plan_critique` panels labelled their GPT reviewer "GPT-5.6 Sol" and "GPT-5.5", and `doctor` / `tachibot init` still advertised "GPT-5.5".
+- **Version drift.** 2.33.1 bumped only `package.json`; `manifest.json`, `server.json` and `package.mcpb.json` still said 2.33.0. All now carry 2.34.0.
+
 ## [2.33.1] - 2026-08-29
 
 ### Changed

@@ -100,7 +100,7 @@ function buildCriticPanel(): Panelist[] {
   if (hasOpenAIApiKey()) {
     panel.push({
       key: "gpt",
-      label: "GPT-5.5 (edge cases & scope)",
+      label: "GPT-6 Astra (edge cases & scope)",
       call: (q) =>
         callOpenAI(
           [

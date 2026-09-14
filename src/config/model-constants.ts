@@ -7,38 +7,48 @@
 // =============================================================================
 // OPENAI MODELS (provider-based naming)
 // =============================================================================
-// GPT-5.6 released Jul 9, 2026 - CURRENT. Three durable tiers replace the pro/mini split:
+// GPT-6 Astra released Sep 3, 2026 - CURRENT DEFAULT. `gpt-6-astra`: $10/$50 (cached $1),
+//   1.05M ctx, 128K out. Verified live Sep 14, 2026 against /v1/models and /v1/responses:
+//   reasoning.effort accepts ONLY low|medium|high|xhigh|max ("none"/"minimal" are a 400, so
+//   callOpenAI maps them to "low"), and temperature must stay at the default — sending 0.7 is
+//   a 400. `gpt-6-astra-pro` / `gpt-astra-latest` exist on OpenRouter only (404 on the direct API).
+//   Rolled out to a limited set of orgs first, so callOpenAI falls back astra -> sol -> terra.
+// GPT-5.6 (Jul 9, 2026) - three tiers kept as explicit picks and as Astra's runtime fallback:
 //   sol (flagship $5/$30) / terra (balanced $2/$12) / luna (fast $0.20/$1.20). 1.05M ctx, 128K out.
 //   Jul 30, 2026 price cut: luna -80%, terra -20%, sol unchanged. Verified Aug 12, 2026.
 //   No Codex-specific API model exists (no gpt-5.6-codex / codex-max) — the CODEX* aliases
-//   below are legacy names repointed onto the sol/terra/luna tiers.
-// "Pro" is no longer a model: sol + reasoning.effort (the $30/$180 gpt-5.5-pro tier is gone).
-// GPT-5.5 (Apr 23, 2026) kept as fallback. OpenRouter uses prefix: openai/gpt-5.6-sol etc.
+//   below are legacy names repointed onto current tiers.
+// "Pro" is not an API model: flagship + reasoning.effort (the $30/$180 gpt-5.5-pro tier is gone).
+// GPT-5.5 (Apr 23, 2026) kept as fallback. OpenRouter uses prefix: openai/gpt-6-astra etc.
 export const OPENAI_MODELS = {
-  // GPT-5.6 tiers (Jul 9, 2026 - CURRENT)
-  DEFAULT: "gpt-5.6-sol",           // Flagship: coding/agentic SOTA, 54% more token-efficient than 5.5
-  SOL: "gpt-5.6-sol",               // Explicit tier alias (also aliased "gpt-5.6" server-side)
+  // GPT-6 Astra (Sep 3, 2026 - CURRENT)
+  DEFAULT: "gpt-6-astra",           // Flagship: computer use, coding, science. $10/$50 (2x sol input)
+  ASTRA: "gpt-6-astra",             // Explicit alias
+
+  // GPT-5.6 tiers (Jul 9, 2026)
+  SOL: "gpt-5.6-sol",               // Previous flagship — Astra's first runtime fallback
   TERRA: "gpt-5.6-terra",           // Balanced: gpt-5.5-level at $2/$12 (Jul 30, 2026 cut: -20%)
   LUNA: "gpt-5.6-luna",             // Fast/cheap: $0.20/$1.20 after the Jul 30, 2026 -80% cut.
                                     // Now ~9x cheaper than terra, not 2.5x — worth routing to it
                                     // far more aggressively. (Weak long-context recall: avoid huge inputs.)
   MINI: "gpt-5.6-luna",             // "mini" tier successor (was gpt-5.4-mini)
-  PRO: "gpt-5.6-sol",               // Pro tier eliminated in 5.6 — sol + reasoning.effort xhigh (was gpt-5.5-pro $30/$180)
+  PRO: "gpt-6-astra",               // No pro API model — Astra + reasoning.effort xhigh/max (was gpt-5.5-pro $30/$180)
 
   // GPT-5.5 (Apr 2026) - fallback
   FALLBACK_5_5: "gpt-5.5",
 
   // Aliases for backward compatibility
-  THINKING: "gpt-5.6-sol",          // "Thinking" = sol with high reasoning effort
-  FULL: "gpt-5.6-sol",              // Map old FULL to DEFAULT
+  THINKING: "gpt-6-astra",          // "Thinking" = flagship with high reasoning effort
+  FULL: "gpt-6-astra",              // Map old FULL to DEFAULT
   CODEX: "gpt-5.6-terra",           // Coding workhorse tier
   CODEX_MINI: "gpt-5.6-luna",       // Cheapest tier
-  CODEX_MAX: "gpt-5.6-sol",         // Map old codex-max to flagship (use high effort)
+  CODEX_MAX: "gpt-6-astra",         // Map old codex-max to flagship (use high effort)
   INSTANT: "gpt-5.6-luna",          // Fast tier
 } as const;
 
 // OpenRouter model ID mapping (add prefix when using OpenRouter gateway)
 export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
+  "gpt-6-astra": "openai/",
   "gpt-5.6-sol": "openai/",
   "gpt-5.6-terra": "openai/",
   "gpt-5.6-luna": "openai/",
@@ -49,6 +59,7 @@ export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
 
 // OpenAI Reasoning Effort Levels (for models that support it)
 // All three GPT-5.6 tiers (sol/terra/luna) accept the full range; medium is the API default.
+// gpt-6-astra rejects NONE (and "minimal") with a 400 — callOpenAI sends LOW instead.
 export const OPENAI_REASONING = {
   NONE: "none",     // No extra reasoning (fastest, allows temperature)
   LOW: "low",       // Light reasoning — right for grounded web-search lookups
@@ -180,7 +191,8 @@ export const QWEN_MODELS = {
   CODER_NEXT: "qwen/qwen3-coder-next",         // 80B/3B MoE, 262K ctx, SWE-Bench >70%, $0.14/$0.80 (still PRIMARY coder — no 3.6-coder yet)
   CODER_PLUS: "qwen/qwen3-coder-plus",         // Code specialist (32K context)
   CODER: "qwen/qwen3-coder",                   // Legacy coder - 480B MoE, SWE-Bench 69.6%
-  QWQ_32B: "qwen/qwq-32b",                     // Deep reasoning - CodeElo 1261
+  DENSE_3_8_27B: "qwen/qwen3.8-27b",           // Aug 14, 2026: dense 27B reasoning, 1M ctx, reasoning_effort, $0.21/$2.55 — powers qwq_reason
+  QWQ_32B: "qwen/qwq-32b",                     // RETIRED from OpenRouter (404 "No endpoints found", Sep 14, 2026) — do NOT call
   MAX_THINKING: "qwen/qwen3-235b-a22b-thinking-2507", // 235B MoE (22B active) thinking mode - heavy reasoning
 } as const;
 
@@ -235,6 +247,8 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
+// UPDATED Sep 14, 2026: OpenAI default gpt-5.6-sol -> gpt-6-astra (Sep 3);
+//   qwq_reason qwen/qwq-32b (retired from OpenRouter) -> qwen/qwen3.8-27b.
 // UPDATED Jul 26, 2026 (full provider audit):
 //   Kimi K2.7-Code -> K3 (Jul 16) · Gemini Flash 3.5 -> 3.6 + Flash-Lite 3.1 -> 3.5 (Jul 21)
 // Re-verified as still-current, NOT bumped: GPT-5.6 tiers (Jul 9), Grok 4.5 (Jul 8),
@@ -242,16 +256,16 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 //   StepFun 3.7, ERNIE 4.5 VL, Qwen Coder-Next, Perplexity Sonar.
 export const CURRENT_MODELS = {
   openai: {
-    default: OPENAI_MODELS.DEFAULT,       // gpt-5.6-sol - flagship, agentic/coding SOTA (Jul 2026)
-    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (sol + effort=high)
-    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (sol + effort=medium)
+    default: OPENAI_MODELS.DEFAULT,       // gpt-6-astra - flagship (Sep 3, 2026), $10/$50
+    reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (astra + effort=xhigh)
+    brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (astra + effort=medium)
     code: OPENAI_MODELS.TERRA,            // Code tasks (gpt-5.6-terra - 5.5-level at $2/$12)
     explain: OPENAI_MODELS.LUNA,          // Explanations (gpt-5.6-luna - $0.20/$1.20, fast)
     search: OPENAI_MODELS.TERRA,          // Web search: $10/1k call fee is flat across tiers,
                                           // so terra ($2/$12) does grounded lookup at 2.5x less
                                           // token cost than sol. All 5.6 tiers support web_search.
-    // Premium: the 5.5-pro tier ($30/$180) is gone — sol + effort=max replaces it at $5/$30
-    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-5.6-sol + reasoning.effort=max)
+    // Premium: the 5.5-pro tier ($30/$180) is gone — astra + effort=max replaces it at $10/$50
+    premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-6-astra + reasoning.effort=max)
   },
   grok: {
     reason: GROK_MODELS._4_5,            // grok-4.5 (Jul 2026 flagship, high reasoning effort)
@@ -442,6 +456,7 @@ export const DEFAULT_WORKFLOW_TOOL = "openai_brainstorm";
 // Used in tool outputs, usage stats, logs - keeps display consistent
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // OpenAI
+  "gpt-6-astra": "gpt-6-astra",
   "gpt-5.6-sol": "gpt-5.6-sol",
   "gpt-5.6-terra": "gpt-5.6-terra",
   "gpt-5.6-luna": "gpt-5.6-luna",
@@ -496,6 +511,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen/qwen3-coder-plus": "qwen-coder",
   "qwen/qwen3-coder": "qwen-coder",
   "qwen/qwq-32b": "qwq-32b",
+  "qwen/qwen3.8-27b": "qwen3.8-27b",
   "qwen/qwen3-max-thinking": "qwen-max",
   "qwen/qwen3-235b-a22b-thinking-2507": "qwen-235b-thinking",
 
@@ -514,6 +530,7 @@ export function getModelDisplayName(modelId: string): string {
 // Model pricing per 1K tokens (input/output average) for cost tracking
 export const MODEL_PRICING: Record<string, number> = {
   // OpenAI
+  "gpt-6-astra": 0.030,         // ($10 + $50) / 2 / 1000 (Sep 3, 2026 - current default)
   "gpt-5.6-sol": 0.0175,        // ($5 + $30) / 2 / 1000 (unchanged in the Jul 30 cut)
   "gpt-5.6-terra": 0.007,       // ($2 + $12) / 2 / 1000 (Jul 30, 2026 cut: -20%)
   "gpt-5.6-luna": 0.0007,       // ($0.20 + $1.20) / 2 / 1000 (Jul 30, 2026 cut: -80%)
@@ -568,6 +585,7 @@ export const MODEL_PRICING: Record<string, number> = {
   "qwen/qwen3-coder-plus": 0.0005,
   "qwen/qwen3-coder": 0.0003,
   "qwen/qwq-32b": 0.001,
+  "qwen/qwen3.8-27b": 0.001382, // ($0.214 + $2.55) / 2 / 1000 (Aug 14, 2026)
   "qwen/qwen3-max-thinking": 0.005,
   "qwen/qwen3-235b-a22b-thinking-2507": 0.000822, // ($0.15 + $1.50) / 2 / 1000
 

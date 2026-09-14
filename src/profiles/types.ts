@@ -52,7 +52,7 @@ export interface ToolsConfig {
   // OpenRouter tools
   qwen_coder: boolean;
   qwen_algo: boolean;
-  qwq_reason: boolean;         // QwQ-32B (multi-perspective deliberation, free tier)
+  qwq_reason: boolean;         // Qwen3.8-27B (multi-perspective deliberation, cheap)
   qwen_reason: boolean;        // Qwen3-Max-Thinking (heavy mathematical reasoning)
   kimi_thinking: boolean;
   kimi_code: boolean;            // NEW: Kimi K2.5 (SWE-focused code, 76.8%)

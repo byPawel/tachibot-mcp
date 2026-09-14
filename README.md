@@ -4,7 +4,7 @@
 
 ### Multi-Model AI Orchestration Platform
 
-[![Version](https://img.shields.io/badge/version-2.33.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
+[![Version](https://img.shields.io/badge/version-2.34.0-blue.svg)](https://www.npmjs.com/package/tachibot-mcp)
 [![Tools](https://img.shields.io/badge/tools-67_active-brightgreen.svg)](#-tool-ecosystem-67-tools)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
@@ -12,7 +12,7 @@
 
 **67 AI tools. 12 providers. One protocol.**
 
-Orchestrate Perplexity, Grok 4.6, GPT-5.6, Gemini, Qwen, Kimi K3, and MiniMax M3
+Orchestrate Perplexity, Grok 4.6, GPT-6 Astra, Gemini, Qwen, Kimi K3, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 [Get Started](#-quick-start) &#183; [View Tools](#-tool-ecosystem-67-tools) &#183; [Documentation](https://tachibot.com/docs)
@@ -29,6 +29,12 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 ---
 
 ## What's New
+
+### v2.34.0
+- **GPT-6 Astra is the OpenAI default.** `gpt-6-astra` (Sep 3, 2026; $10/$50, 1.05M context) now backs `openai_reason`, `openai_brainstorm`, `openai_code_review`, `spec_writer`, `tachi` and the GPT reviewers in `diff_review` / `plan_critique`. Astra rolled out to a limited set of orgs first, so calls fall back to `gpt-5.6-sol`, then `gpt-5.6-terra`, when an org lacks access. `openai_explain` stays on sol — low-effort explanations don't need the flagship.
+- **GPT-6 models could not be called at all.** `callOpenAI` only used the Responses API for names starting with `gpt-5.`, so Astra fell through to Chat Completions with `temperature: 0.7` and got a 400. `gpt-6-*` now goes to the Responses API without temperature, and the `none`/`minimal` reasoning efforts Astra rejects are sent as `low`.
+- **`qwq_reason` works again.** `qwen/qwq-32b` was retired from OpenRouter (every call returned 404), so the tool now runs `qwen/qwen3.8-27b` at `reasoning_effort: medium` with the 235B thinking model as fallback — correct on a probe problem in 2.0s for $0.0007. Tool name and parameters are unchanged.
+- Tool count unchanged at 67.
 
 ### v2.33.0
 - **The writing family (`storm`, `re3`, `de_generic`).** The library had creative *thinking* (`what_if`, `innovate`, `alt_view`, `creative_use`) and zero creative *writing*: against a 7-stage pipeline, stage 4 (structure) and stage 5 (draft) were empty, and stage 6 (revise) fell through to `reflexion` — which optimises toward *correct*, while prose revision is cutting, rhythm and specificity. **85 → 88 techniques.**
