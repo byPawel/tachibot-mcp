@@ -22,6 +22,7 @@ import { validateToolInput, ValidationContext } from "../utils/input-validator.j
 import { hasGrokApiKey } from "../utils/api-keys.js";
 import { trackToolCall, estimateTokens, isTrackingEnabled } from "../utils/usage-tracker.js";
 import { jevDecideTool, JEV_DEFAULT_MODEL } from "../tools/jev-tool.js";
+import { checkStep, NON_STEP_TOOLS } from "./step-guard.js";
 
 // Lazy load OpenRouter for Qwen models
 let callOpenRouter: any = null;
@@ -686,11 +687,6 @@ export async function executeWorkflowTool(
   }
 }
 
-// Tools that must not run as a workflow step (recursion / session control).
-const NON_STEP_TOOLS = new Set([
-  "workflow", "workflow_start", "continue_workflow", "workflow_status",
-  "create_workflow", "visualize_workflow", "list_workflows",
-]);
 
 let registeredToolsPromise: Promise<Array<{ name: string; parameters: any; execute: (...args: any[]) => Promise<any> }>> | null = null;
 
@@ -752,6 +748,10 @@ export async function executeRegisteredTool(
     return { result: `[Error: invalid input for ${toolName} — ${problems}]`, modelUsed: "error" };
   }
 
+  // Trust boundary: profile allowlist, file sandbox, no cost escalation (step-guard.ts)
+  const refused = checkStep(toolName, parsed.data as Record<string, any>);
+  if (refused) return { result: `[Error: workflow step refused — ${refused}]`, modelUsed: "error" };
+
   const output = await tool.execute(parsed.data, stepToolContext);
   const result = typeof output === "string" ? output : JSON.stringify(output, null, 2);
   return { result, modelUsed: toolName };
@@ -788,6 +788,8 @@ export async function executeJevStep(input: ToolInput): Promise<ToolExecutionRes
   }
 
   const model = typeof input.model === "string" && input.model ? input.model : JEV_DEFAULT_MODEL;
+  const refused = checkStep("jev_decide", { model });
+  if (refused) return fail(`workflow step refused — ${refused}`);
   const result = String(
     await jevDecideTool.execute({ state, questions, model } as any),
   );
