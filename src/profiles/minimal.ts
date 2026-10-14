@@ -48,7 +48,6 @@ export const minimalProfile: ProfileConfig = {
     deepseek_algo: false,
     glm_reason: false,
     stepfun_reason: false,
-    ernie_reason: false,
     local_query: false,
     workflow: true,
     list_workflows: false,
@@ -82,5 +81,8 @@ export const minimalProfile: ProfileConfig = {
 
     // Adversarial plan red-team
     plan_critique: false,
+
+    // Typed decisions
+    jev_decide: false,
   }
 };

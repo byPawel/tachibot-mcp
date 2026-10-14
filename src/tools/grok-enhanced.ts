@@ -13,6 +13,8 @@ import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gate
 import { link } from "../utils/ansi-renderer.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import { getTimeoutConfig, formatTimeout } from "../config/timeout-config.js";
+import { withHeartbeat } from "../utils/streaming-helper.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to call it here
 
 const __filename = fileURLToPath(import.meta.url);
@@ -83,14 +85,28 @@ export async function callGrokEnhanced(
       console.error('[Grok Search Debug] Using Responses API:', GROK_RESPONSES_URL);
       console.error('[Grok Search Debug] Request:', JSON.stringify(searchRequestBody, null, 2));
 
-      const response = await fetch(GROK_RESPONSES_URL, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${GROK_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(searchRequestBody)
-      });
+      const searchTimeoutMs = getTimeoutConfig().search;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), searchTimeoutMs);
+      let response: Response;
+      try {
+        response = await fetch(GROK_RESPONSES_URL, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${GROK_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(searchRequestBody),
+          signal: controller.signal
+        });
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error(`${model} live search exceeded ${formatTimeout(searchTimeoutMs)} (raise TACHI_SEARCH_TIMEOUT)`);
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const error = await response.text();
@@ -188,9 +204,9 @@ export async function callGrokEnhanced(
     };
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    // grok-4.5's rollout is region-staged (EU lands mid-July 2026) — fall back to grok-4.3
-    if (model.startsWith('grok-4.5') && errMsg.includes('not available in your region')) {
-      console.error(`[Grok] grok-4.5 region-blocked, falling back to grok-4.3`);
+    // 4.5+ flagship rollouts are region-staged — fall back to grok-4.3
+    if (/^grok-4\.[5-9]/.test(model) && errMsg.includes('not available in your region')) {
+      console.error(`[Grok] ${model} region-blocked, falling back to grok-4.3`);
       return callGrokEnhanced(messages, { ...options, model: GrokModel.GROK_4_3 });
     }
     return {
@@ -435,7 +451,7 @@ export const grokSearchTool = {
     max_search_results: z.number().optional(),
     recency: z.enum(["all", "day", "week", "month", "year"]).optional()
   }),
-  execute: async (args: any, { log }: any) => {
+  execute: async (args: any, { log, reportProgress }: any) => {
     const { query, sources = [{ type: "web" }], max_search_results = 20, recency = "all" } = args;
     const recencyPrompt = recency !== "all"
       ? `Focus on information from the last ${recency}.`
@@ -463,16 +479,19 @@ ${FORMAT_INSTRUCTION}`
       ?.filter((s: any) => s.allowed_websites)
       ?.flatMap((s: any) => s.allowed_websites) || [];
 
-    const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_6,  // grounds reliably; grok-4.5 does not (see GrokModel notes)
-                                  // on /v1/responses — 4.5 answers ungrounded from training data
-                                  // (grok_search_lite is the cheap tier)
-      enableLiveSearch: true,
-      searchSources: max_search_results,
-      searchDomains: domains,
-      temperature: 0.3, // Low temperature for factual search
-      maxTokens: 3000
-    });
+    // Heartbeat keeps the MCP client's 60s request timeout from killing long searches
+    const result = await withHeartbeat(
+      () => callGrokEnhanced(messages, {
+        model: GrokModel.GROK_4_7,  // best-cited grounded search as of 2026-10-14 (see GrokModel notes);
+                                    // grok-4.5 never grounds on /v1/responses (grok_search_lite is the cheap tier)
+        enableLiveSearch: true,
+        searchSources: max_search_results,
+        searchDomains: domains,
+        temperature: 0.3, // Low temperature for factual search
+        maxTokens: 3000
+      }),
+      reportProgress ?? (async () => {})
+    );
 
     // Format sources with ANSI links
     let output = result.content;
@@ -513,9 +532,11 @@ export function getGrokStatus(): {
 } {
   return {
     available: isGrokAvailable(),
-    model: "grok-4.5",
+    model: "grok-4.7",
     features: [
-      'Grok 4.5 (grok-4.5): Flagship ("Opus-class", Jul 2026), 500K context, configurable reasoning effort ($2/$6)',
+      'Grok 4.7 (grok-4.7): Flagship (Sep 21, 2026), 500K context, configurable reasoning effort ($2/$6, doubled above 200K prompt)',
+      'Grok 4.7 also powers live search (grok_search) — best-cited grounded answers',
+      'Grok 4.6 (grok-4.6): Previous flagship/search model, kept for explicit picks ($2/$6)',
       'Grok 4.3 (grok-4.3): Previous flagship, kept as fallback — 1M context, lowest verified hallucination ($1.25/$2.50)',
       'Grok Build (grok-build-0.1): Fast agentic coding specialist, 256k context',
       'Live web search with citations',

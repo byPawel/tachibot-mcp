@@ -31,7 +31,7 @@ import { readFilesIntoContext } from "../utils/file-reader.js";
 //
 // That coupling is invisible and load-bearing: reordering registry's imports, or dropping
 // grok-tools, would silently unregister every OpenRouter-backed tool (Qwen, QwQ, Kimi,
-// MiniMax, DeepSeek, GLM, StepFun, ERNIE, and the planner tools) with no error at all.
+// MiniMax, DeepSeek, GLM, StepFun, and the planner tools) with no error at all.
 // Loading dotenv here makes this module self-sufficient. Non-override, matching every
 // other tool module, so an ambient var still wins — that precedence is deliberate
 // (12-factor) and unchanged.
@@ -48,13 +48,13 @@ export enum OpenRouterModel {
   // Qwen models
   QWEN3_CODER_NEXT = "qwen/qwen3-coder-next",            // NEW: 80B/3B MoE, 262K ctx, SWE >70% - PRIMARY
   QWEN3_CODER = "qwen/qwen3-coder",                      // Legacy: 480B MoE (fallback)
-  QWEN3_CODER_PLUS = "qwen/qwen3-coder-plus",           // Alibaba-only, BROKEN free tier issues
+  QWEN3_CODER_PLUS = "qwen/qwen3-coder-plus",           // GONE from OpenRouter (verified 2026-10-14) — back-compat key only, do NOT call
   QWEN3_CODER_FLASH = "qwen/qwen3-coder-flash",          // Fast/cheap alternative
   QWEN3_30B = "qwen/qwen3-30b-a3b-instruct-2507",        // 30B MoE model
   QWEN3_235B_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // 235B thinking model
   QWQ_32B = "qwen/qwq-32b",                              // RETIRED from OpenRouter (404 "No endpoints found", Sep 14 2026) — back-compat only, do NOT call
   QWEN3_8_27B = "qwen/qwen3.8-27b",                      // Aug 14, 2026: dense 27B reasoning, 1M ctx, reasoning_effort, $0.21/$2.55 - powers qwq_reason (QwQ successor)
-  QWEN3_8_MAX = "qwen/qwen3.8-max",                      // CURRENT (Aug 3, 2026): flagship 3.8 reasoning, 1M ctx, multimodal, reasoning_effort, $2/$6 - PRIMARY for algo/reason
+  QWEN3_8_MAX = "qwen/qwen3.8-max-0902",                 // Pinned snapshot: bare "qwen/qwen3.8-max" left the listing (still answered as -0902, 2026-09-29). CURRENT (Aug 3, 2026): flagship 3.8 reasoning, 1M ctx, multimodal, reasoning_effort, $2/$6 - PRIMARY for algo/reason
   QWEN3_7_MAX = "qwen/qwen3.7-max",                      // Previous flagship (May 21, 2026): 1M ctx, agent-centric, $1.475/$4.425 (fallback)
   QWEN3_MAX_THINKING = "qwen/qwen3-235b-a22b-thinking-2507", // NOTE: Same as QWEN3_235B_THINKING — alias kept for compat
 
@@ -69,24 +69,26 @@ export enum OpenRouterModel {
   MINIMAX_M3 = "minimax/minimax-m3",                   // CURRENT (May 31, 2026): 1M ctx, MSA sparse attention, multimodal, agentic/coding
   MINIMAX_M2_7 = "minimax/minimax-m2.7",               // 2300B/100B MoE, SWE-Pro 56.22%, Multi-SWE #1 (fallback)
   MINIMAX_M2_5 = "minimax/minimax-m2.5",               // SWE-Bench 80.2% (legacy)
-  MINIMAX_M2_1 = "minimax/minimax-m2.1",               // 230B/10B MoE - SWE 72.5% (legacy)
 
   // DeepSeek models - open-weight frontier reasoning/math/CP leader (Apr 2026, MLA/GRPO)
   DEEPSEEK_V4_PRO = "deepseek/deepseek-v4-pro",         // Frontier reasoning/coding/math, top AIME/CodeElo
-  DEEPSEEK_V4_FLASH = "deepseek/deepseek-v4-flash",     // Cheaper/faster V4 (fallback)
+  DEEPSEEK_V4_1_FLASH = "deepseek/deepseek-v4.1-flash", // Sep 10, 2026: 1M ctx, $0.30/$1.20 (first fallback)
+  DEEPSEEK_V4_FLASH = "deepseek/deepseek-v4-flash",     // Cheaper/faster V4 (second fallback)
   DEEPSEEK_R1_0528 = "deepseek/deepseek-r1-0528",       // Reasoning-focused math variant (fallback)
 
   // Zhipu GLM models - agentic / long-horizon coding (open-weights)
-  GLM_5_2 = "z-ai/glm-5.2",                            // CURRENT (Jun 2026): 1M ctx, SWE-Bench Pro 62.1, Terminal-Bench 2.1 81.0, $1.40/$4.40
+  GLM_5_3 = "z-ai/glm-5.3",                            // CURRENT (Aug 18, 2026): 1.3M ctx, $1.40/$4.40 (verified 2026-09-29)
+  GLM_5_2 = "z-ai/glm-5.2",                            // Previous (Jun 2026), fallback: 1M ctx, SWE-Bench Pro 62.1, Terminal-Bench 2.1 81.0, $1.40/$4.40
   GLM_5_1 = "z-ai/glm-5.1",                            // SWE-Bench Pro 58.4, agentic tool-use (fallback)
   GLM_5 = "z-ai/glm-5",                                // GLM-5 base (fallback)
 
-  // StepFun models - efficient reasoning (196B, high AIME/SWE-Verified)
-  STEPFUN_3_7 = "stepfun/step-3.7-flash",              // Latest (May 2026), efficient reasoning
+  // StepFun models
+  STEPFUN_5_PREVIEW = "stepfun/step-5-preview",        // CURRENT (Oct 8, 2026): flagship agentic, 600B/27B-active MoE, 1M ctx, $1/$2.70 (verified 2026-10-14)
+  STEPFUN_3_7 = "stepfun/step-3.7-flash",              // Previous (May 2026), efficient reasoning, 196B (fallback)
   STEPFUN_3_5 = "stepfun/step-3.5-flash",              // Previous flash (fallback)
 
-  // Baidu ERNIE - ONLY 4.5 VL is on OpenRouter (5.1 unavailable). Broad-knowledge juror.
-  ERNIE_4_5_VL = "baidu/ernie-4.5-vl-424b-a47b",       // 424B/47B-active MoE, human-preference/arena strength
+  // Baidu ERNIE: removed 2026-10-14 — baidu/ernie-4.5-vl-424b-a47b expired from OpenRouter on Oct 8
+  // and no Baidu model is listed there any more (ernie_reason tool + ernie juror dropped).
 }
 
 // Fallback map for when providers hit quota limits
@@ -99,9 +101,12 @@ const MODEL_FALLBACKS: Partial<Record<OpenRouterModel, OpenRouterModel>> = {
   [OpenRouterModel.KIMI_K3]: OpenRouterModel.KIMI_K2_7_CODE,     // Fall back to K2.7-Code if K3 fails (also 4x cheaper)
   [OpenRouterModel.KIMI_K2_7_CODE]: OpenRouterModel.KIMI_K2_6,   // Fall back to K2.6 if K2.7-Code fails
   [OpenRouterModel.KIMI_K2_6]: OpenRouterModel.KIMI_K2_THINKING,  // Fall back to k2-thinking if K2.6 fails (k2.5 retired from OpenRouter)
-  [OpenRouterModel.DEEPSEEK_V4_PRO]: OpenRouterModel.DEEPSEEK_V4_FLASH, // Fall back to V4 Flash if Pro is rate-limited
+  [OpenRouterModel.DEEPSEEK_V4_PRO]: OpenRouterModel.DEEPSEEK_V4_1_FLASH, // Fall back to V4.1 Flash if Pro is rate-limited
+  [OpenRouterModel.DEEPSEEK_V4_1_FLASH]: OpenRouterModel.DEEPSEEK_V4_FLASH,
+  [OpenRouterModel.GLM_5_3]: OpenRouterModel.GLM_5_2,           // Fall back to GLM-5.2 if 5.3 fails
   [OpenRouterModel.GLM_5_2]: OpenRouterModel.GLM_5_1,           // Fall back to GLM-5.1 if 5.2 fails
   [OpenRouterModel.GLM_5_1]: OpenRouterModel.GLM_5,              // Fall back to GLM-5 base if 5.1 fails
+  [OpenRouterModel.STEPFUN_5_PREVIEW]: OpenRouterModel.STEPFUN_3_7, // Preview model — fall back to 3.7 flash
   [OpenRouterModel.STEPFUN_3_7]: OpenRouterModel.STEPFUN_3_5, // Fall back to 3.5 flash if 3.7 fails
   [OpenRouterModel.MINIMAX_M3]: OpenRouterModel.MINIMAX_M2_7, // Fall back to M2.7 if M3 fails
 };
@@ -130,7 +135,8 @@ export async function callOpenRouter(
   temperature: number = 0.7,
   maxTokens: number = 8192,
   optionsOrRetry: OpenRouterOptions | boolean = false,
-  timeoutMs?: number
+  timeoutMs?: number,
+  _budgetRetry: boolean = false
 ): Promise<string> {
   // Handle backward compatibility: boolean = _isRetry, object = options
   const _isRetry = typeof optionsOrRetry === 'boolean' ? optionsOrRetry : false;
@@ -187,6 +193,25 @@ export async function callOpenRouter(
 
     const data = await response.json() as any;
     const choice = data.choices?.[0];
+
+    // Budget exhausted ("length"). Reasoning models can spend the whole max_tokens on
+    // thinking and return empty content — the fallback chain below would then return
+    // the half-finished reasoning as if it were the answer (DeepSeek V4 Pro at 8000,
+    // verified 2026-09-29). Retry once with a bigger budget; never pass reasoning off
+    // as an answer.
+    if (choice?.finish_reason === "length") {
+      const answer = choice?.message?.content;
+      if (answer) {
+        return stripFormatting(answer) + `\n\n[truncated: hit max_tokens=${maxTokens}]`;
+      }
+      if (!_budgetRetry) {
+        const bigger = Math.min(Math.max(maxTokens * 3, 32000), 64000);
+        console.error(`[OpenRouter] ${model} spent all ${maxTokens} tokens reasoning, retrying with ${bigger}`);
+        clearTimeout(timeoutId);
+        return callOpenRouter(messages, model, temperature, bigger, optionsOrRetry, timeoutMs, true);
+      }
+      return `[OpenRouter incomplete: ${model} spent the whole ${maxTokens}-token budget on reasoning and returned no answer — lower reasoning_effort or split the problem]`;
+    }
     // Reasoning models (Kimi K2.6, etc.) may return content in different fields:
     // - message.content: standard final answer
     // - message.reasoning_content: native thinking model format (provider-specific)
@@ -1345,7 +1370,7 @@ ${FORMAT_INSTRUCTION}`
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.DEEPSEEK_V4_PRO, 0.3, 8000),
+      () => callOpenRouter(messages, OpenRouterModel.DEEPSEEK_V4_PRO, 0.3, 32000), // V4 Pro reasons long; 8000 was fully eaten by reasoning (2026-09-29)
       reportFn
     );
   }
@@ -1416,7 +1441,7 @@ ${FORMAT_INSTRUCTION}`;
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.DEEPSEEK_V4_PRO, 0.25, 8000),
+      () => callOpenRouter(messages, OpenRouterModel.DEEPSEEK_V4_PRO, 0.25, 32000), // V4 Pro reasons long; 8000 was fully eaten by reasoning (2026-09-29)
       reportFn
     );
   }
@@ -1473,7 +1498,7 @@ ${FORMAT_INSTRUCTION}`
 
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.GLM_5_2, 0.3, 8000),
+      () => callOpenRouter(messages, OpenRouterModel.GLM_5_3, 0.3, 8000),
       reportFn
     );
   }
@@ -1481,7 +1506,8 @@ ${FORMAT_INSTRUCTION}`
 
 /**
  * StepFun Reason Tool
- * Efficient reasoning with StepFun Step 3.7 Flash (196B, high AIME/SWE-Verified).
+ * Reasoning with StepFun Step 5 Preview (Oct 8, 2026: 600B/27B-active MoE, agentic/SWE focus);
+ * falls back to Step 3.7 Flash.
  * Best for: cost-sensitive deep reasoning where quality must stay near-frontier.
  */
 export const stepfunReasonTool = {
@@ -1513,7 +1539,7 @@ export const stepfunReasonTool = {
     const messages = [
       {
         role: "system",
-        content: `You are StepFun Step 3.7 Flash, an efficient reasoning model with strong AIME/SWE-Verified results.
+        content: `You are StepFun Step 5, an efficient frontier reasoning model with strong math and software-engineering results.
 ${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['analytical']}.
 Be efficient: reason tightly, then give a clear conclusion. Flag assumptions explicitly.
 ${args.context ? `Context: ${args.context}` : ''}
@@ -1523,58 +1549,7 @@ ${FORMAT_INSTRUCTION}`
     ];
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.STEPFUN_3_7, 0.3, 8000),
-      reportFn
-    );
-  }
-};
-
-/**
- * ERNIE Reason Tool
- * Broad-knowledge reasoning with Baidu ERNIE 4.5 VL (424B/47B-active MoE).
- * NOTE: ERNIE 5.1 is not on OpenRouter; 4.5 VL is the available model. Strong on
- * human-preference / arena-style questions and broad knowledge.
- */
-export const ernieReasonTool = {
-  name: "ernie_reason",
-  description: "Broad general-knowledge reasoning (Baidu ERNIE). Use for open-ended questions where world knowledge and judgment matter more than formal rigor. Put your PROBLEM in the 'problem' parameter.",
-  parameters: z.object({
-    problem: z.string().describe("The problem to reason about (REQUIRED - put your question here)"),
-    context: z.string().optional().describe("Additional context for the reasoning task"),
-    files: z.array(z.string()).optional().describe("File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE."),
-    approach: z.string()
-      .optional()
-      .default("analytical")
-      .describe("Reasoning approach (e.g., analytical, systematic, step-by-step)")
-  }),
-  execute: async (args: {
-    problem: string;
-    context?: string;
-    files?: string[];
-    approach?: string;
-  }, { log, reportProgress }: any) => {
-    const approachPrompts: Record<string, string> = {
-      analytical: "Analyze across multiple angles, weighing real-world preference and nuance",
-      systematic: "Apply systematic reasoning with clear logic chains",
-      "step-by-step": "Break the problem down systematically, showing every step"
-    };
-    const fileContext = args.files?.length
-      ? `\n\nSOURCE CODE:\n${readFilesIntoContext(args.files)}`
-      : "";
-    const messages = [
-      {
-        role: "system",
-        content: `You are Baidu ERNIE 4.5 VL, a 424B-parameter MoE with broad knowledge and strong human-preference alignment.
-${approachPrompts[args.approach as keyof typeof approachPrompts] || approachPrompts['analytical']}.
-Give a well-rounded, decisive answer. Flag assumptions and uncertainty.
-${args.context ? `Context: ${args.context}` : ''}
-${FORMAT_INSTRUCTION}`
-      },
-      { role: "user", content: args.problem + fileContext }
-    ];
-    const reportFn = reportProgress ?? (async () => {});
-    return await withHeartbeat(
-      () => callOpenRouter(messages, OpenRouterModel.ERNIE_4_5_VL, 0.4, 6000),
+      () => callOpenRouter(messages, OpenRouterModel.STEPFUN_5_PREVIEW, 0.3, 8000),
       reportFn
     );
   }
@@ -1613,8 +1588,7 @@ export function getAllOpenRouterTools() {
     // NEW tools (Jun 2026)
     deepseekReasonTool,  // DeepSeek V4 Pro - frontier reasoning/math (open-weight)
     deepseekAlgoTool,    // DeepSeek V4 Pro - algorithmic code review (top AIME/CodeElo)
-    glmReasonTool,       // Zhipu GLM-5.2 - agentic reasoning (1M ctx, long-horizon coding)
-    stepfunReasonTool,   // StepFun Step 3.7 Flash - efficient reasoning
-    ernieReasonTool,     // Baidu ERNIE 4.5 VL - broad-knowledge reasoning
+    glmReasonTool,       // Zhipu GLM-5.3 - agentic reasoning (1M ctx, long-horizon coding)
+    stepfunReasonTool,   // StepFun Step 5 Preview - agentic reasoning (600B/27B MoE)
   ];
 }

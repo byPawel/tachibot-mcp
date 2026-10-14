@@ -150,7 +150,7 @@ export async function getAllTools(
     tools.push(planCritiqueTool as unknown as RegistryTool);
   }
 
-  // 5) OpenRouter (Qwen/QwQ/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE) + planner
+  // 5) OpenRouter (Qwen/QwQ/Kimi/MiniMax/DeepSeek/GLM/StepFun) + planner
   //    tools — gated on OpenRouter.
   if (isOpenRouterAvailable()) {
     const {
@@ -169,7 +169,6 @@ export async function getAllTools(
       deepseekAlgoTool,
       glmReasonTool,
       stepfunReasonTool,
-      ernieReasonTool,
     } = await import("./openrouter-tools.js");
 
     tools.push(
@@ -188,8 +187,7 @@ export async function getAllTools(
         deepseekReasonTool, // DeepSeek V4 Pro — frontier reasoning/math (open-weight)
         deepseekAlgoTool, // DeepSeek V4 Pro — algorithmic code review (top AIME/CodeElo)
         glmReasonTool, // Zhipu GLM-5.1 — agentic reasoning (SWE-Bench Pro leader)
-        stepfunReasonTool, // StepFun Step 3.7 Flash — efficient reasoning
-        ernieReasonTool, // Baidu ERNIE 4.5 VL — broad-knowledge reasoning
+        stepfunReasonTool, // StepFun Step 5 Preview — efficient reasoning
       ] as unknown as RegistryTool[]),
     );
 
@@ -213,6 +211,10 @@ export async function getAllTools(
     // blog_writer — researched long-form via Kimi — gated on OpenRouter.
     const { blogWriterTool } = await import("./blog-writer-tool.js");
     tools.push(blogWriterTool as unknown as RegistryTool);
+
+    // jev_decide — typed decisions (TypeSafe Jev, System One endpoint) — gated on OpenRouter.
+    const { jevDecideTool } = await import("./jev-tool.js");
+    tools.push(jevDecideTool as unknown as RegistryTool);
   }
 
   // 6) Local-model tools (Ollama / LM Studio / llama.cpp / vLLM). Registered

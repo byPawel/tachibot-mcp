@@ -114,29 +114,22 @@ export const JUROR_REGISTRY: Record<string, {
     ], OpenRouterModel.DEEPSEEK_V4_PRO, 0.3, JUROR_MAX_TOKENS),
   },
   glm: {
-    label: "GLM-5.2 (Agentic)",
+    label: "GLM-5.3 (Agentic)",
     role: "Reason as an agent: plan, anticipate failure modes, decide. Strong on tool-use and SWE.",
     call: async (q) => callOpenRouter([
-      { role: "system", content: `You are Zhipu GLM-5.2, a frontier open-weights agentic model (1M ctx, top long-horizon coding). Plan, reason through tool-use/steps, then give a decisive verdict. ${FORMAT_INSTRUCTION}` },
+      { role: "system", content: `You are Zhipu GLM-5.3, a frontier open-weights agentic model (1M ctx, top long-horizon coding). Plan, reason through tool-use/steps, then give a decisive verdict. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.GLM_5_2, 0.3, JUROR_MAX_TOKENS),
+    ], OpenRouterModel.GLM_5_3, 0.3, JUROR_MAX_TOKENS),
   },
   stepfun: {
-    label: "StepFun 3.7 (Efficient Reasoning)",
+    label: "StepFun 5 Preview (Efficient Reasoning)",
     role: "Reason efficiently and tightly. Strong on math/AIME-style problems at low cost.",
     call: async (q) => callOpenRouter([
-      { role: "system", content: `You are StepFun Step 3.7 Flash, an efficient reasoning model. Reason tightly, then conclude. ${FORMAT_INSTRUCTION}` },
+      { role: "system", content: `You are StepFun Step 5, an efficient frontier reasoning model. Reason tightly, then conclude. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], OpenRouterModel.STEPFUN_3_7, 0.3, JUROR_MAX_TOKENS),
+    ], OpenRouterModel.STEPFUN_5_PREVIEW, 0.3, JUROR_MAX_TOKENS),
   },
-  ernie: {
-    label: "ERNIE 4.5 VL (Broad Knowledge)",
-    role: "Bring broad knowledge and human-preference judgment. Uncorrelated with US labs.",
-    call: async (q) => callOpenRouter([
-      { role: "system", content: `You are Baidu ERNIE 4.5 VL, a broad-knowledge MoE with strong human-preference alignment. Give a well-rounded, decisive judgment. ${FORMAT_INSTRUCTION}` },
-      { role: "user", content: q }
-    ], OpenRouterModel.ERNIE_4_5_VL, 0.4, JUROR_MAX_TOKENS),
-  },
+
   // Local open-weights juror — free, offline, ZERO token cost. Its judgment is
   // uncorrelated with the frontier vendors above, which is exactly what reduces
   // shared-bias blind spots (arXiv:2404.18796). Runs whatever LOCAL_LLM_MODEL
@@ -171,7 +164,7 @@ export const juryTool = defineModelTool({
   parameters: z.object({
     question: z.string().describe("The question or problem for the jury to evaluate (REQUIRED)"),
     jurors: z.string().optional()
-      .describe("Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, ernie, local (free offline — uses LOCAL_LLM_MODEL via Ollama/LM Studio; 'hermes' accepted as legacy alias)"),
+      .describe("Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, local (free offline — uses LOCAL_LLM_MODEL via Ollama/LM Studio; 'hermes' accepted as legacy alias)"),
     mode: z.enum(["synthesize", "evaluate", "rank", "resolve"])
       .optional()
       .default("synthesize")

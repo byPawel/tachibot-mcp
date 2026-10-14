@@ -11,7 +11,7 @@ import * as readline from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 const KEYS = [
-  { name: "OpenRouter", envVar: "OPENROUTER_API_KEY", unlocks: "DeepSeek/GLM/Kimi/Qwen/MiniMax/StepFun/ERNIE + planner (~30 tools)" },
+  { name: "OpenRouter", envVar: "OPENROUTER_API_KEY", unlocks: "DeepSeek/GLM/Kimi/Qwen/MiniMax/StepFun + planner (~30 tools)" },
   { name: "Perplexity", envVar: "PERPLEXITY_API_KEY", unlocks: "web research tools" },
   { name: "Gemini / Google", envVar: "GOOGLE_API_KEY", unlocks: "Gemini tools + jury judge + diff_review/plan_critique" },
   { name: "OpenAI", envVar: "OPENAI_API_KEY", unlocks: "OpenAI (GPT) tools + spec_writer" },

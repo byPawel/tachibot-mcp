@@ -231,7 +231,12 @@ export async function callOpenAI(
   const modelFallbacks: Record<string, string[]> = {
     // gpt-6-astra rolled out to a limited set of orgs first (Sep 2026): an org without
     // access gets 403/404, so degrade to the previous flagship, then terra.
-    "gpt-6-astra": ["gpt-5.6-sol", "gpt-5.6-terra"],
+    "gpt-6-astra": ["gpt-6.1-sol", "gpt-6-sol", "gpt-5.6-terra"],
+    // gpt-6.1-sol (Sep 29, 2026) replaced gpt-6-sol at the same $2/$10
+    "gpt-6.1-sol": ["gpt-6-sol", "gpt-5.6-terra"],
+    // GPT-6 sol/luna (Sep 14, 2026) fall back to their 5.6 namesakes, then terra
+    "gpt-6-sol": ["gpt-5.6-sol", "gpt-5.6-terra"],
+    "gpt-6-luna": ["gpt-5.6-luna", "gpt-5.6-terra"],
     // gpt-5.6-sol is org-verification gated (403 "insufficient permissions" until verified);
     // terra matches gpt-5.5 quality at half price, so it's the safe runtime fallback.
     "gpt-5.6-sol": ["gpt-5.6-terra", "gpt-5.5"],
@@ -565,9 +570,9 @@ export const openAIBrainstormTool = defineModelTool({
     constraints: z.string().optional().describe("Technical constraints: language, framework, performance requirements, team size"),
     ...filesField,
     quantity: z.number().optional().describe("Number of approaches to generate (default: 5)"),
-    model: z.enum(["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
+    model: z.enum(["gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
       .optional()
-      .describe("Model to use - gpt-6-astra (default, flagship), gpt-5.6-sol (previous flagship), gpt-5.6-terra (balanced), gpt-5.6-luna (fast/cheap)"),
+      .describe("Model to use - gpt-6-astra (default, flagship), gpt-6.1-sol (mid tier), gpt-6-sol (previous mid tier), gpt-6-luna (fast/cheap), gpt-5.6-sol/terra/luna (previous generation)"),
     reasoning_effort: z.enum(["none", "low", "medium", "high", "xhigh", "max"])
       .optional()
       .describe("Reasoning effort level - must be one of: none, low, medium, high, xhigh, max (gpt-6-astra runs none as low)"),
@@ -742,7 +747,7 @@ ${FORMAT_INSTRUCTION}`
 
 /**
  * Call OpenAI Responses API with web_search tool enabled
- * Uses GPT-5.2 with real-time web search capability
+ * Uses GPT-6.1 Sol with real-time web search capability
  */
 async function callOpenAIWithSearch(
   query: string,
@@ -778,11 +783,12 @@ async function callOpenAIWithSearch(
   const requestBody = {
     // Web search bills a FLAT $10/1k calls regardless of model, so the model is the only
     // cost lever here — and this was set to the $5/$30 flagship for what is mostly grounded
-    // lookup. Terra supports web_search identically (verified against OpenAI model docs,
-    // Aug 12 2026) at $2/$12, and keeps the long-context recall that luna trades away —
-    // which matters because search results are large inputs. Effort stays at the API
-    // default (medium) so multi-step queries still get agentic search.
-    model: OPENAI_MODELS.TERRA,
+    // lookup. gpt-6.1-sol ($2/$10) is cheaper than terra ($2/$12) and keeps the long-context
+    // recall that luna trades away — which matters because search results are large inputs.
+    // Verified 2026-10-14: same "what did Google release Oct 13" query — terra answered with
+    // a minor Ads update, 6.1-sol found Gemini 4 Argon. Effort stays at the API default
+    // (medium) so multi-step queries still get agentic search.
+    model: OPENAI_MODELS.SOL,
     input: [
       {
         role: "system",

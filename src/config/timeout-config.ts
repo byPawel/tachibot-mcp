@@ -19,6 +19,7 @@ export interface TimeoutConfig {
   gemini: number;
   openrouter: number;
   openrouterThinking: number;
+  search: number;
   progressThreshold: number;
 }
 
@@ -48,6 +49,11 @@ export function getTimeoutConfig(): TimeoutConfig {
     openrouter: parseInt(process.env.TACHI_OPENROUTER_TIMEOUT || '180000'),
     openrouterThinking: parseInt(process.env.TACHI_OPENROUTER_THINKING_TIMEOUT || '600000'),
 
+    // Agentic live search (grok_search/_lite): multi-hop web+X search runs routinely
+    // pass 60s. Callers must also heartbeat, or the MCP client's own 60s request
+    // timeout kills the call first.
+    search: parseInt(process.env.TACHI_SEARCH_TIMEOUT || '300000'),         // 5 minutes
+
     // Progress threshold (30 seconds)
     progressThreshold: parseInt(process.env.TACHI_PROGRESS_THRESHOLD || '30000'),
   };
@@ -71,7 +77,7 @@ export function getOpenRouterModelTimeout(modelId: string): number {
   if (
     id.includes('thinking') || id.includes('reasoning') ||
     id.includes('kimi') || id.includes('deepseek') || id.includes('glm') ||
-    id.includes('stepfun') || id.includes('ernie') ||
+    id.includes('stepfun') ||
     id.includes('qwen3.8') || id.includes('qwen3.7-max')
   ) {
     return config.openrouterThinking;

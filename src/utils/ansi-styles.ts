@@ -91,6 +91,8 @@ const nebulaTheme: Theme = {
     // OpenAI - Emerald green (brand color)
     openai: { bg: 'bgGreen', fg: 'black', label: ' openai ' },
     'gpt-6-astra': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-6-astra ' },
+    'gpt-6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-6-sol ' },
+    'gpt-6-luna': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-6-luna ' },
     'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.6-sol ' },
     'gpt-5.6-terra': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-terra ' },
     'gpt-5.6-luna': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-luna ' },
@@ -195,6 +197,8 @@ const cyberpunkTheme: Theme = {
     // OpenAI - Electric green
     openai: { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ OPENAI ' },
     'gpt-6-astra': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-6-ASTRA ' },
+    'gpt-6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-6-SOL ' },
+    'gpt-6-luna': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-6-LUNA ' },
     'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-SOL ' },
     'gpt-5.6-terra': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-TERRA ' },
     'gpt-5.6-luna': { bg: 'bgGreenBright', fg: 'black', label: ' ⚡ GPT-5.6-LUNA ' },
@@ -299,6 +303,8 @@ const minimalTheme: Theme = {
     // All badges are simple, dark bg with white text
     openai: { bg: 'bgBlack', fg: 'green', label: ' openai ' },
     'gpt-6-astra': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-6-astra ' },
+    'gpt-6-sol': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-6-sol ' },
+    'gpt-6-luna': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-6-luna ' },
     'gpt-5.6-sol': { bg: 'bgBlack', fg: 'greenBright', label: ' gpt-5.6-sol ' },
     'gpt-5.6-terra': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.6-terra ' },
     'gpt-5.6-luna': { bg: 'bgBlack', fg: 'green', label: ' gpt-5.6-luna ' },
@@ -396,6 +402,8 @@ const oceanTheme: Theme = {
   modelBadges: {
     openai: { bg: 'bgGreen', fg: 'black', label: ' openai ' },
     'gpt-6-astra': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-6-astra ' },
+    'gpt-6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-6-sol ' },
+    'gpt-6-luna': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-6-luna ' },
     'gpt-5.6-sol': { bg: 'bgGreenBright', fg: 'black', label: ' gpt-5.6-sol ' },
     'gpt-5.6-terra': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-terra ' },
     'gpt-5.6-luna': { bg: 'bgGreen', fg: 'black', label: ' gpt-5.6-luna ' },

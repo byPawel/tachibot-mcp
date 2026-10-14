@@ -1,3 +1,5 @@
+import { getGeminiProModel } from '../config/model-constants.js';
+
 export interface CommitGuardianOptions {
   model?: string;
   maxTokens?: number;
@@ -37,7 +39,7 @@ export interface Issue {
 }
 
 export class CommitGuardian {
-  private defaultModel = 'gemini-3.1-pro-preview';
+  private defaultModel = getGeminiProModel();
   private defaultMaxTokens = 5000;
   
   private securityPatterns = [

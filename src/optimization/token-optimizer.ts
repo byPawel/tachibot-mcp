@@ -5,6 +5,7 @@
 
 import { LRUCache } from 'lru-cache';
 import crypto from 'crypto';
+import { getGeminiProModel } from '../config/model-constants.js';
 
 export interface TokenRequest {
   prompt: string;
@@ -54,7 +55,7 @@ export class TokenOptimizer {
     batchWindow: 100, // ms to wait for batch
     maxBatchSize: 10, // max requests per batch
     compressionThreshold: 2000, // characters
-    compressionModel: 'gemini-3.1-pro-preview', // Gemini 3 Pro for quality compression
+    compressionModel: getGeminiProModel(), // Active Gemini Pro model for quality compression
   };
 
   // Metrics

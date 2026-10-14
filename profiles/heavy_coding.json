@@ -1,5 +1,5 @@
 {
-  "description": "Heavy coding with all reasoning & code tools (59 tools)",
+  "description": "Heavy coding with all reasoning & code tools (60 tools)",
   "tools": {
     "think": true,
     "focus": true,
@@ -46,7 +46,6 @@
     "deepseek_algo": true,
     "glm_reason": true,
     "stepfun_reason": true,
-    "ernie_reason": false,
     "local_query": true,
     "workflow": true,
     "list_workflows": true,
@@ -67,6 +66,7 @@
     "blog_writer": false,
     "security_review": true,
     "diff_review": true,
-    "plan_critique": true
+    "plan_critique": true,
+    "jev_decide": true
   }
 }

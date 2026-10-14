@@ -92,7 +92,7 @@ export const PROVIDER_GROUPS: ProviderGroup[] = [
     label: "OpenRouter",
     envHint: "OPENROUTER_API_KEY",
     available: hasOpenRouterApiKey,
-    note: "unlocks Qwen / Kimi / MiniMax / DeepSeek / GLM / StepFun / ERNIE + planner",
+    note: "unlocks Qwen / Kimi / MiniMax / DeepSeek / GLM / StepFun + planner",
     tools: [
       "qwen_coder",
       "qwen_algo",
@@ -109,13 +109,13 @@ export const PROVIDER_GROUPS: ProviderGroup[] = [
       "deepseek_algo",
       "glm_reason",
       "stepfun_reason",
-      "ernie_reason",
       "planner_maker",
       "planner_runner",
       "list_plans",
       "testgen",
       "security_review",
       "blog_writer",
+      "jev_decide",
     ],
   },
   {

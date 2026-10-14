@@ -8,6 +8,7 @@ import OpenAI from 'openai';
 import { config } from 'dotenv';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { getGeminiProModel } from '../config/model-constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,7 +79,7 @@ const PROVIDER_CONFIGS = {
   gemini: {
     base: 'https://generativelanguage.googleapis.com/v1beta/',
     key: process.env.GOOGLE_API_KEY,
-    models: ['gemini-3.1-pro-preview']
+    models: [getGeminiProModel(), 'gemini-3.1-pro-preview']
   },
   openrouter: {
     base: 'https://openrouter.ai/api/v1',

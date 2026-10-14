@@ -80,9 +80,9 @@ describe("tool-mapper OpenAI parity with the real MCP tools", () => {
     const result = await executeWorkflowTool("openai_explain", "idempotency keys");
 
     // The bug: this was gpt-5.6-luna while the MCP tool runs sol
-    expect(captured.body.model).toBe("gpt-5.6-sol");
+    expect(captured.body.model).toBe("gpt-6.1-sol");
     expect(messageOf(captured.body, "user")).toContain("Explain: idempotency keys");
-    expect(result.modelUsed).toBe("gpt-5.6-sol");
+    expect(result.modelUsed).toBe("gpt-6.1-sol");
   });
 
   it("openai_reason runs the flagship at xhigh effort like the MCP tool", async () => {

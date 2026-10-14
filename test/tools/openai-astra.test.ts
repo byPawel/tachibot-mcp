@@ -75,7 +75,8 @@ describe("GPT-6 Astra", () => {
   test("is the default OpenAI model, with sol kept as an explicit tier", () => {
     expect(OPENAI_MODELS.ASTRA).toBe("gpt-6-astra");
     expect(OPENAI_MODELS.DEFAULT).toBe("gpt-6-astra");
-    expect(OPENAI_MODELS.SOL).toBe("gpt-5.6-sol");
+    expect(OPENAI_MODELS.SOL).toBe("gpt-6.1-sol");
+    expect(OPENAI_MODELS.SOL_6_0).toBe("gpt-6-sol");
   });
 
   test("uses the Responses API with reasoning effort and no temperature", async () => {
@@ -109,7 +110,7 @@ describe("GPT-6 Astra", () => {
     expect(calls[0].body.reasoning).toEqual({ effort: "none" });
   });
 
-  test("falls back to gpt-5.6-sol when Astra is unavailable to the org", async () => {
+  test("falls back to gpt-6.1-sol when Astra is unavailable to the org", async () => {
     mockFetch((body) =>
       body.model === "gpt-6-astra"
         ? { status: 403, json: { error: { message: "insufficient permissions for this model" } } }
@@ -119,8 +120,8 @@ describe("GPT-6 Astra", () => {
     const result = await callOpenAI(messages, "gpt-6-astra", 0.7, 8000, "none", false, true);
 
     expect(result).toBe("a real answer");
-    expect(calls.map((c) => c.body.model)).toEqual(["gpt-6-astra", "gpt-5.6-sol"]);
-    // Effort is normalised per attempt: sol receives the caller's original "none"
-    expect(calls[1].body.reasoning).toEqual({ effort: "none" });
+    expect(calls.map((c) => c.body.model)).toEqual(["gpt-6-astra", "gpt-6.1-sol"]);
+    // Effort is normalised per attempt: gpt-6.1-sol shares Astra's effort floor, so "none" runs as "low"
+    expect(calls[1].body.reasoning).toEqual({ effort: "low" });
   });
 });

@@ -113,6 +113,13 @@ export async function callGemini(
     await sleep(delay);
   }
 
+  // Gemini 4 Argon (Oct 13, 2026 GA) -> the previous Pro default, on ANY failure: a key/region
+  // without Argon access gets a non-retryable 403/404 that the Flash stage below would skip.
+  if (isProviderFailure(last) && model === GEMINI_MODELS.GEMINI_4_ARGON) {
+    console.error(`🔻 [Gemini] ${model} failed, falling back to ${GEMINI_MODELS.GEMINI_3_1_PRO}`);
+    return callGemini(prompt, GEMINI_MODELS.GEMINI_3_1_PRO, systemPrompt, temperature, validationContext, maxTokens);
+  }
+
   // Same-provider degrade: Pro -> Flash. Skipped when Flash was already the request.
   if (isProviderFailure(last) && GEMINI_RETRYABLE.test(last) && model !== GEMINI_MODELS.FLASH) {
     console.error(`🔻 [Gemini] ${model} exhausted, degrading to ${GEMINI_MODELS.FLASH}`);
@@ -133,6 +140,8 @@ async function callGeminiAttempt(
   validationContext: ValidationContext = 'llm-orchestration',
   maxTokens: number = 18000
 ): Promise<string> {
+  // Argon caps output at 32K (3.x Pro/Flash: 65K) — clamp rather than 400
+  if (model === GEMINI_MODELS.GEMINI_4_ARGON) maxTokens = Math.min(maxTokens, 32768);
   // Try OpenRouter gateway first if enabled
   if (isGatewayEnabled()) {
     const messages = [

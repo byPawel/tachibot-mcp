@@ -1,3 +1,5 @@
+import { getGeminiProModel } from '../config/model-constants.js';
+
 export interface DocumentationOptions {
   model?: string;
   maxTokens?: number;
@@ -48,7 +50,7 @@ export interface InlineComment {
 }
 
 export class DocumentationWriter {
-  private defaultModel = 'gemini-3.1-pro-preview';
+  private defaultModel = getGeminiProModel();
   private defaultMaxTokens = 3000;
   private defaultStyle: DocumentationOptions['style'] = 'narrative';
 

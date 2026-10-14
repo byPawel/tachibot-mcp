@@ -46,7 +46,6 @@
     "deepseek_algo": true,
     "glm_reason": true,
     "stepfun_reason": true,
-    "ernie_reason": true,
     "local_query": true,
     "workflow": true,
     "list_workflows": true,
@@ -67,6 +66,7 @@
     "blog_writer": true,
     "security_review": true,
     "diff_review": true,
-    "plan_critique": true
+    "plan_critique": true,
+    "jev_decide": true
   }
 }

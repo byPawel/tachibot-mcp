@@ -89,7 +89,7 @@ describe("grok_search wiring guard (no network, no real key needed)", () => {
     // Two places pin the search model: CURRENT_MODELS.grok.search and the
     // GrokModel enum member grok-enhanced.ts hardcodes. If someone bumps one
     // without the other, the live probe below may test the wrong model.
-    expect(CURRENT_MODELS.grok.search).toBe(GrokModel.GROK_4_6);
+    expect(CURRENT_MODELS.grok.search).toBe(GrokModel.GROK_4_7);
   });
 
   it("sends the pinned search model to /v1/responses with web_search declared", async () => {

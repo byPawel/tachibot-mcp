@@ -36,7 +36,12 @@ export enum GrokModel {
   // 2026-08-15 with tools:[web_search,x_search] asking today's date: grok-4.3
   // returned 2 web_search_call entries + 1 citation in 10.4s; grok-4.6 returned 2
   // calls + 2 citations in 36.4s. grok-4.5 remains the one that does NOT ground.
-  GROK_4_6 = "grok-4.6",                                      // Latest: 500K ctx, $2/$6, grounded search
+  // Grok 4.7 (Sep 21, 2026) - CURRENT FLAGSHIP. 500K ctx, $2/$6 (rates double above 200K prompt tokens), reasoning_effort. Verified 2026-09-29:
+  // chat 200 served "grok-4.7"; on /v1/responses search it ran 5 search calls but returned 1 citation
+  // vs 4.6's 18 for the same query. Re-verified 2026-10-14 over 3 queries: 4.7 now returns 19/79/2
+  // unique citations vs 4.6's 2/4/2 and found newer facts — so grok_search moved to 4.7.
+  GROK_4_7 = "grok-4.7",                                      // Flagship: reasoning/code/debug/architect + grounded search
+  GROK_4_6 = "grok-4.6",                                      // Previous: 500K ctx, $2/$6 (search model until 2026-10-14)
 
   // Grok 4.5 (Jul 8, 2026) - previous flagship ("Opus-class")
   // 500K ctx (smaller than 4.3's 1M), $2/$6, configurable reasoning effort.
@@ -49,9 +54,9 @@ export enum GrokModel {
   GROK_BUILD = "grok-build-0.1",                              // Coding specialist (May 29, 2026): 256k ctx
 
   // Grok 4.20 keys (Mar 2026) - DEPRECATED, retained for back-compat → now resolve to the current flagship
-  GROK_4_20_REASONING = "grok-4.5",           // [deprecated] → grok-4.5
-  GROK_4_20_NON_REASONING = "grok-4.5",       // [deprecated] → grok-4.5
-  GROK_4_20_MULTI_AGENT = "grok-4.5",         // [deprecated] → grok-4.5 (architect passes high reasoning.effort)
+  GROK_4_20_REASONING = "grok-4.7",           // [deprecated] → grok-4.7
+  GROK_4_20_NON_REASONING = "grok-4.7",       // [deprecated] → grok-4.7
+  GROK_4_20_MULTI_AGENT = "grok-4.7",         // [deprecated] → grok-4.7 (architect passes high reasoning.effort)
 
   // Grok 4.1 fast models (Nov 2025) - BEST VALUE (10x cheaper)
   GROK_4_1_FAST_REASONING = "grok-4-1-fast-reasoning",     // Fast reasoning: 2M context, $0.20/$0.50
@@ -76,7 +81,7 @@ export enum GrokModel {
  */
 export async function callGrok(
   messages: Array<{ role: string; content: string }>,
-  model: GrokModel = GrokModel.GROK_4_5,
+  model: GrokModel = GrokModel.GROK_4_7,
   temperature: number = 0.7,
   maxTokens: number = 16384,  // Increased default for comprehensive responses
   forceVisibleOutput: boolean = true,
@@ -111,7 +116,7 @@ export async function callGrok(
 
   // Grok 4.x reasoning can take 60-90s; 4.3/4.5 flagship and multi-agent can take longer
   const isReasoning = model.includes('reasoning') || model.includes('multi-agent');
-  const isFlagship = model.includes('4.20') || model.startsWith('grok-4.3') || model.startsWith('grok-4.5');
+  const isFlagship = model.includes('4.20') || /^grok-4\.\d/.test(model); // 4.3/4.5/4.6/4.7…
   const timeoutMs = isFlagship ? 180000 : (isReasoning ? 120000 : 60000);
 
   try {
@@ -129,7 +134,7 @@ export async function callGrok(
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     // grok-4.3/4.5 flagships and 4.20 multi-agent all accept reasoning.effort
-    const supportsReasoningEffort = model.includes('multi-agent') || model.startsWith('grok-4.3') || model.startsWith('grok-4.5');
+    const supportsReasoningEffort = model.includes('multi-agent') || /^grok-4\.\d/.test(model); // 4.3+ all accept it
     const requestBody: any = {
       model,
       messages: validatedMessages,
@@ -182,12 +187,12 @@ export async function callGrok(
     return content || "No response from Grok";
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return `[Grok timeout: ${model} exceeded ${isReasoning ? '120' : '60'}s limit]`;
+      return `[Grok timeout: ${model} exceeded ${timeoutMs / 1000}s limit]`;
     }
     const errMsg = error instanceof Error ? error.message : String(error);
-    // grok-4.5's rollout is region-staged (EU lands mid-July 2026) — fall back to grok-4.3
-    if (model.startsWith('grok-4.5') && errMsg.includes('not available in your region')) {
-      console.error(`[Grok] grok-4.5 region-blocked, falling back to grok-4.3`);
+    // 4.5+ flagship rollouts are region-staged — fall back to grok-4.3
+    if (/^grok-4\.[5-9]/.test(model) && errMsg.includes('not available in your region')) {
+      console.error(`[Grok] ${model} region-blocked, falling back to grok-4.3`);
       return callGrok(validatedMessages, GrokModel.GROK_4_3, temperature, maxTokens, forceVisibleOutput, validationContext, reasoningEffort);
     }
     return `[Grok error: ${errMsg}]`;

@@ -25,13 +25,14 @@ export const OPENAI_MODELS = {
   DEFAULT: "gpt-6-astra",           // Flagship: computer use, coding, science. $10/$50 (2x sol input)
   ASTRA: "gpt-6-astra",             // Explicit alias
 
-  // GPT-5.6 tiers (Jul 9, 2026)
-  SOL: "gpt-5.6-sol",               // Previous flagship — Astra's first runtime fallback
+  // GPT-6 mid/budget tiers (Sep 2026). No gpt-6-terra exists — TERRA stays on 5.6.
+  SOL: "gpt-6.1-sol",               // GPT-6.1 mid tier (Sep 29, 2026 DevDay): $2/$10, replaced gpt-6-sol. Astra's first fallback
+  SOL_6_0: "gpt-6-sol",             // Previous mid tier (Sep 14, 2026): $2/$10 — 6.1-sol's fallback
   TERRA: "gpt-5.6-terra",           // Balanced: gpt-5.5-level at $2/$12 (Jul 30, 2026 cut: -20%)
-  LUNA: "gpt-5.6-luna",             // Fast/cheap: $0.20/$1.20 after the Jul 30, 2026 -80% cut.
+  LUNA: "gpt-6-luna",               // GPT-6 budget tier (Sep 14, 2026): $0.10/$0.50 (was gpt-5.6-luna $0.20/$1.20).
                                     // Now ~9x cheaper than terra, not 2.5x — worth routing to it
                                     // far more aggressively. (Weak long-context recall: avoid huge inputs.)
-  MINI: "gpt-5.6-luna",             // "mini" tier successor (was gpt-5.4-mini)
+  MINI: "gpt-6-luna",             // "mini" tier successor (was gpt-5.4-mini)
   PRO: "gpt-6-astra",               // No pro API model — Astra + reasoning.effort xhigh/max (was gpt-5.5-pro $30/$180)
 
   // GPT-5.5 (Apr 2026) - fallback
@@ -41,14 +42,17 @@ export const OPENAI_MODELS = {
   THINKING: "gpt-6-astra",          // "Thinking" = flagship with high reasoning effort
   FULL: "gpt-6-astra",              // Map old FULL to DEFAULT
   CODEX: "gpt-5.6-terra",           // Coding workhorse tier
-  CODEX_MINI: "gpt-5.6-luna",       // Cheapest tier
+  CODEX_MINI: "gpt-6-luna",       // Cheapest tier
   CODEX_MAX: "gpt-6-astra",         // Map old codex-max to flagship (use high effort)
-  INSTANT: "gpt-5.6-luna",          // Fast tier
+  INSTANT: "gpt-6-luna",          // Fast tier
 } as const;
 
 // OpenRouter model ID mapping (add prefix when using OpenRouter gateway)
 export const OPENROUTER_PREFIX_MAP: Record<string, string> = {
   "gpt-6-astra": "openai/",
+  "gpt-6.1-sol": "openai/",
+  "gpt-6-sol": "openai/",
+  "gpt-6-luna": "openai/",
   "gpt-5.6-sol": "openai/",
   "gpt-5.6-terra": "openai/",
   "gpt-5.6-luna": "openai/",
@@ -76,18 +80,30 @@ export const OPENAI_REASONING = {
 // =============================================================================
 // GEMINI MODELS (Google)
 // =============================================================================
+// Gemini 4 Argon GA'd Oct 13, 2026 — the new PRO/reasoning/judge default (verified live 2026-10-14:
+// chat + google_search grounding). $2/$10 intro through Nov 30, 2026, then $4/$20 (thinking tokens bill
+// as output). 1M ctx in, but only 32K out (3.x Pro/Flash allow 65K) — no current caller asks for >18K.
+// Swap back without a code change: TACHI_GEMINI_PRO_MODEL=gemini-3.1-pro-preview (read lazily, so the
+// value from .env is honored even though this module loads before dotenv runs).
 // Gemini 3.7 Flash GA'd Aug 13, 2026 — the new workhorse/FLASH/search tier, 1M ctx,
 // $0.75/$3.75 intro pricing through Dec 31, 2026 (then $1.50/$7.50). 3.6 Flash
 // (Jul 21, 2026, $1.50/$7.50) stays live as the fallback. Gemini 3.5 Flash-Lite
 // shipped the same day ($0.30/$2.50) and replaces 3.1-flash-lite as the cheap tier.
 // Gemini 3.5 Pro STILL has not shipped (missed its June window; "testing with partners",
 // Gemini 4 pre-training underway — reverified via ai.google.dev Aug 29, 2026), so the
-// reasoning DEFAULT stays on gemini-3.1-pro-preview.
+// reasoning default stayed on gemini-3.1-pro-preview until Argon (it is Argon's fallback now).
+export const GEMINI_PRO_DEFAULT = "gemini-4-argon";
+/** Active Gemini Pro-tier model: TACHI_GEMINI_PRO_MODEL override, else Gemini 4 Argon. */
+export function getGeminiProModel(): string {
+  return process.env.TACHI_GEMINI_PRO_MODEL?.trim() || GEMINI_PRO_DEFAULT;
+}
 export const GEMINI_MODELS = {
-  // Gemini 3.1 Pro - reasoning default (3.0 Pro retired Mar 9, 2026; no 3.5 Pro as of Aug 29, 2026)
-  GEMINI_3_PRO: "gemini-3.1-pro-preview",     // Default: top reasoning model available
-  GEMINI_3_1_PRO: "gemini-3.1-pro-preview",   // Enhanced reasoning, 1M context
-  GEMINI_3_7_FLASH: "gemini-3.7-flash",        // GA Aug 13, 2026 - CURRENT flash/search tier, 1M ctx, $0.75/$3.75 intro
+  // Pro tier — getters so the env override is read at call time, not at import time
+  get GEMINI_3_PRO(): string { return getGeminiProModel(); }, // Legacy key name: "the default Pro model"
+  GEMINI_4_ARGON: "gemini-4-argon",            // Oct 13, 2026 GA: frontier reasoning, 1M in / 32K out, $2/$10 → $4/$20 Dec 1
+  GEMINI_3_1_PRO: "gemini-3.1-pro-preview",   // Previous Pro default (Mar 2026), 65K out — Argon's fallback
+  GEMINI_3_8_FLASH: "gemini-3.8-flash",        // Sep 2, 2026 - CURRENT flash/search tier, 1M ctx, $0.75/$3.75 (verified 2026-09-29)
+  GEMINI_3_7_FLASH: "gemini-3.7-flash",        // GA Aug 13, 2026 - previous flash tier (fallback), $0.75/$3.75 intro
   GEMINI_3_6_FLASH: "gemini-3.6-flash",        // GA Jul 21, 2026 - previous flash tier (fallback), $1.50/$7.50
   GEMINI_3_5_FLASH: "gemini-3.5-flash",        // GA May 19, 2026 - previous flash tier (fallback)
   GEMINI_3_FLASH: "gemini-3-flash-preview",    // Legacy fast frontier (kept for model-router)
@@ -95,8 +111,8 @@ export const GEMINI_MODELS = {
   GEMINI_3_1_FLASH_LITE: "gemini-3.1-flash-lite", // Mar 3, 2026 - previous cheap tier (legacy)
 
   // Aliases
-  PRO: "gemini-3.1-pro-preview",
-  FLASH: "gemini-3.7-flash",                   // Bumped: 3.6-flash -> 3.7-flash (Aug 13, 2026 GA)
+  get PRO(): string { return getGeminiProModel(); },
+  FLASH: "gemini-3.8-flash",                   // Bumped: 3.7-flash -> 3.8-flash (Sep 2, 2026)
   FLASH_LITE: "gemini-3.5-flash-lite",         // Bumped: 3.1-flash-lite -> 3.5-flash-lite (Jul 21, 2026)
 } as const;
 
@@ -109,14 +125,18 @@ export const PERPLEXITY_MODELS = {
 
 // Grok Models (xAI) - Re-verified 2026-08-14 against GET /v1/models: Grok 4.6 has shipped and is
 // the current latest. Catalog: grok-4.20-0309-* (x3), grok-4.3, grok-4.5, grok-4.6, grok-build-0.1,
-// plus grok-imagine image/video. grok-4.7 and grok-5 do NOT exist yet.
+// plus grok-imagine image/video. Re-checked 2026-09-29: grok-4.7 is live (launched Sep 21); grok-5 does not exist.
 // Also verified absent: grok-code-fast-2 (unannounced) and grok-build-0.2 (docs still list 0.1 only).
 export const GROK_MODELS = {
   // Grok 4.6 (Aug 2026) - CURRENT LATEST — verified against /v1/models on 2026-08-14.
   // 500K ctx, $2/$6 (same as 4.5), cached input $0.50/M (vs 4.5's $0.30/M). No `-latest` alias yet.
   // CRITICAL for search: 4.6 actually invokes web_search on the Agent Tools API; 4.5 does NOT
   // (returns ungrounded training-data answers with zero web_search_call entries).
-  _4_6: "grok-4.6",                                      // Latest: 500K ctx, $2/$6, cached $0.50/M
+  // Grok 4.7 (Sep 21, 2026; /v1/models `created` says Sep 2 — pre-launch timestamp) - CURRENT FLAGSHIP,
+  // verified 2026-09-29 (chat + search). $2/$6, doubled above 200K prompt tokens. Search paths
+  // stay on 4.6: same query gave 1 citation on 4.7 vs 18 on 4.6.
+  _4_7: "grok-4.7",                                      // Flagship: 500K ctx, $2/$6, reasoning_effort
+  _4_6: "grok-4.6",                                      // Search: 500K ctx, $2/$6, cached $0.50/M
 
   // Grok 4.5 (Jul 8, 2026) - previous flagship ("Opus-class")
   // 500K context (SMALLER than 4.3's 1M — fine for tools, mind huge inputs), $2/$6,
@@ -131,9 +151,9 @@ export const GROK_MODELS = {
   _BUILD: "grok-build-0.1",                              // Coding specialist (May 29, 2026): 256k ctx, fast agentic coding
 
   // Grok 4.20 models (Mar 10, 2026) - LEGACY keys. Deprecated keys now resolve to the current flagship (4.5).
-  _4_20_REASONING: "grok-4.5",                           // [deprecated key] → grok-4.5 (was grok-4.20-0309-reasoning)
-  _4_20_NON_REASONING: "grok-4.5",                       // [deprecated key] → grok-4.5 (was grok-4.20-0309-non-reasoning)
-  _4_20_MULTI_AGENT: "grok-4.5",                         // [deprecated key] → grok-4.5 (architect uses high reasoning.effort)
+  _4_20_REASONING: "grok-4.7",                           // [deprecated key] → grok-4.7 (was grok-4.20-0309-reasoning)
+  _4_20_NON_REASONING: "grok-4.7",                       // [deprecated key] → grok-4.7 (was grok-4.20-0309-non-reasoning)
+  _4_20_MULTI_AGENT: "grok-4.7",                         // [deprecated key] → grok-4.7 (architect uses high reasoning.effort)
 
   // Grok 4.1 fast models (Nov 2025) - BEST VALUE (10x cheaper)
   // RETIRED by xAI — verified Aug 12, 2026. DO NOT WIRE THESE TO ANYTHING.
@@ -177,19 +197,18 @@ export const MINIMAX_MODELS = {
   M3: "minimax/minimax-m3",                     // 1M ctx, MSA sparse attention, multimodal, agentic/coding, $0.30/$1.20
   M2_7: "minimax/minimax-m2.7",                 // 2300B/100B MoE, 200K ctx, SWE-Pro 56.22%, Multi-SWE #1 (fallback)
   M2_5: "minimax/minimax-m2.5",                 // SWE-Bench 80.2%, 37% faster than M2.1 (legacy)
-  M2_1: "minimax/minimax-m2.1",                 // 230B/10B MoE - SWE-Bench 72.5% (legacy)
 } as const;
 
 // Qwen Models (Alibaba via OpenRouter)
 // Qwen3 235B Thinking (July 2025) - Largest reasoning model available
 // Qwen3-Coder-Next (Feb 2026) - Agentic coding specialist, 80B/3B MoE, 262K context
 export const QWEN_MODELS = {
-  MAX_3_8: "qwen/qwen3.8-max",                 // Aug 3, 2026: CURRENT flagship reasoning model — 1M ctx, multimodal (text+image+video), reasoning_effort, $2/$6
+  MAX_3_8: "qwen/qwen3.8-max-0902",                 // Aug 3, 2026: CURRENT flagship reasoning model — 1M ctx, multimodal (text+image+video), reasoning_effort, $2/$6
   MAX_3_7: "qwen/qwen3.7-max",                 // May 21, 2026: previous flagship, 1M ctx, agent-centric, $1.475/$4.425 (fallback)
   PLUS_3_7: "qwen/qwen3.7-plus",               // Jun 3, 2026: general-purpose flagship, 1M ctx, multimodal, $0.32/$1.28
   PLUS_3_6: "qwen/qwen3.6-plus",               // Apr 2026: previous general-purpose flagship (legacy)
   CODER_NEXT: "qwen/qwen3-coder-next",         // 80B/3B MoE, 262K ctx, SWE-Bench >70%, $0.14/$0.80 (still PRIMARY coder — no 3.6-coder yet)
-  CODER_PLUS: "qwen/qwen3-coder-plus",         // Code specialist (32K context)
+  CODER_PLUS: "qwen/qwen3-coder-plus",         // GONE from OpenRouter (verified 2026-10-14) — key kept for back-compat, do NOT call
   CODER: "qwen/qwen3-coder",                   // Legacy coder - 480B MoE, SWE-Bench 69.6%
   DENSE_3_8_27B: "qwen/qwen3.8-27b",           // Aug 14, 2026: dense 27B reasoning, 1M ctx, reasoning_effort, $0.21/$2.55 — powers qwq_reason
   QWQ_32B: "qwen/qwq-32b",                     // RETIRED from OpenRouter (404 "No endpoints found", Sep 14, 2026) — do NOT call
@@ -247,6 +266,9 @@ export const DEFAULT_WORKFLOW_SETTINGS = {
 // When new models release, update ONLY this section!
 // All tools automatically use the new models.
 // ============================================================================
+// UPDATED Oct 14, 2026: Gemini Pro 3.1-pro-preview -> gemini-4-argon (Oct 13 GA; env-switchable);
+//   OpenAI SOL gpt-6-sol -> gpt-6.1-sol (Sep 29); openai_search terra -> 6.1-sol; grok_search 4.6 -> 4.7;
+//   StepFun 3.7-flash -> step-5-preview (Oct 8); ERNIE removed (Baidu left OpenRouter Oct 8).
 // UPDATED Sep 14, 2026: OpenAI default gpt-5.6-sol -> gpt-6-astra (Sep 3);
 //   qwq_reason qwen/qwq-32b (retired from OpenRouter) -> qwen/qwen3.8-27b.
 // UPDATED Jul 26, 2026 (full provider audit):
@@ -260,28 +282,27 @@ export const CURRENT_MODELS = {
     reason: OPENAI_MODELS.DEFAULT,        // Deep reasoning (astra + effort=xhigh)
     brainstorm: OPENAI_MODELS.DEFAULT,    // Creative ideation (astra + effort=medium)
     code: OPENAI_MODELS.TERRA,            // Code tasks (gpt-5.6-terra - 5.5-level at $2/$12)
-    explain: OPENAI_MODELS.LUNA,          // Explanations (gpt-5.6-luna - $0.20/$1.20, fast)
-    search: OPENAI_MODELS.TERRA,          // Web search: $10/1k call fee is flat across tiers,
-                                          // so terra ($2/$12) does grounded lookup at 2.5x less
-                                          // token cost than sol. All 5.6 tiers support web_search.
+    explain: OPENAI_MODELS.SOL,           // openai_explain pins gpt-6.1-sol at low effort ($2/$10)
+    search: OPENAI_MODELS.SOL,            // Web search: $10/1k call fee is flat across tiers; gpt-6.1-sol
+                                          // ($2/$10) beat terra on a fresh-news query (2026-10-14).
     // Premium: the 5.5-pro tier ($30/$180) is gone — astra + effort=max replaces it at $10/$50
     premium: OPENAI_MODELS.PRO,           // Expert mode (gpt-6-astra + reasoning.effort=max)
   },
   grok: {
-    reason: GROK_MODELS._4_5,            // grok-4.5 (Jul 2026 flagship, high reasoning effort)
-    code: GROK_MODELS._4_5,              // grok-4.5 (flagship quality, tool-calling)
-    debug: GROK_MODELS._4_5,             // grok-4.5 (flagship debugging)
-    brainstorm: GROK_MODELS._4_5,        // grok-4.5 (500K context)
-    search: GROK_MODELS._4_6,            // grok-4.6: the ONLY current model verified (2026-08-14) to
-                                         // actually invoke web_search on /v1/responses — grok-4.5
-                                         // silently answers from training data with zero searches
+    reason: GROK_MODELS._4_7,            // grok-4.7 (Sep 21, 2026 flagship, reasoning effort)
+    code: GROK_MODELS._4_7,              // grok-4.7 (flagship quality, tool-calling)
+    debug: GROK_MODELS._4_7,             // grok-4.7 (flagship debugging)
+    brainstorm: GROK_MODELS._4_7,        // grok-4.7 (500K context)
+    search: GROK_MODELS._4_7,            // grok-4.7: re-verified 2026-10-14 over 3 queries — 19/79/2 unique
+                                         // citations vs 4.6's 2/4/2, and found the newer facts. (Sep 29 it
+                                         // lost 1 vs 18; xAI has since fixed 4.7's search.) 4.5 never grounds.
     search_lite: GROK_MODELS._4_3,       // grok-4.3: $1.25/$2.50, 1M ctx — ~1.6x/2.4x cheaper than
                                          // grok-4.5 search. Was _4_1_FAST_NON_REASONING until that id
                                          // was retired (xAI silently served 4.3 for it anyway).
-    architect: GROK_MODELS._4_5,         // grok-4.5 with high reasoning.effort (agentic swarm behaviour)
+    architect: GROK_MODELS._4_7,         // grok-4.7 with high reasoning.effort (agentic swarm behaviour)
   },
   gemini: {
-    default: GEMINI_MODELS.GEMINI_3_PRO,
+    get default(): string { return GEMINI_MODELS.GEMINI_3_PRO; }, // gemini-4-argon unless TACHI_GEMINI_PRO_MODEL
   },
   perplexity: {
     search: PERPLEXITY_MODELS.SONAR,           // $1/$1 per M (cheapest)
@@ -457,6 +478,9 @@ export const DEFAULT_WORKFLOW_TOOL = "openai_brainstorm";
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // OpenAI
   "gpt-6-astra": "gpt-6-astra",
+  "gpt-6.1-sol": "gpt-6.1-sol",
+  "gpt-6-sol": "gpt-6-sol",
+  "gpt-6-luna": "gpt-6-luna",
   "gpt-5.6-sol": "gpt-5.6-sol",
   "gpt-5.6-terra": "gpt-5.6-terra",
   "gpt-5.6-luna": "gpt-5.6-luna",
@@ -468,6 +492,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gpt-5.4-pro": "gpt-5.4-pro",
 
   // Gemini
+  "gemini-4-argon": "gemini-4-argon",
   "gemini-3.1-pro-preview": "gemini-3.1-pro",
   "gemini-3.7-flash": "gemini-3.7-flash",
   "gemini-3.6-flash": "gemini-3.6-flash",
@@ -531,6 +556,9 @@ export function getModelDisplayName(modelId: string): string {
 export const MODEL_PRICING: Record<string, number> = {
   // OpenAI
   "gpt-6-astra": 0.030,         // ($10 + $50) / 2 / 1000 (Sep 3, 2026 - current default)
+  "gpt-6.1-sol": 0.006,         // ($2 + $10) / 2 / 1000 (Sep 29, 2026 - SOL tier)
+  "gpt-6-sol": 0.006,           // ($2 + $10) / 2 / 1000 (Sep 14, 2026 - fallback)
+  "gpt-6-luna": 0.0003,         // ($0.10 + $0.50) / 2 / 1000 (Sep 14, 2026 - LUNA/MINI tier)
   "gpt-5.6-sol": 0.0175,        // ($5 + $30) / 2 / 1000 (unchanged in the Jul 30 cut)
   "gpt-5.6-terra": 0.007,       // ($2 + $12) / 2 / 1000 (Jul 30, 2026 cut: -20%)
   "gpt-5.6-luna": 0.0007,       // ($0.20 + $1.20) / 2 / 1000 (Jul 30, 2026 cut: -80%)
@@ -541,6 +569,7 @@ export const MODEL_PRICING: Record<string, number> = {
   "gpt-5.4-pro": 0.105,         // ($30 + $180) / 2 / 1000 (Mar 2026)
 
   // Gemini
+  "gemini-4-argon": 0.006,        // ($2 + $10) / 2 / 1000 intro through Nov 30, 2026 — $4/$20 (0.012) from Dec 1
   "gemini-3.1-pro-preview": 0.007, // ($2 + $12) / 2 / 1000
   "gemini-3.7-flash": 0.00225,           // ($0.75 + $3.75) / 2 / 1000 intro through Dec 31, 2026 (then $1.50/$7.50)
   "gemini-3.6-flash": 0.0045,            // ($1.50 + $7.50) / 2 / 1000 (GA Jul 21, 2026 - fallback)

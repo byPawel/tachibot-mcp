@@ -64,8 +64,7 @@ export interface ToolsConfig {
   deepseek_reason: boolean;    // DeepSeek V4 Pro (open-weight frontier reasoning/math)
   deepseek_algo: boolean;      // DeepSeek V4 Pro (algorithmic code review — top AIME/CodeElo)
   glm_reason: boolean;         // Zhipu GLM-5.1 (agentic reasoning, SWE-Bench Pro leader)
-  stepfun_reason: boolean;     // StepFun Step 3.7 Flash (efficient reasoning)
-  ernie_reason: boolean;       // Baidu ERNIE 4.5 VL (broad-knowledge reasoning)
+  stepfun_reason: boolean;     // StepFun Step 5 Preview (efficient reasoning)
   local_query: boolean;        // Local open-weight models (Ollama/LM Studio/llama.cpp/vLLM) — zero-cost, offline
 
   // Workflow tools
@@ -103,4 +102,7 @@ export interface ToolsConfig {
 
   // Adversarial plan red-team
   plan_critique: boolean;  // Multi-model plan red-team (DeepSeek/Grok/GPT-5.5) with Gemini judge
+
+  // Typed decisions
+  jev_decide: boolean;  // TypeSafe Jev via OpenRouter — noul/choice/score probabilities, no prose
 }

@@ -271,40 +271,6 @@
     "name": "doctor"
   },
   {
-    "description": "Broad general-knowledge reasoning (Baidu ERNIE). Use for open-ended questions where world knowledge and judgment matter more than formal rigor. Put your PROBLEM in the 'problem' parameter.",
-    "inputSchema": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "approach": {
-          "default": "analytical",
-          "description": "Reasoning approach (e.g., analytical, systematic, step-by-step)",
-          "type": "string"
-        },
-        "context": {
-          "description": "Additional context for the reasoning task",
-          "type": "string"
-        },
-        "files": {
-          "description": "File paths to read as code context. Supports line ranges: 'src/foo.ts:100-200'. Model sees ACTUAL CODE.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "problem": {
-          "description": "The problem to reason about (REQUIRED - put your question here)",
-          "type": "string"
-        }
-      },
-      "required": [
-        "problem"
-      ],
-      "type": "object"
-    },
-    "name": "ernie_reason"
-  },
-  {
     "annotations": {
       "openWorldHint": true,
       "readOnlyHint": true,
@@ -1005,6 +971,81 @@
     "name": "grok_search_lite"
   },
   {
+    "description": "Typed decisions from TypeSafe Jev via OpenRouter — no prose. Send a 'state' plus named questions (noul = yes/no probability, choice = pick an option, score = rate on a scale); get calibrated probabilities back as JSON. Fast and near-free: use for routing, eval/groundedness gates, and risk scoring, not for writing or open-ended reasoning.",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "description": "OpenRouter model id (default: typesafe/jev-1.13)",
+          "type": "string"
+        },
+        "questions": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "criteria": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                ],
+                "description": "choice: {option: description} map. score: ordered levels, lowest first (e.g. ['low','medium','high']). Omit for noul."
+              },
+              "instructions": {
+                "description": "The question Jev should answer about the state",
+                "type": "string"
+              },
+              "type": {
+                "description": "noul = yes/no probability; choice = pick one option; score = rate on an ordered scale",
+                "enum": [
+                  "noul",
+                  "choice",
+                  "score"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "instructions"
+            ],
+            "type": "object"
+          },
+          "description": "Named questions, e.g. {refund: {type:'noul', instructions:'Is a refund requested?'}}",
+          "type": "object"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "additionalProperties": {},
+              "type": "object"
+            }
+          ],
+          "description": "The context to judge — text or an object (e.g. {request, policy, trace, answer})"
+        }
+      },
+      "required": [
+        "state",
+        "questions"
+      ],
+      "type": "object"
+    },
+    "name": "jev_decide"
+  },
+  {
     "description": "Multi-model jury: runs question through configurable panel of AI jurors in parallel, then Gemini synthesizes a unified verdict. Put QUESTION in 'question' parameter.",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1015,7 +1056,7 @@
           "type": "string"
         },
         "jurors": {
-          "description": "Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, ernie, local (free offline — uses LOCAL_LLM_MODEL via Ollama/LM Studio; 'hermes' accepted as legacy alias)",
+          "description": "Comma-separated juror models (default: grok,deepseek,kimi,openai). Available: grok, openai, qwen, qwen_reason, kimi, perplexity, minimax, deepseek, glm, stepfun, local (free offline — uses LOCAL_LLM_MODEL via Ollama/LM Studio; 'hermes' accepted as legacy alias)",
           "type": "string"
         },
         "mode": {
@@ -1591,9 +1632,12 @@
           "type": "number"
         },
         "model": {
-          "description": "Model to use - gpt-6-astra (default, flagship), gpt-5.6-sol (previous flagship), gpt-5.6-terra (balanced), gpt-5.6-luna (fast/cheap)",
+          "description": "Model to use - gpt-6-astra (default, flagship), gpt-6.1-sol (mid tier), gpt-6-sol (previous mid tier), gpt-6-luna (fast/cheap), gpt-5.6-sol/terra/luna (previous generation)",
           "enum": [
             "gpt-6-astra",
+            "gpt-6.1-sol",
+            "gpt-6-sol",
+            "gpt-6-luna",
             "gpt-5.6-sol",
             "gpt-5.6-terra",
             "gpt-5.6-luna"

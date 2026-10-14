@@ -1,6 +1,6 @@
 import { ModelRouter } from '../workflows/model-router.js';
 import { getScoutModels, getDefaultModels } from '../config/model-defaults.js';
-import { GROK_MODELS } from '../config/model-constants.js';
+import { GROK_MODELS, getGeminiProModel } from '../config/model-constants.js';
 import { getGrokApiKey } from '../utils/api-keys.js';
 import { createProgressStream, createMultiModelReporter } from '../utils/progress-stream.js';
 import { smartAPIClient } from '../utils/smart-api-client.js';
@@ -143,7 +143,7 @@ export class Scout {
       flow: 'conditional-hybrid',
       perplexityTimeout: 8000, // Base timeout
       perplexityFor: 'latest API docs only',
-      primary: 'gemini-3.1-pro-preview',
+      primary: getGeminiProModel(),
       upgradeCondition: 'complexity > 0.8',
       tokens: 2000,
       defaultProvider: PROVIDER_PERPLEXITY,

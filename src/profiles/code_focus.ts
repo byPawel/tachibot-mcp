@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const codeFocusProfile: ProfileConfig = {
-  description: "Code-heavy work with debugging and analysis (43 tools)",
+  description: "Code-heavy work with debugging and analysis (44 tools)",
   tools: {
     think: true,
     focus: true,
@@ -48,7 +48,6 @@ export const codeFocusProfile: ProfileConfig = {
     deepseek_algo: true,       // Algorithmic review - top AIME/CodeElo
     glm_reason: true,          // Agentic SWE reasoning
     stepfun_reason: true,      // Efficient reasoning for code logic
-    ernie_reason: false,       // Broad-knowledge model not needed for code focus
     local_query: true,
     workflow: true,
     list_workflows: true,
@@ -82,5 +81,8 @@ export const codeFocusProfile: ProfileConfig = {
 
     // Adversarial plan red-team
     plan_critique: true,
+
+    // Typed decisions
+    jev_decide: true,
   }
 };

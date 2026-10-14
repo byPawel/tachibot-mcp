@@ -29,7 +29,6 @@ const {
   deepseekReasonTool,
   glmReasonTool,
   stepfunReasonTool,
-  ernieReasonTool,
 } = await import("../../src/tools/openrouter-tools.js");
 
 const fakeCtx = {
@@ -104,13 +103,6 @@ const cases = [
     extraArgs: {},
     defaultText: "weighing perspectives and implications before concluding",
     known: { approach: "mathematical", text: "explicit derivations" },
-  },
-  {
-    tool: ernieReasonTool,
-    name: "ernie_reason",
-    extraArgs: {},
-    defaultText: "Analyze across multiple angles",
-    known: { approach: "systematic", text: "systematic reasoning with clear logic chains" },
   },
 ] as const;
 

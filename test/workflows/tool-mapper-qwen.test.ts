@@ -59,13 +59,13 @@ describe("tool-mapper qwen_algo parity with the real MCP tool", () => {
 
     expect(captured.url).toContain("openrouter.ai");
     // The bug: this was qwen/qwq-32b — a silently weaker model
-    expect(captured.body.model).toBe("qwen/qwen3.8-max");
+    expect(captured.body.model).toBe("qwen/qwen3.8-max-0902");
     // Unset effort behaves like "high" (~5 min, ~15x cost) — must be pinned
     expect(captured.body.reasoning_effort).toBe("medium");
     expect(systemPromptOf(captured.body)).toContain(
       "Principal Algorithm Engineer",
     );
-    expect(result.modelUsed).toBe("qwen/qwen3.8-max");
+    expect(result.modelUsed).toBe("qwen/qwen3.8-max-0902");
   });
 });
 

@@ -27,6 +27,7 @@ import { defineModelTool } from "./factory/define-model-tool.js";
 import { link } from "../utils/ansi-renderer.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
+import { withHeartbeat } from "../utils/streaming-helper.js";
 
 /** Pure prompt builder — exported for tests. */
 export function buildGrokSearchLitePrompt(
@@ -62,7 +63,7 @@ export const grokSearchLiteTool = defineModelTool({
     max_search_results: z.number().optional(),
     recency: z.enum(["all", "day", "week", "month", "year"]).optional(),
   }),
-  execute: async (args: any, { log }: any) => {
+  execute: async (args: any, { log, reportProgress }: any) => {
     const {
       query,
       sources = [{ type: "web" }],
@@ -91,14 +92,19 @@ export const grokSearchLiteTool = defineModelTool({
         ?.filter((s: any) => s.allowed_websites)
         ?.flatMap((s: any) => s.allowed_websites) || [];
 
-    const result = await callGrokEnhanced(messages, {
-      model: GrokModel.GROK_4_3, // Cheapest surviving general tier (see header note on the retired 4-1-fast id)
-      enableLiveSearch: true,
-      searchSources: max_search_results,
-      searchDomains: domains,
-      temperature: 0.3, // Low temperature for factual search
-      maxTokens: 3000,
-    });
+    // Heartbeat keeps the MCP client's 60s request timeout from killing long searches
+    const result = await withHeartbeat(
+      () =>
+        callGrokEnhanced(messages, {
+          model: GrokModel.GROK_4_3, // Cheapest surviving general tier (see header note on the retired 4-1-fast id)
+          enableLiveSearch: true,
+          searchSources: max_search_results,
+          searchDomains: domains,
+          temperature: 0.3, // Low temperature for factual search
+          maxTokens: 3000,
+        }),
+      reportProgress ?? (async () => {})
+    );
 
     // Format sources with ANSI links (same shape as grok_search output)
     let output = result.content;

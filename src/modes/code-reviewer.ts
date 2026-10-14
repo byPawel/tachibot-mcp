@@ -1,3 +1,5 @@
+import { getGeminiProModel } from '../config/model-constants.js';
+
 export interface CodeReviewOptions {
   model?: string;
   maxTokens?: number;
@@ -47,7 +49,7 @@ export interface CodeMetrics {
 }
 
 export class CodeReviewer {
-  private defaultModel = 'gemini-3.1-pro-preview';
+  private defaultModel = getGeminiProModel();
   private defaultMaxTokens = 4000;
   private defaultFocusAreas: CodeReviewOptions['focusAreas'] = [
     'security', 'performance', 'readability', 'bugs', 'best-practices'

@@ -12,18 +12,18 @@ export enum ModelTier {
   ULTRA_CHEAP = "gemini-3.5-flash-lite",
 
   // Tier 1: Fast & Efficient
-  ULTRA_EFFICIENT = "gemini-3.7-flash", // $0.75/$3.75 intro workhorse (Aug 13 2026 GA; $1.50/$7.50 from Jan 2027)
-  EFFICIENT = "gpt-5.6-luna", // $0.20/$1.20 after the Jul 30 -80% cut
+  ULTRA_EFFICIENT = "gemini-3.8-flash", // $0.75/$3.75 workhorse (Sep 2, 2026)
+  EFFICIENT = "gpt-6-luna", // $0.10/$0.50 (Sep 14, 2026)
 
   // Tier 2: Balanced — gpt-5.6-terra is gpt-5.5-level at $2/$12
   STANDARD = "gpt-5.6-terra",
-  GPT5_MINI = "gpt-5.6-luna", // Legacy alias: the "mini" tier is now luna
+  GPT5_MINI = "gpt-6-luna", // Legacy alias: the "mini" tier is now luna
 
   // Tier 3: Advanced
   WEB_SEARCH = "perplexity-sonar-pro", // With citations
 
   // Tier 4: Premium (opt-in only)
-  GPT5_FULL = "gpt-5.6-sol", // Flagship $5/$30; crank reasoning.effort for "pro"
+  GPT5_FULL = "gpt-6.1-sol", // GPT-6.1 mid tier $2/$10; crank reasoning.effort for "pro"
 }
 
 export interface QueryContext {
@@ -61,6 +61,9 @@ interface ModelCosts {
 const MODEL_COSTS: ModelCosts = {
   // GPT-6 Astra (Sep 3, 2026) — current OpenAI default. Latency is an estimate, not measured.
   "gpt-6-astra": { input: 0.010, output: 0.050, latency: 2400 },
+  "gpt-6.1-sol": { input: 0.002, output: 0.010, latency: 1500 },
+  "gpt-6-sol": { input: 0.002, output: 0.010, latency: 1500 },
+  "gpt-6-luna": { input: 0.0001, output: 0.0005, latency: 1400 },
 
   // GPT-5.6 family (Jul 9, 2026; terra/luna repriced Jul 30, 2026)
   "gpt-5.6-sol": { input: 0.005, output: 0.030, latency: 2200 },        // Flagship
@@ -76,11 +79,13 @@ const MODEL_COSTS: ModelCosts = {
   "gpt-5.4-pro": { input: 0.030, output: 0.180, latency: 2500 },
 
   // Gemini
+  "gemini-3.8-flash": { input: 0.00075, output: 0.00375, latency: 800 },
   "gemini-3.7-flash": { input: 0.00075, output: 0.00375, latency: 600 },     // Aug 13, 2026 (intro pricing through Dec 31, 2026)
   "gemini-3.6-flash": { input: 0.0015, output: 0.0075, latency: 600 },       // Jul 21, 2026
   "gemini-3.5-flash-lite": { input: 0.0003, output: 0.0025, latency: 400 },  // Jul 21, 2026
   "gemini-3.5-flash": { input: 0.0015, output: 0.009, latency: 600 },        // May 19, 2026
-  "gemini-3.1-pro-preview": { input: 0.002, output: 0.012, latency: 1200 },  // Judge/reasoning default
+  "gemini-4-argon": { input: 0.002, output: 0.010, latency: 1400 },  // Judge/reasoning default (Oct 13, 2026); $4/$20 from Dec 1
+  "gemini-3.1-pro-preview": { input: 0.002, output: 0.012, latency: 1200 },  // Previous Pro default, Argon's fallback
   "gemini-3-flash-preview": { input: 0.0005, output: 0.003, latency: 500 },  // Legacy
 
   // Other models

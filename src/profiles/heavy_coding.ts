@@ -1,7 +1,7 @@
 import { ProfileConfig } from './types.js';
 
 export const heavyCodingProfile: ProfileConfig = {
-  description: "Heavy coding with all reasoning & code tools (59 tools)",
+  description: "Heavy coding with all reasoning & code tools (60 tools)",
   tools: {
     // Core reasoning - all enabled
     think: true,
@@ -59,7 +59,6 @@ export const heavyCodingProfile: ProfileConfig = {
     deepseek_algo: true,       // Algorithmic review - top AIME/CodeElo
     glm_reason: true,          // Agentic SWE reasoning (SWE-Bench Pro leader)
     stepfun_reason: true,      // Efficient reasoning
-    ernie_reason: false,       // Not needed for heavy coding
     local_query: true,         // Local open-weight coding model (zero-cost/offline)
 
     // Workflow - minimal set for execution
@@ -95,5 +94,8 @@ export const heavyCodingProfile: ProfileConfig = {
 
     // Adversarial plan red-team
     plan_critique: true,
+
+    // Typed decisions
+    jev_decide: true,
   }
 };

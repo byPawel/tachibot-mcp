@@ -1,6 +1,7 @@
 import { ModelRouter } from '../workflows/model-router.js';
 import { TokenTracker } from '../optimization/token-tracker.js';
 import { BatchExecutor } from '../optimization/batch-executor.js';
+import { getGeminiProModel } from '../config/model-constants.js';
 
 export interface ArchitectOptions {
   path?: string;
@@ -129,7 +130,7 @@ export class Architect {
   
   private stages = {
     gemini_analysis: {
-      model: 'gemini-3.1-pro-preview',
+      model: getGeminiProModel(),
       maxTokens: 1000000,
       tasks: [
         'fullCodebaseAnalysis',
@@ -224,8 +225,8 @@ export class Architect {
   }
 
   private selectGeminiModel(options: ArchitectOptions): string {
-    // Always use Gemini 3 Pro Preview for RAW POWER
-    return 'gemini-3.1-pro-preview';
+    // Active Pro model (gemini-4-argon unless TACHI_GEMINI_PRO_MODEL overrides it)
+    return getGeminiProModel();
   }
 
   private calculateGeminiTokens(options: ArchitectOptions): number {
@@ -583,8 +584,8 @@ export class Architect {
     let cost = 0;
     
     for (const result of stageResults) {
-      if (result.model === 'gemini-3.1-pro-preview') {
-        cost += (result.tokens / 1000000) * 1.25; // Gemini 3 Pro Preview pricing
+      if (result.model.startsWith('gemini-')) {
+        cost += (result.tokens / 1000000) * 1.25; // Rough Gemini Pro blended rate
       } else if (result.model === 'think') {
         cost += 0; // Free!
       } else {
