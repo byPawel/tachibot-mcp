@@ -28,6 +28,7 @@ const GROK_RESPONSES_URL = "https://api.x.ai/v1/responses"; // New Agent Tools A
 
 // Unified GrokModel enum - single source of truth in grok-tools.ts
 import { GrokModel } from './grok-tools.js';
+import { modelFallbackEnabled, degradedBanner } from "../utils/fallback-policy.js";
 export { GrokModel };
 
 export interface GrokOptions {
@@ -88,9 +89,12 @@ export async function callGrokEnhanced(
       const searchTimeoutMs = getTimeoutConfig().search;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), searchTimeoutMs);
-      let response: Response;
+      // The timer must cover the BODY too: headers can arrive while the agentic search
+      // is still streaming, so clearing it right after fetch() resolved left a stalled
+      // body read unbounded (with heartbeats hiding the hang from the MCP client).
+      let data: any;
       try {
-        response = await fetch(GROK_RESPONSES_URL, {
+        const response = await fetch(GROK_RESPONSES_URL, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${GROK_API_KEY}`,
@@ -99,6 +103,13 @@ export async function callGrokEnhanced(
           body: JSON.stringify(searchRequestBody),
           signal: controller.signal
         });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Grok API error: ${response.statusText} - ${error}`);
+        }
+
+        data = await response.json();
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
           throw new Error(`${model} live search exceeded ${formatTimeout(searchTimeoutMs)} (raise TACHI_SEARCH_TIMEOUT)`);
@@ -107,13 +118,6 @@ export async function callGrokEnhanced(
       } finally {
         clearTimeout(timeoutId);
       }
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Grok API error: ${response.statusText} - ${error}`);
-      }
-
-      const data = await response.json() as any;
 
       // Responses API format: output[] interleaves reasoning, web_search_call and
       // MULTIPLE "message" entries — agentic runs emit a preamble message ("I'll
@@ -205,9 +209,12 @@ export async function callGrokEnhanced(
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     // 4.5+ flagship rollouts are region-staged — fall back to grok-4.3
-    if (/^grok-4\.[5-9]/.test(model) && errMsg.includes('not available in your region')) {
+    if (/^grok-4\.[5-9]/.test(model) && errMsg.includes('not available in your region') && modelFallbackEnabled()) {
       console.error(`[Grok] ${model} region-blocked, falling back to grok-4.3`);
-      return callGrokEnhanced(messages, { ...options, model: GrokModel.GROK_4_3 });
+      const fb = await callGrokEnhanced(messages, { ...options, model: GrokModel.GROK_4_3 });
+      return fb.content.startsWith('[Grok')
+        ? fb
+        : { ...fb, content: degradedBanner(model, GrokModel.GROK_4_3, 'not available in your region') + fb.content };
     }
     return {
       content: `[Grok error: ${errMsg}]`
@@ -460,7 +467,7 @@ export const grokSearchTool = {
     const messages = [
       {
         role: "system",
-        content: `You are Grok 4.6 with live search. Search for: "${query}".
+        content: `You are Grok 4.7 with live search. Search for: "${query}".
 ${recencyPrompt}
 Provide concise, factual results with sources.
 Limit search to ${max_search_results} sources for cost control.
@@ -472,7 +479,7 @@ ${FORMAT_INSTRUCTION}`
       }
     ];
 
-    log?.info(`Grok Search: ${max_search_results} sources, recency: ${recency} (using grok-4.6, verified grounded)`);
+    log?.info(`Grok Search: ${max_search_results} sources, recency: ${recency} (using grok-4.7, verified grounded)`);
 
     // Extract domains from sources if specified
     const domains = sources

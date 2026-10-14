@@ -10,6 +10,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
 import { isProviderFailure } from "../utils/provider-failure.js";
+import { modelFallbackEnabled, isBillingFailure, describeFailure, degradedBanner } from "../utils/fallback-policy.js";
 import { GEMINI_MODELS } from "../config/model-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { stripFormatting } from "../utils/format-stripper.js";
@@ -115,21 +116,40 @@ export async function callGemini(
 
   // Gemini 4 Argon (Oct 13, 2026 GA) -> the previous Pro default, on ANY failure: a key/region
   // without Argon access gets a non-retryable 403/404 that the Flash stage below would skip.
-  if (isProviderFailure(last) && model === GEMINI_MODELS.GEMINI_4_ARGON) {
+  // The result carries a [degraded: …] banner naming the model that ACTUALLY answered and
+  // why (judge-runner reports it), and a double failure keeps BOTH errors. Skipped when
+  // TACHI_MODEL_FALLBACK=off or the failure is billing (another model bills the same key).
+  const mayFallBack = isProviderFailure(last) && modelFallbackEnabled() && !isBillingFailure(last);
+  if (mayFallBack && model === GEMINI_MODELS.GEMINI_4_ARGON) {
     console.error(`🔻 [Gemini] ${model} failed, falling back to ${GEMINI_MODELS.GEMINI_3_1_PRO}`);
-    return callGemini(prompt, GEMINI_MODELS.GEMINI_3_1_PRO, systemPrompt, temperature, validationContext, maxTokens);
+    const fb = await callGemini(prompt, GEMINI_MODELS.GEMINI_3_1_PRO, systemPrompt, temperature, validationContext, maxTokens);
+    if (isProviderFailure(fb)) {
+      return `[Gemini error: ${model} failed (${firstLine(last)}); fallback ${GEMINI_MODELS.GEMINI_3_1_PRO} failed too (${firstLine(fb)})]`;
+    }
+    // 3.1 Pro may itself have degraded to Flash — keep the innermost answering model
+    const inner = parseDegradedBanner(fb);
+    const reason = describeFailure(last) + (inner ? `; ${GEMINI_MODELS.GEMINI_3_1_PRO} also degraded` : "");
+    return degradedBanner(model, inner?.answeredBy ?? GEMINI_MODELS.GEMINI_3_1_PRO, reason) + (inner ? inner.body : fb);
   }
 
   // Same-provider degrade: Pro -> Flash. Skipped when Flash was already the request.
-  if (isProviderFailure(last) && GEMINI_RETRYABLE.test(last) && model !== GEMINI_MODELS.FLASH) {
+  if (mayFallBack && GEMINI_RETRYABLE.test(last) && model !== GEMINI_MODELS.FLASH) {
     console.error(`🔻 [Gemini] ${model} exhausted, degrading to ${GEMINI_MODELS.FLASH}`);
     const flash = await callGeminiAttempt(prompt, GEMINI_MODELS.FLASH, systemPrompt, temperature, validationContext, maxTokens);
     if (!isProviderFailure(flash)) {
-      return `[degraded: ${model} unavailable, answered by ${GEMINI_MODELS.FLASH}]\n\n${flash}`;
+      return degradedBanner(model, GEMINI_MODELS.FLASH, describeFailure(last)) + flash;
     }
   }
 
   return last;
+}
+
+const firstLine = (s: string): string => s.trim().split("\n")[0].slice(0, 300);
+
+/** Parse callGemini's leading "[degraded: X unavailable, answered by Y]" banner. */
+export function parseDegradedBanner(text: string): { answeredBy: string; body: string } | null {
+  const m = /^\[degraded: [^\]]*answered by ([^\]\s]+)\]\n\n/.exec(text);
+  return m ? { answeredBy: m[1], body: text.slice(m[0].length) } : null;
 }
 
 async function callGeminiAttempt(

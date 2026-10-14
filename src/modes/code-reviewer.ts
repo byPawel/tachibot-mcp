@@ -49,7 +49,8 @@ export interface CodeMetrics {
 }
 
 export class CodeReviewer {
-  private defaultModel = getGeminiProModel();
+  // Getter, not a field: instances are built at module load, before .env is applied
+  private get defaultModel(): string { return getGeminiProModel(); }
   private defaultMaxTokens = 4000;
   private defaultFocusAreas: CodeReviewOptions['focusAreas'] = [
     'security', 'performance', 'readability', 'bugs', 'best-practices'

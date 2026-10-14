@@ -12,9 +12,13 @@
  */
 
 const PROVIDER_FAILURE =
-  /^\s*\[[^\]]*\b(error|timeout|failed|unavailable|not available|not configured|quota|rate.?limit)\b/i;
+  /^\s*\[[^\]]*\b(error|timeout|failed|incomplete|unavailable|not available|not configured|quota|rate.?limit)\b/i;
 
 export function isProviderFailure(text: string | null | undefined): boolean {
   if (typeof text !== "string" || text.length === 0) return true;
+  // "[degraded: X unavailable, answered by Y]" is a SUCCESS banner (a fallback model
+  // answered). Its word "unavailable" used to match below, so every degraded Gemini
+  // answer was discarded as a failure and the judge escalated to a paid OpenAI call.
+  if (/^\s*\[degraded: [^\]]*answered by /i.test(text)) return false;
   return PROVIDER_FAILURE.test(text) || /^\s*No response from /i.test(text);
 }

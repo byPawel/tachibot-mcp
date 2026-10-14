@@ -352,17 +352,17 @@ export const TOOL_DEFAULTS = {
 
   // Gemini tools
   gemini_brainstorm: {
-    model: CURRENT_MODELS.gemini.default,
+    get model(): string { return CURRENT_MODELS.gemini.default; }, // live: follows TACHI_GEMINI_PRO_MODEL
     maxTokens: 2048,
     temperature: 0.9,
   },
   gemini_analyze_code: {
-    model: CURRENT_MODELS.gemini.default,
+    get model(): string { return CURRENT_MODELS.gemini.default; }, // live: follows TACHI_GEMINI_PRO_MODEL
     maxTokens: 2048,
     temperature: 0.3,
   },
   gemini_analyze_text: {
-    model: CURRENT_MODELS.gemini.default,
+    get model(): string { return CURRENT_MODELS.gemini.default; }, // live: follows TACHI_GEMINI_PRO_MODEL
     maxTokens: 2048,
     temperature: 0.5,
   },

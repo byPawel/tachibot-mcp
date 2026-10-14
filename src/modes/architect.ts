@@ -130,7 +130,7 @@ export class Architect {
   
   private stages = {
     gemini_analysis: {
-      model: getGeminiProModel(),
+      get model(): string { return getGeminiProModel(); },
       maxTokens: 1000000,
       tasks: [
         'fullCodebaseAnalysis',

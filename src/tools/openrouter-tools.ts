@@ -14,6 +14,8 @@ import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { getOpenRouterModelTimeout } from "../config/timeout-config.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
+import { modelFallbackEnabled, isBillingFailure, describeFailure, degradedBanner } from "../utils/fallback-policy.js";
+import { isProviderFailure } from "../utils/provider-failure.js";
 
 // Load .env in-module rather than relying on import order.
 //
@@ -123,6 +125,29 @@ interface OpenRouterOptions {
   // Reasoning depth. Only models listing `reasoning_effort` honour it (Qwen3.8-Max today);
   // OpenRouter drops it for models that don't, so quota fallbacks stay safe.
   reasoning_effort?: "low" | "medium" | "high";
+  /** Internal: set on the single MODEL_FALLBACKS hop so it can't chain further. */
+  __retry?: boolean;
+}
+
+/**
+ * Errors worth one hop to MODEL_FALLBACKS: the model is gone/unrouted (404, "No endpoints
+ * found"), overloaded or rate-limited (408/429/5xx), or Alibaba's free-tier quota. Until
+ * 2026-10-14 only FreeTierOnly triggered it, so a retired or preview model 404'd with its
+ * configured fallback sitting unused. 400/401/402/403 are request/account problems that
+ * another model won't fix.
+ */
+function shouldUseModelFallback(status: number | undefined, errorText: string): boolean {
+  if (!modelFallbackEnabled() || isBillingFailure(errorText, status)) return false;
+  if (/FreeTierOnly|No endpoints found/i.test(errorText)) return true;
+  return status !== undefined && (status === 404 || status === 408 || status === 429 || status >= 500);
+}
+
+/** Never silent: a fallback answer is bannered with the reason; a double failure keeps both causes. */
+function withFallbackDisclosure(requested: string, fallback: string, reason: string, firstError: string, result: string): string {
+  if (isProviderFailure(result)) {
+    return `[OpenRouter error: ${requested} failed (${reason}: ${firstError}); fallback ${fallback} failed too: ${result.trim().split("\n")[0].slice(0, 300)}]`;
+  }
+  return degradedBanner(requested, fallback, reason) + result;
 }
 
 /**
@@ -139,7 +164,7 @@ export async function callOpenRouter(
   _budgetRetry: boolean = false
 ): Promise<string> {
   // Handle backward compatibility: boolean = _isRetry, object = options
-  const _isRetry = typeof optionsOrRetry === 'boolean' ? optionsOrRetry : false;
+  const _isRetry = typeof optionsOrRetry === 'boolean' ? optionsOrRetry : !!optionsOrRetry.__retry;
   const options: OpenRouterOptions = typeof optionsOrRetry === 'object' ? optionsOrRetry : {};
 
   if (!OPENROUTER_API_KEY) {
@@ -181,14 +206,18 @@ export async function callOpenRouter(
     if (!response.ok) {
       const errorText = await response.text();
 
-      // Check for Alibaba free tier quota error - auto-fallback
-      if (!_isRetry && errorText.includes("FreeTierOnly") && MODEL_FALLBACKS[model]) {
+      // Model gone / overloaded / quota — one hop to the configured fallback, keeping
+      // options (reasoning_effort etc.; the old `true` flag silently dropped them)
+      if (!_isRetry && MODEL_FALLBACKS[model] && shouldUseModelFallback(response.status, errorText)) {
         const fallback = MODEL_FALLBACKS[model]!;
-        console.error(`[OpenRouter] ${model} hit provider quota, falling back to ${fallback}`);
-        return callOpenRouter(messages, fallback, temperature, maxTokens, true);
+        console.error(`[OpenRouter] ${model} failed (${response.status}), falling back to ${fallback}`);
+        clearTimeout(timeoutId);
+        return withFallbackDisclosure(model, fallback, describeFailure(errorText, response.status),
+          `${response.status} ${response.statusText}`,
+          await callOpenRouter(messages, fallback, temperature, maxTokens, { ...options, __retry: true }, timeoutMs));
       }
 
-      throw new Error(`OpenRouter API error: ${response.statusText} - ${errorText}`);
+      throw new Error(`OpenRouter API error (${describeFailure(errorText, response.status)}): ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json() as any;
@@ -232,10 +261,12 @@ export async function callOpenRouter(
     const errorMsg = error instanceof Error ? error.message : String(error);
 
     // Also catch quota errors from thrown exceptions
-    if (!_isRetry && errorMsg.includes("FreeTierOnly") && MODEL_FALLBACKS[model]) {
+    if (!_isRetry && MODEL_FALLBACKS[model] && shouldUseModelFallback(undefined, errorMsg)) {
       const fallback = MODEL_FALLBACKS[model]!;
       console.error(`[OpenRouter] ${model} hit provider quota, falling back to ${fallback}`);
-      return callOpenRouter(messages, fallback, temperature, maxTokens, true);
+      clearTimeout(timeoutId);
+      return withFallbackDisclosure(model, fallback, describeFailure(errorMsg), errorMsg.slice(0, 200),
+        await callOpenRouter(messages, fallback, temperature, maxTokens, { ...options, __retry: true }, timeoutMs));
     }
 
     return `[OpenRouter error: ${errorMsg}]`;

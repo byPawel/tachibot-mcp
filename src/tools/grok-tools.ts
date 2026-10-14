@@ -17,6 +17,7 @@ import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { tryOpenRouterGateway, isGatewayEnabled } from "../utils/openrouter-gateway.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
+import { modelFallbackEnabled, degradedBanner } from "../utils/fallback-policy.js";
 // Note: renderOutput is applied centrally in server.ts safeAddTool() - no need to import here
 
 const __filename = fileURLToPath(import.meta.url);
@@ -191,9 +192,10 @@ export async function callGrok(
     }
     const errMsg = error instanceof Error ? error.message : String(error);
     // 4.5+ flagship rollouts are region-staged — fall back to grok-4.3
-    if (/^grok-4\.[5-9]/.test(model) && errMsg.includes('not available in your region')) {
+    if (/^grok-4\.[5-9]/.test(model) && errMsg.includes('not available in your region') && modelFallbackEnabled()) {
       console.error(`[Grok] ${model} region-blocked, falling back to grok-4.3`);
-      return callGrok(validatedMessages, GrokModel.GROK_4_3, temperature, maxTokens, forceVisibleOutput, validationContext, reasoningEffort);
+      const fb = await callGrok(validatedMessages, GrokModel.GROK_4_3, temperature, maxTokens, forceVisibleOutput, validationContext, reasoningEffort);
+      return fb.startsWith('[Grok') ? fb : degradedBanner(model, GrokModel.GROK_4_3, 'not available in your region') + fb;
     }
     return `[Grok error: ${errMsg}]`;
   }

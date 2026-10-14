@@ -25,7 +25,9 @@ jest.unstable_mockModule(GATEWAY_MODULE, () => ({
   tryOpenRouterGateway: async () => null,
 }));
 
-const { callGemini } = await import("../../src/tools/gemini-tools.js");
+const { callGemini, parseDegradedBanner } = await import("../../src/tools/gemini-tools.js");
+const { runJudge } = await import("../../src/utils/judge-runner.js");
+const { isProviderFailure } = await import("../../src/utils/provider-failure.js");
 const { GEMINI_MODELS, CURRENT_MODELS, getGeminiProModel } = await import(
   "../../src/config/model-constants.js"
 );
@@ -106,5 +108,60 @@ describe("Gemini 4 Argon", () => {
 
     expect(calls.map((c) => c.model)).toEqual(["gemini-4-argon", "gemini-3.1-pro-preview"]);
     expect(result).toContain("a real answer");
+    // Degradation is visible, naming the model that actually answered
+    expect(parseDegradedBanner(result)?.answeredBy).toBe("gemini-3.1-pro-preview");
+  });
+
+  test("when Argon AND 3.1 Pro both fail, the error keeps both causes", async () => {
+    mockFetch((model) => ({
+      status: 404,
+      json: { error: { code: 404, message: `models/${model} is not found`, status: "NOT_FOUND" } },
+    }));
+
+    const result = await callGemini("hi", "gemini-4-argon");
+
+    expect(isProviderFailure(result)).toBe(true);
+    expect(result).toContain("gemini-4-argon");
+    expect(result).toContain("gemini-3.1-pro-preview");
+  });
+
+  test("the fallback banner carries the reason", async () => {
+    mockFetch((model) =>
+      model === "gemini-4-argon"
+        ? { status: 404, json: { error: { code: 404, message: "models/gemini-4-argon is not found", status: "NOT_FOUND" } } }
+        : { status: 200, json: okBody },
+    );
+
+    const result = await callGemini("hi", "gemini-4-argon");
+
+    expect(result.startsWith("[degraded: gemini-4-argon unavailable — model not available")).toBe(true);
+  });
+
+  test("TACHI_MODEL_FALLBACK=off: Argon's own error, no 3.1 Pro call", async () => {
+    process.env.TACHI_MODEL_FALLBACK = "off";
+    try {
+      mockFetch(() => ({ status: 404, json: { error: { code: 404, message: "not found", status: "NOT_FOUND" } } }));
+
+      const result = await callGemini("hi", "gemini-4-argon");
+
+      expect(calls.map((c) => c.model)).toEqual(["gemini-4-argon"]);
+      expect(isProviderFailure(result)).toBe(true);
+    } finally {
+      delete process.env.TACHI_MODEL_FALLBACK;
+    }
+  });
+
+  test("runJudge reports 3.1 Pro (not Argon, not Flash) when Argon fell back", async () => {
+    delete process.env.TACHI_GEMINI_PRO_MODEL;
+    mockFetch((model) =>
+      model === "gemini-4-argon"
+        ? { status: 403, json: { error: { code: 403, message: "permission denied", status: "PERMISSION_DENIED" } } }
+        : { status: 200, json: okBody },
+    );
+
+    const verdict = await runJudge("judge this", "you are a judge");
+
+    expect(verdict.judge).toBe("gemini-3.1-pro-preview");
+    expect(verdict.degraded).toBe(true);
   });
 });

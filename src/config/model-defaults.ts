@@ -26,7 +26,7 @@ import {
  */
 const MODELS = {
   // Google Gemini
-  GEMINI: GEMINI_MODELS.GEMINI_3_PRO,           // gemini-3.1-pro-preview
+  get GEMINI(): string { return GEMINI_MODELS.GEMINI_3_PRO; }, // gemini-4-argon unless TACHI_GEMINI_PRO_MODEL (read per call)
 
   // OpenAI (GPT-6 Astra)
   OPENAI: OPENAI_MODELS.THINKING,               // gpt-6-astra (default - most capable, agentic)

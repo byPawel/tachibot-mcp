@@ -39,7 +39,8 @@ export interface Issue {
 }
 
 export class CommitGuardian {
-  private defaultModel = getGeminiProModel();
+  // Getter, not a field: instances are built at module load, before .env is applied
+  private get defaultModel(): string { return getGeminiProModel(); }
   private defaultMaxTokens = 5000;
   
   private securityPatterns = [

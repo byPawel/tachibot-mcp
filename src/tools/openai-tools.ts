@@ -17,6 +17,7 @@ import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
 import { readFilesIntoContext } from "../utils/file-reader.js";
+import { modelFallbackEnabled, isBillingFailure, describeFailure, degradedBanner } from "../utils/fallback-policy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -249,7 +250,9 @@ export async function callOpenAI(
     "gpt-5.4-pro": ["gpt-5.6-sol", "gpt-5.6-terra"]
   };
 
-  const modelsToTry = [model, ...(modelFallbacks[model] || [])];
+  // TACHI_MODEL_FALLBACK=off: answer with the requested model or report its error
+  const modelsToTry = [model, ...(modelFallbackEnabled() ? modelFallbacks[model] || [] : [])];
+  let firstFailureReason = '';
   console.error(`🔍 TRACE: Models to try: ${modelsToTry.join(', ')}`);
   // Every attempt is recorded — reporting only the LAST one hides why the
   // requested model was skipped (e.g. sol 403-gated, then terra/5.5 out of quota).
@@ -327,6 +330,12 @@ export async function callOpenAI(
         lastError = `${currentModel}: ${response.statusText} - ${error}`;
         attemptErrors.push(`${currentModel} → ${response.status} ${response.statusText}: ${extractApiErrorMessage(error)}`);
         console.error(`🔍 TRACE: ${currentModel} failed - Status: ${response.status}, Error: ${error}`);
+        firstFailureReason ||= describeFailure(error, response.status);
+
+        // Out of credits / insufficient_quota: every fallback bills the same account — stop
+        if (isBillingFailure(error, response.status)) {
+          return `[OpenAI request failed: ${describeFailure(error, response.status)} — ${currentModel} → ${response.status}: ${extractApiErrorMessage(error)}. Not trying other models (they bill the same account).]`;
+        }
 
         // Check if it's a model not found / not-yet-unlocked error
         // (403 "insufficient permissions" = org-verification-gated tier, e.g. gpt-5.6-sol)
@@ -393,13 +402,16 @@ export async function callOpenAI(
           ? `${currentModel}: incomplete response (${incompleteReason ?? 'unknown reason'}) — output budget ${budget} consumed before any visible text (lower reasoning_effort or raise max_tokens)`
           : `${currentModel}: empty response with status "${responseStatus ?? 'unknown'}"`;
         attemptErrors.push(lastError);
+        firstFailureReason ||= describeFailure(lastError);
         console.error(`🔍 TRACE: ${currentModel} EMPTY - ${lastError}`);
         continue; // Try next model instead of returning a fake success
       }
 
       console.error(`🔍 TRACE: ${currentModel} SUCCESS - Response length: ${rawContent.length}`);
 
-      return stripFormatting(rawContent);
+      // Never silent: a fallback model's answer says which model answered and why
+      const banner = currentModel !== model ? degradedBanner(model, currentModel, firstFailureReason || 'request failed') : '';
+      return banner + stripFormatting(rawContent);
 
     } catch (error) {
       // Handle abort/timeout specifically
@@ -411,6 +423,7 @@ export async function callOpenAI(
         console.error(`🔍 TRACE: ${currentModel} EXCEPTION - ${lastError}`);
       }
       attemptErrors.push(lastError);
+      firstFailureReason ||= describeFailure(lastError);
       continue; // Try next model
     }
   }

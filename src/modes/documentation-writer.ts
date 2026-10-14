@@ -50,7 +50,8 @@ export interface InlineComment {
 }
 
 export class DocumentationWriter {
-  private defaultModel = getGeminiProModel();
+  // Getter, not a field: instances are built at module load, before .env is applied
+  private get defaultModel(): string { return getGeminiProModel(); }
   private defaultMaxTokens = 3000;
   private defaultStyle: DocumentationOptions['style'] = 'narrative';
 

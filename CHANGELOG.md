@@ -18,11 +18,20 @@ Every model ID below was verified on 2026-10-14 against the provider's live mode
 - **`stepfun_reason` and the `stepfun` juror run `stepfun/step-5-preview`** (Oct 8, 2026: 600B/27B-active MoE, 1M ctx, $1/$2.70), falling back to `step-3.7-flash` and then `step-3.5-flash`.
 - Also included (prepared Sep 29, first committed here): GPT-6 `sol` / `luna` tiers, `gemini-3.8-flash` as the Flash/search tier, `grok-4.7` as the Grok flagship, GLM 5.3, the DeepSeek V4.1 Flash fallback, the pinned `qwen3.8-max-0902` snapshot, and `jev_decide` registered under OpenRouter.
 
+### Added
+- **Fallbacks are never silent, and they can be turned off.** Whenever a different model answers than the one requested (Gemini Argon → 3.1 Pro → Flash, the OpenAI tier chain, OpenRouter `MODEL_FALLBACKS`, the Grok region fallback), the answer starts with a banner: `[degraded: <requested> unavailable — <reason>; answered by <actual>]`. The reason is plain English: model not available (retired or not routed), no access for this key/region, rate-limited or quota exhausted, timed out, provider overloaded, or invalid API key. **`TACHI_MODEL_FALLBACK=off`** turns all model swaps off, including the judge's Gemini → OpenAI escalation, and returns the requested model's own error instead. This is for users who would rather fail than be billed for, or answered by, a different (e.g. cheaper or free-tier) model.
+- **Out of credits never falls back.** A 402, OpenAI's `insufficient_quota` or an "insufficient credits" error now stops at once with "out of credits / billing (top up the provider account)". Previously it tried every model in the chain, all of which bill the same account.
+
 ### Removed
 - **`ernie_reason` and the `ernie` juror.** `baidu/ernie-4.5-vl-424b-a47b` expired from OpenRouter on Oct 8, 2026, and OpenRouter lists no Baidu model now, so every call would 404. Tool count goes from 68 to 67 (`balanced` 56, `research_power` 37, `full` 67).
 
 ### Fixed
 - **Reasoning models could return half-finished reasoning as the answer.** When `finish_reason` is `length` with empty content, `callOpenRouter` now retries once with a larger budget and otherwise returns an explicit "incomplete" error. `deepseek_reason` and `deepseek_algo` budgets went from 8K to 32K.
+- **Successful degraded Gemini answers were thrown away.** The `[degraded: … unavailable, answered by …]` banner contains the word "unavailable", which `isProviderFailure` matched. Every answer that Pro → Flash degradation rescued was therefore treated as a failure, and the judge escalated to a paid OpenAI call. The banner now counts as success, and the judge reports the model that actually answered.
+- **OpenRouter model fallbacks almost never ran.** `MODEL_FALLBACKS` (K3 → K2.7-Code, DeepSeek V4 Pro → V4.1 Flash, GLM 5.3 → 5.2, StepFun 5 → 3.7, …) fired only on Alibaba's `FreeTierOnly` error, so a retired or preview model's 404, a 429 or a 5xx returned an error with its configured fallback unused. They now trigger on 404/408/429/5xx and "No endpoints found". The single hop also keeps `reasoning_effort`, which the old bare `true` flag dropped.
+- **A juror that spent its whole budget on reasoning was still counted.** The `[OpenRouter incomplete: …]` marker is now a provider failure, so the jury drops that juror instead of synthesizing an empty opinion.
+- **The `grok_search` timeout stopped covering the response body.** The timer was cleared as soon as headers arrived, so a stalled body read could hang forever while heartbeats hid it. Body consumption is now inside the timeout.
+- **The Gemini Pro override was frozen at import in several places** (`model-defaults` scout/challenger/verifier, `TOOL_DEFAULTS`, and mode instances built at module load). These are now live getters.
 - **Long `grok_search` / `grok_search_lite` runs were killed by the MCP client's 60s timeout.** They now heartbeat and use a dedicated `TACHI_SEARCH_TIMEOUT` (default 5 minutes).
 
 ## [2.34.0] - 2026-09-14

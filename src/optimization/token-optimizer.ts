@@ -55,7 +55,7 @@ export class TokenOptimizer {
     batchWindow: 100, // ms to wait for batch
     maxBatchSize: 10, // max requests per batch
     compressionThreshold: 2000, // characters
-    compressionModel: getGeminiProModel(), // Active Gemini Pro model for quality compression
+    get compressionModel(): string { return getGeminiProModel(); }, // Active Gemini Pro model for quality compression
   };
 
   // Metrics

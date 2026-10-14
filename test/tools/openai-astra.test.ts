@@ -119,9 +119,35 @@ describe("GPT-6 Astra", () => {
 
     const result = await callOpenAI(messages, "gpt-6-astra", 0.7, 8000, "none", false, true);
 
-    expect(result).toBe("a real answer");
+    // Never silent: the fallback answer names the model that answered and why
+    expect(result).toBe(
+      "[degraded: gpt-6-astra unavailable — no access to this model for this key/region; answered by gpt-6.1-sol]\n\na real answer",
+    );
     expect(calls.map((c) => c.body.model)).toEqual(["gpt-6-astra", "gpt-6.1-sol"]);
     // Effort is normalised per attempt: gpt-6.1-sol shares Astra's effort floor, so "none" runs as "low"
     expect(calls[1].body.reasoning).toEqual({ effort: "low" });
+  });
+
+  test("TACHI_MODEL_FALLBACK=off: no fallback chain, Astra's own error", async () => {
+    process.env.TACHI_MODEL_FALLBACK = "off";
+    try {
+      mockFetch(() => ({ status: 403, json: { error: { message: "insufficient permissions for this model" } } }));
+
+      const result = await callOpenAI(messages, "gpt-6-astra", 0.7, 8000, "high", false, true);
+
+      expect(calls.map((c) => c.body.model)).toEqual(["gpt-6-astra"]);
+      expect(result).toMatch(/^\[OpenAI request failed/);
+    } finally {
+      delete process.env.TACHI_MODEL_FALLBACK;
+    }
+  });
+
+  test("insufficient_quota (out of credits) stops instead of trying other tiers", async () => {
+    mockFetch(() => ({ status: 429, json: { error: { message: "You exceeded your current quota", code: "insufficient_quota" } } }));
+
+    const result = await callOpenAI(messages, "gpt-6-astra", 0.7, 8000, "high", false, true);
+
+    expect(calls).toHaveLength(1);
+    expect(result).toContain("out of credits");
   });
 });

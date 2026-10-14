@@ -25,10 +25,11 @@
  *      than an error string: the panel already ran and the user already paid for it.
  */
 
-import { callGemini } from "../tools/gemini-tools.js";
+import { callGemini, parseDegradedBanner } from "../tools/gemini-tools.js";
 import { callOpenAI } from "../tools/openai-tools.js";
 import { OPENAI_MODELS, OPENAI_REASONING, GEMINI_MODELS } from "../config/model-constants.js";
 import { isProviderFailure } from "./provider-failure.js";
+import { modelFallbackEnabled } from "./fallback-policy.js";
 
 export interface JudgeResult {
   /** Synthesized verdict, or null when every judge was unavailable. */
@@ -54,15 +55,21 @@ export async function runJudge(
     maxTokens,
   );
   if (!isProviderFailure(gemini)) {
-    // callGemini prefixes its own banner when it degraded Pro -> Flash.
-    const degraded = gemini.startsWith("[degraded:");
+    // callGemini prefixes a banner naming the model that actually answered when it
+    // degraded (Argon -> 3.1 Pro, and/or Pro -> Flash).
+    const banner = parseDegradedBanner(gemini);
     return {
       text: gemini,
-      judge: degraded ? GEMINI_MODELS.FLASH : GEMINI_MODELS.GEMINI_3_PRO,
-      degraded,
+      judge: banner ? banner.answeredBy : GEMINI_MODELS.GEMINI_3_PRO,
+      degraded: banner !== null,
     };
   }
 
+  // TACHI_MODEL_FALLBACK=off: no cross-provider escalation — callers degrade visibly
+  if (!modelFallbackEnabled()) {
+    console.error(`💀 [Judge] Gemini unavailable and model fallback is off (TACHI_MODEL_FALLBACK)`);
+    return { text: null, judge: null, degraded: true };
+  }
   console.error(`🔻 [Judge] Gemini unavailable, escalating to ${OPENAI_MODELS.SOL}`);
   const openai = await callOpenAI(
     [
