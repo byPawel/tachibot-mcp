@@ -40,7 +40,7 @@ truth for recommendations — don't maintain a parallel list here.
      }
    })
    ```
-   Candidates: auto's picks plus 2–4 plausible ones from `list_prompt_techniques({})`. Use 3–7 options. Order the offer in step 4 by `answers.technique.probabilities`. If Jev errors, keep auto's order.
+   Candidates: auto's picks plus 2–4 plausible ones from `list_prompt_techniques({})`. Use 3–7 options, listed in **alphabetical order**, never in auto's rank order and never marked as auto's pick, or Jev just echoes the ranking. Order the offer in step 4 by `answers.technique.probabilities`. If Jev errors, keep auto's order.
 2. Write a goal-first brief IN CONTEXT (free — you're already a frontier model; do NOT add a paid rewrite step). Turn the raw query into: goal, constraints, deliverable, and how you'll know it's right. Preserve the user's ambiguity — surface it as an open question rather than resolving it silently. If the query is long/messy or the user explicitly asks to improve their prompt, offer the opt-in tool instead: `refine_prompt({ query, goal?, context? })` — relay its REFINED PROMPT + WHAT CHANGED + OPEN QUESTIONS and get approval before using the brief. Never call it automatically.
 3. Preview the top recommended technique against a sensible tool (see mapping below): `preview_prompt_technique({ technique: "[top pick]", tool: "[tool]", query: "[the brief]" })`.
 4. Show the user the original query vs the enhanced prompt, name the technique + why. Offer the choice through your option-choosing interface (in Claude Code: the multiple-choice UI) — the previewed technique first marked "(Recommended)", then the runner-ups from the auto step, each with its one-line why. In clients without that UI, list them inline.

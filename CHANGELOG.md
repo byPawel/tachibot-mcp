@@ -5,7 +5,7 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Oct 2026 model refresh
+## [2.35.0] - 2026-10-14
 
 Every model ID below was verified on 2026-10-14 against the provider's live model listing and with real calls through the built tools (16/16 tool paths pass).
 
@@ -25,6 +25,17 @@ Every model ID below was verified on 2026-10-14 against the provider's live mode
 - **`jev_decide` actually loads now.** On v2.34.0 it was switched on in the profiles but never registered. It asks TypeSafe Jev (`typesafe/jev-1.13`, through OpenRouter's System One endpoint) typed questions: `noul` for a yes/no probability, `choice` to pick an option, `score` to rate on a scale. You get calibrated probabilities back as JSON, for about $0.00002 per call in under a second.
 - **Workflows can branch on Jev decisions.** Step conditions now support dotted paths and `== != > >= < <=`, and read into JSON step outputs, e.g. `if: "gate.answers.grounded.noul < 0.6"`. New `workflows/jev-gated-answer.yaml`: a Perplexity answer, then a Jev check that it is grounded in sources, then Grok research and a Gemini revision only if that check fails.
 - **Jev checks in the skills.** `/council` gets an evidence-sufficiency check after research (it caps confidence) and a calibrated pick plus risk score before the resolution, with a rule for what happens when they disagree. `/review` cross-checks its merge verdict and risk. `/prompt` ranks candidate techniques when keyword matching is weak. `/write` gains a Jev check.
+
+### Security
+- **Workflow steps now have a trust boundary** (`src/workflows/step-guard.ts`). Delegating workflow steps to the real tools gave any workflow YAML (`workflow({ file })` runs any path, and workflow files get shared) the same power as the user's own MCP client. Steps now:
+  - run only tools **enabled in the active profile**;
+  - may pass `files` only when they resolve **inside the working directory**: no `..` escape, no symlink escape, no home-relative paths, and nothing that looks like a credential (`.env*`, `.ssh`, `.aws`, `.npmrc`, `*.pem`/`*.key`, `credentials*`…). The file reader has no sandbox of its own;
+  - may not set `useHeavy`, and may point `jev_decide` only at a `typesafe/*` model;
+  - may not call the meta tools (`workflow*`, `validate_workflow*`, `list_workflows`).
+  A refused step fails visibly. Direct tool calls are unchanged.
+
+### Changed (skills)
+- **Jev calibration calls are now blind.** `/council`, `/review` and `/prompt` no longer show Jev other models' rankings, scores or verdicts, and list options alphabetically. With a leaked "X ranked first" hint Jev echoed it (p = 0.99); the same evidence sent blind gave that option 0.10. Otherwise its agree/dissent signal means nothing.
 
 ### Removed
 - **`ernie_reason` and the `ernie` juror.** `baidu/ernie-4.5-vl-424b-a47b` expired from OpenRouter on Oct 8, 2026, and OpenRouter lists no Baidu model now, so every call would 404. Tool count goes from 68 to 67 (`balanced` 56, `research_power` 37, `full` 67).

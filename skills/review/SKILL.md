@@ -25,6 +25,9 @@ Review the user's current change with the `diff_review` tool.
      }
    })
    ```
+   Blind rule: `state` carries the findings and stats only, never the judge's verdict, the
+   panel's vote or a "mergeable" lean. Jev echoes such hints (see /council), and then its
+   agreement means nothing.
    Add one line under the verdict: `Jev: [choice] p=[prob] · merge risk [level]`. If Jev's choice differs from the judge's, say so plainly. Don't override the judge; the disagreement is a signal for the user. Skip silently if Jev errors.
 6. Offer to apply the top fix.
 

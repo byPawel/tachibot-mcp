@@ -237,16 +237,22 @@ mcp__tachibot-mcp__openai_reason({
 
 ### Step 3.5: Calibrated Pick (Jev)
 
-Give Jev the options enumerated in Thought 1 and the weighted criteria. Its probabilities
-are an independent cross-check on the reasoning chain, not the verdict.
+Give Jev the options enumerated in Thought 1, the weighted criteria and the **evidence only**.
+Its probabilities are an independent cross-check on the reasoning chain, not the verdict.
+
+**Blind rule: never put another model's ranking, scores, lean or verdict into Jev's `state`.**
+That includes Thought 2's scores, the chain's leading option, "X ranked first", and one-sided
+debate summaries. Jev echoes such hints: in the 2026-10-14 Argon council, a leaked
+"keep_argon_monitor ranked first" line produced p=0.99 for that option, while the same
+evidence sent blind gave it p=0.10 and picked route_by_task (0.37). An echoed pick makes the
+agreement rule meaningless. Arguments are evidence; conclusions are not.
 ```
 mcp__tachibot-mcp__jev_decide({
   state: {
     question: "[query]",
     criteria: "[weighted criteria from Thought 1]",
-    research: "[Phase 1 key findings]",
-    debate: "[Phase 2 key tension, strongest pro + con]",
-    scores: "[Thought 2 option scores]"
+    research: "[Phase 1 key findings + any measured data]",
+    arguments: "[Phase 2 strongest argument for EACH option, given equal space and in neutral order. No conclusions]"
   },
   questions: {
     pick: {
@@ -263,6 +269,8 @@ mcp__tachibot-mcp__jev_decide({
 })
 ```
 - Option keys: short snake_case, 2–6 options, always include `do_nothing` when Thought 1 did.
+  List them in **alphabetical order**, not in the chain's ranking order, and keep the one-line
+  descriptions neutral (e.g. never "recommended" or "safest").
 - Read `answers.pick.choice`, `answers.pick.probabilities`, `answers.pick.confidence`,
   and `answers.risk.legend[argmax(answers.risk.probabilities)]`.
 - Record whether Jev's pick matches the chain's leading option (Thought 2/4). Pass both to Step 4.
