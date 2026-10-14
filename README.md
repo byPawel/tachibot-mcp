@@ -30,6 +30,23 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ## What's New
 
+### v2.35.0
+- **Gemini 4 Argon is the reasoning/judge default** (GA Oct 13). In our judge tests it was faster and cheaper than 3.1 Pro even at its Dec 1 price ($4/$20), and on a real diff it caught defects that 3.1 Pro passed as "no defects, 5/5". Switch back without a code change with `TACHI_GEMINI_PRO_MODEL=gemini-3.1-pro-preview`.
+- **Model refresh, every ID verified live:**
+  - `gpt-6.1-sol` (SOL tier, now also `openai_search`)
+  - `grok-4.7` for `grok_search`
+  - `gemini-3.8-flash` for search and Flash
+  - `stepfun/step-5-preview`, GLM 5.3, and a DeepSeek V4.1 Flash fallback
+- **`jev_decide` works now.** It asks TypeSafe Jev for yes/no, choice or score answers as calibrated probabilities, for about $0.00002 per call. Workflows can branch on its answers (`if: "gate.answers.grounded.noul < 0.6"`), and `/council`, `/review`, `/prompt` and `/write` use it as a calibration check.
+- **Fallbacks are never silent, and can be turned off.** An answer from a backup model starts with `[degraded: X unavailable — <reason>; answered by Y]`. `TACHI_MODEL_FALLBACK=off` turns backup models off entirely. Running out of credits never triggers a fallback.
+- **Fixes:**
+  - Rescued Gemini answers were being discarded.
+  - OpenRouter fallbacks fired only on a single error type.
+  - `nextThought` OpenAI steps could silently call no model.
+  - The grok search timeout ignored the response body.
+- **Security: workflow steps have a trust boundary.** Steps run only profile-enabled tools, may read only files inside the working directory (no `..`, symlink escapes or secrets such as `.env` and keys), and can't turn on Grok Heavy.
+- **Removed `ernie_reason`** (Baidu left OpenRouter on Oct 8). The `jev_decide` addition and `ernie_reason` removal leave the count at 67 tools.
+
 ### v2.34.0
 - **GPT-6 Astra is the OpenAI default.** `gpt-6-astra` (Sep 3, 2026; $10/$50, 1.05M context) now backs `openai_reason`, `openai_brainstorm`, `openai_code_review`, `spec_writer`, `tachi` and the GPT reviewers in `diff_review` / `plan_critique`. Astra rolled out to a limited set of orgs first, so calls fall back to `gpt-5.6-sol`, then `gpt-5.6-terra`, when an org lacks access. `openai_explain` stays on sol — low-effort explanations don't need the flagship.
 - **GPT-6 models could not be called at all.** `callOpenAI` only used the Responses API for names starting with `gpt-5.`, so Astra fell through to Chat Completions with `temperature: 0.7` and got a 400. `gpt-6-*` now goes to the Responses API without temperature, and the `none`/`minimal` reasoning efforts Astra rejects are sent as `low`.
