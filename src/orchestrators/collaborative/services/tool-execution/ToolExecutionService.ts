@@ -167,8 +167,11 @@ export class ToolExecutionService implements IToolExecutionEngine {
 
     // OpenAI smart routing
     if (modelLower === "openai" || modelLower === "gpt") {
-      // Code-related → could add openai_code_review if needed
-      if (prompt.includes("```") || /\b(review code|debug|refactor)\b/i.test(prompt)) {
+      // Explicit code-review intent only. A bare ``` is NOT intent: nextThought prompts carry
+      // prior thoughts' output, which often contains code fences, so every OpenAI step after
+      // one fenced answer was misrouted to code review (and, with no executor case, returned
+      // "[Tool openai_code_review not available …]" without calling any model).
+      if (/\b(review (this |the )?code|code review|debug|refactor)\b/i.test(prompt)) {
         return "openai_code_review";
       }
 
@@ -326,6 +329,11 @@ export class ToolExecutionService implements IToolExecutionEngine {
         return {
           query: prompt,
           mode: "analytical"
+        };
+
+      case "openai_code_review":
+        return {
+          code: prompt
         };
 
       default:
@@ -559,6 +567,16 @@ Step-by-step reasoning:
             }
           });
           return typeof openaiBrainstormResult === 'string' ? openaiBrainstormResult : JSON.stringify(openaiBrainstormResult);
+
+        case "openai_code_review":
+          const { openaiCodeReviewTool } = await import("../../../../tools/openai-tools.js");
+          const openaiCodeReviewResult = await openaiCodeReviewTool.execute(params, {
+            log: {
+              info: (msg: string, data?: any) => console.error(`[${toolName}] ${msg}`, data),
+              error: (msg: string, data?: any) => console.error(`[${toolName}] ERROR: ${msg}`, data)
+            }
+          });
+          return typeof openaiCodeReviewResult === 'string' ? openaiCodeReviewResult : JSON.stringify(openaiCodeReviewResult);
 
         case "gemini_brainstorm":
           const { geminiBrainstormTool } = await import("../../../../tools/gemini-tools.js");
