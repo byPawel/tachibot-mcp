@@ -10,7 +10,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io)
 
-**67 AI tools. 12 providers. One protocol.**
+**67 AI tools. 11 providers. One protocol.**
 
 Orchestrate Perplexity, Grok 4.6, GPT-6 Astra, Gemini, Qwen, Kimi K3, and MiniMax M3
 from Claude Code, Claude Desktop, Cursor, or any MCP client.
@@ -156,8 +156,8 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ## Key Features
 
 ### Multi-Model Intelligence
-- **65 AI Tools** across 12 providers &mdash; Perplexity, Grok, GPT-5, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, ERNIE (Baidu), plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
-- **Gemini 3.7 Flash** (`gemini-3.7-flash`, GA Aug 13 2026) &mdash; Flash/search tier; reasoning default stays `gemini-3.1-pro-preview` (Google has still not shipped a 3.5 Pro)
+- **67 AI Tools** across 11 providers &mdash; Perplexity, Grok, GPT-6, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, TypeSafe Jev, plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
+- **Gemini 4 Argon** (`gemini-4-argon`, GA Oct 13 2026) &mdash; reasoning/judge default; set `TACHI_GEMINI_PRO_MODEL=gemini-3.1-pro-preview` to roll back. Flash/search tier is `gemini-3.8-flash`
 - **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
 - **Smart Routing** &mdash; Automatic model selection for optimal results
 - **OpenRouter Gateway** &mdash; Optional single API key for all providers
@@ -176,7 +176,7 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 | **Code Focus** | 43 | Software development, SWE tasks |
 | **Balanced** | 56 | General-purpose, mixed workflows |
 | **Heavy Coding** | 59 | Max code tools + agentic workflows |
-| **Full** (default) | 67 | Everything enabled |
+| **Full** (default) | 68 | Everything enabled |
 
 ### Developer Experience
 - **Claude Code** &mdash; First-class support
@@ -262,13 +262,13 @@ See [Installation Guide](docs/INSTALLATION_BOTH.md) for detailed instructions.
 `perplexity_ask` &#183; `perplexity_reason` &#183; `grok_search` &#183; `grok_search_lite` &#183; `openai_search` &#183; `gemini_search`
 
 ### Reasoning & Planning (15)
-`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `ernie_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans` &#183; `spec_writer` &#183; `blog_writer`
+`grok_reason` &#183; `openai_reason` &#183; `qwen_reason` &#183; `qwq_reason` &#183; `kimi_thinking` &#183; `kimi_decompose` &#183; `deepseek_reason` &#183; `glm_reason` &#183; `stepfun_reason` &#183; `planner_maker` &#183; `planner_runner` &#183; `list_plans` &#183; `spec_writer` &#183; `blog_writer`
 
 ### Code Intelligence (11)
 `kimi_code` &#183; `grok_code` &#183; `grok_debug` &#183; `qwen_coder` &#183; `qwen_algo` &#183; `qwen_competitive` &#183; `deepseek_algo` &#183; `minimax_code` &#183; `minimax_agent` &#183; `testgen` &#183; `debug_triage`
 
-### Analysis & Judgment (14)
-`gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_judge` &#183; `jury` &#183; `diff_review` &#183; `plan_critique` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `security_review` &#183; `kimi_long_context`
+### Analysis & Judgment (15)
+`gemini_analyze_text` &#183; `gemini_analyze_code` &#183; `gemini_judge` &#183; `jury` &#183; `diff_review` &#183; `plan_critique` &#183; `gemini_brainstorm` &#183; `openai_brainstorm` &#183; `openai_code_review` &#183; `openai_explain` &#183; `grok_brainstorm` &#183; `grok_architect` &#183; `security_review` &#183; `jev_decide` &#183; `kimi_long_context`
 
 ### Meta & Orchestration (6)
 `think` &#183; `nextThought` &#183; `focus` &#183; `tachi` &#183; `doctor` &#183; `usage_stats`

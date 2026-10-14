@@ -25,7 +25,7 @@ Counts below are generated from `src/profiles/*.ts` via `npm run build:profiles`
 | Profile | Tools | Description |
 |---------|-------|-------------|
 | `minimal` | 14 | Minimal essential tools for basic tasks |
-| `research_power` | 38 | Research-focused with Grok search + all Perplexity + brainstorming |
+| `research_power` | 37 | Research-focused with Grok search + all Perplexity + brainstorming |
 | `code_focus` | 43 | Code-heavy work with debugging and analysis |
 | `balanced` | 56 | Balanced set for general use |
 | `heavy_coding` | 59 | Heavy coding with all reasoning & code tools |
@@ -50,14 +50,14 @@ Minimal essential tools for basic tasks.
 
 ---
 
-### 2. `research_power` (38 tools)
+### 2. `research_power` (37 tools)
 
 Research-focused with Grok search + all Perplexity + brainstorming + the full reasoning/planning suite.
 
 **Tools:**
 - Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
 - Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `grok_search_lite`, `openai_search`, `gemini_search`
-- Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`
+- Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`
 - Judgment: `gemini_judge`, `jury`
 - Creative: `openai_brainstorm`, `gemini_brainstorm`
 - Code: `qwen_coder`, `kimi_code`, `kimi_long_context`, `minimax_agent`
@@ -74,7 +74,7 @@ Research-focused with Grok search + all Perplexity + brainstorming + the full re
 
 ---
 
-### 3. `code_focus` (43 tools)
+### 3. `code_focus` (44 tools)
 
 Code-heavy work with debugging and analysis.
 
@@ -88,7 +88,7 @@ Code-heavy work with debugging and analysis.
 - Planning: `planner_maker`, `planner_runner`, `list_plans`, `spec_writer`
 - Workflow: `workflow`, `list_workflows`, `validate_workflow`
 - Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`, `refine_prompt`
-- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
+- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`, `jev_decide`
 
 **Best for:** Software development, debugging, code review, refactoring, security-conscious changes.
 
@@ -101,7 +101,7 @@ Balanced set for general use — nearly everything except the deepest niche reas
 **Tools:**
 - Meta: `think`, `focus`, `tachi`, `doctor`, `nextThought`, `usage_stats`
 - Research: `perplexity_ask`, `perplexity_reason`, `grok_search`, `grok_search_lite`, `openai_search`, `gemini_search`
-- Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`
+- Reasoning: `grok_reason`, `qwq_reason`, `qwen_reason`, `kimi_thinking`, `kimi_decompose`, `deepseek_reason`, `glm_reason`, `stepfun_reason`
 - Code: `grok_code`, `qwen_coder`, `qwen_algo`, `kimi_code`, `kimi_long_context`, `minimax_code`, `minimax_agent`, `deepseek_algo`, `debug_triage`
 - Judgment: `gemini_judge`, `jury`
 - Creative: `openai_brainstorm`, `gemini_brainstorm`
@@ -110,14 +110,14 @@ Balanced set for general use — nearly everything except the deepest niche reas
 - Planning: `planner_maker`, `planner_runner`, `list_plans`, `spec_writer`, `blog_writer`
 - Workflow: `workflow`, `list_workflows`, `create_workflow`, `visualize_workflow`
 - Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`, `refine_prompt`
-- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
+- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`, `jev_decide`
 - Reasoning (OpenAI): `openai_reason`
 
 **Best for:** General-purpose work, daily tasks, mixed research + code.
 
 ---
 
-### 5. `heavy_coding` (59 tools)
+### 5. `heavy_coding` (60 tools)
 
 Heavy coding with the full reasoning & code toolset, minus the general workflow-management tools.
 
@@ -133,11 +133,11 @@ Heavy coding with the full reasoning & code toolset, minus the general workflow-
 - Planning: `planner_maker`, `planner_runner`, `list_plans`, `spec_writer`
 - Workflow: `workflow`, `list_workflows`, `workflow_start`, `continue_workflow`
 - Prompt engineering: `list_prompt_techniques`, `preview_prompt_technique`, `execute_prompt_technique`, `refine_prompt`
-- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`
+- Quality: `testgen`, `security_review`, `diff_review`, `plan_critique`, `jev_decide`
 
 **Best for:** Coding marathons, large refactors, when you want every code-intelligence tool available but don't need custom workflow authoring.
 
-**Not included** (present only in `full`): `ernie_reason`, `qwen_competitive`, `create_workflow`, `visualize_workflow`, `workflow_status`, `validate_workflow`, `validate_workflow_file`.
+**Not included** (present only in `full`): `qwen_competitive`, `create_workflow`, `visualize_workflow`, `workflow_status`, `validate_workflow`, `validate_workflow_file`.
 
 ---
 
@@ -145,11 +145,11 @@ Heavy coding with the full reasoning & code toolset, minus the general workflow-
 
 All tools enabled for maximum capability. This is the profile set in `tools.config.json`'s `activeProfile` by default.
 
-**Tools:** every tool listed in [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md), including the niche/conditional ones not in any other profile: `ernie_reason`, `qwen_competitive`, `create_workflow`, `visualize_workflow`, `workflow_status`, `validate_workflow`, `validate_workflow_file`.
+**Tools:** every tool listed in [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md), including the niche/conditional ones not in any other profile: `qwen_competitive`, `create_workflow`, `visualize_workflow`, `workflow_status`, `validate_workflow`, `validate_workflow_file`.
 
 **Best for:** Maximum flexibility, specialized tasks, demonstrations.
 
-**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools won't register even under `full`. Run `doctor` to see exactly what's active.
+**Note:** tools still self-gate on API keys — with no `OPENROUTER_API_KEY`, the Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun tools won't register even under `full`. Run `doctor` to see exactly what's active.
 
 ---
 
@@ -216,7 +216,7 @@ Priority: `ENV vars` > `customProfile` > `activeProfile` > default (enabled).
 ### Tool still appears / still hidden
 1. Confirm the tool is `true`/`false` in the active profile (`profiles/<name>.json` after a build, or `src/profiles/<name>.ts` in source).
 2. Check for an `ENABLE_TOOL_*` / `DISABLE_TOOL_*` environment override.
-3. Confirm the tool's provider API key is set — some tools (Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE) need `OPENROUTER_API_KEY` regardless of profile.
+3. Confirm the tool's provider API key is set — some tools (Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun) need `OPENROUTER_API_KEY` regardless of profile.
 
 ### Custom profile not working
 1. Set `"enabled": true` in `customProfile`.

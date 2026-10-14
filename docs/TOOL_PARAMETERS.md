@@ -36,7 +36,7 @@ deepseek_algo({
 })
 ```
 
-Tools with `files`: `deepseek_algo`, `deepseek_reason`, `diff_review`, `ernie_reason`, `gemini_analyze_code`, `gemini_analyze_text`, `gemini_brainstorm`, `gemini_judge`, `glm_reason`, `grok_architect`, `grok_brainstorm`, `grok_code`, `grok_debug`, `grok_reason`, `kimi_code`, `kimi_decompose`, `kimi_long_context`, `kimi_thinking`, `minimax_agent`, `minimax_code`, `openai_brainstorm`, `openai_code_review`, `openai_explain`, `openai_reason`, `perplexity_ask`, `perplexity_reason`, `plan_critique`, `planner_maker`, `planner_runner`, `qwen_algo`, `qwen_coder`, `qwen_competitive`, `qwen_reason`, `qwq_reason`, `security_review`, `stepfun_reason`, `testgen`.
+Tools with `files`: `deepseek_algo`, `deepseek_reason`, `diff_review`, `gemini_analyze_code`, `gemini_analyze_text`, `gemini_brainstorm`, `gemini_judge`, `glm_reason`, `grok_architect`, `grok_brainstorm`, `grok_code`, `grok_debug`, `grok_reason`, `kimi_code`, `kimi_decompose`, `kimi_long_context`, `kimi_thinking`, `minimax_agent`, `minimax_code`, `openai_brainstorm`, `openai_code_review`, `openai_explain`, `openai_reason`, `perplexity_ask`, `perplexity_reason`, `plan_critique`, `planner_maker`, `planner_runner`, `qwen_algo`, `qwen_coder`, `qwen_competitive`, `qwen_reason`, `qwq_reason`, `security_review`, `stepfun_reason`, `testgen`.
 
 **Why prefer `files` over pasting code:** the model sees the actual current file content, not a snapshot you may have summarized or mis-copied. For diff-scoped review use `diff_review` or `security_review`'s `diff` parameter instead — those take `git diff` output directly.
 
@@ -44,7 +44,7 @@ Tools with `files`: `deepseek_algo`, `deepseek_reason`, `diff_review`, `ernie_re
 
 ## Model-Reasoning Tools: `problem` + `approach` + `context`
 
-The single-model reasoning tools (`grok_reason`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `ernie_reason`, `qwen_reason`, `qwq_reason`, `kimi_thinking`, `perplexity_reason`) share a common shape:
+The single-model reasoning tools (`grok_reason`, `deepseek_reason`, `glm_reason`, `stepfun_reason`, `qwen_reason`, `qwq_reason`, `kimi_thinking`, `perplexity_reason`) share a common shape:
 
 ```typescript
 {
@@ -55,11 +55,11 @@ The single-model reasoning tools (`grok_reason`, `deepseek_reason`, `glm_reason`
 }
 ```
 
-`approach` is **not a fixed enum** for most of these tools — it's a free-text steering hint with a per-tool default (`grok_reason` has no default; `deepseek_reason`/`ernie_reason`/`stepfun_reason` default to `"analytical"`; `qwen_reason` defaults to `"mathematical"`; `kimi_thinking` defaults to `"step-by-step"`; `qwq_reason` defaults to `"multi-perspective"` and is closer to an enum in practice: `multi-perspective | mathematical | logical | creative`). Check the specific tool's entry in TOOLS_REFERENCE.md for its default.
+`approach` is **not a fixed enum** for most of these tools — it's a free-text steering hint with a per-tool default (`grok_reason` has no default; `deepseek_reason`/`stepfun_reason` default to `"analytical"`; `qwen_reason` defaults to `"mathematical"`; `kimi_thinking` defaults to `"step-by-step"`; `qwq_reason` defaults to `"multi-perspective"` and is closer to an enum in practice: `multi-perspective | mathematical | logical | creative`). Check the specific tool's entry in TOOLS_REFERENCE.md for its default.
 
 Model-specific extras: `grok_reason` has `useHeavy: boolean` (Grok 4 Heavy, $3/$15, for hard problems); `kimi_thinking` has `maxSteps: integer (1-10, default 3)`.
 
-**Choosing among the reasoning tools** — see CLAUDE.md's Model Configuration table for current model IDs/pricing. As a rule of thumb: `deepseek_reason` for open-weight frontier math/reasoning, `qwen_reason` for the heaviest math (Qwen3.8 Max, 1M context), `qwq_reason` when you want 4-perspective debate instead of a single answer, `kimi_thinking`/`glm_reason` for agentic/tool-use planning, `stepfun_reason` for cheaper-but-strong AIME/SWE reasoning, `ernie_reason` for broad-knowledge/arena-style answers.
+**Choosing among the reasoning tools** — see CLAUDE.md's Model Configuration table for current model IDs/pricing. As a rule of thumb: `deepseek_reason` for open-weight frontier math/reasoning, `qwen_reason` for the heaviest math (Qwen3.8 Max, 1M context), `qwq_reason` when you want 4-perspective debate instead of a single answer, `kimi_thinking`/`glm_reason` for agentic/tool-use planning, `stepfun_reason` for cheaper-but-strong AIME/SWE reasoning.
 
 ---
 
@@ -125,7 +125,7 @@ PERPLEXITY_API_KEY=...       # perplexity_ask, perplexity_reason
 GROK_API_KEY=...             # or XAI_API_KEY — grok_* tools
 OPENAI_API_KEY=...           # openai_* tools
 GEMINI_API_KEY=...           # gemini_* tools, jury synthesis
-OPENROUTER_API_KEY=...       # qwen_*, kimi_*, minimax_*, deepseek_*, glm_*, stepfun_*, ernie_* tools
+OPENROUTER_API_KEY=...       # qwen_*, kimi_*, minimax_*, deepseek_*, glm_*, stepfun_* tools
 ```
 
 `local_query` and the `jury` tool's `local` juror need no API key — they call any OpenAI-compatible local server (Ollama, LM Studio, llama.cpp, vLLM). See CLAUDE.md's "Connecting Local Models" section.
@@ -138,7 +138,7 @@ Tools whose provider key is missing simply don't register — call `doctor` to s
 - `grok*` → xAI API
 - `openai*`, `gpt*` → OpenAI API
 - `gemini*` → Google API
-- `qwen*`, `qwq*`, `kimi*`, `minimax*`, `deepseek*`, `glm*`, `stepfun*`, `ernie*` → OpenRouter
+- `qwen*`, `qwq*`, `kimi*`, `minimax*`, `deepseek*`, `glm*`, `stepfun*` → OpenRouter
 
 ---
 

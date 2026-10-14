@@ -9,9 +9,9 @@ Schemas below are generated from the wire contract (`test/golden/__snapshots__/t
 ## Table of Contents
 
 - [Research & Search](#research--search) (6): [perplexity_ask](#perplexity_ask) &#183; [perplexity_reason](#perplexity_reason) &#183; [grok_search](#grok_search) &#183; [grok_search_lite](#grok_search_lite) &#183; [openai_search](#openai_search) &#183; [gemini_search](#gemini_search)
-- [Reasoning & Planning](#reasoning--planning) (15): [grok_reason](#grok_reason) &#183; [openai_reason](#openai_reason) &#183; [qwen_reason](#qwen_reason) &#183; [qwq_reason](#qwq_reason) &#183; [kimi_thinking](#kimi_thinking) &#183; [kimi_decompose](#kimi_decompose) &#183; [deepseek_reason](#deepseek_reason) &#183; [glm_reason](#glm_reason) &#183; [stepfun_reason](#stepfun_reason) &#183; [ernie_reason](#ernie_reason) &#183; [planner_maker](#planner_maker) &#183; [planner_runner](#planner_runner) &#183; [list_plans](#list_plans) &#183; [spec_writer](#spec_writer) &#183; [blog_writer](#blog_writer)
+- [Reasoning & Planning](#reasoning--planning) (14): [grok_reason](#grok_reason) &#183; [openai_reason](#openai_reason) &#183; [qwen_reason](#qwen_reason) &#183; [qwq_reason](#qwq_reason) &#183; [kimi_thinking](#kimi_thinking) &#183; [kimi_decompose](#kimi_decompose) &#183; [deepseek_reason](#deepseek_reason) &#183; [glm_reason](#glm_reason) &#183; [stepfun_reason](#stepfun_reason) &#183; [planner_maker](#planner_maker) &#183; [planner_runner](#planner_runner) &#183; [list_plans](#list_plans) &#183; [spec_writer](#spec_writer) &#183; [blog_writer](#blog_writer)
 - [Code Intelligence](#code-intelligence) (11): [kimi_code](#kimi_code) &#183; [grok_code](#grok_code) &#183; [grok_debug](#grok_debug) &#183; [qwen_coder](#qwen_coder) &#183; [qwen_algo](#qwen_algo) &#183; [qwen_competitive](#qwen_competitive) &#183; [deepseek_algo](#deepseek_algo) &#183; [minimax_code](#minimax_code) &#183; [minimax_agent](#minimax_agent) &#183; [testgen](#testgen) &#183; [debug_triage](#debug_triage)
-- [Analysis & Judgment](#analysis--judgment) (14): [gemini_analyze_text](#gemini_analyze_text) &#183; [gemini_analyze_code](#gemini_analyze_code) &#183; [gemini_judge](#gemini_judge) &#183; [jury](#jury) &#183; [diff_review](#diff_review) &#183; [plan_critique](#plan_critique) &#183; [gemini_brainstorm](#gemini_brainstorm) &#183; [openai_brainstorm](#openai_brainstorm) &#183; [openai_code_review](#openai_code_review) &#183; [openai_explain](#openai_explain) &#183; [grok_brainstorm](#grok_brainstorm) &#183; [grok_architect](#grok_architect) &#183; [security_review](#security_review) &#183; [kimi_long_context](#kimi_long_context)
+- [Analysis & Judgment](#analysis--judgment) (15): [gemini_analyze_text](#gemini_analyze_text) &#183; [gemini_analyze_code](#gemini_analyze_code) &#183; [gemini_judge](#gemini_judge) &#183; [jury](#jury) &#183; [diff_review](#diff_review) &#183; [plan_critique](#plan_critique) &#183; [gemini_brainstorm](#gemini_brainstorm) &#183; [openai_brainstorm](#openai_brainstorm) &#183; [openai_code_review](#openai_code_review) &#183; [openai_explain](#openai_explain) &#183; [grok_brainstorm](#grok_brainstorm) &#183; [grok_architect](#grok_architect) &#183; [security_review](#security_review) &#183; [jev_decide](#jev_decide) &#183; [kimi_long_context](#kimi_long_context)
 - [Meta & Orchestration](#meta--orchestration) (7): [think](#think) &#183; [nextThought](#nextthought) &#183; [focus](#focus) &#183; [continue_focus](#continue_focus) &#183; [tachi](#tachi) &#183; [doctor](#doctor) &#183; [usage_stats](#usage_stats)
 - [Workflows](#workflows) (9): [workflow](#workflow) &#183; [workflow_start](#workflow_start) &#183; [continue_workflow](#continue_workflow) &#183; [list_workflows](#list_workflows) &#183; [create_workflow](#create_workflow) &#183; [visualize_workflow](#visualize_workflow) &#183; [workflow_status](#workflow_status) &#183; [validate_workflow](#validate_workflow) &#183; [validate_workflow_file](#validate_workflow_file)
 - [Prompt Engineering](#prompt-engineering) (4): [list_prompt_techniques](#list_prompt_techniques) &#183; [preview_prompt_technique](#preview_prompt_technique) &#183; [execute_prompt_technique](#execute_prompt_technique) &#183; [refine_prompt](#refine_prompt)
@@ -370,7 +370,7 @@ glm_reason({
 
 ### stepfun_reason
 
-Efficient deep reasoning with StepFun Step 3.7 Flash (196B — high AIME/SWE-Verified at lower cost). Put your PROBLEM in the `problem` parameter.
+Efficient deep reasoning with StepFun Step 5 Preview (600B/27B-active MoE; falls back to Step 3.7 Flash). Put your PROBLEM in the `problem` parameter.
 
 #### Parameters
 
@@ -387,30 +387,6 @@ Efficient deep reasoning with StepFun Step 3.7 Flash (196B — high AIME/SWE-Ver
 stepfun_reason({
   problem: "Fastest way to detect cycles in a large directed graph",
   approach: "analytical"
-})
-```
-
----
-
-### ernie_reason
-
-Broad-knowledge reasoning with Baidu ERNIE 4.5 VL (424B MoE — human-preference/arena strength). Put your PROBLEM in the `problem` parameter.
-
-#### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `problem` | `string` | ✅ Yes | - | The problem to reason about |
-| `approach` | `string` | No | `"analytical"` | Reasoning approach (e.g. analytical, systematic, step-by-step) |
-| `context` | `string` | No | - | Additional context |
-| `files` | `string[]` | No | - | File paths to read as code context |
-
-#### Example
-
-```typescript
-ernie_reason({
-  problem: "Compare the tradeoffs of REST vs GraphQL for a public API",
-  approach: "systematic"
 })
 ```
 
@@ -944,7 +920,7 @@ Multi-model jury: runs question through configurable panel of AI jurors in paral
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `question` | `string` | ✅ Yes | - | The question or problem for the jury to evaluate |
-| `jurors` | `string` | No | `"grok,deepseek,kimi,openai"` | Comma-separated juror models. Available: `grok`, `openai`, `qwen`, `qwen_reason`, `kimi`, `perplexity`, `minimax`, `deepseek`, `glm`, `stepfun`, `ernie`, `local` (free offline via `LOCAL_LLM_MODEL`; `hermes` accepted as legacy alias) |
+| `jurors` | `string` | No | `"grok,deepseek,kimi,openai"` | Comma-separated juror models. Available: `grok`, `openai`, `qwen`, `qwen_reason`, `kimi`, `perplexity`, `minimax`, `deepseek`, `glm`, `stepfun`, `local` (free offline via `LOCAL_LLM_MODEL`; `hermes` accepted as legacy alias) |
 | `mode` | `"synthesize" \| "evaluate" \| "rank" \| "resolve"` | No | `"synthesize"` | Judge mode |
 | `context` | `string` | No | - | Additional context for all jurors |
 
@@ -1187,6 +1163,38 @@ security_review({
   standard: "owasp",
   context: "Public-facing API, no auth on this endpoint yet"
 })
+```
+
+---
+
+### jev_decide
+
+Typed decisions from TypeSafe Jev via OpenRouter's System One endpoint (`/api/v1/systemone`, not chat-completions). No prose: send a `state` plus named questions, get calibrated probabilities back as JSON. ~0.3–0.6s, ~$0.04/M input tokens, output free, 32K context. Use for routing, eval/groundedness gates, and risk scoring — not for writing or open-ended reasoning. Needs `OPENROUTER_API_KEY`.
+
+#### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `state` | `string \| object` | Yes | - | Context to judge (e.g. `{request, policy, trace, answer}`) |
+| `questions` | `Record<string, Question>` | Yes | - | Named questions (see below) |
+| `model` | `string` | No | `typesafe/jev-1.13` | OpenRouter model id |
+
+Question: `{ type, instructions, criteria? }`
+- `noul` — yes/no probability. No `criteria`.
+- `choice` — `criteria` is an `{option: description}` map (≥2 options). Returns `choice`, per-option `probabilities`, `confidence`.
+- `score` — `criteria` is an ordered array, lowest first (≥2 levels). Returns `score` (index scale), `legend`, `probabilities`, `confidence`.
+
+#### Example
+
+```typescript
+jev_decide({
+  state: { claim: "I refunded your order.", trace: ["lookup_order(123) -> ok"] },
+  questions: {
+    grounded: { type: "noul", instructions: "Is the claim supported by the trace?" },
+    verdict: { type: "choice", instructions: "Classify", criteria: { pass: "supported", fail: "unsupported" } }
+  }
+})
+// → { answers: { grounded: { noul: 0.07 }, verdict: { choice: "fail", confidence: 0.99, ... } }, usage: {...} }
 ```
 
 ---
@@ -1722,7 +1730,7 @@ PERPLEXITY_API_KEY=...
 GROK_API_KEY=...            # or XAI_API_KEY
 OPENAI_API_KEY=...
 GEMINI_API_KEY=...
-OPENROUTER_API_KEY=...      # gates Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun/ERNIE tools
+OPENROUTER_API_KEY=...      # gates Qwen/Kimi/MiniMax/DeepSeek/GLM/StepFun tools
 
 # Search
 DEFAULT_SEARCH_PROVIDER=perplexity

@@ -5,6 +5,26 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - Oct 2026 model refresh
+
+Every model ID below was verified on 2026-10-14 against the provider's live model listing and with real calls through the built tools (16/16 tool paths pass).
+
+### Changed
+- **Gemini reasoning/judge default is now Gemini 4 Argon (`gemini-4-argon`)**, GA Oct 13, 2026. Pricing is $2/$10 per 1M tokens through Nov 30, 2026, then **$4/$20 from Dec 1**. Thinking tokens bill as output. Context is 1M in, but output is capped at **32K** (3.x Pro allowed 65K), so `callGemini` clamps the budget. No current caller asks for more than 18K.
+- **Gemini Pro model is switchable without a code change.** Set `TACHI_GEMINI_PRO_MODEL=gemini-3.1-pro-preview` to roll back. The value is read at call time (`getGeminiProModel()`; `GEMINI_MODELS.PRO` / `GEMINI_3_PRO` and `CURRENT_MODELS.gemini.default` are getters), so a value in `.env` is honoured even though the constants module loads before dotenv runs. On any Argon failure (a key or region without access returns a non-retryable 403/404), `callGemini` falls back to `gemini-3.1-pro-preview` and then degrades to Flash. Legacy modes that hardcoded `gemini-3.1-pro-preview` (commit guardian, code reviewer, documentation writer, scout, architect, token optimizer) now follow the switch.
+- **OpenAI `SOL` tier is `gpt-6.1-sol`** (Sep 29, 2026, same $2/$10). `gpt-6-sol` stays as its fallback (`SOL_6_0`). Astra's fallback chain is now astra → 6.1-sol → 6-sol → 5.6-terra.
+- **`openai_search` moved from `gpt-5.6-terra` to `gpt-6.1-sol`**, which is cheaper ($2/$10 vs $2/$12). On a fresh-news query terra answered with a minor Ads update, while 6.1-sol found the actual launch.
+- **`grok_search` moved from `grok-4.6` to `grok-4.7`.** This reverses the Sep 29 call. Across 3 queries 4.7 returned 19 / 79 / 2 unique citations vs 4.6's 2 / 4 / 2 and found newer facts.
+- **`stepfun_reason` and the `stepfun` juror run `stepfun/step-5-preview`** (Oct 8, 2026: 600B/27B-active MoE, 1M ctx, $1/$2.70), falling back to `step-3.7-flash` and then `step-3.5-flash`.
+- Also included (prepared Sep 29, first committed here): GPT-6 `sol` / `luna` tiers, `gemini-3.8-flash` as the Flash/search tier, `grok-4.7` as the Grok flagship, GLM 5.3, the DeepSeek V4.1 Flash fallback, the pinned `qwen3.8-max-0902` snapshot, and `jev_decide` registered under OpenRouter.
+
+### Removed
+- **`ernie_reason` and the `ernie` juror.** `baidu/ernie-4.5-vl-424b-a47b` expired from OpenRouter on Oct 8, 2026, and OpenRouter lists no Baidu model now, so every call would 404. Tool count goes from 68 to 67 (`balanced` 56, `research_power` 37, `full` 67).
+
+### Fixed
+- **Reasoning models could return half-finished reasoning as the answer.** When `finish_reason` is `length` with empty content, `callOpenRouter` now retries once with a larger budget and otherwise returns an explicit "incomplete" error. `deepseek_reason` and `deepseek_algo` budgets went from 8K to 32K.
+- **Long `grok_search` / `grok_search_lite` runs were killed by the MCP client's 60s timeout.** They now heartbeat and use a dedicated `TACHI_SEARCH_TIMEOUT` (default 5 minutes).
+
 ## [2.34.0] - 2026-09-14
 
 ### Changed
