@@ -15,6 +15,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { isToolEnabled } from "../utils/tool-config.js";
+import { expandFilePaths, parseFileSpec, resolveFileSpec } from "../utils/file-reader.js";
 
 /** Meta / session tools that must never run as a step (recursion, or they read files). */
 export const NON_STEP_TOOLS = new Set([
@@ -23,39 +24,52 @@ export const NON_STEP_TOOLS = new Set([
   "validate_workflow", "validate_workflow_file",
 ]);
 
-/** Basenames/segments that look like credentials — never readable from a step. */
-const SECRET_PATH = /(^|[\\/])(\.env(\.[\w.-]+)?|\.ssh|\.aws|\.gnupg|\.npmrc|\.pypirc|\.netrc|\.git-credentials|\.docker|id_(rsa|ed25519|ecdsa|dsa)[^\\/]*|[^\\/]*\.(pem|key|p12|pfx|keystore)|credentials[^\\/]*|secrets?[^\\/]*\.(json|ya?ml|toml))([\\/]|$)/i;
-
-/** Strip a trailing line range ("src/a.ts:10-20") the file reader accepts. */
-function stripRange(p: string): string {
-  return p.replace(/:\d+(-\d+)?$/, "");
-}
+/**
+ * Credential-looking names that are NOT hidden files (hidden ones are refused wholesale
+ * below). A denylist can't be complete, which is why every dot-segment is refused too.
+ */
+const SECRET_NAME = /^(id_(rsa|ed25519|ecdsa|dsa)\b.*|.*\.(pem|key|p12|pfx|keystore|jks|kdbx)|credentials.*|secrets?(\..*)?|.*\.secret(s)?(\..*)?|service[-_]?account.*\.json|token(s)?(\..*)?)$/i;
 
 /**
- * Why a step may not read this path, or null when it may. Paths must resolve inside
- * `root` (default: the server's cwd) after following symlinks, and not look like secrets.
+ * Why a step may not read `resolved` (an absolute path from the reader's own resolver),
+ * or null. Symlinks are followed via the deepest EXISTING ancestor, so neither
+ * "link-to-outside/x" nor a missing "link-to-outside/new" escapes the check.
  */
-export function stepFileViolation(rawPath: string, root: string = process.cwd()): string | null {
-  if (typeof rawPath !== "string" || !rawPath.trim()) return "empty path";
-  const p = stripRange(rawPath.trim());
-  if (p.startsWith("~")) return "home-relative paths are not allowed";
-  if (SECRET_PATH.test(p)) return "looks like a credential/secret file";
-
-  const rootReal = fs.existsSync(root) ? fs.realpathSync(root) : path.resolve(root);
-  // Follow symlinks so one inside the root can't point out of it. For a path that doesn't
-  // exist yet, resolve its deepest EXISTING ancestor — a lexical check alone would accept
-  // "link-to-outside/new-file".
-  const lexical = path.resolve(rootReal, p);
-  let existing = lexical;
+function concreteFileViolation(resolved: string, rootReal: string): string | null {
+  let existing = resolved;
   const tail: string[] = [];
   while (!fs.existsSync(existing) && path.dirname(existing) !== existing) {
     tail.unshift(path.basename(existing));
     existing = path.dirname(existing);
   }
-  const resolved = path.join(fs.realpathSync(existing), ...tail);
-  const rel = path.relative(rootReal, resolved);
+  const real = path.join(fs.realpathSync(existing), ...tail);
+  const rel = path.relative(rootReal, real);
+  if (rel === "" ) return null; // the root itself (a directory spec) — its files are checked individually
   if (rel.startsWith("..") || path.isAbsolute(rel)) return "outside the working directory";
-  if (SECRET_PATH.test(rel)) return "looks like a credential/secret file";
+  const segments = rel.split(path.sep);
+  if (segments.some((seg) => seg.startsWith("."))) return "hidden files/directories (.env, .git, .ssh…) are not readable from workflow steps";
+  if (segments.some((seg) => SECRET_NAME.test(seg))) return "looks like a credential/secret file";
+  return null;
+}
+
+/**
+ * Why a step may not pass this `files` entry, or null when it may. Uses the file
+ * reader's OWN parser, resolver and directory expansion (utils/file-reader.ts), so the
+ * guard validates exactly the files readFilesIntoContext will open — no differential
+ * on line ranges ("foo:5" vs "foo"), directories (".") or resolution.
+ * Containment root is the server's cwd, the same base the reader resolves against.
+ */
+export function stepFileViolation(rawPath: string): string | null {
+  if (typeof rawPath !== "string" || !rawPath.trim()) return "empty path";
+  if (rawPath.trim().startsWith("~")) return "home-relative paths are not allowed";
+  const rootReal = fs.realpathSync(process.cwd());
+
+  // The spec itself (directory or file), then every file the reader would expand it to
+  const targets = [rawPath, ...expandFilePaths([rawPath])];
+  for (const spec of targets) {
+    const why = concreteFileViolation(resolveFileSpec(parseFileSpec(spec).filePath), rootReal);
+    if (why) return why;
+  }
   return null;
 }
 

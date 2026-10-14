@@ -29,7 +29,7 @@ Every model ID below was verified on 2026-10-14 against the provider's live mode
 ### Security
 - **Workflow steps now have a trust boundary** (`src/workflows/step-guard.ts`). Delegating workflow steps to the real tools gave any workflow YAML (`workflow({ file })` runs any path, and workflow files get shared) the same power as the user's own MCP client. Steps now:
   - run only tools **enabled in the active profile**;
-  - may pass `files` only when they resolve **inside the working directory**: no `..` escape, no symlink escape, no home-relative paths, and nothing that looks like a credential (`.env*`, `.ssh`, `.aws`, `.npmrc`, `*.pem`/`*.key`, `credentials*`…). The file reader has no sandbox of its own;
+  - may pass `files` only when every file the reader would open resolves **inside the working directory**. The guard uses the file reader's own parsing, line-range handling and directory expansion, so the two can't disagree (for example `foo:5` vs `foo`, or `.` expanding to `credentials.json`). Symlinks are followed, including into files that don't exist yet. No hidden path segment at all (`.env`, `.git`, `.ssh`, `.kube`…), no credential-looking names (`*.pem`/`*.key`, `credentials*`, `secrets*`, `id_rsa*`…), no home-relative paths. The file reader has no sandbox of its own;
   - may not set `useHeavy`, and may point `jev_decide` only at a `typesafe/*` model;
   - may not call the meta tools (`workflow*`, `validate_workflow*`, `list_workflows`).
   A refused step fails visibly. Direct tool calls are unchanged.

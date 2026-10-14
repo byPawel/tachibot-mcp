@@ -28,7 +28,7 @@ describe("stepFileViolation", () => {
     const why = stepFileViolation(p);
     expect(why).not.toBeNull();
     if (kind === "outside") expect(why).toMatch(/outside/);
-    if (kind === "secret") expect(why).toMatch(/secret|outside/);
+    if (kind === "secret") expect(why).toMatch(/secret|outside|hidden/);
     if (kind === "home") expect(why).toMatch(/home/);
   });
 
@@ -37,16 +37,53 @@ describe("stepFileViolation", () => {
     (p) => expect(stepFileViolation(p)).toBeNull(),
   );
 
-  test("a symlink inside the root pointing outside it is refused", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "stepguard-"));
-    const link = path.join(dir, "escape");
-    fs.symlinkSync(os.tmpdir(), link);
-    try {
-      expect(stepFileViolation("escape/x.txt", dir)).toMatch(/outside/);
-    } finally {
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
-  });
+  test.each([".git/config", "src/.secret-notes.md", ".kube/config"])("refuses hidden path %s", (p) =>
+    expect(stepFileViolation(p)).toMatch(/hidden|outside/),
+  );
+});
+
+/** Run inside a throwaway cwd (the guard and the reader both resolve against cwd). */
+function inTempCwd(fn: (dir: string) => void) {
+  const prev = process.cwd();
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "stepguard-")));
+  const outside = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "stepguard-out-")));
+  fs.writeFileSync(path.join(outside, "secret.txt"), "TOP SECRET");
+  process.chdir(dir);
+  try {
+    fn(outside);
+  } finally {
+    process.chdir(prev);
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+}
+
+describe("no parser differential with the file reader", () => {
+  test("symlink dir pointing outside, file that does not exist yet", () =>
+    inTempCwd((outside) => {
+      fs.symlinkSync(outside, "escape");
+      expect(stepFileViolation("escape/new-file.txt")).toMatch(/outside/);
+    }));
+
+  test("'foo:5' is checked as the file the reader opens (foo:5), not 'foo'", () =>
+    inTempCwd((outside) => {
+      fs.writeFileSync("foo", "harmless");
+      fs.symlinkSync(path.join(outside, "secret.txt"), "foo:5"); // reader opens "foo:5" literally
+      expect(stepFileViolation("foo:5")).toMatch(/outside/);
+    }));
+
+  test("a directory spec is checked by the files it expands to", () =>
+    inTempCwd(() => {
+      fs.writeFileSync("app.ts", "ok");
+      fs.writeFileSync("credentials.json", "{}");
+      expect(stepFileViolation(".")).toMatch(/credential|secret/);
+    }));
+
+  test("a clean directory passes", () =>
+    inTempCwd(() => {
+      fs.writeFileSync("app.ts", "ok");
+      expect(stepFileViolation(".")).toBeNull();
+    }));
 });
 
 describe("checkStep", () => {

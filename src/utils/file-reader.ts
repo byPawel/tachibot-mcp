@@ -7,10 +7,28 @@ import * as fs from "fs";
 import * as path from "path";
 
 /**
+ * Split an optional line range off a file spec: "file.ts:100-200". This is the ONLY
+ * parser for that syntax — workflows/step-guard.ts validates paths with it, so the
+ * guard and the reader can never disagree about which file a spec names.
+ */
+export function parseFileSpec(rawPath: string): { filePath: string; startLine?: number; endLine?: number } {
+  const rangeMatch = rawPath.match(/^(.+?):(\d+)-(\d+)$/);
+  return rangeMatch
+    ? { filePath: rangeMatch[1], startLine: parseInt(rangeMatch[2], 10), endLine: parseInt(rangeMatch[3], 10) }
+    : { filePath: rawPath };
+}
+
+/** Absolute path the reader will open for a (range-stripped) file path. */
+export function resolveFileSpec(filePath: string): string {
+  return path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
+}
+
+/**
  * Expand directory paths into their code file contents.
  * Non-recursive. Filters to known code file extensions.
+ * Exported so the workflow step guard validates the exact files that will be read.
  */
-function expandFilePaths(filePaths: string[]): string[] {
+export function expandFilePaths(filePaths: string[]): string[] {
   const codeExtensions = new Set([
     '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.java',
     '.c', '.cpp', '.h', '.css', '.html', '.json', '.yaml', '.yml',
@@ -70,14 +88,8 @@ export function readFilesIntoContext(filePaths: string[], maxCharsPerFile = 8000
   for (const rawPath of expandedPaths) {
     try {
       // Parse optional line range: file.ts:100-200
-      const rangeMatch = rawPath.match(/^(.+?):(\d+)-(\d+)$/);
-      const filePath = rangeMatch ? rangeMatch[1] : rawPath;
-      const startLine = rangeMatch ? parseInt(rangeMatch[2], 10) : undefined;
-      const endLine = rangeMatch ? parseInt(rangeMatch[3], 10) : undefined;
-
-      const resolved = path.isAbsolute(filePath)
-        ? filePath
-        : path.join(process.cwd(), filePath);
+      const { filePath, startLine, endLine } = parseFileSpec(rawPath);
+      const resolved = resolveFileSpec(filePath);
 
       if (!fs.existsSync(resolved)) {
         sections.push(`--- FILE: ${rawPath} ---\n[File not found: ${resolved}]\n`);
