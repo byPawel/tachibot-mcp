@@ -10,9 +10,10 @@
 import { z } from "zod";
 import { defineModelTool } from "./factory/define-model-tool.js";
 import { getOpenRouterApiKey } from "../utils/api-keys.js";
+import { JEV_MODELS } from "../config/model-constants.js";
 
 export const JEV_API_URL = "https://openrouter.ai/api/v1/systemone";
-export const JEV_DEFAULT_MODEL = "typesafe/jev-1.13";
+export const JEV_DEFAULT_MODEL: string = JEV_MODELS.JEV_1_13;
 const JEV_TIMEOUT_MS = 30000;
 
 const questionSchema = z.object({

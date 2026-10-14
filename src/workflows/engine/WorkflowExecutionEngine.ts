@@ -10,6 +10,7 @@ import { loadConfig } from '../../config.js';
 import { modelRouter } from '../../optimization/model-router.js';
 import { tokenOptimizer } from '../../optimization/token-optimizer.js';
 import type { Workflow, WorkflowStep, ExecutionRecord, FileReference, WorkflowManifest } from '../workflow-types.js';
+import { WorkflowHelpers } from './WorkflowHelpers.js';
 
 export { executeWorkflowImpl };
 
@@ -106,15 +107,16 @@ async function executeWorkflowImpl(
       for (let i = 0; i < workflow.steps.length; i++) {
         const step = workflow.steps[i];
 
-        // Check condition
+        // Check condition — a false `if` skips the step. (Previously it only
+        // skipped when `skip: true` was ALSO set, so a bare `if` silently ran.)
         if (step.condition?.if) {
-          const shouldRun = parent.evaluateCondition(
+          const conditionContext = await WorkflowHelpers.resolveConditionContext(
             step.condition.if,
-            variables,
-            stepOutputs,
+            { ...variables, ...stepOutputs },
           );
-          if (!shouldRun && step.condition.skip) {
-            console.error(`⏭️ Skipping step: ${step.name}`);
+          const shouldRun = WorkflowHelpers.evaluateCondition(step.condition.if, conditionContext);
+          if (!shouldRun) {
+            console.error(`⏭️ Skipping step: ${step.name} (condition false: ${step.condition.if})`);
             continue;
           }
         }

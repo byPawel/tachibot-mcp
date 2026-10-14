@@ -10,6 +10,7 @@ import { WorkflowEventBus, WorkflowEvents } from '../events/WorkflowEventBus.js'
 import { WorkflowStateMachine } from '../state/WorkflowStateMachine.js';
 import { WorkflowState } from '../state/interfaces/IStateMachine.js';
 import { WorkflowStep } from '../../workflow-types.js';
+import { WorkflowHelpers } from '../WorkflowHelpers.js';
 
 export interface StepExecutionContext {
   workflowId: string;
@@ -215,16 +216,7 @@ export class StepExecutionHandler {
   }
 
   private evaluateCondition(condition: string, variables: Record<string, any>): boolean {
-    // Simple equality check: "variable == value"
-    const match = condition.match(/^(\w+)\s*==\s*(.+)$/);
-    if (match) {
-      const [, variable, expectedValue] = match;
-      const actualValue = variables[variable];
-      return String(actualValue).trim() === expectedValue.trim().replace(/['"]/g, '');
-    }
-
-    // Default: check if variable exists and is truthy
-    return !!variables[condition];
+    return WorkflowHelpers.evaluateCondition(condition, variables);
   }
 
   private async handleStepFailure(context: StepExecutionContext, error: Error): Promise<void> {

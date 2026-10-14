@@ -21,6 +21,7 @@ import {
 import { validateToolInput, ValidationContext } from "../utils/input-validator.js";
 import { hasGrokApiKey } from "../utils/api-keys.js";
 import { trackToolCall, estimateTokens, isTrackingEnabled } from "../utils/usage-tracker.js";
+import { jevDecideTool, JEV_DEFAULT_MODEL } from "../tools/jev-tool.js";
 
 // Lazy load OpenRouter for Qwen models
 let callOpenRouter: any = null;
@@ -105,6 +106,13 @@ export async function executeWorkflowTool(
     console.error(`📥 Input value: ${String(input).substring(0, 100)}...`);
   }
 
+  // jev_decide takes a structured {state, questions} input, not a prompt, so it
+  // is routed before prompt extraction. Without this case a Jev step fell
+  // through to `default` and silently ran GPT codex-mini as free text.
+  if (toolName === "jev_decide") {
+    return executeJevStep(input);
+  }
+
   // ============================================
   // UNIVERSAL INPUT NORMALIZATION
   // Support ANY parameter name for maximum DX
@@ -129,6 +137,9 @@ export async function executeWorkflowTool(
            input.message ||        // generic message
            input.instruction ||    // generic instruction
            input.previousStep ||   // workflow chaining
+           // Registry-delegated tools name their main field anything
+           // (question, perspectives, diff, plan...) — take the first string.
+           (Object.values(input).find((v) => typeof v === "string" && v.trim()) as string | undefined) ||
            "";
   };
 
@@ -654,25 +665,141 @@ export async function executeWorkflowTool(
         );
 
       // ============ DEFAULT ============
-      default:
-        console.warn(
-          `⚠️ Unknown tool: ${toolName}, falling back to GPT-5.1-codex-mini`,
-        );
+      // Anything without a hand-written case is delegated to the REAL registered
+      // tool object (same model, prompt and params as the MCP tool). This used to
+      // fall back to GPT codex-mini for every unknown name — 46 registered tools
+      // (deepseek_*, glm_reason, jury, gemini_judge, minimax_*, ...) silently ran
+      // the wrong model and returned its prose. Unknown names now fail loudly.
+      default: {
+        const delegated = await executeRegisteredTool(toolName, input, prompt);
+        if (delegated) return buildResult(delegated.result, delegated.modelUsed);
         return buildResult(
-          await callOpenAI(
-            toMessages(prompt),
-            OPENAI_MODELS.CODEX_MINI as OpenAIModel,
-            temperature,
-            maxTokens,
-          ),
-          OPENAI_MODELS.CODEX_MINI
+          `[Error: unknown workflow tool '${toolName}' — not a mapped tool and not registered (missing API key or disabled in the active profile?)]`,
+          "error",
         );
+      }
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error(`❌ Tool execution error for ${toolName}:`, errorMsg);
     return buildResult(`[Error executing ${toolName}: ${errorMsg}]`, "error");
   }
+}
+
+// Tools that must not run as a workflow step (recursion / session control).
+const NON_STEP_TOOLS = new Set([
+  "workflow", "workflow_start", "continue_workflow", "workflow_status",
+  "create_workflow", "visualize_workflow", "list_workflows",
+]);
+
+let registeredToolsPromise: Promise<Array<{ name: string; parameters: any; execute: (...args: any[]) => Promise<any> }>> | null = null;
+
+/** Registered provider tools, loaded once. Dynamic import avoids a registry ↔ mapper cycle. */
+function getRegisteredTools() {
+  if (!registeredToolsPromise) {
+    registeredToolsPromise = import("../tools/registry.js")
+      .then((m) => m.getAllTools())
+      .catch((error) => {
+        registeredToolsPromise = null;
+        throw error;
+      });
+  }
+  return registeredToolsPromise;
+}
+
+const stepToolContext = {
+  log: Object.assign((...a: unknown[]) => console.error(...a), {
+    info: (...a: unknown[]) => console.error(...a),
+    warn: (...a: unknown[]) => console.error(...a),
+    error: (...a: unknown[]) => console.error(...a),
+    debug: () => {},
+  }),
+  reportProgress: async () => {},
+};
+
+/**
+ * Run a workflow step through the registered MCP tool of the same name.
+ * Object input is validated against the tool's zod schema; required fields the
+ * step left out are filled with the step's main text (so `input: { query }`
+ * still reaches a tool whose field is `problem`). Returns null when no
+ * registered tool has that name.
+ */
+export async function executeRegisteredTool(
+  toolName: string,
+  input: ToolInput,
+  prompt: string,
+): Promise<ToolExecutionResult | null> {
+  if (NON_STEP_TOOLS.has(toolName)) {
+    return { result: `[Error: '${toolName}' cannot run as a workflow step]`, modelUsed: "error" };
+  }
+  const tool = (await getRegisteredTools()).find((t) => t.name === toolName);
+  if (!tool) return null;
+
+  const args: Record<string, any> = typeof input === "object" && input ? { ...input } : {};
+  let parsed = tool.parameters.safeParse(args);
+  if (!parsed.success && prompt) {
+    for (const issue of parsed.error.issues) {
+      if (issue.code === "invalid_type" && issue.received === "undefined" && issue.path.length === 1) {
+        args[issue.path[0] as string] = prompt;
+      }
+    }
+    parsed = tool.parameters.safeParse(args);
+  }
+  if (!parsed.success) {
+    const problems = parsed.error.issues
+      .map((i: any) => `${i.path.join(".") || "(input)"}: ${i.message}`)
+      .join("; ");
+    return { result: `[Error: invalid input for ${toolName} — ${problems}]`, modelUsed: "error" };
+  }
+
+  const output = await tool.execute(parsed.data, stepToolContext);
+  const result = typeof output === "string" ? output : JSON.stringify(output, null, 2);
+  return { result, modelUsed: toolName };
+}
+
+/**
+ * Workflow adapter for jev_decide. Accepts `questions` as an object or a JSON
+ * string (YAML block scalars), and falls back to the step's text content for
+ * `state` so `state: "${previous.output}"` and `previousStep` both work.
+ * The result is Jev's JSON, which `condition.if` can read into, e.g.
+ * `gate.answers.grounded.noul >= 0.7`.
+ */
+export async function executeJevStep(input: ToolInput): Promise<ToolExecutionResult> {
+  const fail = (msg: string): ToolExecutionResult => ({ result: `[Jev error: ${msg}]`, modelUsed: "error" });
+  if (typeof input === "string" || !input) {
+    return fail("jev_decide needs an object input: { state, questions: { name: { type, instructions, criteria? } } }");
+  }
+
+  let questions: any = input.questions;
+  if (typeof questions === "string") {
+    try {
+      questions = JSON.parse(questions);
+    } catch {
+      return fail("'questions' is a string but not valid JSON");
+    }
+  }
+  if (!questions || typeof questions !== "object" || Array.isArray(questions)) {
+    return fail("'questions' must be a map of named questions");
+  }
+
+  const state = input.state ?? input.context ?? input.previousStep ?? input.query ?? input.text ?? input.content;
+  if (state === undefined || state === null || state === "") {
+    return fail("'state' is empty — pass the text or object Jev should judge");
+  }
+
+  const model = typeof input.model === "string" && input.model ? input.model : JEV_DEFAULT_MODEL;
+  const result = String(
+    await jevDecideTool.execute({ state, questions, model } as any),
+  );
+  const modelUsed = result.startsWith("[Jev") || result.startsWith("Error:") ? "error" : model;
+  if (isTrackingEnabled()) {
+    try {
+      trackToolCall("workflow:jev_decide", modelUsed, estimateTokens(result));
+    } catch {
+      // Silently ignore tracking errors
+    }
+  }
+  return { result, modelUsed };
 }
 
 /**
@@ -727,6 +854,7 @@ export function getAvailableTools(): string[] {
       "qwen_algo",
       "qwq_reason",
       "kimi_thinking",
+      "jev_decide",
     );
   }
 

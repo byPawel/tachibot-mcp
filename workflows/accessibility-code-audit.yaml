@@ -31,7 +31,7 @@ steps:
 
   # Step 3: Collaborative fix debate (Gemini + Qwen)
   - name: fix-generation-debate
-    tool: pingpong
+    tool: gemini_brainstorm
     input:
       problem: "Given accessibility issues: ${a11y_scan} and standards: ${wcag_standards}, debate the best fixes"
       models: ["gemini", "qwen"]

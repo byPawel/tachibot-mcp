@@ -199,6 +199,15 @@ export const MINIMAX_MODELS = {
   M2_5: "minimax/minimax-m2.5",                 // SWE-Bench 80.2%, 37% faster than M2.1 (legacy)
 } as const;
 
+// Jev (TypeSafe via OpenRouter) — typed decisions, NOT a chat model. Served only on
+// OpenRouter's System One endpoint (/api/v1/systemone) and absent from /api/v1/models,
+// so never route these through callOpenRouter. ~$0.04/M input, output free, ~0.3s.
+// Verified live 2026-10-14: jev-1.13 answers (served as jev-1.13-20260917);
+// jev-latest is a 400. typesafe/jev-router is a chat-completions meta-router — not wired.
+export const JEV_MODELS = {
+  JEV_1_13: "typesafe/jev-1.13",               // noul / choice / score questions over a state
+} as const;
+
 // Qwen Models (Alibaba via OpenRouter)
 // Qwen3 235B Thinking (July 2025) - Largest reasoning model available
 // Qwen3-Coder-Next (Feb 2026) - Agentic coding specialist, 80B/3B MoE, 262K context
@@ -247,6 +256,7 @@ export const ALL_MODELS = {
   ...KIMI_MODELS,
   ...QWEN_MODELS,
   ...MINIMAX_MODELS,
+  ...JEV_MODELS,
 } as const;
 
 // Type for any valid model name

@@ -117,13 +117,33 @@ mcp__tachibot-mcp__perplexity_ask({ query: "Verify or refute, with sources: (1) 
    Fast-moving/recent claims → `grok_search` instead.
 3. **Entailment rule**: a claim is SUPPORTED only if a retrieved passage entails it —
    quote that passage into the ledger. A bare URL, or "sources agree", is NOT support.
-4. Status each claim: `SUPPORTED` / `WEAK` (plausible, no entailing passage) /
-   `CONTRADICTED`.
-5. Repairs — minimal, fact-only edits: CONTRADICTED → correct from the passage or cut
+4. **Entailment check (Jev)** — one call, one named `noul` question per claim, so the
+   entailment rule is scored by a calibrated model instead of eyeballed (~$0.00002/call):
+
+```
+mcp__tachibot-mcp__jev_decide({
+  state: {
+    c1: { claim: "[claim 1]", passage: "[quoted passage for claim 1]" },
+    c2: { claim: "[claim 2]", passage: "[quoted passage for claim 2]" }
+  },
+  questions: {
+    c1: { type: "noul", instructions: "Does c1.passage entail c1.claim — every number, date and name in the claim stated or directly implied by the passage?" },
+    c2: { type: "noul", instructions: "Does c2.passage entail c2.claim — every number, date and name in the claim stated or directly implied by the passage?" }
+  }
+})
+```
+
+   Read `answers.cN.noul`. Claims with no quoted passage skip Jev (they are WEAK at best).
+   Batch ≤ 15 claims per call.
+5. Status each claim: `SUPPORTED` (passage quoted AND Jev ≥ 0.7) / `WEAK` (plausible,
+   no entailing passage, or Jev 0.3–0.7) / `CONTRADICTED` (search says FALSE/OUTDATED,
+   or Jev < 0.3 on a passage that addresses the same fact). Record the Jev value in the
+   ledger. If Jev errors, fall back to the manual entailment rule and note it.
+6. Repairs — minimal, fact-only edits: CONTRADICTED → correct from the passage or cut
    the sentence. WEAK → hedge explicitly ("reportedly", "as of [date]") or cut.
    Surrounding prose style is not touched in this pass.
 
-Save the ledger as `claims.md` (`# | claim | status | quoted passage | URL`).
+Save the ledger as `claims.md` (`# | claim | status | jev | quoted passage | URL`).
 **G1 passes when zero CONTRADICTED remain.**
 
 ### Step 4: Gate G2 — Sharpen (voice only; facts frozen)
@@ -190,6 +210,7 @@ any, and the file paths.
 | Both Step 1 searches error | Draft anyway; skip G1; UNGROUNDED banner on final.md |
 | `blog_writer` errors | Stop and report — no degraded drafting path |
 | `de_generic` tool errors | Retry with `gemini_analyze_text`; then skip G2 with a note |
+| `jev_decide` errors | Manual entailment rule only; note "Jev unavailable" in `revisions.md` |
 | `jury` errors (`--jury`) | Note and ship — it was advisory |
 
 ## Model roles
@@ -198,7 +219,8 @@ any, and the file paths.
 |-------|------|-----|
 | Ground | `grok_search` + `perplexity_ask` | the live facts blog_writer cannot fetch |
 | Draft | `blog_writer` (Kimi K3) | STORM+Re3 stay internal, called once |
-| Verify | `perplexity_ask` / `grok_search` | disprove-oriented, passage entailment |
+| Verify | `perplexity_ask` / `grok_search` | disprove-oriented, passage retrieval |
+| Entailment | `jev_decide` (noul per claim) | calibrated claim→passage score, near-free |
 | Sharpen | `grok_reason` via `de_generic` | different lab than drafter — decorrelated critique |
 | Score (opt-in) | `jury` | advisory; the gates certify, consensus doesn't |
 

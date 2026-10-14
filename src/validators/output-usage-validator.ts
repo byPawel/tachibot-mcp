@@ -129,8 +129,15 @@ export class OutputUsageValidator {
         }
       }
 
-      // Check condition.if field
+      // Check condition.if field — both `${step.x}` interpolations and the bare
+      // dotted-path form the engine evaluates (`gate.answers.ok.noul < 0.6`).
       if (step.condition?.if) {
+        const bareRoot = step.condition.if.trim().replace(/^\$\{/, '').match(/^[\w-]+/)?.[0];
+        if (bareRoot && steps.some(s => s.name === bareRoot)) {
+          used.add(bareRoot);
+        } else if (bareRoot && varToStep.has(bareRoot)) {
+          used.add(varToStep.get(bareRoot)!);
+        }
         const matches = step.condition.if.matchAll(this.interpolationRegex);
 
         for (const match of matches) {

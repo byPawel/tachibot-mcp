@@ -1,0 +1,59 @@
+# Jev-Gated Answer — answer, check groundedness with Jev, research more only if needed
+# Usage: workflow({ name: "jev-gated-answer", query: "is SQLite WAL safe on NFS?" })
+#
+# Shows the Jev switch pattern: a jev_decide step returns calibrated JSON, and
+# later steps branch on it with `condition.if` (dotted path + comparison):
+#   if: "gate.answers.grounded.noul < 0.6"
+# A false `if` skips the step. Jev costs ~$0.00002/call and answers in <1s.
+#
+# Models used: Perplexity (answer), Jev (gate), Grok (extra research), Gemini (revise)
+
+name: jev-gated-answer
+description: "Perplexity answer → Jev groundedness gate → (only if weak) Grok research + Gemini revision"
+version: "1.0"
+
+steps:
+  - name: answer
+    tool: perplexity_ask
+    input:
+      query: "${query}"
+    maxTokens: 3000
+    output:
+      variable: first_answer
+
+  - name: gate
+    tool: jev_decide
+    input:
+      state: "QUESTION:\n${query}\n\nANSWER:\n${first_answer}"
+      questions:
+        grounded:
+          type: noul
+          instructions: "Is every key claim in the answer supported by a cited source or by evidence stated in the answer itself?"
+        complete:
+          type: score
+          instructions: "How completely does the answer address the question?"
+          criteria: ["partial", "mostly", "complete"]
+    output:
+      variable: gate_result
+
+  # Runs only when Jev doubts the answer is grounded.
+  - name: extra-research
+    tool: grok_search
+    condition:
+      if: "gate.answers.grounded.noul < 0.6"
+    input:
+      query: "${query}"
+      recency: "month"
+    maxTokens: 4000
+    output:
+      variable: extra_evidence
+
+  - name: revise
+    tool: gemini_analyze_text
+    condition:
+      if: "gate.answers.grounded.noul < 0.6"
+    input:
+      text: "Revise this answer using the new evidence. Remove or flag any claim the evidence does not support.\n\nQUESTION:\n${query}\n\nORIGINAL ANSWER:\n${first_answer}\n\nNEW EVIDENCE:\n${extra_evidence}"
+    maxTokens: 3000
+    output:
+      variable: revised_answer

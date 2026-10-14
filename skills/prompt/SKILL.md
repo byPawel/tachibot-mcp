@@ -30,6 +30,17 @@ truth for recommendations — don't maintain a parallel list here.
 ### `/prompt [query]` — recommend, then apply
 
 1. Ask the tool, don't guess: `preview_prompt_technique({ technique: "auto", query: "[query]" })`. It returns the top techniques for the intent with a reason and a kind tag (contract = imposes output structure, safe on reasoning models; scaffold = mainly helps weaker/routed models).
+1b. **Rank with Jev when the keyword match is weak.** `auto` is regex-based, so it can miss intent or return its generic fallback (`chain_of_note` / `astute_rag` / `spotlighting` for a query that isn't about retrieval). When that happens, or when its top picks look like a coin-flip, rank the candidates with one near-free typed call (~$0.00002):
+   ```
+   mcp__tachibot-mcp__jev_decide({
+     state: "[the user's query, verbatim]",
+     questions: {
+       technique: { type: "choice", instructions: "Which thinking technique best fits this task?",
+                    criteria: { "[name]": "[its one-line why from auto / list_prompt_techniques]", "...": "..." } }
+     }
+   })
+   ```
+   Candidates: auto's picks plus 2–4 plausible ones from `list_prompt_techniques({})`. Use 3–7 options. Order the offer in step 4 by `answers.technique.probabilities`. If Jev errors, keep auto's order.
 2. Write a goal-first brief IN CONTEXT (free — you're already a frontier model; do NOT add a paid rewrite step). Turn the raw query into: goal, constraints, deliverable, and how you'll know it's right. Preserve the user's ambiguity — surface it as an open question rather than resolving it silently. If the query is long/messy or the user explicitly asks to improve their prompt, offer the opt-in tool instead: `refine_prompt({ query, goal?, context? })` — relay its REFINED PROMPT + WHAT CHANGED + OPEN QUESTIONS and get approval before using the brief. Never call it automatically.
 3. Preview the top recommended technique against a sensible tool (see mapping below): `preview_prompt_technique({ technique: "[top pick]", tool: "[tool]", query: "[the brief]" })`.
 4. Show the user the original query vs the enhanced prompt, name the technique + why. Offer the choice through your option-choosing interface (in Claude Code: the multiple-choice UI) — the previewed technique first marked "(Recommended)", then the runner-ups from the auto step, each with its one-line why. In clients without that UI, list them inline.

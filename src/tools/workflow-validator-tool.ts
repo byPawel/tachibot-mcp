@@ -5,33 +5,27 @@
 import { z } from 'zod';
 import { workflowValidator } from '../validators/workflow-validator.js';
 import { defineModelTool } from './factory/define-model-tool.js';
+import { PROVIDER_GROUPS, ALWAYS_ON_TOOLS } from './provider-catalog.js';
 
 // Get all registered tools from the server
 // We'll treat ALL known tools as "enabled" for validation purposes
 // The tool validator will distinguish between "unknown" (error) and "disabled" (warning)
 function getAllKnownTools(): Set<string> {
-  // Return all known tool names
+  // Registered tools come from the provider catalog (same source as doctor/tachi),
+  // so new tools are known here without a second hand-kept list. The hard-coded
+  // names are workflow-only aliases/modes that tool-mapper.ts has explicit cases
+  // for. ('pingpong' used to be listed but was never a tool — steps using it
+  // silently ran GPT codex-mini; tool-mapper now rejects unknown names.)
   return new Set([
-    // Core
+    ...PROVIDER_GROUPS.flatMap((g) => g.tools),
+    ...ALWAYS_ON_TOOLS,
     'think', 'focus', 'nextThought',
-    // Perplexity
-    'perplexity_ask', 'perplexity_reason', 'perplexity_research',
-    // Grok
-    'grok_reason', 'grok_code', 'grok_debug', 'grok_architect', 'grok_brainstorm', 'grok_search',
-    // OpenAI
-    'openai_brainstorm', 'openai_reason', 'openai_code_review', 'openai_explain',
-    // Gemini
-    'gemini_brainstorm', 'gemini_analyze_code', 'gemini_analyze_text',
-    // Qwen
-    'qwen_coder',
-    // Kimi
-    'kimi_thinking',
-    // Advanced modes
-    'verifier', 'scout', 'challenger', 'hunter',
-    // Workflow
+    'perplexity_research', 'perplexity_code_search',
+    'grok', 'grok_heavy', 'gemini_query',
+    'gpt5', 'gpt5_mini', 'gpt5_analyze', 'openai_analyze',
+    'verifier', 'scout', 'challenger', 'auditor', 'commit_guardian', 'architect',
+    'code_reviewer', 'test_architect', 'documentation_writer',
     'workflow', 'list_workflows', 'create_workflow', 'visualize_workflow',
-    // Collaborative
-    'pingpong', 'qwen_competitive'
   ]);
 }
 
