@@ -16,6 +16,7 @@ import * as path from "path";
 import { readFilesIntoContext } from "../utils/file-reader.js";
 import { defineModelTool } from "./factory/define-model-tool.js";
 import { filesField } from "./factory/base-schemas.js";
+import { isToolEnabled } from "../utils/tool-config.js";
 
 // ═══════════════════════════════════════════════════════════════════
 // TYPES
@@ -145,6 +146,7 @@ const TOOL_MAX_TOKENS: Record<string, number> = {
 
   // Analysis tools - medium verbosity
   qwen_coder: 2500,
+  deepseek_reason: 3000,
   minimax_code: 2500,
   kimi_thinking: 2500,
   kimi_decompose: 3000,
@@ -453,6 +455,46 @@ function listRecentPlans(days: number = 7): { filename: string; path: string; cr
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// MODEL TIER — which tools the planner routes its steps to
+// ═══════════════════════════════════════════════════════════════════
+// TACHI_PLANNER_TIER=quality (default): code analysis goes to deepseek_reason
+//   (DeepSeek V4 Pro, frontier reasoning) — a sixth lab in the council.
+// TACHI_PLANNER_TIER=standard: the previous, cheaper lineup — qwen_coder
+//   (Qwen3-Coder-Next, 80B/3B-active MoE, $0.14/$0.80).
+// Read at call time so .env (loaded after this module) is honoured.
+export type PlannerTier = "quality" | "standard";
+export function getPlannerTier(): PlannerTier {
+  return process.env.TACHI_PLANNER_TIER?.trim().toLowerCase() === "standard" ? "standard" : "quality";
+}
+
+/**
+ * First candidate the active profile actually exposes. Without this the
+ * planner could hand the agent a tool its profile never registered (e.g.
+ * code_focus has planner_maker but not qwen_reason). Falls back to the first
+ * candidate when none is enabled, so the instruction still names a real tool.
+ */
+export function pickEnabledTool(candidates: string[]): string {
+  return candidates.find(t => isToolEnabled(t)) ?? candidates[0];
+}
+
+function codeAnalysisTool(): string {
+  return getPlannerTier() === "standard"
+    ? pickEnabledTool(["qwen_coder", "deepseek_reason"])
+    : pickEnabledTool(["deepseek_reason", "qwen_coder"]);
+}
+
+/** Draft-synthesis + 50% gate model: Qwen3.8 Max, else DeepSeek V4 Pro (same {problem, approach} params). */
+function synthesisReasonTool(): string {
+  return pickEnabledTool(["qwen_reason", "deepseek_reason"]);
+}
+
+const TOOL_MODEL_LABEL: Record<string, string> = {
+  qwen_coder: "Qwen3-Coder-Next",
+  deepseek_reason: "DeepSeek V4 Pro",
+  qwen_reason: "Qwen3.8 Max",
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // WORKFLOW STEPS DEFINITION
 // ═══════════════════════════════════════════════════════════════════
 
@@ -554,16 +596,12 @@ export const ALL_WORKFLOW_STEPS: WorkflowStep[] = [
 
   // Phase 2: Analysis (2 tools - WITH actual code review when provided)
   {
-    id: "analyze_qwen",
+    id: "analyze_qwen",  // id kept: callers pass prior.analyze_qwen back
     phase: "Analysis",
-    tool: "qwen_coder",
-    thinking: "Code-focused analysis. Qwen excels at technical feasibility - understanding APIs, dependencies, data structures. When codeContext is provided, it reviews ACTUAL code to score quality and identify specific changes needed.",
-    buildParams: (task, context, codeContext, answers, prior) => ({
-      task: codeContext ? "review" : "analyze",
-      ...(codeContext ? { code: codeContext } : {}),
-      // qwen_coder's schema requires `query` (there is no `requirements`
-      // field, and it's not a recognized alias — see param-aliases.ts)
-      query: `Task: ${task}
+    get tool() { return codeAnalysisTool(); },
+    thinking: "Code-focused analysis. Technical feasibility — APIs, dependencies, data structures. When codeContext is provided, it reviews ACTUAL code to score quality and identify specific changes needed. Quality tier: DeepSeek V4 Pro; standard tier: Qwen3-Coder-Next.",
+    buildParams: (task, context, codeContext, answers, prior) => {
+      const prompt = `Task: ${task}
 ${context ? `Context: ${context}` : ""}
 ${answers ? `User Clarifications:\n${answers}` : ""}
 ${prior.search ? `Research:\n${extractSummary(prior.search, PRIOR_CONTEXT_LIMIT_INTERMEDIATE)}` : ""}
@@ -577,9 +615,19 @@ Analyze this code and provide:
 3. Performance score /10 (complexity, bottlenecks)
 4. Specific issues found with line references
 5. Implementation approach for the task` : "Analyze feasibility and provide implementation approach."}
-${DISTILL_SUFFIX}`,
-    }),
-    description: "Analyze code feasibility + quality (Qwen)",
+${DISTILL_SUFFIX}`;
+      if (codeAnalysisTool() === "deepseek_reason") {
+        return { problem: prompt, approach: "analytical" };
+      }
+      // qwen_coder's schema requires `query` (there is no `requirements`
+      // field, and it's not a recognized alias — see param-aliases.ts)
+      return {
+        task: codeContext ? "review" : "analyze",
+        ...(codeContext ? { code: codeContext } : {}),
+        query: prompt,
+      };
+    },
+    get description() { return `Analyze code feasibility + quality (${TOOL_MODEL_LABEL[codeAnalysisTool()]})`; },
   },
   {
     id: "analyze_kimi",
@@ -610,7 +658,7 @@ ${DISTILL_SUFFIX}`,
     id: "decompose_kimi",
     phase: "Decomposition",
     tool: "kimi_decompose",
-    thinking: "Structured decomposition. Kimi K2.5 uses Agent Swarm reasoning to break the task into parallel subtasks with IDs, dependencies, and acceptance criteria. This dependency graph feeds into the synthesis phase for a more actionable, ordered plan.",
+    thinking: "Structured decomposition. Kimi K3 uses Agent Swarm reasoning to break the task into parallel subtasks with IDs, dependencies, and acceptance criteria. This dependency graph feeds into the synthesis phase for a more actionable, ordered plan.",
     buildParams: (task, context, _codeContext, answers, prior) => ({
       task: `${task}${answers ? `\n\nUser clarifications:\n${answers}` : ""}`,
       context: [
@@ -622,7 +670,7 @@ ${DISTILL_SUFFIX}`,
       depth: 3,
       outputFormat: "dependencies",
     }),
-    description: "Task decomposition with dependencies (Kimi K2.5)",
+    description: "Task decomposition with dependencies (Kimi K3)",
     dokoroType: "progress",
   },
 
@@ -639,7 +687,7 @@ ${DISTILL_SUFFIX}`,
 TASK: ${task}
 ${context ? `CONTEXT: ${context}` : ""}
 
-QWEN'S ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
+CODE ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
 KIMI'S ANALYSIS: ${distilledPrior("analyze_kimi", prior) || "N/A"}
 
 Argue the TOP 5 reasons this approach is correct:
@@ -670,7 +718,7 @@ ${context ? `CONTEXT: ${context}` : ""}
 PRO ARGUMENTS (Grok):
 ${distilledPrior("debate_pro", prior) || "N/A"}
 
-QWEN'S ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
+CODE ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
 
 PART 1 - AGAINST (TOP 5 risks):
 1. Architecture/design weaknesses
@@ -702,7 +750,7 @@ ${DISTILL_SUFFIX}`,
 TASK: ${task}
 ${answers ? `USER CLARIFICATIONS:\n${answers}` : ""}
 
-QWEN ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
+CODE ANALYSIS: ${distilledPrior("analyze_qwen", prior) || "N/A"}
 KIMI ANALYSIS: ${distilledPrior("analyze_kimi", prior) || "N/A"}
 ${prior.debate_con ? `
 DEBATE SYNTHESIS (key tensions to address):
@@ -860,8 +908,8 @@ ${DISTILL_SUFFIX}`,
   {
     id: "judge_draft",
     phase: "Judgment",
-    tool: "qwen_reason",
-    thinking: "First synthesis pass. Now we merge: Qwen's feasibility + Kimi's steps + GPT's critiques. Creates a coherent draft that addresses all findings and includes quality scores.",
+    get tool() { return synthesisReasonTool(); },
+    thinking: "First synthesis pass. Now we merge: the code analysis + Kimi's steps + GPT's critiques. Creates a coherent draft that addresses all findings and includes quality scores.",
     buildParams: (task, _context, codeContext, answers, prior) => ({
       problem: `Synthesize a coherent implementation plan:
 
@@ -869,7 +917,7 @@ TASK: ${task}
 ${answers ? `USER REQUIREMENTS:\n${answers}` : ""}
 
 ANALYSES:
-- Qwen: ${distilledPrior("analyze_qwen", prior) || "N/A"}
+- Code analysis: ${distilledPrior("analyze_qwen", prior) || "N/A"}
 - Kimi: ${distilledPrior("analyze_kimi", prior) || "N/A"}
 ${prior.decompose_kimi ? `\nTASK DECOMPOSITION (subtasks + dependencies):\n${truncateSmart(prior.decompose_kimi, PRIOR_CONTEXT_LIMIT_SYNTHESIS)}` : ""}
 
@@ -888,7 +936,7 @@ ${prior.responsive_judge ? "Include responsive design requirements and breakpoin
 Include overall confidence score /10.`,
       approach: "logical",
     }),
-    description: "Draft plan synthesis (Qwen)",
+    get description() { return `Draft plan synthesis (${TOOL_MODEL_LABEL[synthesisReasonTool()]})`; },
     isSynthesis: true,
   },
   {
@@ -969,7 +1017,7 @@ Example:
   [Execute grok_search]
 
   planner_maker({ task: "Add auth", mode: "continue", step: 2, prior: { search: "..." } })
-  → { nextTool: { tool: "qwen_coder", params: {...} }, step: 2 }
+  → { nextTool: { tool: "deepseek_reason", params: {...} }, step: 2 }
 
   ... continue until isComplete: true`,
 
@@ -1759,18 +1807,19 @@ VERDICT: ON_TRACK, AMEND_PLAN (with proposal), or WRONG_APPROACH`;
       } else if (checkpoint === "50%") {
         const verifyPrompt = `50% CHECKPOINT — Progress & Goal Alignment Review\n\nCOMPLETED STEPS:\n${completedSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}\n\nREMAINING STEPS:\n${remainingSteps.map(s => `${s.stepNum}. ${s.title}`).join('\n')}${goalPrompt}${evidence}\n\nRESPOND WITH:\n1. Progress assessment — are completed steps implemented correctly?\n2. Goal alignment — does current work serve the stated goal? Any drift?\n3. Remaining plan — should we adjust remaining steps to better serve the goal?\n4. Verdict: ON_TRACK or DRIFTING (with explanation)`;
 
-        lines.push("### 🔍 50% — Progress Check (Qwen Reason)");
+        const gateTool = synthesisReasonTool();
+        lines.push(`### 🔍 50% — Progress Check (${TOOL_MODEL_LABEL[gateTool]})`);
         lines.push("");
         lines.push("Execute this verification tool:");
         lines.push("");
         lines.push("```json");
         lines.push(JSON.stringify({
-          tool: "qwen_reason",
-          params: { query: verifyPrompt },
+          tool: gateTool,
+          params: { problem: verifyPrompt, approach: "logical" },
         }, null, 2));
         lines.push("```");
         lines.push("");
-        lines.push("After Qwen judge, continue to next step or adjust plan based on verdict.");
+        lines.push("After the 50% judge, continue to next step or adjust plan based on verdict.");
 
       } else if (checkpoint === "80%") {
         const decomposeContext = `Remaining steps:\n${remainingSteps.map(s => `${s.stepNum}. ${s.title}${s.details ? ': ' + s.details.substring(0, 100) : ''}`).join('\n')}\n\nCompleted: ${completedSteps.map(s => `[${s.stepNum}] ${s.title}`).join(', ')}${goal ? `\n\nGOAL: ${goal}\nEnsure all remaining subtasks serve this goal. Flag any that don't.` : ""}`;

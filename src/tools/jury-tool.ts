@@ -13,7 +13,7 @@ import { callOpenAI } from "./openai-tools.js";
 import { callOpenRouter, OpenRouterModel } from "./openrouter-tools.js";
 import { callLocal } from "./local-tools.js";
 import { callGemini } from "./gemini-tools.js";
-import { GEMINI_MODELS } from "../config/model-constants.js";
+import { GEMINI_MODELS, OPENAI_MODELS } from "../config/model-constants.js";
 import { FORMAT_INSTRUCTION } from "../utils/format-constants.js";
 import { isProviderFailure } from "../utils/provider-failure.js";
 import { runJudge, judgeAttribution, type JudgeResult } from "../utils/judge-runner.js";
@@ -26,6 +26,14 @@ import {
 } from "../utils/judge-constants.js";
 import { stripFormatting } from "../utils/format-stripper.js";
 import { withHeartbeat } from "../utils/streaming-helper.js";
+
+// GPT juror model. Was implicit (callOpenAI's cheap default, now gpt-6-luna)
+// since v2.14.7 — never a deliberate choice. Pinned to the GPT-6.1 sol mid
+// tier ($2/$10); TACHI_JURY_OPENAI_MODEL overrides (e.g. gpt-6-astra, gpt-6-luna).
+// Read at call time so .env (loaded after this module) is honoured.
+export function getJuryOpenAIModel(): string {
+  return process.env.TACHI_JURY_OPENAI_MODEL?.trim() || OPENAI_MODELS.SOL;
+}
 
 // Per-juror output budget. Reasoning-heavy jurors (GLM, Kimi, DeepSeek,
 // GPT-5.5 high-effort) spend much of their token budget on internal reasoning
@@ -57,7 +65,7 @@ export const JUROR_REGISTRY: Record<string, {
     call: async (q) => callOpenAI([
       { role: "system", content: `You are an analytical reasoner. Consider tradeoffs, edge cases, and nuance. ${FORMAT_INSTRUCTION}` },
       { role: "user", content: q }
-    ], undefined, 0.7, JUROR_MAX_TOKENS, "high"),
+    ], getJuryOpenAIModel(), 0.7, JUROR_MAX_TOKENS, "high"),
   },
   qwen: {
     label: "Qwen (Code & Logic)",

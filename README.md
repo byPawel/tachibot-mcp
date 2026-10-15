@@ -30,6 +30,15 @@ from Claude Code, Claude Desktop, Cursor, or any MCP client.
 
 ## What's New
 
+### v2.35.1
+- **The planner's code analysis runs on DeepSeek V4 Pro** instead of Qwen3-Coder-Next, the one small model in the council. That adds a sixth lab. Set `TACHI_PLANNER_TIER=standard` for the cheaper lineup.
+- **The jury's GPT juror is pinned to `gpt-6.1-sol`.** It had been silently getting the cheap `gpt-6-luna` default. Override with `TACHI_JURY_OPENAI_MODEL`.
+- **Fixes:**
+  - The planner no longer points at tools its profile doesn't register (`code_focus` lacks `qwen_reason`).
+  - The `planner_runner` 50% gate now sends the right params.
+  - The workflow step guard now checks paths with the file reader's own parsing.
+- Tool count unchanged at 67.
+
 ### v2.35.0
 - **Gemini 4 Argon is the reasoning/judge default** (GA Oct 13). In our judge tests it was faster and cheaper than 3.1 Pro even at its Dec 1 price ($4/$20), and on a real diff it caught defects that 3.1 Pro passed as "no defects, 5/5". Switch back without a code change with `TACHI_GEMINI_PRO_MODEL=gemini-3.1-pro-preview`.
 - **Model refresh, every ID verified live:**
@@ -175,7 +184,8 @@ Skills automatically adapt to your configured API keys. Even with just 1-2 provi
 ### Multi-Model Intelligence
 - **67 AI Tools** across 11 providers &mdash; Perplexity, Grok, GPT-6, Gemini, Qwen, Kimi, MiniMax, DeepSeek, GLM (Zhipu), StepFun, TypeSafe Jev, plus free local models (Ollama / LM Studio / llama.cpp / vLLM)
 - **Gemini 4 Argon** (`gemini-4-argon`, GA Oct 13 2026) &mdash; reasoning/judge default; set `TACHI_GEMINI_PRO_MODEL=gemini-3.1-pro-preview` to roll back. Flash/search tier is `gemini-3.8-flash`
-- **Multi-Model Council** &mdash; planner_maker synthesizes plans from 5+ models into bite-sized TDD steps
+- **Multi-Model Council** &mdash; planner_maker synthesizes plans from six labs into bite-sized TDD steps. Code analysis runs on DeepSeek V4 Pro; set `TACHI_PLANNER_TIER=standard` for the cheaper Qwen3-Coder-Next lineup
+- **Jury** &mdash; the GPT juror runs on `gpt-6.1-sol`; override with `TACHI_JURY_OPENAI_MODEL` (e.g. `gpt-6-astra`)
 - **Smart Routing** &mdash; Automatic model selection for optimal results
 - **OpenRouter Gateway** &mdash; Optional single API key for all providers
 

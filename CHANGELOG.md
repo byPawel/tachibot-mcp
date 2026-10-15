@@ -5,6 +5,21 @@ All notable changes to TachiBot MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.35.1] - 2026-10-15
+
+### Changed
+- **The planner's code-analysis step now runs on DeepSeek V4 Pro** (`deepseek_reason`) instead of Qwen3-Coder-Next (`qwen_coder`, an 80B/3B-active MoE at $0.14/$0.80). That step was the one small model in a council of flagships (Grok 4.7, Kimi K3, GPT-6 Astra, Qwen3.8 Max, Gemini 4 Argon), and it adds a sixth lab to the plan. In a live check, DeepSeek V4 Pro scored a sample Express handler on quality, security and performance in about 29s. Set `TACHI_PLANNER_TIER=standard` to switch back to the cheaper lineup. The variable is read at call time.
+- **The jury's GPT juror is pinned to `gpt-6.1-sol`** ($2/$10). Since v2.14.7 it had passed no model, so it silently got `callOpenAI`'s cheap default, which is now `gpt-6-luna` ($0.10/$0.50, weak recall on long inputs). Override it with `TACHI_JURY_OPENAI_MODEL`, for example `gpt-6-astra`.
+- **Planner prompts call the analysis "CODE ANALYSIS"** instead of "QWEN'S ANALYSIS", so later models aren't told the wrong author. The prior key stays `analyze_qwen` for compatibility.
+
+### Fixed
+- **The planner no longer hands the agent a tool that its profile doesn't register.** `code_focus` includes `planner_maker` but not `qwen_reason`, so the draft-synthesis step and the `planner_runner` 50% gate pointed at a missing tool. Both now fall back to `deepseek_reason`, and the analysis step falls back to `qwen_coder`.
+- **The `planner_runner` 50% gate now sends `{problem, approach}`**, matching the reasoning tools' schema, instead of `{query}`.
+- **The `kimi_decompose` step description said "Kimi K2.5".** It now says Kimi K3, the model it actually calls.
+
+### Security
+- **The workflow step guard now validates paths with the file reader's own parsing.** In 2.35.0 the guard parsed `files` separately from the reader, so `foo:5` could open a symlink out of the repo and `.` could expand to `credentials.json`. Every file the reader would open is now checked, and hidden path segments (`.env`, `.git`, `.ssh`…) are refused.
+
 ## [2.35.0] - 2026-10-14
 
 Every model ID below was verified on 2026-10-14 against the provider's live model listing and with real calls through the built tools (16/16 tool paths pass).

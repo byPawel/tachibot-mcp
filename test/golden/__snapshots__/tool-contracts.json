@@ -1969,7 +1969,7 @@
       "readOnlyHint": false,
       "title": "Plan Creator"
     },
-    "description": "Multi-model council for creating implementation plans.\n\nCOORDINATOR PATTERN - Returns ONE tool to execute at a time:\n1. Call with mode: \"start\" to begin\n2. Execute the returned tool\n3. Call with mode: \"continue\" and prior results\n4. Repeat until isComplete: true\n\nExample:\n  planner_maker({ task: \"Add auth\", mode: \"start\" })\n  → { nextTool: { tool: \"grok_search\", params: {...} }, step: 1 }\n\n  [Execute grok_search]\n\n  planner_maker({ task: \"Add auth\", mode: \"continue\", step: 2, prior: { search: \"...\" } })\n  → { nextTool: { tool: \"qwen_coder\", params: {...} }, step: 2 }\n\n  ... continue until isComplete: true",
+    "description": "Multi-model council for creating implementation plans.\n\nCOORDINATOR PATTERN - Returns ONE tool to execute at a time:\n1. Call with mode: \"start\" to begin\n2. Execute the returned tool\n3. Call with mode: \"continue\" and prior results\n4. Repeat until isComplete: true\n\nExample:\n  planner_maker({ task: \"Add auth\", mode: \"start\" })\n  → { nextTool: { tool: \"grok_search\", params: {...} }, step: 1 }\n\n  [Execute grok_search]\n\n  planner_maker({ task: \"Add auth\", mode: \"continue\", step: 2, prior: { search: \"...\" } })\n  → { nextTool: { tool: \"deepseek_reason\", params: {...} }, step: 2 }\n\n  ... continue until isComplete: true",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
