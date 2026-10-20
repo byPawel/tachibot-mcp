@@ -18,6 +18,7 @@
 // here needs env vars set before import, so static imports are safe.
 import { ALL_WORKFLOW_STEPS } from "../../src/tools/planner-tools.js";
 import { qwenCoderTool, deepseekReasonTool, qwenReasonTool } from "../../src/tools/openrouter-tools.js";
+import { openaiGpt5ReasonTool } from "../../src/tools/openai-tools.js";
 import { withParamAliases } from "../../src/utils/param-aliases.js";
 
 // The schema exactly as registered: alias preprocessing wrapped around it
@@ -142,5 +143,23 @@ describe("planner judge_draft step", () => {
     } finally {
       delete process.env.DISABLE_TOOL_QWEN_REASON;
     }
+  });
+});
+
+/**
+ * Critique step pins GPT-6.1 Sol on openai_reason (whose default is Astra).
+ */
+describe("planner critique step emits schema-valid openai_reason params on GPT-6.1 Sol", () => {
+  const critiqueStep = ALL_WORKFLOW_STEPS.find((s: any) => s.id === "critique");
+  const openaiReasonSchema = withParamAliases(openaiGpt5ReasonTool as any).parameters;
+
+  it("params parse and keep model gpt-6.1-sol", () => {
+    expect(critiqueStep!.tool).toBe("openai_reason");
+    const params = critiqueStep!.buildParams("add rate limiting", "", "", "", { analyze_qwen: "a", analyze_kimi: "b" });
+    const parsed = openaiReasonSchema.safeParse(params);
+    if (!parsed.success) {
+      throw new Error(`openai_reason params failed: ${JSON.stringify(parsed.error.issues)}`);
+    }
+    expect(parsed.data.model).toBe("gpt-6.1-sol");
   });
 });

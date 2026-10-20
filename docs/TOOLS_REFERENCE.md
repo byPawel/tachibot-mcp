@@ -198,7 +198,7 @@ grok_reason({
 
 ### openai_reason
 
-Mathematical reasoning using GPT-5.2-thinking. Put your QUERY in the `query` parameter.
+Mathematical reasoning with OpenAI's thinking tier (GPT-6 Astra by default, xhigh effort). Put your QUERY in the `query` parameter.
 
 #### Parameters
 
@@ -208,6 +208,7 @@ Mathematical reasoning using GPT-5.2-thinking. Put your QUERY in the `query` par
 | `mode` | `string` | No | `"analytical"` | Reasoning mode (e.g. mathematical, scientific, logical, analytical) |
 | `context` | `string` | No | - | Additional context |
 | `files` | `string[]` | No | - | File paths to read as code context |
+| `model` | `string` | No | `gpt-6-astra` | Override: `gpt-6.1-sol`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`/`terra`/`luna` (the planner's critique step pins `gpt-6.1-sol`) |
 
 #### Example
 

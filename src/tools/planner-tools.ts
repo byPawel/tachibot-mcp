@@ -17,6 +17,7 @@ import { readFilesIntoContext } from "../utils/file-reader.js";
 import { defineModelTool } from "./factory/define-model-tool.js";
 import { filesField } from "./factory/base-schemas.js";
 import { isToolEnabled } from "../utils/tool-config.js";
+import { OPENAI_MODELS } from "../config/model-constants.js";
 
 // ═══════════════════════════════════════════════════════════════════
 // TYPES
@@ -743,7 +744,7 @@ ${DISTILL_SUFFIX}`,
     id: "critique",
     phase: "Critique",
     tool: "openai_reason",
-    thinking: "Pre-mortem + adversarial review. GPT assumes this implementation has FAILED in production, then works backward to find why. Combines pre-mortem analysis (Klein 2007) with devil's advocate critique. When code is provided, it hunts for security vulnerabilities and performance issues in the actual implementation.",
+    thinking: "Pre-mortem + adversarial review. GPT-6.1 Sol assumes this implementation has FAILED in production, then works backward to find why. Combines pre-mortem analysis (Klein 2007) with devil's advocate critique. When code is provided, it hunts for security vulnerabilities and performance issues in the actual implementation.",
     buildParams: (task, _context, codeContext, answers, prior) => ({
       query: `PRE-MORTEM + CRITIQUE: Assume this implementation FAILED in production 3 months from now. Work backward to find why.
 
@@ -772,8 +773,10 @@ ${prior.debate_con ? "6. Unresolved tensions from the debate" : ""}
 8. Score the proposed approach /10
 ${DISTILL_SUFFIX}`,
       mode: "analytical",
+      // GPT-6.1 Sol: same xhigh effort as Astra at 1/5 the price ($2/$10 vs $10/$50)
+      model: OPENAI_MODELS.SOL,
     }),
-    description: "Find holes and gaps (GPT)",
+    description: "Find holes and gaps (GPT-6.1 Sol)",
     dokoroType: "progress",
   },
 

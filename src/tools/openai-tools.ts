@@ -528,9 +528,12 @@ export const openaiGpt5ReasonTool = defineModelTool({
     mode: z.string()
       .optional()
       .default("analytical")
-      .describe("Reasoning mode (e.g., mathematical, scientific, logical, analytical)")
+      .describe("Reasoning mode (e.g., mathematical, scientific, logical, analytical)"),
+    model: z.enum(["gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
+      .optional()
+      .describe("Model to use - gpt-6-astra (default, flagship), gpt-6.1-sol (mid tier), gpt-6-sol (previous mid tier), gpt-6-luna (fast/cheap), gpt-5.6-sol/terra/luna (previous generation)")
   }),
-  execute: async (args: { query: string; context?: string; files?: string[]; mode?: string }, { log, reportProgress, skipValidation }: any) => {
+  execute: async (args: { query: string; context?: string; files?: string[]; mode?: string; model?: string }, { log, reportProgress, skipValidation }: any) => {
     const modePrompts = {
       mathematical: "Focus on mathematical proofs, calculations, and formal logic",
       scientific: "Apply scientific method and empirical reasoning",
@@ -564,7 +567,7 @@ ${FORMAT_INSTRUCTION}`
     // xhigh first, and it costs latency on every call. Both land in the 180s timeout branch.
     const reportFn = reportProgress ?? (async () => {});
     return await withHeartbeat(
-      () => callOpenAI(messages, OPENAI_MODELS.DEFAULT, 0.7, 8000, OPENAI_REASONING.XHIGH, false, skipValidation || false),
+      () => callOpenAI(messages, args.model ?? OPENAI_MODELS.DEFAULT, 0.7, 8000, OPENAI_REASONING.XHIGH, false, skipValidation || false),
       reportFn
     );
   }

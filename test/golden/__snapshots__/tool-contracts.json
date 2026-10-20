@@ -1788,6 +1788,19 @@
           "description": "Reasoning mode (e.g., mathematical, scientific, logical, analytical)",
           "type": "string"
         },
+        "model": {
+          "description": "Model to use - gpt-6-astra (default, flagship), gpt-6.1-sol (mid tier), gpt-6-sol (previous mid tier), gpt-6-luna (fast/cheap), gpt-5.6-sol/terra/luna (previous generation)",
+          "enum": [
+            "gpt-6-astra",
+            "gpt-6.1-sol",
+            "gpt-6-sol",
+            "gpt-6-luna",
+            "gpt-5.6-sol",
+            "gpt-5.6-terra",
+            "gpt-5.6-luna"
+          ],
+          "type": "string"
+        },
         "query": {
           "description": "The question or problem to reason about (REQUIRED - put your question here)",
           "type": "string"
